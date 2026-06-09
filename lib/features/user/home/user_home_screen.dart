@@ -1,9 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
+import 'package:riderzz_app/features/user/home/pages/user_home_page.dart';
+import 'package:riderzz_app/features/user/home/pages/user_bookings_page.dart';
+import 'package:riderzz_app/features/user/home/pages/user_payments_page.dart';
+import 'package:riderzz_app/features/user/home/pages/user_account_page.dart';
 
-class UserHomeScreen extends StatelessWidget {
+class UserHomeScreen extends StatefulWidget {
   const UserHomeScreen({super.key});
+
+  @override
+  State<UserHomeScreen> createState() => _UserHomeScreenState();
+}
+
+class _UserHomeScreenState extends State<UserHomeScreen> {
+  int _currentIndex = 0;
+
+  String _getInitials(String? name) {
+    if (name == null || name.isEmpty) return 'RK';
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return parts[0][0].toUpperCase();
+  }
+
+  void _showSupportDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.help_outline_rounded, color: Color(0xFF1A3D6B)),
+            SizedBox(width: 8),
+            Text('Help & Support', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'For any booking queries or support, please email us at support@cargoswift.com or call our toll-free 24/7 support line at +91 1800-123-4567.',
+          style: TextStyle(color: Color(0xFF4A5568), height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close', style: TextStyle(color: Color(0xFF1A3D6B), fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -11,149 +58,180 @@ class UserHomeScreen extends StatelessWidget {
     final user = authProvider.currentUser;
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF0F2027),
-              Color(0xFF203A43),
-              Color(0xFF2C5364),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Welcome back,',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          user?.name ?? 'Rider',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.logout_rounded, color: Colors.white),
-                      onPressed: () async {
-                        await authProvider.logout();
-                        if (context.mounted) {
-                          Navigator.pushReplacementNamed(context, '/registration');
-                        }
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 40),
-                // Premium Card Example
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.12),
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
+      backgroundColor: const Color(0xFFF7F8FA),
+      appBar: AppBar(
+        toolbarHeight: 0,
+        elevation: 0,
+        backgroundColor: const Color(0xFF1A3D6B),
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Reusable User Layout App Bar Header
+            Container(
+              color: const Color(0xFF1A3D6B),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Icon(Icons.directions_car_filled_outlined,
-                              color: Colors.cyanAccent, size: 32),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.cyanAccent.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Text(
-                              'Active Session',
-                              style: TextStyle(
-                                color: Colors.cyanAccent,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
                       const Text(
-                        'Where are you going today?',
+                        'Good morning,',
                         style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                          color: Colors.white70,
+                          fontSize: 13,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
                       Text(
-                        'Start typing your destination below to book a premium ride instantly.',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.6),
-                          fontSize: 14,
+                        user?.name ?? 'Rahul Kumar',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
-                ),
-                const Spacer(),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.cyanAccent,
-                      foregroundColor: const Color(0xFF0F2027),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                  PopupMenuButton<String>(
+                    onSelected: (value) async {
+                      if (value == 'support') {
+                        _showSupportDialog(context);
+                      } else if (value == 'logout') {
+                        await authProvider.logout();
+                        if (context.mounted) {
+                          Navigator.pushReplacementNamed(context, '/login');
+                        }
+                      }
+                    },
+                    offset: const Offset(0, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    onPressed: () {},
-                    child: const Text(
-                      'Book a New Ride',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'support',
+                        child: Row(
+                          children: const [
+                            Icon(Icons.help_outline_rounded, size: 18, color: Color(0xFF1A2233)),
+                            SizedBox(width: 8),
+                            Text('Help & Support', style: TextStyle(fontSize: 14)),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuDivider(),
+                      PopupMenuItem(
+                        value: 'logout',
+                        child: Row(
+                          children: const [
+                            Icon(Icons.logout_rounded, size: 18, color: Colors.redAccent),
+                            SizedBox(width: 8),
+                            Text('Logout', style: TextStyle(fontSize: 14, color: Colors.redAccent)),
+                          ],
+                        ),
+                      ),
+                    ],
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF0F9B6E),
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        _getInitials(user?.name),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
-              ],
+                ],
+              ),
             ),
-          ),
+
+            // Layout Body containing currently active subpage view
+            Expanded(
+              child: _buildTabContent(context),
+            ),
+          ],
         ),
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        selectedItemColor: const Color(0xFF1A3D6B),
+        unselectedItemColor: const Color(0xFFB0B8C4),
+        selectedFontSize: 11,
+        unselectedFontSize: 11,
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.assignment_outlined),
+            activeIcon: Icon(Icons.assignment_rounded),
+            label: 'Bookings',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_balance_wallet_outlined),
+            activeIcon: Icon(Icons.account_balance_wallet_rounded),
+            label: 'Payments',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline_rounded),
+            activeIcon: Icon(Icons.person_rounded),
+            label: 'Account',
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildTabContent(BuildContext context) {
+    switch (_currentIndex) {
+      case 0:
+        return UserHomePage(
+          onBookingConfirmed: () {
+            setState(() {
+              _currentIndex = 1; // Transition to bookings tab on confirmation
+            });
+          },
+        );
+      case 1:
+        return const UserBookingsPage();
+      case 2:
+        return const UserPaymentsPage();
+      case 3:
+        return UserAccountPage(
+          onNavigateToHistory: () {
+            setState(() {
+              _currentIndex = 2; // Transition to payments tab
+            });
+          },
+        );
+      default:
+        return UserHomePage(
+          onBookingConfirmed: () {
+            setState(() {
+              _currentIndex = 1;
+            });
+          },
+        );
+    }
   }
 }

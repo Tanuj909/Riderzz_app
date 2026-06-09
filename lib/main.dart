@@ -6,6 +6,7 @@ import 'package:riderzz_app/core/api/dio_client.dart';
 import 'package:riderzz_app/core/storage/secure_storage_service.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/auth/services/auth_service.dart';
+import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,6 +45,11 @@ class MyApp extends StatelessWidget {
           ),
           update: (_, authService, storageService, previous) =>
               previous ?? AuthProvider(authService: authService, storageService: storageService),
+        ),
+
+        // ChangeNotifierProvider for AddressProvider
+        ChangeNotifierProvider<AddressProvider>(
+          create: (_) => AddressProvider(),
         ),
       ],
       child: MaterialApp(
