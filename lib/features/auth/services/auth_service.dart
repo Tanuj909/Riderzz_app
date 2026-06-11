@@ -91,4 +91,18 @@ class AuthService {
       rethrow;
     }
   }
+
+  /// Fetches current user details
+  Future<UserModel> fetchCurrentUser() async {
+    try {
+      final response = await _dioClient.get(ApiConstants.me);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
+        return UserModel.fromJson(data);
+      }
+      throw Exception('Failed to fetch user data');
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

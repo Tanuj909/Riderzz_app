@@ -74,7 +74,7 @@ class AuthProvider extends ChangeNotifier {
 
       _currentUser = user;
       await _storageService.saveAuthData(
-        token: user.token,
+        token: user.token ?? '',
         role: user.role,
         userId: user.userId,
       );
@@ -104,11 +104,32 @@ class AuthProvider extends ChangeNotifier {
           role: role,
           token: token,
         );
+        try {
+          await fetchUserProfile();
+        } catch (_) {}
         notifyListeners();
         return true;
       }
     }
     return false;
+  }
+
+  /// Fetches the full user profile from the server
+  Future<void> fetchUserProfile() async {
+    try {
+      final user = await _authService.fetchCurrentUser();
+      _currentUser = UserModel(
+        userId: user.userId,
+        role: user.role,
+        token: _currentUser?.token,
+        name: user.name,
+        phone: user.phone,
+        status: user.status,
+      );
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Failed to fetch user profile: $e');
+    }
   }
 
   /// Sign out
@@ -155,7 +176,7 @@ class AuthProvider extends ChangeNotifier {
 
       _currentUser = user;
       await _storageService.saveAuthData(
-        token: user.token,
+        token: user.token ?? '',
         role: user.role,
         userId: user.userId,
       );

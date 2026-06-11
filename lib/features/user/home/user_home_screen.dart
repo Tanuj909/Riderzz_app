@@ -18,7 +18,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   int _currentIndex = 0;
 
   String _getInitials(String? name) {
-    if (name == null || name.isEmpty) return 'RK';
+    if (name == null || name.trim().isEmpty) return 'U';
     final parts = name.trim().split(' ');
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
@@ -78,22 +78,38 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Good morning,',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
                       Text(
-                        user?.name ?? 'Rahul Kumar',
+                        user?.name ?? '',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 17,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
+                      if (user?.status != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: user?.status == 'ACTIVE' ? Colors.greenAccent : Colors.orangeAccent,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              user?.status ?? '',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                   PopupMenuButton<String>(
@@ -112,6 +128,19 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     itemBuilder: (context) => [
+                      if (user?.phone != null) ...[
+                        PopupMenuItem(
+                          enabled: false,
+                          child: Row(
+                            children: [
+                              const Icon(Icons.phone_android_rounded, size: 18, color: Color(0xFF1A2233)),
+                              const SizedBox(width: 8),
+                              Text('+91 ${user!.phone}', style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuDivider(),
+                      ],
                       PopupMenuItem(
                         value: 'support',
                         child: Row(
