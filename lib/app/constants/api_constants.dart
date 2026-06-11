@@ -8,4 +8,7 @@ class ApiConstants {
   static const String register = '/auth/register';
   static const String loginSendOtp = '/auth/login/send-otp';
   static const String loginVerifyOtp = '/auth/login/verify-otp';
+
+  // User Endpoints
+  static const String addresses = '/user/addresses';
 }

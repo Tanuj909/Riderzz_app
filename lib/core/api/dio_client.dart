@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:riderzz_app/app/constants/api_constants.dart';
+import 'package:riderzz_app/core/storage/secure_storage_service.dart';
 
 class DioClient {
   final Dio _dio;
+  final SecureStorageService? _storageService;
 
-  DioClient()
+  DioClient([this._storageService])
       : _dio = Dio(
           BaseOptions(
             baseUrl: ApiConstants.baseUrl,
@@ -16,6 +18,19 @@ class DioClient {
             },
           ),
         ) {
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          if (_storageService != null) {
+            final token = await _storageService.getToken();
+            if (token != null && token.isNotEmpty) {
+              options.headers['Authorization'] = 'Bearer $token';
+            }
+          }
+          return handler.next(options);
+        },
+      ),
+    );
     _dio.interceptors.add(
       LogInterceptor(
         requestBody: true,
@@ -55,6 +70,44 @@ class DioClient {
     try {
       final response = await _dio.get(
         path,
+        queryParameters: queryParameters,
+        options: options,
+      );
+      return response;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<Response> put(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    try {
+      final response = await _dio.put(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      );
+      return response;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<Response> delete(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    try {
+      final response = await _dio.delete(
+        path,
+        data: data,
         queryParameters: queryParameters,
         options: options,
       );

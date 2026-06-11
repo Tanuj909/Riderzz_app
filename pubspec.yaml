@@ -38,6 +38,11 @@ dependencies:
   provider: ^6.1.1
   flutter_secure_storage: ^9.0.0
   flutter_dotenv: ^5.1.0
+  google_maps_flutter: ^2.17.1
+  geocoding: ^3.0.0
+  flutter_polyline_points: ^3.1.0
+  google_places_flutter: ^2.1.1
+  geolocator: ^14.0.2
 
 dev_dependencies:
   flutter_test:
@@ -65,6 +70,7 @@ flutter:
   assets:
     - .env
     - assets/images/logo/logo.jpeg
+    - assets/images/logo.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

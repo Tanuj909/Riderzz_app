@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.riderzz_app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -23,6 +23,18 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Parse Google Maps API Key from root .env file
+        val envFile = file("${project.projectDir}/../../.env")
+        var googleMapsApiKey = "YOUR_GOOGLE_MAPS_API_KEY"
+        if (envFile.exists()) {
+            envFile.forEachLine { line ->
+                if (line.startsWith("GOOGLE_MAPS_API_KEY=")) {
+                    googleMapsApiKey = line.substringAfter("GOOGLE_MAPS_API_KEY=").trim()
+                }
+            }
+        }
+        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = googleMapsApiKey
     }
 
     buildTypes {

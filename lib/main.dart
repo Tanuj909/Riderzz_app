@@ -3,6 +3,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/app/routes/app_routes.dart';
 import 'package:riderzz_app/core/api/dio_client.dart';
+import 'package:riderzz_app/core/providers/location_provider.dart';
+import 'package:riderzz_app/core/services/location_service.dart';
 import 'package:riderzz_app/core/storage/secure_storage_service.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/auth/services/auth_service.dart';
@@ -29,8 +31,10 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         // Services and core clients
-        Provider<DioClient>(create: (_) => DioClient()),
         Provider<SecureStorageService>(create: (_) => SecureStorageService()),
+        ProxyProvider<SecureStorageService, DioClient>(
+          update: (context, storage, previous) => DioClient(storage),
+        ),
         
         // Proxy provider for AuthService depending on DioClient
         ProxyProvider<DioClient, AuthService>(
@@ -47,9 +51,15 @@ class MyApp extends StatelessWidget {
               previous ?? AuthProvider(authService: authService, storageService: storageService),
         ),
 
-        // ChangeNotifierProvider for AddressProvider
-        ChangeNotifierProvider<AddressProvider>(
-          create: (_) => AddressProvider(),
+        // ChangeNotifierProxyProvider for AddressProvider depending on DioClient
+        ChangeNotifierProxyProvider<DioClient, AddressProvider>(
+          create: (context) => AddressProvider(context.read<DioClient>()),
+          update: (_, dioClient, previous) => previous ?? AddressProvider(dioClient),
+        ),
+
+        // LocationProvider for current device location
+        ChangeNotifierProvider<LocationProvider>(
+          create: (_) => LocationProvider(LocationService()),
         ),
       ],
       child: MaterialApp(

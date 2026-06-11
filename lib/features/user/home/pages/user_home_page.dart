@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:riderzz_app/core/providers/location_provider.dart';
+import 'package:riderzz_app/features/user/addresses/location_picker_screen.dart';
 import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
 
 class UserHomePage extends StatefulWidget {
@@ -17,8 +19,34 @@ class UserHomePage extends StatefulWidget {
 class _UserHomePageState extends State<UserHomePage> {
   int _selectedVehicleIndex = 1; // Default to Mini Truck
 
-  final _pickupController = TextEditingController(text: 'Connaught Place, New Delhi');
+  final _pickupController = TextEditingController();
   final _dropController = TextEditingController();
+
+  double? _pickupLatitude;
+  double? _pickupLongitude;
+  double? _dropLatitude;
+  double? _dropLongitude;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<AddressProvider>(context, listen: false).fetchAddresses();
+      _setCurrentLocationAsPickup();
+    });
+  }
+
+  /// If the user granted location permission, auto-fill pickup with current location.
+  void _setCurrentLocationAsPickup() {
+    final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+    if (locationProvider.hasLocation) {
+      setState(() {
+        _pickupController.text = locationProvider.currentAddress ?? '';
+        _pickupLatitude = locationProvider.currentLatitude;
+        _pickupLongitude = locationProvider.currentLongitude;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -36,6 +64,13 @@ class _UserHomePageState extends State<UserHomePage> {
         const SnackBar(content: Text('Please enter a drop location to book')),
       );
       return;
+    }
+
+    if (_pickupLatitude != null && _pickupLongitude != null) {
+      debugPrint('Booking Pickup Coordinates: $_pickupLatitude, $_pickupLongitude');
+    }
+    if (_dropLatitude != null && _dropLongitude != null) {
+      debugPrint('Booking Drop Coordinates: $_dropLatitude, $_dropLongitude');
     }
 
     showDialog(
@@ -80,6 +115,73 @@ class _UserHomePageState extends State<UserHomePage> {
     );
   }
 
+  void _showLocationActionSheet(BuildContext context, Map<String, dynamic> item, String label) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Set Location: $label',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A2233),
+                ),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(Icons.pin_drop_rounded, color: Color(0xFF0F9B6E)),
+                title: const Text('Set as Pickup Location', style: TextStyle(fontSize: 14,color: Colors.black87,)),
+                onTap: () {
+                  setState(() {
+                    _pickupController.text = item['address'] ?? '';
+                    _pickupLatitude = item['lat'] is num ? (item['lat'] as num).toDouble() : null;
+                    _pickupLongitude = item['lng'] is num ? (item['lng'] as num).toDouble() : null;
+                  });
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(this.context).showSnackBar(
+                    SnackBar(
+                      content: Text('Pickup set to $label'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+              const Divider(height: 1, color: Color(0xFFE9ECF0)),
+              ListTile(
+                leading: const Icon(Icons.location_on_rounded, color: Color(0xFFF97316)),
+                title: const Text('Set as Drop Location', style: TextStyle(fontSize: 14,color: Colors.black87,)),
+                onTap: () {
+                  setState(() {
+                    _dropController.text = item['address'] ?? '';
+                    _dropLatitude = item['lat'] is num ? (item['lat'] as num).toDouble() : null;
+                    _dropLongitude = item['lng'] is num ? (item['lng'] as num).toDouble() : null;
+                  });
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(this.context).showSnackBar(
+                    SnackBar(
+                      content: Text('Drop set to $label'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -105,6 +207,7 @@ class _UserHomePageState extends State<UserHomePage> {
               children: [
                 // Pickup Location Row
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
                       width: 10,
@@ -118,19 +221,48 @@ class _UserHomePageState extends State<UserHomePage> {
                     Expanded(
                       child: TextFormField(
                         controller: _pickupController,
-                        scrollPadding: const EdgeInsets.only(top: 80, bottom: 20),
                         style: const TextStyle(
                           fontSize: 13,
                           color: Color(0xFF1A2233),
                           fontWeight: FontWeight.w400,
                         ),
+                        onChanged: (value) {
+                          _pickupLatitude = null;
+                          _pickupLongitude = null;
+                        },
                         decoration: const InputDecoration(
                           hintText: 'Enter pickup location',
                           hintStyle: TextStyle(color: Color(0xFFB0B8C4)),
                           border: InputBorder.none,
                           isDense: true,
-                          contentPadding: EdgeInsets.zero,
+                          contentPadding: EdgeInsets.symmetric(vertical: 8),
                         ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () async {
+                        final result = await Navigator.push<Map<String, dynamic>>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LocationPickerScreen(
+                              initialLatitude: _pickupLatitude,
+                              initialLongitude: _pickupLongitude,
+                            ),
+                          ),
+                        );
+                        if (result != null) {
+                          setState(() {
+                            _pickupController.text = result['address'] ?? '';
+                            _pickupLatitude = result['latitude'];
+                            _pickupLongitude = result['longitude'];
+                          });
+                        }
+                      },
+                      child: const Icon(
+                        Icons.map_outlined,
+                        size: 20,
+                        color: Color(0xFF1A3D6B),
                       ),
                     ),
                   ],
@@ -146,6 +278,7 @@ class _UserHomePageState extends State<UserHomePage> {
                 ),
                 // Drop Location Row
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
                       width: 10,
@@ -159,19 +292,48 @@ class _UserHomePageState extends State<UserHomePage> {
                     Expanded(
                       child: TextFormField(
                         controller: _dropController,
-                        scrollPadding: const EdgeInsets.only(top: 80, bottom: 20),
                         style: const TextStyle(
                           fontSize: 13,
                           color: Color(0xFF1A2233),
                           fontWeight: FontWeight.w400,
                         ),
+                        onChanged: (value) {
+                          _dropLatitude = null;
+                          _dropLongitude = null;
+                        },
                         decoration: const InputDecoration(
                           hintText: 'Add drop location',
                           hintStyle: TextStyle(color: Color(0xFFB0B8C4)),
                           border: InputBorder.none,
                           isDense: true,
-                          contentPadding: EdgeInsets.zero,
+                          contentPadding: EdgeInsets.symmetric(vertical: 8),
                         ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () async {
+                        final result = await Navigator.push<Map<String, dynamic>>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LocationPickerScreen(
+                              initialLatitude: _dropLatitude,
+                              initialLongitude: _dropLongitude,
+                            ),
+                          ),
+                        );
+                        if (result != null) {
+                          setState(() {
+                            _dropController.text = result['address'] ?? '';
+                            _dropLatitude = result['latitude'];
+                            _dropLongitude = result['longitude'];
+                          });
+                        }
+                      },
+                      child: const Icon(
+                        Icons.map_outlined,
+                        size: 20,
+                        color: Color(0xFF1A3D6B),
                       ),
                     ),
                   ],
@@ -202,17 +364,18 @@ class _UserHomePageState extends State<UserHomePage> {
                             itemCount: addresses.length,
                             itemBuilder: (context, index) {
                               final item = addresses[index];
-                              final type = item['type'];
+                              final label = item['label'] ?? '';
+                              final lowerLabel = label.toLowerCase();
 
                               IconData chipIcon = Icons.location_on_rounded;
                               Color chipBg = const Color(0xFFFFF3E8);
                               Color chipIconColor = const Color(0xFFF97316);
 
-                              if (type == 'home') {
+                              if (lowerLabel == 'home') {
                                 chipIcon = Icons.home_rounded;
                                 chipBg = const Color(0xFFE6F7F2);
                                 chipIconColor = const Color(0xFF0F9B6E);
-                              } else if (type == 'office') {
+                              } else if (lowerLabel == 'office') {
                                 chipIcon = Icons.business_rounded;
                                 chipBg = const Color(0xFFE8F0FB);
                                 chipIconColor = const Color(0xFF1A3D6B);
@@ -221,24 +384,13 @@ class _UserHomePageState extends State<UserHomePage> {
                               return Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: InkWell(
-                                  onTap: () {
-                                    setState(() {
-                                      _pickupController.text = 'Current Location';
-                                      _dropController.text = item['address'] ?? '';
-                                    });
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Route set to ${item['title']}'),
-                                        duration: const Duration(seconds: 2),
-                                      ),
-                                    );
-                                  },
+                                  onTap: () => _showLocationActionSheet(context, item, label),
                                   borderRadius: BorderRadius.circular(20),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                     decoration: BoxDecoration(
                                       color: chipBg,
-                                      border: Border.all(color: chipIconColor.withOpacity(0.15)),
+                                      border: Border.all(color: chipIconColor.withValues(alpha: 0.15)),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Row(
@@ -247,7 +399,7 @@ class _UserHomePageState extends State<UserHomePage> {
                                         Icon(chipIcon, size: 14, color: chipIconColor),
                                         const SizedBox(width: 5),
                                         Text(
-                                          item['title'] ?? '',
+                                          label,
                                           style: const TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w500,
