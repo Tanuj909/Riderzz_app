@@ -1,6 +1,5 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-
 class ApiConstants {
   static String get baseUrl => dotenv.env['API_BASE_URL'] ?? 'http://localhost:4000/api';
 
@@ -9,8 +8,8 @@ class ApiConstants {
   static const String register = '/auth/register';
   static const String loginSendOtp = '/auth/login/send-otp';
   static const String loginVerifyOtp = '/auth/login/verify-otp';
+  static const String me = '/auth/me';
 
   // User Endpoints
-  static const String me = '/auth/me';
   static const String addresses = '/user/addresses';
 }

@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/app/routes/app_routes.dart';
-import 'package:riderzz_app/core/api/dio_client.dart';
+
+import 'package:riderzz_app/core/network/api_client.dart';
 import 'package:riderzz_app/core/providers/location_provider.dart';
 import 'package:riderzz_app/core/services/location_service.dart';
 import 'package:riderzz_app/core/storage/secure_storage_service.dart';
+
+import 'package:riderzz_app/features/auth/data/datasource/auth_remote_datasource.dart';
+import 'package:riderzz_app/features/auth/data/repositories/auth_repository.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
-import 'package:riderzz_app/features/auth/services/auth_service.dart';
+
+import 'package:riderzz_app/features/user/addresses/data/datasource/address_remote_datasource.dart';
+import 'package:riderzz_app/features/user/addresses/data/repositories/address_repository.dart';
 import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
 
 void main() async {
@@ -30,31 +36,41 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Services and core clients
+        // 1. Core Services & Network
         Provider<SecureStorageService>(create: (_) => SecureStorageService()),
-        ProxyProvider<SecureStorageService, DioClient>(
-          update: (context, storage, previous) => DioClient(storage),
+        ProxyProvider<SecureStorageService, ApiClient>(
+          update: (context, storage, previous) => ApiClient(storageService: storage),
         ),
         
-        // Proxy provider for AuthService depending on DioClient
-        ProxyProvider<DioClient, AuthService>(
-          update: (_, dioClient, previous) => AuthService(dioClient),
+        // 2. Data Sources
+        ProxyProvider<ApiClient, AuthRemoteDataSource>(
+          update: (_, apiClient, previous) => AuthRemoteDataSource(apiClient),
         ),
-        
-        // ChangeNotifierProvider for AuthProvider
-        ChangeNotifierProxyProvider2<AuthService, SecureStorageService, AuthProvider>(
-          create: (context) => AuthProvider(
-            authService: context.read<AuthService>(),
-            storageService: context.read<SecureStorageService>(),
-          ),
-          update: (_, authService, storageService, previous) =>
-              previous ?? AuthProvider(authService: authService, storageService: storageService),
+        ProxyProvider<ApiClient, AddressRemoteDataSource>(
+          update: (_, apiClient, previous) => AddressRemoteDataSource(apiClient),
         ),
 
-        // ChangeNotifierProxyProvider for AddressProvider depending on DioClient
-        ChangeNotifierProxyProvider<DioClient, AddressProvider>(
-          create: (context) => AddressProvider(context.read<DioClient>()),
-          update: (_, dioClient, previous) => previous ?? AddressProvider(dioClient),
+        // 3. Repositories
+        ProxyProvider<AuthRemoteDataSource, AuthRepository>(
+          update: (_, authDataSource, previous) => AuthRepository(authDataSource),
+        ),
+        ProxyProvider<AddressRemoteDataSource, AddressRepository>(
+          update: (_, addressDataSource, previous) => AddressRepository(addressDataSource),
+        ),
+        
+        // 4. State Management (Providers)
+        ChangeNotifierProxyProvider2<AuthRepository, SecureStorageService, AuthProvider>(
+          create: (context) => AuthProvider(
+            authRepository: context.read<AuthRepository>(),
+            storageService: context.read<SecureStorageService>(),
+          ),
+          update: (_, authRepo, storageService, previous) =>
+              previous ?? AuthProvider(authRepository: authRepo, storageService: storageService),
+        ),
+
+        ChangeNotifierProxyProvider<AddressRepository, AddressProvider>(
+          create: (context) => AddressProvider(context.read<AddressRepository>()),
+          update: (_, addressRepo, previous) => previous ?? AddressProvider(addressRepo),
         ),
 
         // LocationProvider for current device location

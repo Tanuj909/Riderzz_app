@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:riderzz_app/app/constants/api_constants.dart';
-import 'package:riderzz_app/core/api/dio_client.dart';
+import 'package:riderzz_app/core/network/api_exception.dart';
+import 'package:riderzz_app/features/user/addresses/data/repositories/address_repository.dart';
 
 class AddressProvider extends ChangeNotifier {
-  final DioClient _dioClient;
+  final AddressRepository _addressRepository;
 
   List<Map<String, dynamic>> _addresses = [];
   bool _isLoading = false;
   String? _errorMessage;
 
-  AddressProvider(this._dioClient);
+  AddressProvider(this._addressRepository);
 
   List<Map<String, dynamic>> get addresses => List.unmodifiable(_addresses);
   bool get isLoading => _isLoading;
@@ -21,18 +21,14 @@ class AddressProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _dioClient.get(ApiConstants.addresses);
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final Map<String, dynamic> body = Map<String, dynamic>.from(response.data);
-        if (body['success'] == true) {
-          final List<dynamic> list = body['data'] ?? [];
-          _addresses = list.map((e) => Map<String, dynamic>.from(e)).toList();
-        } else {
-          _errorMessage = body['message'] ?? 'Failed to fetch addresses';
-        }
+      final response = await _addressRepository.fetchAddresses();
+      if (response.success) {
+        _addresses = response.data ?? [];
       } else {
-        _errorMessage = 'Failed to fetch addresses (Status: ${response.statusCode})';
+        _errorMessage = response.message;
       }
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
     } finally {
@@ -52,27 +48,24 @@ class AddressProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _dioClient.post(
-        ApiConstants.addresses,
-        data: {
-          'label': label,
-          'address': address,
-          'lat': latitude,
-          'lng': longitude,
-        },
+      final response = await _addressRepository.addAddress(
+        label: label,
+        address: address,
+        latitude: latitude,
+        longitude: longitude,
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final Map<String, dynamic> body = Map<String, dynamic>.from(response.data);
-        if (body['success'] == true) {
-          await fetchAddresses();
-          return true;
-        } else {
-          _errorMessage = body['message'] ?? 'Failed to add address';
-        }
+      if (response.success) {
+        await fetchAddresses();
+        return true;
       } else {
-        _errorMessage = 'Failed to add address (Status: ${response.statusCode})';
+        _errorMessage = response.message;
       }
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
       _isLoading = false;
       notifyListeners();
       return false;
@@ -96,27 +89,25 @@ class AddressProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _dioClient.put(
-        '${ApiConstants.addresses}/$id',
-        data: {
-          'label': label,
-          'address': address,
-          'lat': latitude,
-          'lng': longitude,
-        },
+      final response = await _addressRepository.updateAddress(
+        id: id,
+        label: label,
+        address: address,
+        latitude: latitude,
+        longitude: longitude,
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final Map<String, dynamic> body = Map<String, dynamic>.from(response.data);
-        if (body['success'] == true) {
-          await fetchAddresses();
-          return true;
-        } else {
-          _errorMessage = body['message'] ?? 'Failed to update address';
-        }
+      if (response.success) {
+        await fetchAddresses();
+        return true;
       } else {
-        _errorMessage = 'Failed to update address (Status: ${response.statusCode})';
+        _errorMessage = response.message;
       }
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
       _isLoading = false;
       notifyListeners();
       return false;
@@ -134,19 +125,19 @@ class AddressProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _dioClient.delete('${ApiConstants.addresses}/$id');
+      final response = await _addressRepository.deleteAddress(id);
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final Map<String, dynamic> body = Map<String, dynamic>.from(response.data);
-        if (body['success'] == true) {
-          await fetchAddresses();
-          return true;
-        } else {
-          _errorMessage = body['message'] ?? 'Failed to delete address';
-        }
+      if (response.success) {
+        await fetchAddresses();
+        return true;
       } else {
-        _errorMessage = 'Failed to delete address (Status: ${response.statusCode})';
+        _errorMessage = response.message;
       }
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
       _isLoading = false;
       notifyListeners();
       return false;

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:riderzz_app/core/models/user_model.dart';
 import 'package:riderzz_app/core/storage/secure_storage_service.dart';
-import 'package:riderzz_app/features/auth/services/auth_service.dart';
+import 'package:riderzz_app/features/auth/data/repositories/auth_repository.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final AuthService _authService;
+  final AuthRepository _authRepository;
   final SecureStorageService _storageService;
 
   UserModel? _currentUser;
@@ -14,9 +14,9 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoginOtpSent = false;
 
   AuthProvider({
-    required AuthService authService,
+    required AuthRepository authRepository,
     required SecureStorageService storageService,
-  })  : _authService = authService,
+  })  : _authRepository = authRepository,
         _storageService = storageService;
 
   UserModel? get currentUser => _currentUser;
@@ -40,7 +40,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _authService.sendOtp(phone);
+      await _authRepository.sendOtp(phone);
       _isOtpSent = true;
       _isLoading = false;
       notifyListeners();
@@ -65,7 +65,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final user = await _authService.register(
+      final user = await _authRepository.register(
         name: name,
         phone: phone,
         password: password,
@@ -117,7 +117,7 @@ class AuthProvider extends ChangeNotifier {
   /// Fetches the full user profile from the server
   Future<void> fetchUserProfile() async {
     try {
-      final user = await _authService.fetchCurrentUser();
+      final user = await _authRepository.fetchCurrentUser();
       _currentUser = UserModel(
         userId: user.userId,
         role: user.role,
@@ -146,7 +146,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _authService.loginSendOtp(phone);
+      await _authRepository.loginSendOtp(phone);
       _isLoginOtpSent = true;
       _isLoading = false;
       notifyListeners();
@@ -169,7 +169,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final user = await _authService.loginVerifyOtp(
+      final user = await _authRepository.loginVerifyOtp(
         phone: phone,
         otp: otp,
       );
