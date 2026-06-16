@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:riderzz_app/core/models/user_model.dart';
 import 'package:riderzz_app/core/storage/secure_storage_service.dart';
+import 'package:riderzz_app/core/utils/jwt_helper.dart';
 import 'package:riderzz_app/features/auth/data/repositories/auth_repository.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -93,6 +94,12 @@ class AuthProvider extends ChangeNotifier {
   /// Try local storage login auto recovery
   Future<bool> tryAutoLogin() async {
     final token = await _storageService.getToken();
+    if (token != null && JwtHelper.isTokenExpired(token)) {
+      debugPrint('Token has expired, logging out user.');
+      await logout();
+      return false;
+    }
+
     final role = await _storageService.getRole();
     final userIdStr = await _storageService.getUserId();
 
@@ -172,6 +179,39 @@ class AuthProvider extends ChangeNotifier {
       final user = await _authRepository.loginVerifyOtp(
         phone: phone,
         otp: otp,
+      );
+
+      _currentUser = user;
+      await _storageService.saveAuthData(
+        token: user.token ?? '',
+        role: user.role,
+        userId: user.userId,
+      );
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Admin Login
+  Future<bool> adminLogin({
+    required String phone,
+    required String password,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final user = await _authRepository.adminLogin(
+        phone: phone,
+        password: password,
       );
 
       _currentUser = user;

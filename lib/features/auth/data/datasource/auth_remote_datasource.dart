@@ -10,9 +10,13 @@ class AuthRemoteDataSource {
   Future<String> sendOtp(String phone) async {
     final response = await _apiClient.post(
       ApiConstants.sendOtp,
-      data: {'phone': phone},
+      data: {
+        'destination': phone,
+        'type': 'MOBILE',
+      },
     );
-    return response.data?.toString() ?? 'OTP Sent Successfully';
+    final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
+    return data['message'] ?? 'OTP Sent Successfully';
   }
 
   Future<UserModel> register({
@@ -36,8 +40,11 @@ class AuthRemoteDataSource {
 
   Future<String> loginSendOtp(String phone) async {
     final response = await _apiClient.post(
-      ApiConstants.loginSendOtp,
-      data: {'phone': phone},
+      ApiConstants.sendOtp,
+      data: {
+        'destination': phone,
+        'type': 'MOBILE',
+      },
     );
     final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
     return data['message'] ?? 'OTP Sent Successfully';
@@ -50,8 +57,9 @@ class AuthRemoteDataSource {
     final response = await _apiClient.post(
       ApiConstants.loginVerifyOtp,
       data: {
-        'phone': phone,
+        'destination': phone,
         'otp': otp,
+        'type': 'MOBILE',
       },
     );
     final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
@@ -62,5 +70,24 @@ class AuthRemoteDataSource {
     final response = await _apiClient.get(ApiConstants.me);
     final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
     return UserModel.fromJson(data);
+  }
+
+  Future<UserModel> adminLogin({
+    required String phone,
+    required String password,
+  }) async {
+    final response = await _apiClient.post(
+      ApiConstants.adminLogin,
+      data: {
+        'phone': phone,
+        'password': password,
+      },
+    );
+    final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
+    return UserModel.fromJson(
+      data,
+      phone: phone,
+      token: data['accessToken'] as String?,
+    );
   }
 }

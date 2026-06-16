@@ -556,6 +556,24 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    Center(
+                      child: TextButton(
+                        onPressed: () {
+                          authProvider.resetState();
+                          Navigator.pushNamed(context, '/admin_login');
+                        },
+                        child: const Text(
+                          "Administrator Login",
+                          style: TextStyle(
+                            color: Color(0xFF1A3D6B),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ],
               ),

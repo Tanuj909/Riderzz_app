@@ -16,9 +16,21 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json, {String? name, String? phone, String? token}) {
+    String? roleStr;
+    if (json['role'] != null) {
+      roleStr = json['role'] as String;
+    } else if (json['roles'] != null) {
+      if (json['roles'] is List && (json['roles'] as List).isNotEmpty) {
+        roleStr = (json['roles'] as List).first.toString();
+      } else if (json['roles'] is String) {
+        roleStr = json['roles'] as String;
+      }
+    }
+    roleStr ??= 'CUSTOMER';
+
     return UserModel(
-      userId: json['userId'] as int,
-      role: json['role'] as String,
+      userId: (json['userId'] ?? json['id']) as int,
+      role: roleStr,
       token: json['token'] as String? ?? token,
       name: json['name'] as String? ?? name,
       phone: json['phone'] as String? ?? phone,

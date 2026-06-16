@@ -71,6 +71,8 @@ class _RoleRedirectScreenState extends State<RoleRedirectScreen> with SingleTick
         Navigator.pushReplacementNamed(context, '/user_home');
       } else if (role == 'ROLE_DRIVER') {
         Navigator.pushReplacementNamed(context, '/driver_home');
+      } else if (role == 'ADMIN' || role == 'ROLE_ADMIN') {
+        Navigator.pushReplacementNamed(context, '/admin_dashboard');
       } else {
         Navigator.pushReplacementNamed(context, '/user_home');
       }

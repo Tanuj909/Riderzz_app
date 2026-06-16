@@ -38,4 +38,11 @@ class AuthRepository {
   Future<UserModel> fetchCurrentUser() async {
     return await _remoteDataSource.fetchCurrentUser();
   }
+
+  Future<UserModel> adminLogin({
+    required String phone,
+    required String password,
+  }) async {
+    return await _remoteDataSource.adminLogin(phone: phone, password: password);
+  }
 }

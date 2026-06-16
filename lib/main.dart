@@ -15,6 +15,12 @@ import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/user/addresses/data/datasource/address_remote_datasource.dart';
 import 'package:riderzz_app/features/user/addresses/data/repositories/address_repository.dart';
 import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
+import 'package:riderzz_app/features/admin/vehicles/data/datasource/admin_vehicles_remote_datasource.dart';
+import 'package:riderzz_app/features/admin/vehicles/data/repositories/admin_vehicles_repository.dart';
+import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_provider.dart';
+import 'package:riderzz_app/features/admin/rider_verification/data/datasource/rider_verification_datasource.dart';
+import 'package:riderzz_app/features/admin/rider_verification/data/repositories/rider_verification_repository.dart';
+import 'package:riderzz_app/features/admin/rider_verification/providers/rider_verification_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,6 +55,12 @@ class MyApp extends StatelessWidget {
         ProxyProvider<ApiClient, AddressRemoteDataSource>(
           update: (_, apiClient, previous) => AddressRemoteDataSource(apiClient),
         ),
+        ProxyProvider<ApiClient, AdminVehiclesRemoteDataSource>(
+          update: (_, apiClient, previous) => AdminVehiclesRemoteDataSource(apiClient),
+        ),
+        ProxyProvider<ApiClient, RiderVerificationRemoteDataSource>(
+          update: (_, apiClient, previous) => RiderVerificationRemoteDataSource(apiClient),
+        ),
 
         // 3. Repositories
         ProxyProvider<AuthRemoteDataSource, AuthRepository>(
@@ -56,6 +68,12 @@ class MyApp extends StatelessWidget {
         ),
         ProxyProvider<AddressRemoteDataSource, AddressRepository>(
           update: (_, addressDataSource, previous) => AddressRepository(addressDataSource),
+        ),
+        ProxyProvider<AdminVehiclesRemoteDataSource, AdminVehiclesRepository>(
+          update: (_, vehiclesDataSource, previous) => AdminVehiclesRepository(vehiclesDataSource),
+        ),
+        ProxyProvider<RiderVerificationRemoteDataSource, RiderVerificationRepository>(
+          update: (_, dataSource, previous) => RiderVerificationRepository(dataSource),
         ),
         
         // 4. State Management (Providers)
@@ -72,6 +90,14 @@ class MyApp extends StatelessWidget {
           create: (context) => AddressProvider(context.read<AddressRepository>()),
           update: (_, addressRepo, previous) => previous ?? AddressProvider(addressRepo),
         ),
+        ChangeNotifierProxyProvider<AdminVehiclesRepository, AdminVehiclesProvider>(
+          create: (context) => AdminVehiclesProvider(context.read<AdminVehiclesRepository>()),
+          update: (_, repository, previous) => previous ?? AdminVehiclesProvider(repository),
+        ),
+        ChangeNotifierProxyProvider<RiderVerificationRepository, RiderVerificationProvider>(
+          create: (context) => RiderVerificationProvider(context.read<RiderVerificationRepository>()),
+          update: (_, repository, previous) => previous ?? RiderVerificationProvider(repository),
+        ),
 
         // LocationProvider for current device location
         ChangeNotifierProvider<LocationProvider>(
@@ -80,6 +106,7 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'Riderzz',
+        navigatorKey: AppRoutes.navigatorKey,
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
