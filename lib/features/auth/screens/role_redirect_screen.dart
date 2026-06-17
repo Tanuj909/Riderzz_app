@@ -67,9 +67,9 @@ class _RoleRedirectScreenState extends State<RoleRedirectScreen> with SingleTick
 
     if (isLoggedIn && authProvider.currentUser != null) {
       final role = authProvider.currentUser!.role;
-      if (role == 'ROLE_USER') {
+      if (role == 'ROLE_USER' || role == 'CUSTOMER' || role == 'ROLE_CUSTOMER') {
         Navigator.pushReplacementNamed(context, '/user_home');
-      } else if (role == 'ROLE_DRIVER') {
+      } else if (role == 'ROLE_DRIVER' || role == 'DRIVER') {
         Navigator.pushReplacementNamed(context, '/driver_home');
       } else if (role == 'ADMIN' || role == 'ROLE_ADMIN') {
         Navigator.pushReplacementNamed(context, '/admin_dashboard');

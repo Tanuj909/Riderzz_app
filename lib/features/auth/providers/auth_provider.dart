@@ -231,4 +231,38 @@ class AuthProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  /// Update current user's role and save to secure storage
+  Future<bool> updateUserRole(String newRole) async {
+    if (_currentUser == null) return false;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _storageService.saveAuthData(
+        token: _currentUser!.token ?? '',
+        role: newRole,
+        userId: _currentUser!.userId,
+      );
+
+      _currentUser = UserModel(
+        userId: _currentUser!.userId,
+        role: newRole,
+        token: _currentUser!.token,
+        name: _currentUser!.name,
+        phone: _currentUser!.phone,
+        status: _currentUser!.status,
+      );
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
 }

@@ -113,6 +113,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     ],
                   ),
                   PopupMenuButton<String>(
+                    color: Colors.white,
+                    surfaceTintColor: Colors.white,
                     onSelected: (value) async {
                       if (value == 'support') {
                         _showSupportDialog(context);
@@ -128,38 +130,80 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     itemBuilder: (context) => [
-                      if (user?.phone != null) ...[
-                        PopupMenuItem(
-                          enabled: false,
-                          child: Row(
+                      // Profile Header
+                      PopupMenuItem(
+                        enabled: false,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.phone_android_rounded, size: 18, color: Color(0xFF1A2233)),
-                              const SizedBox(width: 8),
-                              Text('+91 ${user!.phone}', style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                              Text(
+                                user?.name ?? 'Customer',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Color(0xFF1A2233),
+                                ),
+                              ),
+                              if (user?.phone != null) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.phone_android_rounded, size: 12, color: Color(0xFF6B7785)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '+91 ${user!.phone}',
+                                      style: const TextStyle(fontSize: 12, color: Color(0xFF6B7785)),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ],
                           ),
                         ),
-                        const PopupMenuDivider(),
-                      ],
-                      PopupMenuItem(
-                        value: 'support',
-                        child: Row(
-                          children: const [
-                            Icon(Icons.help_outline_rounded, size: 18, color: Color(0xFF1A2233)),
-                            SizedBox(width: 8),
-                            Text('Help & Support', style: TextStyle(fontSize: 14)),
-                          ],
+                      ),
+                      const PopupMenuItem<String>(
+                        enabled: false,
+                        height: 1,
+                        child: Divider(
+                          height: 1,
+                          color: Color(0xFFE2E8F0),
+                          thickness: 0.5,
                         ),
                       ),
-                      const PopupMenuDivider(),
+                      // Help & Support
+                      PopupMenuItem(
+                        value: 'support',
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.help_outline_rounded, size: 16, color: Color(0xFF4A5568)),
+                              SizedBox(width: 8),
+                              Text(
+                                'Help & Support',
+                                style: TextStyle(fontSize: 13, color: Color(0xFF1A2233), fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Logout
                       PopupMenuItem(
                         value: 'logout',
-                        child: Row(
-                          children: const [
-                            Icon(Icons.logout_rounded, size: 18, color: Colors.redAccent),
-                            SizedBox(width: 8),
-                            Text('Logout', style: TextStyle(fontSize: 14, color: Colors.redAccent)),
-                          ],
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.logout_rounded, size: 16, color: Colors.redAccent),
+                              SizedBox(width: 8),
+                              Text(
+                                'Logout',
+                                style: TextStyle(fontSize: 13, color: Colors.redAccent, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],

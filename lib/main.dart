@@ -21,6 +21,9 @@ import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_pro
 import 'package:riderzz_app/features/admin/rider_verification/data/datasource/rider_verification_datasource.dart';
 import 'package:riderzz_app/features/admin/rider_verification/data/repositories/rider_verification_repository.dart';
 import 'package:riderzz_app/features/admin/rider_verification/providers/rider_verification_provider.dart';
+import 'package:riderzz_app/features/driver/home/data/datasource/driver_remote_datasource.dart';
+import 'package:riderzz_app/features/driver/home/data/repositories/driver_repository.dart';
+import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,6 +64,9 @@ class MyApp extends StatelessWidget {
         ProxyProvider<ApiClient, RiderVerificationRemoteDataSource>(
           update: (_, apiClient, previous) => RiderVerificationRemoteDataSource(apiClient),
         ),
+        ProxyProvider<ApiClient, DriverRemoteDataSource>(
+          update: (_, apiClient, previous) => DriverRemoteDataSource(apiClient),
+        ),
 
         // 3. Repositories
         ProxyProvider<AuthRemoteDataSource, AuthRepository>(
@@ -74,6 +80,9 @@ class MyApp extends StatelessWidget {
         ),
         ProxyProvider<RiderVerificationRemoteDataSource, RiderVerificationRepository>(
           update: (_, dataSource, previous) => RiderVerificationRepository(dataSource),
+        ),
+        ProxyProvider<DriverRemoteDataSource, DriverRepository>(
+          update: (_, dataSource, previous) => DriverRepository(dataSource),
         ),
         
         // 4. State Management (Providers)
@@ -97,6 +106,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProxyProvider<RiderVerificationRepository, RiderVerificationProvider>(
           create: (context) => RiderVerificationProvider(context.read<RiderVerificationRepository>()),
           update: (_, repository, previous) => previous ?? RiderVerificationProvider(repository),
+        ),
+        ChangeNotifierProxyProvider<DriverRepository, DriverHomeProvider>(
+          create: (context) => DriverHomeProvider(context.read<DriverRepository>()),
+          update: (_, repository, previous) => previous ?? DriverHomeProvider(repository),
         ),
 
         // LocationProvider for current device location

@@ -3,9 +3,17 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 class LoggerInterceptor extends Interceptor {
+  bool _shouldLog(String path) {
+    final excludedPaths = [
+      '/driver/wallet',
+      '/driver/wallet/recharge',
+    ];
+    return !excludedPaths.any((p) => path.contains(p));
+  }
+
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    if (kDebugMode) {
+    if (kDebugMode && _shouldLog(options.path)) {
       debugPrint('====================================');
       debugPrint('➡️ REQUEST[${options.method}] => PATH: ${options.path}');
       debugPrint('Headers: ${options.headers}');
@@ -20,7 +28,7 @@ class LoggerInterceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    if (kDebugMode) {
+    if (kDebugMode && _shouldLog(response.requestOptions.path)) {
       debugPrint('====================================');
       debugPrint('⬅️ RESPONSE[${response.statusCode}] => PATH: ${response.requestOptions.path}');
       debugPrint('Data: ${_prettyPrint(response.data)}');
@@ -31,7 +39,7 @@ class LoggerInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    if (kDebugMode) {
+    if (kDebugMode && _shouldLog(err.requestOptions.path)) {
       debugPrint('====================================');
       debugPrint('🛑 ERROR[${err.response?.statusCode}] => PATH: ${err.requestOptions.path}');
       debugPrint('Message: ${err.message}');

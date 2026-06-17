@@ -14,4 +14,11 @@ class ApiConstants {
 
   // User Endpoints
   static const String addresses = '/user/addresses';
+
+  // Driver Endpoints
+  static const String driverProfile = '/driver/profile';
+  static const String driverWallet = '/driver/wallet';
+  static const String driverWalletRecharge = '/driver/wallet/recharge';
+  static const String driverOnline = '/driver/online';
+  static const String driverOffline = '/driver/offline';
 }

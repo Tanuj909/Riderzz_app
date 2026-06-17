@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/user/addresses/address_list_screen.dart';
+import 'package:riderzz_app/features/driver/profile/become_driver_screen.dart';
 
 class UserAccountPage extends StatelessWidget {
   final VoidCallback onNavigateToHistory;
@@ -125,6 +126,18 @@ class UserAccountPage extends StatelessWidget {
             iconColor: const Color(0xFFF97316),
             label: 'Transaction History',
             onTap: onNavigateToHistory,
+          ),
+          _buildMenuItem(
+            icon: Icons.directions_car_filled_outlined,
+            color: const Color(0xFFF5F3FF),
+            iconColor: const Color(0xFF7C3AED),
+            label: 'Become a Driver',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BecomeDriverScreen()),
+              );
+            },
           ),
           _buildMenuItem(
             icon: Icons.help_outline_rounded,
