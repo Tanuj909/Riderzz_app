@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:riderzz_app/core/models/driver_profile_model.dart';
 import 'package:riderzz_app/core/models/driver_wallet_model.dart';
+import 'package:riderzz_app/core/models/available_vehicle_model.dart';
+import 'package:riderzz_app/core/network/api_exception.dart';
 import 'package:riderzz_app/features/driver/home/data/repositories/driver_repository.dart';
 
 class DriverHomeProvider extends ChangeNotifier {
@@ -34,6 +36,15 @@ class DriverHomeProvider extends ChangeNotifier {
     try {
       _profile = await _driverRepository.getDriverProfile();
       _isLoading = false;
+      notifyListeners();
+    } on ApiException catch (e) {
+      _isLoading = false;
+      if (e.statusCode == 404 || e.message.toLowerCase().contains('not found')) {
+        _profile = null;
+        _errorMessage = null;
+      } else {
+        _errorMessage = e.toString();
+      }
       notifyListeners();
     } catch (e) {
       _isLoading = false;
@@ -118,5 +129,49 @@ class DriverHomeProvider extends ChangeNotifier {
   Future<bool> toggleOnlineOffline() async {
     if (_profile == null) return false;
     return await setOnlineStatus(!_profile!.isOnline);
+  }
+
+  // Available Vehicles
+  List<AvailableVehicleModel> _availableVehicles = [];
+  List<AvailableVehicleModel> get availableVehicles => _availableVehicles;
+
+  Future<void> fetchAvailableVehicles() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _availableVehicles = await _driverRepository.getAvailableVehicles();
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+    }
+  }
+
+  Future<bool> applyAsDriver(Map<String, dynamic> body) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _driverRepository.applyDriver(body);
+      
+      // Re-fetch profile to set screen to PENDING status UI immediately
+      try {
+        _profile = await _driverRepository.getDriverProfile();
+      } catch (_) {}
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
   }
 }

@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app requires access to your photo library to pick images for vehicle documents like Aadhar, PAN, and License.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app requires access to your camera to take photos of your vehicle documents.</string>
 </dict>
 </plist>

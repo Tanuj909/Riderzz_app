@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/admin/vehicles/screens/admin_vehicles_screen.dart';
 import 'package:riderzz_app/features/admin/rider_verification/rider_verification_screen.dart';
+import 'package:riderzz_app/features/admin/rider_verification/providers/rider_verification_provider.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -14,6 +15,19 @@ class AdminDashboardScreen extends StatefulWidget {
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<RiderVerificationProvider>();
+      if (provider.currentStatusFilter != 'PENDING') {
+        provider.setStatusFilter('PENDING');
+      } else {
+        provider.fetchDrivers(isRefresh: true);
+      }
+    });
+  }
 
   String _getInitials(String? name) {
     if (name == null || name.trim().isEmpty) return 'A';
@@ -169,6 +183,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           setState(() {
             _currentIndex = index;
           });
+          if (index == 0) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final provider = context.read<RiderVerificationProvider>();
+              if (provider.currentStatusFilter != 'PENDING') {
+                provider.setStatusFilter('PENDING');
+              } else {
+                provider.fetchDrivers(isRefresh: true);
+              }
+            });
+          }
         },
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
@@ -212,116 +236,137 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   // TAB 0: DASHBOARD OPERATIONAL OVERVIEW
   Widget _buildDashboardTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Operational Overview',
-            style: TextStyle(
-              color: Color(0xFF1A2233),
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+    final verificationProvider = Provider.of<RiderVerificationProvider>(context);
+
+    // Automatically self-correct filter and fetch pending count if not set to PENDING
+    if (verificationProvider.currentStatusFilter != 'PENDING' && !verificationProvider.isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        verificationProvider.setStatusFilter('PENDING');
+      });
+    }
+
+    final int pendingCount = verificationProvider.drivers.length;
+    final String driverSubtitle = verificationProvider.isLoading
+        ? 'Loading pending requests...'
+        : '$pendingCount pending request${pendingCount == 1 ? '' : 's'} awaiting review';
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        final provider = context.read<RiderVerificationProvider>();
+        if (provider.currentStatusFilter != 'PENDING') {
+          await provider.setStatusFilter('PENDING');
+        } else {
+          await provider.fetchDrivers(isRefresh: true);
+        }
+      },
+      color: const Color(0xFF1A3D6B),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Operational Overview',
+              style: TextStyle(
+                color: Color(0xFF1A2233),
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-
-          // Grid of Stats Cards
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.4,
-            children: [
-              _buildStatCard(
-                title: 'Active Bookings',
-                value: '42',
-                icon: Icons.local_shipping_rounded,
-                color: const Color(0xFF1A3D6B),
-              ),
-              _buildStatCard(
-                title: 'Total Drivers',
-                value: '18',
-                icon: Icons.sports_motorsports_rounded,
-                color: const Color(0xFF0F9B6E),
-              ),
-              _buildStatCard(
-                title: 'Total Customers',
-                value: '124',
-                icon: Icons.people_rounded,
-                color: const Color(0xFFE28743),
-              ),
-              _buildStatCard(
-                title: 'Today Revenue',
-                value: '₹14,250',
-                icon: Icons.account_balance_wallet_rounded,
-                color: Colors.pinkAccent,
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          const Text(
-            'Administrative Tasks',
-            style: TextStyle(
-              color: Color(0xFF1A2233),
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+            const SizedBox(height: 12),
+  
+            // Grid of Stats Cards
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.8,
+              children: [
+                _buildStatCard(
+                  title: 'Active Bookings',
+                  value: '42',
+                  icon: Icons.local_shipping_rounded,
+                  color: const Color(0xFF1A3D6B),
+                ),
+                _buildStatCard(
+                  title: 'Total Drivers',
+                  value: '18',
+                  icon: Icons.sports_motorsports_rounded,
+                  color: const Color(0xFF0F9B6E),
+                ),
+                _buildStatCard(
+                  title: 'Total Customers',
+                  value: '124',
+                  icon: Icons.people_rounded,
+                  color: const Color(0xFFE28743),
+                ),
+                _buildStatCard(
+                  title: 'Today Revenue',
+                  value: '₹14,250',
+                  icon: Icons.account_balance_wallet_rounded,
+                  color: Colors.pinkAccent,
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
-
-          _buildActionItem(
-            title: 'Driver Registration Approvals',
-            subtitle: '6 pending drivers awaiting review',
-            icon: Icons.verified_user_rounded,
-            iconBgColor: const Color(0xFFFFF0F0),
-            iconColor: Colors.redAccent,
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFECEC),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.redAccent.withValues(alpha: 0.2)),
+            const SizedBox(height: 24),
+   
+            const Text(
+              'Administrative Tasks',
+              style: TextStyle(
+                color: Color(0xFF1A2233),
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
-              child: const Text(
-                'Action Required',
-                style: TextStyle(
-                  color: Colors.redAccent,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
+            ),
+            const SizedBox(height: 12),
+   
+            _buildActionItem(
+              title: 'Driver Requests',
+              subtitle: driverSubtitle,
+              icon: Icons.person_add_rounded,
+              iconBgColor: const Color(0xFFFFF0F0),
+              iconColor: Colors.redAccent,
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFECEC),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.redAccent.withValues(alpha: 0.2)),
+                ),
+                child: Text(
+                  verificationProvider.isLoading
+                      ? 'Loading...'
+                      : '$pendingCount Pending',
+                  style: const TextStyle(
+                    color: Colors.redAccent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
+              onTap: () {
+                setState(() {
+                  _currentIndex = 1; // Transition to Pending Requests tab
+                });
+              },
             ),
-            onTap: () {
-              setState(() {
-                _currentIndex = 1; // Transition to Pending Requests tab
-              });
-            },
-          ),
-          _buildActionItem(
-            title: 'Ride Dispatch Center',
-            subtitle: 'Monitor maps and live tracking',
-            icon: Icons.map_rounded,
-            iconBgColor: const Color(0xFFE8F0FB),
-            iconColor: const Color(0xFF1A3D6B),
-          ),
-          _buildActionItem(
-            title: 'Pricing & Configurations',
-            subtitle: 'Update slab configurations and settings',
-            icon: Icons.settings_suggest_rounded,
-            iconBgColor: const Color(0xFFEBFDF6),
-            iconColor: const Color(0xFF0F9B6E),
-            onTap: () {
-              setState(() {
-                _currentIndex = 2; // Transition to Vehicles tab
-              });
-            },
-          ),
-        ],
+            _buildActionItem(
+              title: 'Vehicle Configuration',
+              subtitle: 'Manage vehicle types, rates, and limits',
+              icon: Icons.airport_shuttle_rounded,
+              iconBgColor: const Color(0xFFEBFDF6),
+              iconColor: const Color(0xFF0F9B6E),
+              onTap: () {
+                setState(() {
+                  _currentIndex = 2; // Transition to Vehicles tab
+                });
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -336,7 +381,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -351,7 +396,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -370,15 +415,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   color: color.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: color, size: 16),
+                child: Icon(icon, color: color, size: 14),
               ),
             ],
           ),
+          const SizedBox(height: 4),
           Text(
             value,
             style: const TextStyle(
               color: Color(0xFF1A2233),
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),

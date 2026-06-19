@@ -1,7 +1,7 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConstants {
-  static String get baseUrl => dotenv.env['API_BASE_URL'] ?? 'http://10.228.162.2:4000';
+  static String get baseUrl => dotenv.env['API_BASE_URL'] ?? 'http://10.24.69.2:4000';
 
   // Auth Endpoints
   static const String sendOtp = '/auth/send-otp';
@@ -21,4 +21,6 @@ class ApiConstants {
   static const String driverWalletRecharge = '/driver/wallet/recharge';
   static const String driverOnline = '/driver/online';
   static const String driverOffline = '/driver/offline';
+  static const String driverApply = '/driver/apply';
+  static const String availableVehicles = '/driver/vehicles/available';
 }

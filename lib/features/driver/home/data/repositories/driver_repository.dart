@@ -1,5 +1,6 @@
 import 'package:riderzz_app/core/models/driver_profile_model.dart';
 import 'package:riderzz_app/core/models/driver_wallet_model.dart';
+import 'package:riderzz_app/core/models/available_vehicle_model.dart';
 import 'package:riderzz_app/features/driver/home/data/datasource/driver_remote_datasource.dart';
 
 class DriverRepository {
@@ -25,5 +26,13 @@ class DriverRepository {
 
   Future<bool> goOffline() async {
     return await _remoteDataSource.goOffline();
+  }
+
+  Future<List<AvailableVehicleModel>> getAvailableVehicles() async {
+    return await _remoteDataSource.getAvailableVehicles();
+  }
+
+  Future<void> applyDriver(Map<String, dynamic> data) async {
+    await _remoteDataSource.applyDriver(data);
   }
 }

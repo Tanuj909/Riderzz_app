@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/core/providers/location_provider.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
+import 'package:riderzz_app/features/auth/screens/login_screen.dart';
+import 'package:riderzz_app/features/user/home/user_home_screen.dart';
+import 'package:riderzz_app/features/driver/home/driver_home_screen.dart';
+import 'package:riderzz_app/features/admin/dashboard/admin_dashboard_screen.dart';
 
 class RoleRedirectScreen extends StatefulWidget {
   const RoleRedirectScreen({super.key});
@@ -10,37 +14,30 @@ class RoleRedirectScreen extends StatefulWidget {
   State<RoleRedirectScreen> createState() => _RoleRedirectScreenState();
 }
 
-class _RoleRedirectScreenState extends State<RoleRedirectScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _glowAnimation;
-
+class _RoleRedirectScreenState extends State<RoleRedirectScreen> {
   @override
   void initState() {
     super.initState();
-    
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    );
-
-    _glowAnimation = Tween<double>(begin: 25.0, end: 75.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
-    );
-
-    _animationController.repeat(reverse: true);
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkRoleAndRedirect();
     });
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
+  void _navigateTo(Widget page, String routeName) {
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        settings: RouteSettings(name: routeName),
+        pageBuilder: (context, animation, secondaryAnimation) => page,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 600),
+      ),
+    );
   }
 
   void _checkRoleAndRedirect() async {
@@ -68,80 +65,129 @@ class _RoleRedirectScreenState extends State<RoleRedirectScreen> with SingleTick
     if (isLoggedIn && authProvider.currentUser != null) {
       final role = authProvider.currentUser!.role;
       if (role == 'ROLE_USER' || role == 'CUSTOMER' || role == 'ROLE_CUSTOMER') {
-        Navigator.pushReplacementNamed(context, '/user_home');
+        _navigateTo(const UserHomeScreen(), '/user_home');
       } else if (role == 'ROLE_DRIVER' || role == 'DRIVER') {
-        Navigator.pushReplacementNamed(context, '/driver_home');
+        _navigateTo(const DriverHomeScreen(), '/driver_home');
       } else if (role == 'ADMIN' || role == 'ROLE_ADMIN') {
-        Navigator.pushReplacementNamed(context, '/admin_dashboard');
+        _navigateTo(const AdminDashboardScreen(), '/admin_dashboard');
       } else {
-        Navigator.pushReplacementNamed(context, '/user_home');
+        _navigateTo(const UserHomeScreen(), '/user_home');
       }
     } else {
-      Navigator.pushReplacementNamed(context, '/login');
+      _navigateTo(const LoginScreen(), '/login');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFF0B141C),
-              Color(0xFF162534),
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+      backgroundColor: Colors.white,
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40.0),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Animated Riderzz text with breathing glow effect
-              AnimatedBuilder(
-                animation: _glowAnimation,
-                builder: (context, child) {
-                  return Text(
-                    'Riderzz',
-                    style: TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: 3.0,
-                      shadows: [
-                        Shadow(
-                          color: Colors.cyanAccent.withValues(alpha: 0.6),
-                          blurRadius: _glowAnimation.value * 0.4,
-                        ),
-                        Shadow(
-                          color: Colors.cyanAccent.withValues(alpha: 0.35),
-                          blurRadius: _glowAnimation.value,
-                        ),
-                      ],
-                    ),
-                  );
-                },
+              // Logo Image (Constrained to prevent screen edge sticking)
+              ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 240,
+                  maxHeight: 140,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Image.asset(
+                    'assets/images/logo/logo.jpeg',
+                    fit: BoxFit.contain,
+                  ),
+                ),
               ),
               const SizedBox(height: 50),
               
-              // Loading Bar
-              SizedBox(
-                width: 140,
-                height: 3,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(1.5),
-                  child: const LinearProgressIndicator(
-                    backgroundColor: Color(0xFF1E2E3D),
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.cyanAccent),
-                  ),
-                ),
+              // Loading Dots Blue Animation
+              const BouncingDotsIndicator(
+                color: Color(0xFF1A3D6B),
+                size: 11.0,
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class BouncingDotsIndicator extends StatefulWidget {
+  final Color color;
+  final double size;
+
+  const BouncingDotsIndicator({
+    super.key,
+    required this.color,
+    this.size = 12.0,
+  });
+
+  @override
+  State<BouncingDotsIndicator> createState() => _BouncingDotsIndicatorState();
+}
+
+class _BouncingDotsIndicatorState extends State<BouncingDotsIndicator> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(4, (index) {
+        return AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            // Calculate delay/phase shift for each dot (staggered)
+            final double progress = (_controller.value - (index * 0.15)) % 1.0;
+            
+            // Map progress to bounce/scale curve (0.0 -> 1.0 -> 0.0)
+            double scale = 1.0;
+            double opacity = 0.3;
+            
+            if (progress < 0.5) {
+              final double t = progress / 0.5; // 0.0 to 1.0
+              scale = 1.0 + 0.45 * t; // scale up to 1.45
+              opacity = 0.3 + 0.7 * t; // opacity up to 1.0
+            } else {
+              final double t = (progress - 0.5) / 0.5; // 0.0 to 1.0
+              scale = 1.45 - 0.45 * t; // scale down to 1.0
+              opacity = 1.0 - 0.7 * t; // opacity down to 0.3
+            }
+
+            return Container(
+              width: widget.size,
+              height: widget.size,
+              margin: const EdgeInsets.symmetric(horizontal: 5),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: widget.color.withOpacity(opacity),
+              ),
+              transform: Matrix4.diagonal3Values(scale, scale, 1.0),
+              transformAlignment: Alignment.center,
+            );
+          },
+        );
+      }),
     );
   }
 }

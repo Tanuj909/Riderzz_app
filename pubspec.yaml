@@ -44,6 +44,7 @@ dependencies:
   google_places_flutter: ^2.1.1
   geolocator: ^14.0.2
   jwt_decoder: ^2.0.1
+  image_picker: ^1.2.2
 
 dev_dependencies:
   flutter_test:

@@ -2,6 +2,7 @@ import 'package:riderzz_app/core/network/api_client.dart';
 import 'package:riderzz_app/core/network/api_constants.dart';
 import 'package:riderzz_app/core/models/driver_profile_model.dart';
 import 'package:riderzz_app/core/models/driver_wallet_model.dart';
+import 'package:riderzz_app/core/models/available_vehicle_model.dart';
 
 class DriverRemoteDataSource {
   final ApiClient _apiClient;
@@ -44,5 +45,19 @@ class DriverRemoteDataSource {
     final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
     final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
     return data['isOnline'] as bool? ?? false;
+  }
+
+  Future<List<AvailableVehicleModel>> getAvailableVehicles() async {
+    final response = await _apiClient.get(ApiConstants.availableVehicles);
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final List<dynamic> list = resBody['data'] as List? ?? [];
+    return list.map((item) => AvailableVehicleModel.fromJson(Map<String, dynamic>.from(item))).toList();
+  }
+
+  Future<void> applyDriver(Map<String, dynamic> data) async {
+    await _apiClient.post(
+      ApiConstants.driverApply,
+      data: data,
+    );
   }
 }
