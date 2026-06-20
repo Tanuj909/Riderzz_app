@@ -21,6 +21,7 @@ class ApiConstants {
   static const String driverWalletRecharge = '/driver/wallet/recharge';
   static const String driverOnline = '/driver/online';
   static const String driverOffline = '/driver/offline';
-  static const String driverApply = '/driver/apply';
+  static const String driverApply = '/driver/register';
   static const String availableVehicles = '/driver/vehicles/available';
+  static const String driverDocuments = '/driver/documents';
 }

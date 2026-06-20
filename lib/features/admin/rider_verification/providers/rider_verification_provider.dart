@@ -101,8 +101,10 @@ class RiderVerificationProvider extends ChangeNotifier {
         rejectionReason: rejectionReason,
       );
 
+      final targetLocalStatus = (status == 'ACTIVATED') ? 'APPROVED' : status;
+
       // If the filter status doesn't match the new status, remove it from list
-      if (_currentStatusFilter != status) {
+      if (_currentStatusFilter != targetLocalStatus) {
         _drivers.removeWhere((d) => d.id == driverId);
       } else {
         // Otherwise, update the local model's status
@@ -115,7 +117,7 @@ class RiderVerificationProvider extends ChangeNotifier {
             name: old.name,
             phone: old.phone,
             userStatus: old.userStatus,
-            approvalStatus: status,
+            approvalStatus: targetLocalStatus,
             licenseNumber: old.licenseNumber,
             vehicleNumber: old.vehicleNumber,
             isOnline: old.isOnline,
@@ -128,6 +130,64 @@ class RiderVerificationProvider extends ChangeNotifier {
         }
       }
       
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Verifies a specific driver document.
+  Future<bool> verifyDriverDocument(int driverId, int documentId, String status, {String? rejectionReason}) async {
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _repository.verifyDriverDocument(
+        driverId: driverId,
+        documentId: documentId,
+        status: status,
+        rejectionReason: rejectionReason,
+      );
+
+      // Locally update the driver's document status in our list
+      final driverIndex = _drivers.indexWhere((d) => d.id == driverId);
+      if (driverIndex != -1) {
+        final driver = _drivers[driverIndex];
+        final docList = List<AdminDriverDocumentModel>.from(driver.documents);
+        final docIndex = docList.indexWhere((doc) => doc.id == documentId);
+        if (docIndex != -1) {
+          final oldDoc = docList[docIndex];
+          docList[docIndex] = AdminDriverDocumentModel(
+            id: oldDoc.id,
+            docType: oldDoc.docType,
+            fileUrl: oldDoc.fileUrl,
+            status: status,
+            rejectionReason: rejectionReason,
+            uploadedAt: oldDoc.uploadedAt,
+          );
+          
+          _drivers[driverIndex] = AdminDriverModel(
+            id: driver.id,
+            userId: driver.userId,
+            name: driver.name,
+            phone: driver.phone,
+            userStatus: driver.userStatus,
+            approvalStatus: driver.approvalStatus,
+            licenseNumber: driver.licenseNumber,
+            vehicleNumber: driver.vehicleNumber,
+            isOnline: driver.isOnline,
+            rating: driver.rating,
+            totalTrips: driver.totalTrips,
+            vehicle: driver.vehicle,
+            documents: docList,
+            createdAt: driver.createdAt,
+          );
+        }
+      }
+
       notifyListeners();
       return true;
     } catch (e) {

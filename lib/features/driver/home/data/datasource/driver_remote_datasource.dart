@@ -60,4 +60,23 @@ class DriverRemoteDataSource {
       data: data,
     );
   }
+
+  Future<void> uploadDriverDocument(String docType, String fileUrl) async {
+    await _apiClient.post(
+      ApiConstants.driverDocuments,
+      data: {
+        'documentType': docType,
+        'fileUrl': fileUrl,
+      },
+    );
+  }
+
+  Future<List<DriverDocumentModel>> getDriverDocuments() async {
+    final response = await _apiClient.get(ApiConstants.driverDocuments);
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final List<dynamic> list = resBody['data'] as List? ?? [];
+    return list
+        .map((item) => DriverDocumentModel.fromJson(Map<String, dynamic>.from(item)))
+        .toList();
+  }
 }

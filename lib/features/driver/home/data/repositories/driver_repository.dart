@@ -35,4 +35,12 @@ class DriverRepository {
   Future<void> applyDriver(Map<String, dynamic> data) async {
     await _remoteDataSource.applyDriver(data);
   }
+
+  Future<void> uploadDriverDocument(String docType, String fileUrl) async {
+    await _remoteDataSource.uploadDriverDocument(docType, fileUrl);
+  }
+
+  Future<List<DriverDocumentModel>> getDriverDocuments() async {
+    return await _remoteDataSource.getDriverDocuments();
+  }
 }

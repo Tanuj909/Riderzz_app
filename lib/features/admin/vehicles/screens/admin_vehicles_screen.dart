@@ -138,7 +138,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  'Fleet Configuration',
+                                  'Vehicle Managment',
                                   style: TextStyle(
                                     color: Color(0xFF1A2233),
                                     fontSize: 16,
@@ -228,6 +228,25 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
     );
   }
 
+  IconData _getVehicleIcon(String categoryName) {
+    final name = categoryName.toLowerCase();
+    if (name.contains('bike') || name.contains('motorcycle') || name.contains('two wheeler')) {
+      return Icons.motorcycle_rounded;
+    } else if (name.contains('scooty') || name.contains('scooter') || name.contains('vespa') || name.contains('moped')) {
+      return Icons.two_wheeler_rounded;
+    } else if (name.contains('auto') || name.contains('rickshaw')) {
+      return Icons.electric_rickshaw_rounded;
+    } else if (name.contains('car') || name.contains('sedan') || name.contains('suv') || name.contains('cab')) {
+      return Icons.directions_car_rounded;
+    } else if (name.contains('truck') || name.contains('lorry') || name.contains('pickup') || name.contains('tempo') || name.contains('load')) {
+      return Icons.local_shipping_rounded;
+    } else if (name.contains('cycle') || name.contains('bicycle')) {
+      return Icons.pedal_bike_rounded;
+    } else {
+      return Icons.airport_shuttle_rounded; // default generic vehicle icon
+    }
+  }
+
   Widget _buildVehicleCard(VehicleTypeModel vehicle) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -247,6 +266,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
           Row(
             children: [
               Container(
@@ -255,7 +275,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                   color: Color(0xFFE8F0FB),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.local_shipping_rounded, color: Color(0xFF1A3D6B), size: 20),
+                child: Icon(_getVehicleIcon(vehicle.name), color: const Color(0xFF1A3D6B), size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -283,6 +303,40 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                   ],
                 ),
               ),
+            ],
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.0),
+            child: Divider(height: 1, color: Color(0xFFE9ECF0)),
+          ),
+          // Parameters Grid (3 columns on first row, 2 columns on second row)
+          Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(child: _buildParamItem('Base Fare', '₹${vehicle.baseFare.toStringAsFixed(0)}')),
+                  Expanded(child: _buildParamItem('Rate/Km', '₹${vehicle.perKmRate.toStringAsFixed(0)}')),
+                  Expanded(child: _buildParamItem('Max weight', '${vehicle.maxWeightKg} kg')),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(child: _buildParamItem('Commission', '${vehicle.commissionPct.toStringAsFixed(0)}%')),
+                  Expanded(child: _buildParamItem('Min Wallet Bal.', '₹${vehicle.minWalletBalance.toStringAsFixed(0)}')),
+                  const Expanded(child: SizedBox.shrink()),
+                ],
+              ),
+            ],
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.0),
+            child: Divider(height: 1, color: Color(0xFFE9ECF0)),
+          ),
+          // Status and Action buttons Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
               // Status Badge
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -299,41 +353,33 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                   ),
                 ),
               ),
-            ],
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12.0),
-            child: Divider(height: 1, color: Color(0xFFE9ECF0)),
-          ),
-          // Parameters Grid
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildParamItem('Base Fare', '₹${vehicle.baseFare.toStringAsFixed(0)}'),
-              _buildParamItem('Rate/Km', '₹${vehicle.perKmRate.toStringAsFixed(0)}'),
-              _buildParamItem('Max weight', '${vehicle.maxWeightKg} kg'),
-              _buildParamItem('Commission', '${vehicle.commissionPct.toStringAsFixed(0)}%'),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildParamItem('Min Wallet Bal.', '₹${vehicle.minWalletBalance.toStringAsFixed(0)}'),
+              // Action Buttons
               Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit_rounded, color: Color(0xFF1A3D6B), size: 18),
+                  TextButton.icon(
+                    icon: const Icon(Icons.edit_rounded, color: Color(0xFF1A3D6B), size: 14),
+                    label: const Text('Edit', style: TextStyle(color: Color(0xFF1A3D6B), fontSize: 11, fontWeight: FontWeight.bold)),
                     onPressed: () => _showFormBottomSheet(vehicleType: vehicle),
-                    constraints: const BoxConstraints(),
-                    padding: const EdgeInsets.all(8),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      backgroundColor: const Color(0xFFE8F0FB),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
                   ),
                   const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.delete_rounded, color: Colors.redAccent, size: 18),
+                  TextButton.icon(
+                    icon: const Icon(Icons.delete_rounded, color: Colors.redAccent, size: 14),
+                    label: const Text('Delete', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
                     onPressed: () => _confirmDelete(context, vehicle),
-                    constraints: const BoxConstraints(),
-                    padding: const EdgeInsets.all(8),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      backgroundColor: const Color(0xFFFFF0F0),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
                   ),
                 ],
               ),

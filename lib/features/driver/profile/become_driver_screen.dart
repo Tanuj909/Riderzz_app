@@ -26,6 +26,8 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
   final _aadharController = TextEditingController(text: 'https://cdn.riderzz.com/docs/aadhar.pdf');
   final _panController = TextEditingController(text: 'https://cdn.riderzz.com/docs/pan.pdf');
   final _dlDocController = TextEditingController(text: 'https://cdn.riderzz.com/docs/license.pdf');
+  final _rcBookController = TextEditingController(text: 'https://cdn.riderzz.com/docs/rc_book.pdf');
+  final _insuranceController = TextEditingController(text: 'https://cdn.riderzz.com/docs/insurance.pdf');
 
   AvailableVehicleModel? _selectedVehicle;
 
@@ -34,6 +36,8 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
   XFile? _aadharFile;
   XFile? _panFile;
   XFile? _dlFile;
+  XFile? _rcBookFile;
+  XFile? _insuranceFile;
 
   @override
   void initState() {
@@ -52,6 +56,8 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
     _aadharController.dispose();
     _panController.dispose();
     _dlDocController.dispose();
+    _rcBookController.dispose();
+    _insuranceController.dispose();
     super.dispose();
   }
 
@@ -69,7 +75,9 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
     if (_formKey.currentState!.validate()) {
       if (_aadharController.text.trim().isEmpty ||
           _panController.text.trim().isEmpty ||
-          _dlDocController.text.trim().isEmpty) {
+          _dlDocController.text.trim().isEmpty ||
+          _rcBookController.text.trim().isEmpty ||
+          _insuranceController.text.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Please upload all required documents.'),
@@ -80,6 +88,8 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
       }
 
       final body = {
+        "licenseNumber": _licenseController.text.trim(),
+        "vehicleNumber": _plateController.text.trim(),
         "vehicle": {
           "id": _selectedVehicle!.id,
           "vehicleTypeId": _selectedVehicle!.vehicleTypeId,
@@ -90,26 +100,17 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
           "perKmRate": _selectedVehicle!.perKmRate,
           "status": "APPROVED",
           "existing": true
-        },
-        "documents": [
-          {
-            "documentType": "AADHAR",
-            "fileUrl": _aadharController.text.trim()
-          },
-          {
-            "documentType": "PAN",
-            "fileUrl": _panController.text.trim()
-          },
-          {
-            "documentType": "DRIVING_LICENSE",
-            "fileUrl": _dlDocController.text.trim()
-          }
-        ],
-        "licenseNumber": _licenseController.text.trim(),
-        "vehicleNumber": _plateController.text.trim()
+        }
       };
 
-      final success = await provider.applyAsDriver(body);
+      final success = await provider.applyAsDriver(
+        body,
+        aadharUrl: _aadharController.text.trim(),
+        panUrl: _panController.text.trim(),
+        dlUrl: _dlDocController.text.trim(),
+        rcBookUrl: _rcBookController.text.trim(),
+        insuranceUrl: _insuranceController.text.trim(),
+      );
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -154,25 +155,53 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
     }
   }
 
-  Future<void> _pickDocument(String type) async {
+  Future<void> _pickDocument(String type, DriverHomeProvider provider) async {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 80,
       );
       if (image != null) {
+        final fileUrl = 'https://cdn.riderzz.com/docs/uploaded_${image.name}';
         setState(() {
           if (type == 'AADHAR') {
             _aadharFile = image;
-            _aadharController.text = 'https://cdn.riderzz.com/docs/uploaded_${image.name}';
+            _aadharController.text = fileUrl;
           } else if (type == 'PAN') {
             _panFile = image;
-            _panController.text = 'https://cdn.riderzz.com/docs/uploaded_${image.name}';
-          } else if (type == 'DL') {
+            _panController.text = fileUrl;
+          } else if (type == 'DRIVING_LICENSE' || type == 'DL') {
             _dlFile = image;
-            _dlDocController.text = 'https://cdn.riderzz.com/docs/uploaded_${image.name}';
+            _dlDocController.text = fileUrl;
+          } else if (type == 'RC_BOOK') {
+            _rcBookFile = image;
+            _rcBookController.text = fileUrl;
+          } else if (type == 'INSURANCE') {
+            _insuranceFile = image;
+            _insuranceController.text = fileUrl;
           }
         });
+
+        // If user already has a profile (submitted/pending/rejected), upload immediately!
+        if (provider.profile != null) {
+          final docType = (type == 'DL' || type == 'DRIVING_LICENSE') ? 'DRIVING_LICENSE' : type;
+          final uploadSuccess = await provider.uploadDocument(docType, fileUrl);
+          if (uploadSuccess && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('$type uploaded successfully!'),
+                backgroundColor: const Color(0xFF0F9B6E),
+              ),
+            );
+          } else if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(provider.errorMessage ?? 'Failed to upload $type. Please try again.'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
+        }
       }
     } catch (e) {
       if (!mounted) return;
@@ -191,33 +220,100 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
     required XFile? pickedFile,
     required String defaultUrl,
     required VoidCallback onTap,
+    DriverProfileModel? profile,
   }) {
+    DriverDocumentModel? existingDoc;
+    if (profile != null) {
+      for (final doc in profile.documents) {
+        if (doc.docType.toUpperCase() == documentType.toUpperCase()) {
+          existingDoc = doc;
+          break;
+        }
+      }
+    }
+
     final String defaultFileName = defaultUrl.split('/').last;
     final hasFile = pickedFile != null;
-    final displayName = hasFile ? pickedFile.name : '$defaultFileName (Auto-attached)';
+    
+    Color cardBgColor = const Color(0xFFF8FAFC);
+    Color cardBorderColor = const Color(0xFFE2E8F0);
+    double cardBorderWidth = 1.0;
+    Color iconBgColor = const Color(0xFFF1F5F9);
+    Color iconColor = const Color(0xFF64748B);
+    IconData cardIcon = Icons.cloud_upload_outlined;
+    String statusBadgeText = '';
+    Color statusBadgeColor = Colors.grey;
+
+    if (hasFile) {
+      cardBgColor = const Color(0xFFEFF6FF);
+      cardBorderColor = const Color(0xFFBFDBFE);
+      cardBorderWidth = 1.2;
+      iconBgColor = const Color(0xFFDBEAFE);
+      iconColor = const Color(0xFF1E40AF);
+      cardIcon = Icons.file_present_rounded;
+    } else if (existingDoc != null) {
+      final status = existingDoc.status.toUpperCase();
+      if (status == 'APPROVED') {
+        cardBgColor = const Color(0xFFF0FDF4);
+        cardBorderColor = const Color(0xFFDCFCE7);
+        cardBorderWidth = 1.2;
+        iconBgColor = const Color(0xFFD1FAE5);
+        iconColor = const Color(0xFF166534);
+        cardIcon = Icons.check_circle_rounded;
+        statusBadgeText = 'APPROVED';
+        statusBadgeColor = const Color(0xFF16A34A);
+      } else if (status == 'REJECTED') {
+        cardBgColor = const Color(0xFFFEF2F2);
+        cardBorderColor = const Color(0xFFFEE2E2);
+        cardBorderWidth = 1.2;
+        iconBgColor = const Color(0xFFFEE2E2);
+        iconColor = const Color(0xFF991B1B);
+        cardIcon = Icons.cancel_rounded;
+        statusBadgeText = 'REJECTED';
+        statusBadgeColor = const Color(0xFFDC2626);
+      } else {
+        cardBgColor = const Color(0xFFFFF7ED);
+        cardBorderColor = const Color(0xFFFFEDD5);
+        cardBorderWidth = 1.2;
+        iconBgColor = const Color(0xFFFFEDD5);
+        iconColor = const Color(0xFFC2410C);
+        cardIcon = Icons.hourglass_empty_rounded;
+        statusBadgeText = 'PENDING';
+        statusBadgeColor = const Color(0xFFEA580C);
+      }
+    }
+
+    final displayName = hasFile 
+        ? pickedFile.name 
+        : (existingDoc != null 
+            ? existingDoc.fileUrl.split("/").last 
+            : '$defaultFileName (Auto-attached)');
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F8FA),
+        color: cardBgColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: hasFile ? const Color(0xFF1A3D6B) : const Color(0xFFE9ECF0),
-          width: hasFile ? 1.5 : 1.0,
+          color: cardBorderColor,
+          width: cardBorderWidth,
         ),
+        boxShadow: (hasFile || existingDoc != null) 
+            ? [BoxShadow(color: Colors.black.withOpacity(0.015), blurRadius: 4, offset: const Offset(0, 2))]
+            : [],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: hasFile ? const Color(0xFFE8F0FB) : const Color(0xFFE9ECF0),
+              color: iconBgColor,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
-              hasFile ? Icons.file_present_rounded : Icons.cloud_upload_outlined,
-              color: hasFile ? const Color(0xFF1A3D6B) : const Color(0xFF6B7785),
+              cardIcon,
+              color: iconColor,
               size: 20,
             ),
           ),
@@ -226,13 +322,35 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Color(0xFF1A2233),
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          color: Color(0xFF1E293B),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if (statusBadgeText.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: statusBadgeColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          statusBadgeText,
+                          style: TextStyle(
+                            color: statusBadgeColor,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -240,18 +358,29 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: hasFile ? const Color(0xFF1A3D6B) : const Color(0xFF6B7785),
-                    fontSize: 12,
+                    color: (hasFile || existingDoc != null) ? const Color(0xFF334155) : const Color(0xFF64748B),
+                    fontSize: 11.5,
                   ),
                 ),
+                if (existingDoc != null && existingDoc.status.toUpperCase() == 'REJECTED' && existingDoc.rejectionReason != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Reason: ${existingDoc.rejectionReason}',
+                    style: const TextStyle(
+                      color: Color(0xFFB91C1C),
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
           const SizedBox(width: 12),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: hasFile ? const Color(0xFFE8F0FB) : const Color(0xFF1A3D6B),
-              foregroundColor: hasFile ? const Color(0xFF1A3D6B) : Colors.white,
+              backgroundColor: (hasFile || existingDoc != null) ? const Color(0xFFEFF6FF) : const Color(0xFF1A3D6B),
+              foregroundColor: (hasFile || existingDoc != null) ? const Color(0xFF1E40AF) : Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               minimumSize: Size.zero,
@@ -261,7 +390,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
             ),
             onPressed: onTap,
             child: Text(
-              hasFile ? 'Change' : 'Upload',
+              (hasFile || existingDoc != null) ? 'Change' : 'Upload',
               style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -769,7 +898,8 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
             documentType: 'AADHAR',
             pickedFile: _aadharFile,
             defaultUrl: _aadharController.text,
-            onTap: () => _pickDocument('AADHAR'),
+            onTap: () => _pickDocument('AADHAR', driverProvider),
+            profile: driverProvider.profile,
           ),
 
           _buildDocumentUploadCard(
@@ -777,15 +907,35 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
             documentType: 'PAN',
             pickedFile: _panFile,
             defaultUrl: _panController.text,
-            onTap: () => _pickDocument('PAN'),
+            onTap: () => _pickDocument('PAN', driverProvider),
+            profile: driverProvider.profile,
           ),
 
           _buildDocumentUploadCard(
             title: 'Driving License',
-            documentType: 'DL',
+            documentType: 'DRIVING_LICENSE',
             pickedFile: _dlFile,
             defaultUrl: _dlDocController.text,
-            onTap: () => _pickDocument('DL'),
+            onTap: () => _pickDocument('DRIVING_LICENSE', driverProvider),
+            profile: driverProvider.profile,
+          ),
+
+          _buildDocumentUploadCard(
+            title: 'RC Book (Registration Certificate)',
+            documentType: 'RC_BOOK',
+            pickedFile: _rcBookFile,
+            defaultUrl: _rcBookController.text,
+            onTap: () => _pickDocument('RC_BOOK', driverProvider),
+            profile: driverProvider.profile,
+          ),
+
+          _buildDocumentUploadCard(
+            title: 'Vehicle Insurance',
+            documentType: 'INSURANCE',
+            pickedFile: _insuranceFile,
+            defaultUrl: _insuranceController.text,
+            onTap: () => _pickDocument('INSURANCE', driverProvider),
+            profile: driverProvider.profile,
           ),
           const SizedBox(height: 16),
 
@@ -857,7 +1007,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
     } else if (status == 'APPROVED') {
       return _buildApprovedUI(profile, userRole);
     } else if (status == 'REJECTED') {
-      return _buildRejectedUI(profile);
+      return _buildRejectedUI(profile, driverProvider);
     } else {
       return _buildPendingUI(profile, driverProvider);
     }
@@ -869,42 +1019,53 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 20),
-          Center(
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: Color(0xFFFFF3E8),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.hourglass_empty_rounded,
-                size: 64,
-                color: Color(0xFFF97316),
-              ),
+          // Elegant modern status banner
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF7ED),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFFFEDD5)),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFEA580C)),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Application Pending Review',
+                        style: TextStyle(
+                          color: Color(0xFFC2410C),
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Your details and documents are under review. We will notify you once approved.',
+                        style: TextStyle(
+                          color: Color(0xFFEA580C),
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
-            'Application Pending Review ⏳',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF1A2233),
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Your application to become a driver partner has been received and is currently under review by our admin team.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF4A5568),
-              fontSize: 13,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 28),
 
           // Submitted Details Card
           Container(
@@ -932,6 +1093,62 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                 _buildDetailRow('Documents Status', '${profile.documents.length} Uploaded (Pending Verification)'),
               ],
             ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Verification Documents 📁',
+            style: TextStyle(color: Color(0xFF1A2233), fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Check the status or re-upload documents if required:',
+            style: TextStyle(color: Color(0xFF6B7785), fontSize: 11),
+          ),
+          const SizedBox(height: 16),
+
+          _buildDocumentUploadCard(
+            title: 'Aadhar Card',
+            documentType: 'AADHAR',
+            pickedFile: _aadharFile,
+            defaultUrl: _aadharController.text,
+            onTap: () => _pickDocument('AADHAR', driverProvider),
+            profile: profile,
+          ),
+
+          _buildDocumentUploadCard(
+            title: 'PAN Card',
+            documentType: 'PAN',
+            pickedFile: _panFile,
+            defaultUrl: _panController.text,
+            onTap: () => _pickDocument('PAN', driverProvider),
+            profile: profile,
+          ),
+
+          _buildDocumentUploadCard(
+            title: 'Driving License',
+            documentType: 'DRIVING_LICENSE',
+            pickedFile: _dlFile,
+            defaultUrl: _dlDocController.text,
+            onTap: () => _pickDocument('DRIVING_LICENSE', driverProvider),
+            profile: profile,
+          ),
+
+          _buildDocumentUploadCard(
+            title: 'RC Book (Registration Certificate)',
+            documentType: 'RC_BOOK',
+            pickedFile: _rcBookFile,
+            defaultUrl: _rcBookController.text,
+            onTap: () => _pickDocument('RC_BOOK', driverProvider),
+            profile: profile,
+          ),
+
+          _buildDocumentUploadCard(
+            title: 'Vehicle Insurance',
+            documentType: 'INSURANCE',
+            pickedFile: _insuranceFile,
+            defaultUrl: _insuranceController.text,
+            onTap: () => _pickDocument('INSURANCE', driverProvider),
+            profile: profile,
           ),
           const SizedBox(height: 24),
 
@@ -1199,42 +1416,50 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 20),
-          Center(
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: Color(0xFFE6F7F2),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check_circle_outline_rounded,
-                size: 72,
-                color: Color(0xFF0F9B6E),
-              ),
+          // Elegant modern approved banner
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0FDF4),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFDCFCE7)),
+            ),
+            child: const Row(
+              children: [
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: Color(0xFF16A34A),
+                  size: 24,
+                ),
+                SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Application Approved! 🎉',
+                        style: TextStyle(
+                          color: Color(0xFF166534),
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Congratulations, your driver partner registration is complete. Welcome to the Riderzz network.',
+                        style: TextStyle(
+                          color: Color(0xFF15803D),
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
-            'Application Approved! 🎉',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF1A2233),
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Congratulations, your driver partner registration is complete. Click below to launch your Driver dashboard and start earning.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF4A5568),
-              fontSize: 13,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 28),
 
           // Approved details summary
           Container(
@@ -1283,7 +1508,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
     );
   }
 
-  Widget _buildRejectedUI(DriverProfileModel profile) {
+  Widget _buildRejectedUI(DriverProfileModel profile, DriverHomeProvider driverProvider) {
     final String rejectionReason = profile.vehicle?.rejectionReason ?? 'Submitted document(s) were invalid or illegible.';
     
     return SingleChildScrollView(
@@ -1291,39 +1516,47 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 20),
-          Center(
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: Color(0xFFFEF2F2),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.error_outline_rounded,
-                size: 64,
-                color: Colors.redAccent,
-              ),
+          // Elegant modern rejected banner
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF2F2),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFFEE2E2)),
             ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Application Rejected ❌',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF1A2233),
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Unfortunately, your application to become a driver partner has been rejected due to the following reason:',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF4A5568),
-              fontSize: 13,
-              height: 1.5,
+            child: const Row(
+              children: [
+                Icon(
+                  Icons.cancel_rounded,
+                  color: Color(0xFFDC2626),
+                  size: 24,
+                ),
+                SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Application Rejected ❌',
+                        style: TextStyle(
+                          color: Color(0xFF991B1B),
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Please check the status of each document and re-upload rejected or missing ones.',
+                        style: TextStyle(
+                          color: Color(0xFFB91C1C),
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 20),
@@ -1359,6 +1592,62 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 28),
+          const Text(
+            'Verification Documents 📁',
+            style: TextStyle(color: Color(0xFF1A2233), fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Please update/re-upload any rejected documents below:',
+            style: TextStyle(color: Color(0xFF6B7785), fontSize: 11),
+          ),
+          const SizedBox(height: 16),
+
+          _buildDocumentUploadCard(
+            title: 'Aadhar Card',
+            documentType: 'AADHAR',
+            pickedFile: _aadharFile,
+            defaultUrl: _aadharController.text,
+            onTap: () => _pickDocument('AADHAR', driverProvider),
+            profile: profile,
+          ),
+
+          _buildDocumentUploadCard(
+            title: 'PAN Card',
+            documentType: 'PAN',
+            pickedFile: _panFile,
+            defaultUrl: _panController.text,
+            onTap: () => _pickDocument('PAN', driverProvider),
+            profile: profile,
+          ),
+
+          _buildDocumentUploadCard(
+            title: 'Driving License',
+            documentType: 'DRIVING_LICENSE',
+            pickedFile: _dlFile,
+            defaultUrl: _dlDocController.text,
+            onTap: () => _pickDocument('DRIVING_LICENSE', driverProvider),
+            profile: profile,
+          ),
+
+          _buildDocumentUploadCard(
+            title: 'RC Book (Registration Certificate)',
+            documentType: 'RC_BOOK',
+            pickedFile: _rcBookFile,
+            defaultUrl: _rcBookController.text,
+            onTap: () => _pickDocument('RC_BOOK', driverProvider),
+            profile: profile,
+          ),
+
+          _buildDocumentUploadCard(
+            title: 'Vehicle Insurance',
+            documentType: 'INSURANCE',
+            pickedFile: _insuranceFile,
+            defaultUrl: _insuranceController.text,
+            onTap: () => _pickDocument('INSURANCE', driverProvider),
+            profile: profile,
           ),
           const SizedBox(height: 36),
 

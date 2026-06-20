@@ -1,4 +1,5 @@
 import 'package:riderzz_app/features/admin/rider_verification/data/datasource/rider_verification_datasource.dart';
+import 'package:riderzz_app/core/models/driver_wallet_model.dart';
 
 class RiderVerificationRepository {
   final RiderVerificationRemoteDataSource _remoteDataSource;
@@ -26,6 +27,42 @@ class RiderVerificationRepository {
       driverId: driverId,
       status: status,
       rejectionReason: rejectionReason,
+    );
+  }
+
+  Future<void> verifyDriverDocument({
+    required int driverId,
+    required int documentId,
+    required String status,
+    String? rejectionReason,
+  }) async {
+    await _remoteDataSource.verifyDriverDocument(
+      driverId: driverId,
+      documentId: documentId,
+      status: status,
+      rejectionReason: rejectionReason,
+    );
+  }
+
+  Future<void> forceDriverOffline(int driverId) async {
+    await _remoteDataSource.forceDriverOffline(driverId);
+  }
+
+  Future<DriverWalletModel> getDriverWallet(int driverId) async {
+    return await _remoteDataSource.getDriverWallet(driverId);
+  }
+
+  Future<void> adjustDriverWallet({
+    required int driverId,
+    required String type,
+    required double amount,
+    required String description,
+  }) async {
+    await _remoteDataSource.adjustDriverWallet(
+      driverId: driverId,
+      type: type,
+      amount: amount,
+      description: description,
     );
   }
 }

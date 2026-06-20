@@ -84,10 +84,13 @@ class AuthRemoteDataSource {
       },
     );
     final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
+    final nestedData = data['data'] != null && data['data'] is Map
+        ? Map<String, dynamic>.from(data['data'] as Map)
+        : data;
     return UserModel.fromJson(
       data,
       phone: phone,
-      token: data['accessToken'] as String?,
+      token: nestedData['accessToken'] as String?,
     );
   }
 }

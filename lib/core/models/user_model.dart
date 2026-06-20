@@ -16,25 +16,44 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json, {String? name, String? phone, String? token}) {
+    Map<String, dynamic> targetJson = json;
+    if (json['data'] != null && json['data'] is Map) {
+      targetJson = Map<String, dynamic>.from(json['data'] as Map);
+    }
+
     String? roleStr;
-    if (json['role'] != null) {
-      roleStr = json['role'] as String;
-    } else if (json['roles'] != null) {
-      if (json['roles'] is List && (json['roles'] as List).isNotEmpty) {
-        roleStr = (json['roles'] as List).first.toString();
-      } else if (json['roles'] is String) {
-        roleStr = json['roles'] as String;
+    if (targetJson['role'] != null) {
+      roleStr = targetJson['role'] as String;
+    } else if (targetJson['roles'] != null) {
+      if (targetJson['roles'] is List && (targetJson['roles'] as List).isNotEmpty) {
+        roleStr = (targetJson['roles'] as List).first.toString();
+      } else if (targetJson['roles'] is String) {
+        roleStr = targetJson['roles'] as String;
       }
     }
     roleStr ??= 'CUSTOMER';
 
+    final rawId = targetJson['userId'] ?? targetJson['id'] ?? json['userId'] ?? json['id'];
+    int id = 0;
+    if (rawId != null) {
+      if (rawId is int) {
+        id = rawId;
+      } else {
+        id = int.tryParse(rawId.toString()) ?? 0;
+      }
+    }
+
     return UserModel(
-      userId: (json['userId'] ?? json['id']) as int,
+      userId: id,
       role: roleStr,
-      token: json['token'] as String? ?? token,
-      name: json['name'] as String? ?? name,
-      phone: json['phone'] as String? ?? phone,
-      status: json['status'] as String?,
+      token: targetJson['token'] as String? ??
+          targetJson['accessToken'] as String? ??
+          json['token'] as String? ??
+          json['accessToken'] as String? ??
+          token,
+      name: targetJson['name'] as String? ?? json['name'] as String? ?? name,
+      phone: targetJson['phone'] as String? ?? json['phone'] as String? ?? phone,
+      status: targetJson['status'] as String? ?? json['status'] as String?,
     );
   }
 

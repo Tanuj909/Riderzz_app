@@ -5,6 +5,7 @@ import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/admin/vehicles/screens/admin_vehicles_screen.dart';
 import 'package:riderzz_app/features/admin/rider_verification/rider_verification_screen.dart';
 import 'package:riderzz_app/features/admin/rider_verification/providers/rider_verification_provider.dart';
+import 'package:riderzz_app/features/admin/wallets/screens/admin_wallets_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -114,6 +115,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     ],
                   ),
                   PopupMenuButton<String>(
+                    color: Colors.white,
+                    surfaceTintColor: Colors.white,
                     onSelected: (value) {
                       if (value == 'logout') {
                         _handleLogout(context, authProvider);
@@ -124,33 +127,69 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     itemBuilder: (context) => [
-                      if (adminUser?.phone != null) ...[
-                        PopupMenuItem(
-                          enabled: false,
-                          child: Row(
+                      // Profile Header
+                      PopupMenuItem(
+                        enabled: false,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.phone_android_rounded, size: 18, color: Color(0xFF1A2233)),
-                              const SizedBox(width: 8),
-                              Text('+91 ${adminUser!.phone}', style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                              Text(
+                                adminUser?.name ?? 'Administrator',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Color(0xFF1A2233),
+                                ),
+                              ),
+                              if (adminUser?.phone != null) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.phone_android_rounded, size: 12, color: Color(0xFF6B7785)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '+91 ${adminUser!.phone}',
+                                      style: const TextStyle(fontSize: 12, color: Color(0xFF6B7785)),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ],
                           ),
                         ),
-                        const PopupMenuDivider(),
-                      ],
+                      ),
+                      const PopupMenuItem<String>(
+                        enabled: false,
+                        height: 1,
+                        child: Divider(
+                          height: 1,
+                          color: Color(0xFFE2E8F0),
+                          thickness: 0.5,
+                        ),
+                      ),
+                      // Logout
                       PopupMenuItem(
                         value: 'logout',
-                        child: Row(
-                          children: const [
-                            Icon(Icons.logout_rounded, size: 18, color: Colors.redAccent),
-                            SizedBox(width: 8),
-                            Text('Logout Portal', style: TextStyle(fontSize: 14, color: Colors.redAccent, fontWeight: FontWeight.bold)),
-                          ],
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.logout_rounded, size: 16, color: Colors.redAccent),
+                              SizedBox(width: 8),
+                              Text(
+                                'Logout Portal',
+                                style: TextStyle(fontSize: 13, color: Colors.redAccent, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                     child: Container(
-                      width: 38,
-                      height: 38,
+                      width: 36,
+                      height: 36,
                       decoration: const BoxDecoration(
                         color: Color(0xFF0F9B6E),
                         shape: BoxShape.circle,
@@ -161,7 +200,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 13,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
@@ -216,6 +255,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             activeIcon: Icon(Icons.airport_shuttle_rounded),
             label: 'Vehicles',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_balance_wallet_outlined),
+            activeIcon: Icon(Icons.account_balance_wallet_rounded),
+            label: 'Wallets',
+          ),
         ],
       ),
     );
@@ -229,6 +273,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         return const RiderVerificationScreen();
       case 2:
         return const AdminVehiclesScreen();
+      case 3:
+        return const AdminWalletsScreen();
       default:
         return _buildDashboardTab();
     }
@@ -362,6 +408,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               onTap: () {
                 setState(() {
                   _currentIndex = 2; // Transition to Vehicles tab
+                });
+              },
+            ),
+            _buildActionItem(
+              title: 'Driver Wallets & Operations',
+              subtitle: 'Manage balances, view transactions, and force offline status',
+              icon: Icons.account_balance_wallet_rounded,
+              iconBgColor: const Color(0xFFEBF3FD),
+              iconColor: const Color(0xFF1A3D6B),
+              onTap: () {
+                setState(() {
+                  _currentIndex = 3; // Transition to Wallets tab
                 });
               },
             ),

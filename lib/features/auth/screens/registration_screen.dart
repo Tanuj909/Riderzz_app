@@ -616,7 +616,6 @@ class _AnimatedSpeedLogoState extends State<AnimatedSpeedLogo> with SingleTicker
         weight: 22.0,
       ),
     ]).animate(_controller);
-
     // Start the animation loop after 600ms delay to let screen transition finish.
     // While waiting, the logo is positioned at Offset(1.5, 0.0) which is off-screen.
     Future.delayed(const Duration(milliseconds: 600), () {

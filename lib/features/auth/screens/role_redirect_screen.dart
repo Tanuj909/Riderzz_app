@@ -24,7 +24,7 @@ class _RoleRedirectScreenState extends State<RoleRedirectScreen> {
   }
 
   void _navigateTo(Widget page, String routeName) {
-    Navigator.pushReplacement(
+    Navigator.pushAndRemoveUntil(
       context,
       PageRouteBuilder(
         settings: RouteSettings(name: routeName),
@@ -37,6 +37,7 @@ class _RoleRedirectScreenState extends State<RoleRedirectScreen> {
         },
         transitionDuration: const Duration(milliseconds: 600),
       ),
+      (route) => false,
     );
   }
 

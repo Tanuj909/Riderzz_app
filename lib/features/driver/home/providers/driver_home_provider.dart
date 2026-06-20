@@ -34,7 +34,32 @@ class DriverHomeProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _profile = await _driverRepository.getDriverProfile();
+      var profile = await _driverRepository.getDriverProfile();
+      
+      // Fetch documents from /driver/documents separately and attach them to the profile model
+      try {
+        final docs = await _driverRepository.getDriverDocuments();
+        profile = DriverProfileModel(
+          id: profile.id,
+          userId: profile.userId,
+          name: profile.name,
+          phone: profile.phone,
+          userStatus: profile.userStatus,
+          approvalStatus: profile.approvalStatus,
+          licenseNumber: profile.licenseNumber,
+          vehicleNumber: profile.vehicleNumber,
+          isOnline: profile.isOnline,
+          rating: profile.rating,
+          totalTrips: profile.totalTrips,
+          vehicle: profile.vehicle,
+          documents: docs,
+          createdAt: profile.createdAt,
+        );
+      } catch (de) {
+        debugPrint('Failed to fetch driver documents separately: $de');
+      }
+
+      _profile = profile;
       _isLoading = false;
       notifyListeners();
     } on ApiException catch (e) {
@@ -151,18 +176,51 @@ class DriverHomeProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> applyAsDriver(Map<String, dynamic> body) async {
+  Future<bool> applyAsDriver(
+    Map<String, dynamic> body, {
+    required String aadharUrl,
+    required String panUrl,
+    required String dlUrl,
+    required String rcBookUrl,
+    required String insuranceUrl,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
+      // 1. Register driver and vehicle details
       await _driverRepository.applyDriver(body);
-      
-      // Re-fetch profile to set screen to PENDING status UI immediately
+
+      // 2. Upload documents to /driver/documents sequentially
       try {
-        _profile = await _driverRepository.getDriverProfile();
-      } catch (_) {}
+        await _driverRepository.uploadDriverDocument("AADHAR", aadharUrl);
+      } catch (e) {
+        debugPrint('Failed to upload Aadhar: $e');
+      }
+      try {
+        await _driverRepository.uploadDriverDocument("PAN", panUrl);
+      } catch (e) {
+        debugPrint('Failed to upload PAN: $e');
+      }
+      try {
+        await _driverRepository.uploadDriverDocument("DRIVING_LICENSE", dlUrl);
+      } catch (e) {
+        debugPrint('Failed to upload Driving License: $e');
+      }
+      try {
+        await _driverRepository.uploadDriverDocument("RC_BOOK", rcBookUrl);
+      } catch (e) {
+        debugPrint('Failed to upload RC Book: $e');
+      }
+      try {
+        await _driverRepository.uploadDriverDocument("INSURANCE", insuranceUrl);
+      } catch (e) {
+        debugPrint('Failed to upload Insurance: $e');
+      }
+      
+      // 3. Re-fetch profile to load state immediately
+      await fetchDriverProfile();
       
       _isLoading = false;
       notifyListeners();
@@ -174,4 +232,24 @@ class DriverHomeProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> uploadDocument(String docType, String fileUrl) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _driverRepository.uploadDriverDocument(docType, fileUrl);
+      await fetchDriverProfile();
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
 }
+
