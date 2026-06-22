@@ -72,16 +72,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Riderzz Admin Portal',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
                       Text(
                         adminUser?.name ?? 'Administrator',
                         style: const TextStyle(
