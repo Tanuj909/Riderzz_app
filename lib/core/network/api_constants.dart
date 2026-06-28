@@ -1,19 +1,26 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConstants {
-  static String get baseUrl => dotenv.env['API_BASE_URL'] ?? 'http://10.24.69.2:4000';
+  static String get baseUrl => dotenv.env['API_BASE_URL'] ?? 'http://10.24.69.2:4000/api';
 
   // Auth Endpoints
   static const String sendOtp = '/auth/send-otp';
   static const String register = '/auth/register';
-  static const String loginVerifyOtp = '/auth/login-otp';
+  static const String loginVerifyOtp = '/auth/login/otp';
   static const String me = '/auth/me';
-  static const String adminLogin = '/admin/auth/login';
-  static const String vehicleTypes = '/admin/vehicle-types';
-  static const String adminDrivers = '/admin/drivers';
+  static const String customerProfileMe = '/profile/me';
+  static const String customerProfileUpdate = '/profile/customer';
+  static const String uploadProfileImage = '/profile/image';
+  static const String adminLogin = '/auth/login/password';
+  static const String vehicleTypes = '/vehicle-types';
+  static const String adminDrivers = '/drivers';
+  static const String adminDriverList = '/driver/admin/list';
+  static const String adminVehicles = '/admin/vehicles';
+  static const String adminCommissionConfigs = '/admin/commission-configs';
 
   // User Endpoints
-  static const String addresses = '/user/addresses';
+  static const String addresses = '/addresses';
+  static const String savedRoutes = '/saved-routes';
 
   // Driver Endpoints
   static const String driverProfile = '/driver/profile';

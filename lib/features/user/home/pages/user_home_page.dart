@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:riderzz_app/core/providers/location_provider.dart';
 import 'package:riderzz_app/features/user/addresses/location_picker_screen.dart';
 import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
+import 'package:riderzz_app/features/user/saved_routes/providers/saved_route_provider.dart';
 
 class UserHomePage extends StatefulWidget {
   final VoidCallback onBookingConfirmed;
@@ -32,6 +33,7 @@ class _UserHomePageState extends State<UserHomePage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AddressProvider>(context, listen: false).fetchAddresses();
+      Provider.of<SavedRouteProvider>(context, listen: false).fetchSavedRoutes();
       _setCurrentLocationAsPickup();
     });
   }
@@ -400,6 +402,91 @@ class _UserHomePageState extends State<UserHomePage> {
                                         const SizedBox(width: 5),
                                         Text(
                                           label,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            color: Color(0xFF1A2233),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                Consumer<SavedRouteProvider>(
+                  builder: (context, savedRouteProvider, _) {
+                    final routes = savedRouteProvider.savedRoutes;
+                    if (routes.isEmpty) return const SizedBox.shrink();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 14),
+                        const Text(
+                          'QUICK BOOK SAVED ROUTE',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF6B7785),
+                            letterSpacing: 0.06,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 38,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: routes.length,
+                            itemBuilder: (context, index) {
+                              final item = routes[index];
+                              final routeName = item['routeName'] ?? '';
+                              
+                              Color chipBg = const Color(0xFFFDF2F8);
+                              Color chipIconColor = const Color(0xFFDB2777);
+
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: InkWell(
+                                  onTap: () {
+                                    final pickup = item['pickupAddress'] ?? {};
+                                    final drop = item['dropAddress'] ?? {};
+                                    setState(() {
+                                      _pickupController.text = pickup['address'] ?? '';
+                                      _pickupLatitude = pickup['lat'] is num ? (pickup['lat'] as num).toDouble() : null;
+                                      _pickupLongitude = pickup['lng'] is num ? (pickup['lng'] as num).toDouble() : null;
+
+                                      _dropController.text = drop['address'] ?? '';
+                                      _dropLatitude = drop['lat'] is num ? (drop['lat'] as num).toDouble() : null;
+                                      _dropLongitude = drop['lng'] is num ? (drop['lng'] as num).toDouble() : null;
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Route set to "$routeName"'),
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
+                                  },
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: chipBg,
+                                      border: Border.all(color: chipIconColor.withValues(alpha: 0.15)),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.directions_outlined, size: 14, color: chipIconColor),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          routeName,
                                           style: const TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w500,

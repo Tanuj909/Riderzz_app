@@ -1,5 +1,7 @@
+import 'package:dio/dio.dart';
 import 'package:riderzz_app/core/network/api_client.dart';
 import 'package:riderzz_app/core/network/api_constants.dart';
+import 'package:riderzz_app/core/network/api_exception.dart';
 import 'package:riderzz_app/core/models/driver_profile_model.dart';
 import 'package:riderzz_app/core/models/driver_wallet_model.dart';
 import 'package:riderzz_app/core/models/available_vehicle_model.dart';
@@ -12,8 +14,11 @@ class DriverRemoteDataSource {
   Future<DriverProfileModel> getDriverProfile() async {
     final response = await _apiClient.get(ApiConstants.driverProfile);
     final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
-    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
-    return DriverProfileModel.fromJson(data);
+    final dynamic data = resBody['data'];
+    if (data == null || (data is Map && (data['userId'] == null || data['userId'] == 0))) {
+      throw ApiException("Driver profile not found", statusCode: 404);
+    }
+    return DriverProfileModel.fromJson(Map<String, dynamic>.from(data));
   }
 
   Future<DriverWalletModel> getDriverWallet() async {
@@ -54,6 +59,26 @@ class DriverRemoteDataSource {
     return list.map((item) => AvailableVehicleModel.fromJson(Map<String, dynamic>.from(item))).toList();
   }
 
+  Future<DriverProfileModel> updateDriverProfile({
+    required String licenseNumber,
+    required String bio,
+    required String gender,
+    required String dob,
+  }) async {
+    final response = await _apiClient.put(
+      ApiConstants.driverProfile,
+      data: {
+        'licenseNumber': licenseNumber,
+        'bio': bio,
+        'gender': gender,
+        'dob': dob,
+      },
+    );
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
+    return DriverProfileModel.fromJson(data);
+  }
+
   Future<void> applyDriver(Map<String, dynamic> data) async {
     await _apiClient.post(
       ApiConstants.driverApply,
@@ -61,22 +86,15 @@ class DriverRemoteDataSource {
     );
   }
 
-  Future<void> uploadDriverDocument(String docType, String fileUrl) async {
+  Future<void> uploadDriverDocument(String docType, String filePath) async {
+    final formData = FormData.fromMap({
+      'documentType': docType,
+      'file': await MultipartFile.fromFile(filePath),
+    });
+
     await _apiClient.post(
       ApiConstants.driverDocuments,
-      data: {
-        'documentType': docType,
-        'fileUrl': fileUrl,
-      },
+      data: formData,
     );
-  }
-
-  Future<List<DriverDocumentModel>> getDriverDocuments() async {
-    final response = await _apiClient.get(ApiConstants.driverDocuments);
-    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
-    final List<dynamic> list = resBody['data'] as List? ?? [];
-    return list
-        .map((item) => DriverDocumentModel.fromJson(Map<String, dynamic>.from(item)))
-        .toList();
   }
 }

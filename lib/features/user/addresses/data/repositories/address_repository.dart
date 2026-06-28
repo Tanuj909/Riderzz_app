@@ -10,37 +10,25 @@ class AddressRepository {
     return await _remoteDataSource.fetchAddresses();
   }
 
-  Future<ApiResponse<dynamic>> addAddress({
-    required String label,
-    required String address,
-    required double latitude,
-    required double longitude,
-  }) async {
-    return await _remoteDataSource.addAddress(
-      label: label,
-      address: address,
-      latitude: latitude,
-      longitude: longitude,
-    );
+  Future<ApiResponse<dynamic>> addAddress(Map<String, dynamic> data) async {
+    return await _remoteDataSource.addAddress(data);
   }
 
   Future<ApiResponse<dynamic>> updateAddress({
     required int id,
-    required String label,
-    required String address,
-    required double latitude,
-    required double longitude,
+    required Map<String, dynamic> data,
   }) async {
     return await _remoteDataSource.updateAddress(
       id: id,
-      label: label,
-      address: address,
-      latitude: latitude,
-      longitude: longitude,
+      data: data,
     );
   }
 
   Future<ApiResponse<dynamic>> deleteAddress(int id) async {
     return await _remoteDataSource.deleteAddress(id);
+  }
+
+  Future<ApiResponse<dynamic>> setDefaultAddress(int id) async {
+    return await _remoteDataSource.setDefaultAddress(id);
   }
 }

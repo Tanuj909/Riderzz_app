@@ -342,7 +342,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Plate: ${driver.vehicleNumber} • Type: ${driver.vehicle?.vehicleTypeName ?? "N/A"}',
+                            'Plate: ${driver.vehicleNumber}',
                             style: const TextStyle(
                               color: Color(0xFF6B7785),
                               fontSize: 11,
@@ -422,14 +422,52 @@ class DriverDetailsBottomSheet extends StatefulWidget {
 
 class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
   bool _isUpdating = false;
+  bool _isLoadingDetails = true;
+  AdminDriverModel? _fullDriver;
 
-  void _showDocumentViewerDialog(AdminDriverModel currentDriver, AdminDriverDocumentModel doc) {
-    showDialog(
+  @override
+  void initState() {
+    super.initState();
+    _fetchFullDetails();
+  }
+
+  Future<void> _fetchFullDetails() async {
+    final provider = context.read<RiderVerificationProvider>();
+    final result = await provider.fetchDriverById(widget.driver.userId);
+    if (mounted) {
+      setState(() {
+        _fullDriver = result;
+        _isLoadingDetails = false;
+      });
+    }
+  }
+
+  void _showDocumentViewerDialog(AdminDriverModel currentDriver, AdminDriverDocumentModel doc) async {
+    await showDialog(
       context: context,
       builder: (context) => DocumentViewerDialog(
         driver: currentDriver,
         document: doc,
       ),
+    );
+    _fetchFullDetails();
+  }
+
+  void _showEditDriverDialog(AdminDriverModel driver) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return EditDriverDialog(
+          driver: driver,
+          onSaved: (updated) {
+            if (mounted) {
+              setState(() {
+                _fullDriver = updated;
+              });
+            }
+          },
+        );
+      },
     );
   }
 
@@ -442,7 +480,7 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
       ),
     );
 
-    if (result == null) return; // User cancelled
+    if (result == null) return;
 
     if (!mounted) return;
 
@@ -482,24 +520,44 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
       case 'REJECTED':
         return Colors.redAccent;
       default:
-        return const Color(0xFFD97706);
+        return const Color(0xFF0284C7);
     }
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Color(0xFF6B7785), fontSize: 12)),
+          Flexible(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A2233)),
+              textAlign: TextAlign.end,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<RiderVerificationProvider>(
       builder: (context, provider, child) {
-        final driver = provider.drivers.firstWhere(
-          (d) => d.id == widget.driver.id,
+        final driver = _fullDriver ?? provider.drivers.firstWhere(
+          (d) => d.id == widget.driver.id || d.userId == widget.driver.userId,
           orElse: () => widget.driver,
         );
-        final vehicle = driver.vehicle;
 
         const List<String> allRequiredDocTypes = [
-          'AADHAR',
-          'PAN',
-          'DRIVING_LICENSE',
+          'AADHAAR_FRONT',
+          'AADHAAR_BACK',
+          'PAN_CARD',
+          'DRIVING_LICENSE_FRONT',
+          'DRIVING_LICENSE_BACK',
           'RC_BOOK',
           'INSURANCE',
         ];
@@ -511,7 +569,7 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
 
         return ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.72,
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
           ),
           child: Container(
             decoration: const BoxDecoration(
@@ -519,354 +577,408 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
             padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Pull Indicator
-                  Center(
-                    child: Container(
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE9ECF0),
-                        borderRadius: BorderRadius.circular(2),
+            child: _isLoadingDetails
+                ? const SizedBox(
+                    height: 200,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B)),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    driver.name,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A2233)),
-                  ),
-                  Text(
-                    'Phone: +91 ${driver.phone} • Status: ${driver.approvalStatus}',
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF6B7785)),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Vehicle Specs section
-                  const Text('Vehicle Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1A2233))),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF7F8FA),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE9ECF0)),
-                    ),
+                  )
+                : SingleChildScrollView(
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        // Pull Indicator
+                        Center(
+                          child: Container(
+                            width: 36,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE9ECF0),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Make & Model', style: TextStyle(color: Color(0xFF6B7785), fontSize: 12)),
-                            Text(
-                              vehicle != null ? '${vehicle.make} ${vehicle.model}' : 'N/A',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A2233)),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    driver.name,
+                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A2233)),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Phone: +91 ${driver.phone}${driver.email != null ? ' • ${driver.email}' : ''}',
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF6B7785)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                if (driver.vehicleTypeName != null && driver.vehicleTypeName!.isNotEmpty)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE8F0FB),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(color: const Color(0xFF1A3D6B).withValues(alpha: 0.15)),
+                                    ),
+                                    child: Text(
+                                      driver.vehicleTypeName!,
+                                      style: const TextStyle(
+                                        color: Color(0xFF1A3D6B),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                const SizedBox(height: 6),
+                                TextButton.icon(
+                                  onPressed: () => _showEditDriverDialog(driver),
+                                  icon: const Icon(Icons.edit_rounded, size: 14, color: Color(0xFF1A3D6B)),
+                                  label: const Text('Edit Info', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1A3D6B))),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Plate Number', style: TextStyle(color: Color(0xFF6B7785), fontSize: 12)),
-                            Text(
-                              driver.vehicleNumber,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A2233)),
-                            ),
-                          ],
+                        const SizedBox(height: 16),
+
+                        // Personal Information Section
+                        const Text('Personal Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1A2233))),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF7F8FA),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFE9ECF0)),
+                          ),
+                          child: Column(
+                            children: [
+                              _buildInfoRow('Approval Status', driver.approvalStatus),
+                              if (driver.gender != null) _buildInfoRow('Gender', driver.gender!),
+                              if (driver.dob != null) _buildInfoRow('Date of Birth', driver.dob!),
+                              if (driver.bio != null && driver.bio!.isNotEmpty) _buildInfoRow('Bio', driver.bio!),
+                              _buildInfoRow('Rating', '${driver.rating.toStringAsFixed(1)} ⭐'),
+                              _buildInfoRow('Completed Trips', driver.totalTrips.toString()),
+                              _buildInfoRow('Online', driver.isOnline ? 'Yes' : 'No'),
+                              if (driver.approvedAt != null) _buildInfoRow('Approved At', driver.approvedAt!),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 6),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Max Weight Capacity', style: TextStyle(color: Color(0xFF6B7785), fontSize: 12)),
-                            Text(
-                              vehicle != null ? '${vehicle.maxWeightKg} kg' : 'N/A',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A2233)),
-                            ),
-                          ],
+
+                        const SizedBox(height: 16),
+
+                        // Vehicle Information Section
+                        const Text('Vehicle Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1A2233))),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF7F8FA),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFE9ECF0)),
+                          ),
+                          child: Column(
+                            children: [
+                              if (driver.vehicleTypeName != null) _buildInfoRow('Vehicle Type', driver.vehicleTypeName!),
+                              _buildInfoRow('Registration Number', driver.vehicleNumber),
+                              if (driver.color != null) _buildInfoRow('Color', driver.color!),
+                              if (driver.manufacturingYear != null) _buildInfoRow('Manufacturing Year', driver.manufacturingYear.toString()),
+                              if (driver.vehicleStatus != null) _buildInfoRow('Vehicle Status', driver.vehicleStatus!),
+                              _buildInfoRow('License Number', driver.licenseNumber),
+                              if (driver.licenseExpiry != null) _buildInfoRow('License Expiry', driver.licenseExpiry!),
+                              if (driver.insuranceExpiry != null) _buildInfoRow('Insurance Expiry', driver.insuranceExpiry!),
+                              if (driver.vehicle != null) ...[
+                                _buildInfoRow('Make & Model', '${driver.vehicle!.make} ${driver.vehicle!.model}'),
+                                _buildInfoRow('Max Weight', '${driver.vehicle!.maxWeightKg} kg'),
+                                _buildInfoRow('Rate/Km', '₹${driver.vehicle!.perKmRate.toStringAsFixed(0)}'),
+                              ],
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 6),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Base Rate per Km', style: TextStyle(color: Color(0xFF6B7785), fontSize: 12)),
-                            Text(
-                              vehicle != null ? '₹${vehicle.perKmRate.toStringAsFixed(0)}' : 'N/A',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A2233)),
-                            ),
-                          ],
+
+                        const SizedBox(height: 16),
+
+                        // Documents Verification list
+                        Text(
+                          'Verification Documents (${driver.documents.length})',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1A2233)),
                         ),
+                        const SizedBox(height: 8),
+                        if (driver.documents.isEmpty)
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF7F8FA),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFE9ECF0)),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'No documents uploaded yet.',
+                                style: TextStyle(color: Color(0xFF6B7785), fontSize: 13),
+                              ),
+                            ),
+                          )
+                        else
+                          ...driver.documents.map((doc) {
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFFE9ECF0)),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.description_outlined, color: Color(0xFF1A3D6B), size: 20),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                doc.docType.replaceAll('_', ' '),
+                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A2233)),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                doc.status,
+                                                style: TextStyle(color: _getDocStatusColor(doc.status), fontSize: 10, fontWeight: FontWeight.bold),
+                                              ),
+                                              if (doc.rejectionReason != null && doc.rejectionReason!.isNotEmpty) ...[
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  'Reason: ${doc.rejectionReason}',
+                                                  style: const TextStyle(color: Colors.redAccent, fontSize: 10),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFE8F0FB),
+                                      foregroundColor: const Color(0xFF1A3D6B),
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                    icon: const Icon(Icons.remove_red_eye_rounded, size: 14),
+                                    label: const Text('View', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    onPressed: () => _showDocumentViewerDialog(driver, doc),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+
+                        // Show missing documents
+                        ...allRequiredDocTypes.where((type) => !uploadedDocTypes.contains(type)).map((docType) {
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF7F8FA),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFE9ECF0)),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.warning_amber_rounded, color: Color(0xFF6B7785), size: 20),
+                                    const SizedBox(width: 8),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          docType.replaceAll('_', ' '),
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF6B7785)),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        const Text(
+                                          'Not Uploaded',
+                                          style: TextStyle(color: Color(0xFF6B7785), fontSize: 10, fontWeight: FontWeight.bold),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Text(
+                                    'Missing',
+                                    style: TextStyle(color: Color(0xFF6B7785), fontSize: 10, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+
+                        const SizedBox(height: 24),
+
+                        // Update Status Actions Panel
+                        if (_isUpdating)
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8.0),
+                              child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B))),
+                            ),
+                          )
+                        else if (driver.approvalStatus == 'REJECTED')
+                          const SizedBox.shrink()
+                        else if (driver.approvalStatus == 'SUSPENDED')
+                          Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                ),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF6B7785)),
+                                    SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Driver is currently suspended. You can activate this driver below.',
+                                        style: TextStyle(
+                                          color: Color(0xFF4A5568),
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF0F9B6E),
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(vertical: 14),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        elevation: 0,
+                                      ),
+                                      onPressed: () => _updateStatus('ACTIVATED'),
+                                      child: const Text('Activate Driver', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          )
+                        else
+                          Column(
+                            children: [
+                              if (driver.approvalStatus != 'APPROVED') ...[
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF0F9B6E),
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(vertical: 14),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                          elevation: 0,
+                                        ),
+                                        onPressed: () => _updateStatus('APPROVED'),
+                                        child: const Text('Approve Application', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                              ],
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.redAccent,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(vertical: 14),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        elevation: 0,
+                                      ),
+                                      onPressed: () => _updateStatus('REJECTED'),
+                                      child: const Text('Reject Application', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (driver.approvalStatus == 'APPROVED') ...[
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF6B7785),
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                          elevation: 0,
+                                        ),
+                                        onPressed: () => _updateStatus('SUSPENDED'),
+                                        child: const Text('Suspend Driver', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: 16),
-
-                  // Documents Verification list
-                  const Text('Verification Documents', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1A2233))),
-                  const SizedBox(height: 8),
-                  ...allRequiredDocTypes.map((docType) {
-                    final docIndex = driver.documents.indexWhere((d) => d.docType == docType);
-                    final hasDoc = docIndex != -1;
-
-                    if (hasDoc) {
-                      final doc = driver.documents[docIndex];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE9ECF0)),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.description_outlined, color: Color(0xFF1A3D6B), size: 20),
-                                const SizedBox(width: 8),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      doc.docType.replaceAll('_', ' '),
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A2233)),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Status: ${doc.status}',
-                                      style: TextStyle(color: _getDocStatusColor(doc.status), fontSize: 10, fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFE8F0FB),
-                                foregroundColor: const Color(0xFF1A3D6B),
-                                elevation: 0,
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                              icon: const Icon(Icons.remove_red_eye_rounded, size: 14),
-                              label: const Text('View', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                              onPressed: () => _showDocumentViewerDialog(driver, doc),
-                            ),
-                          ],
-                        ),
-                      );
-                    } else {
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF7F8FA),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE9ECF0)),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706), size: 20),
-                                const SizedBox(width: 8),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      docType.replaceAll('_', ' '),
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF6B7785)),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    const Text(
-                                      'Still Pending (Not Uploaded)',
-                                      style: TextStyle(color: Color(0xFFD97706), fontSize: 10, fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFF7E6),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Text(
-                                'Missing',
-                                style: TextStyle(color: Color(0xFFD97706), fontSize: 10, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                  }),
-
-                  const SizedBox(height: 24),
-
-                  // Update Status Actions Panel
-                  if (_isUpdating)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8.0),
-                        child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B))),
-                      ),
-                    )
-                  else if (driver.approvalStatus == 'REJECTED')
-                    const SizedBox.shrink()
-                  else if (driver.approvalStatus == 'SUSPENDED')
-                    Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF6B7785)),
-                              SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Driver is currently suspended. You can activate this driver below.',
-                                  style: TextStyle(
-                                    color: Color(0xFF4A5568),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF0F9B6E),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  elevation: 0,
-                                ),
-                                onPressed: () => _updateStatus('ACTIVATED'),
-                                child: const Text('Activate Driver', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    )
-                  else
-                    Column(
-                      children: [
-                        if (driver.approvalStatus != 'APPROVED') ...[
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: canApprove ? const Color(0xFF0F9B6E) : const Color(0xFFE9ECF0),
-                                    foregroundColor: canApprove ? Colors.white : const Color(0xFFA0AEC0),
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    elevation: 0,
-                                  ),
-                                  onPressed: () {
-                                    if (canApprove) {
-                                      _updateStatus('APPROVED');
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('All documents must be uploaded and approved first.'),
-                                          duration: Duration(seconds: 2),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  child: const Text('Approve Application', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (!canApprove) ...[
-                            const SizedBox(height: 6),
-                            const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.info_outline_rounded, size: 12, color: Color(0xFF6B7785)),
-                                SizedBox(width: 4),
-                                Text(
-                                  'All documents must be uploaded and approved first.',
-                                  style: TextStyle(color: Color(0xFF6B7785), fontSize: 10, fontWeight: FontWeight.w500),
-                                ),
-                              ],
-                            ),
-                          ],
-                          const SizedBox(height: 8),
-                        ],
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.redAccent,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  elevation: 0,
-                                ),
-                                onPressed: () => _updateStatus('REJECTED'),
-                                child: const Text('Reject Application', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (driver.approvalStatus == 'APPROVED') ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF6B7785),
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    elevation: 0,
-                                  ),
-                                  onPressed: () => _updateStatus('SUSPENDED'),
-                                  child: const Text('Suspend Driver', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                ],
-              ),
-            ),
           ),
         );
       },
     );
   }
 }
+
 
 class DocumentViewerDialog extends StatefulWidget {
   final AdminDriverModel driver;
@@ -929,19 +1041,18 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
 
   String _getFormattedDocNo(String docType) {
     final idStr = widget.driver.id.toString().padLeft(4, '0');
-    switch (docType) {
-      case 'AADHAR':
-        return '5321 8842 $idStr';
-      case 'PAN':
-        return 'BJKPD${idStr}G';
-      case 'DRIVING_LICENSE':
-        return 'DL-132026$idStr';
-      case 'RC_BOOK':
-        return 'RC-DL-3C-$idStr';
-      case 'INSURANCE':
-        return 'INS-992384-${widget.driver.id.toString().padLeft(2, '0')}';
-      default:
-        return 'DOC-ID-$idStr';
+    if (docType.startsWith('AADHAAR')) {
+      return '5321 8842 $idStr';
+    } else if (docType == 'PAN_CARD' || docType == 'PAN') {
+      return 'BJKPD${idStr}G';
+    } else if (docType.startsWith('DRIVING_LICENSE')) {
+      return 'DL-132026$idStr';
+    } else if (docType == 'RC_BOOK') {
+      return 'RC-DL-3C-$idStr';
+    } else if (docType == 'INSURANCE') {
+      return 'INS-992384-${widget.driver.id.toString().padLeft(2, '0')}';
+    } else {
+      return 'DOC-ID-$idStr';
     }
   }
 
@@ -951,66 +1062,60 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
     late String cardLabel;
     late IconData cardIcon;
 
-    switch (docType) {
-      case 'AADHAR':
-        cardGradient = const LinearGradient(
-          colors: [Color(0xFF1E3C72), Color(0xFF2A5298)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-        cardTitle = 'AADHAAR CARD';
-        cardLabel = 'Govt. of India • UIDAI';
-        cardIcon = Icons.fingerprint_rounded;
-        break;
-      case 'PAN':
-        cardGradient = const LinearGradient(
-          colors: [Color(0xFF0F2027), Color(0xFF203A43)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-        cardTitle = 'PAN CARD';
-        cardLabel = 'Income Tax Department';
-        cardIcon = Icons.account_balance_wallet_rounded;
-        break;
-      case 'DRIVING_LICENSE':
-        cardGradient = const LinearGradient(
-          colors: [Color(0xFF8A2387), Color(0xFFE94057)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-        cardTitle = 'DRIVING LICENSE';
-        cardLabel = 'Ministry of Road Transport & Highways';
-        cardIcon = Icons.directions_car_rounded;
-        break;
-      case 'RC_BOOK':
-        cardGradient = const LinearGradient(
-          colors: [Color(0xFF11998E), Color(0xFF38EF7D)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-        cardTitle = 'REGISTRATION CERTIFICATE';
-        cardLabel = 'Vehicle Registration Department';
-        cardIcon = Icons.two_wheeler_rounded;
-        break;
-      case 'INSURANCE':
-        cardGradient = const LinearGradient(
-          colors: [Color(0xFF141E30), Color(0xFF243B55)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-        cardTitle = 'VEHICLE INSURANCE';
-        cardLabel = 'Motor Policy Certificate';
-        cardIcon = Icons.verified_user_rounded;
-        break;
-      default:
-        cardGradient = const LinearGradient(
-          colors: [Color(0xFF1A3D6B), Color(0xFF1D5A9C)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-        cardTitle = 'DOCUMENT';
-        cardLabel = 'Verification Source';
-        cardIcon = Icons.description_rounded;
+    if (docType.startsWith('AADHAAR')) {
+      cardGradient = const LinearGradient(
+        colors: [Color(0xFF1E3C72), Color(0xFF2A5298)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+      cardTitle = docType.replaceAll('_', ' ');
+      cardLabel = 'Govt. of India • UIDAI';
+      cardIcon = Icons.fingerprint_rounded;
+    } else if (docType == 'PAN_CARD' || docType == 'PAN') {
+      cardGradient = const LinearGradient(
+        colors: [Color(0xFF0F2027), Color(0xFF203A43)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+      cardTitle = 'PAN CARD';
+      cardLabel = 'Income Tax Department';
+      cardIcon = Icons.account_balance_wallet_rounded;
+    } else if (docType.startsWith('DRIVING_LICENSE')) {
+      cardGradient = const LinearGradient(
+        colors: [Color(0xFF8A2387), Color(0xFFE94057)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+      cardTitle = docType.replaceAll('_', ' ');
+      cardLabel = 'Ministry of Road Transport & Highways';
+      cardIcon = Icons.directions_car_rounded;
+    } else if (docType == 'RC_BOOK') {
+      cardGradient = const LinearGradient(
+        colors: [Color(0xFF11998E), Color(0xFF38EF7D)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+      cardTitle = 'REGISTRATION CERTIFICATE';
+      cardLabel = 'Vehicle Registration Department';
+      cardIcon = Icons.two_wheeler_rounded;
+    } else if (docType == 'INSURANCE') {
+      cardGradient = const LinearGradient(
+        colors: [Color(0xFF141E30), Color(0xFF243B55)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+      cardTitle = 'VEHICLE INSURANCE';
+      cardLabel = 'Motor Policy Certificate';
+      cardIcon = Icons.verified_user_rounded;
+    } else {
+      cardGradient = const LinearGradient(
+        colors: [Color(0xFF1A3D6B), Color(0xFF1D5A9C)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+      cardTitle = 'DOCUMENT';
+      cardLabel = 'Verification Source';
+      cardIcon = Icons.description_rounded;
     }
 
     return Container(
@@ -1300,7 +1405,50 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildCardGraphic(docType, docStatus),
+                Container(
+                  width: double.infinity,
+                  height: 190,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF1F5F9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.visibility_off_rounded,
+                          color: Color(0xFF64748B),
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      const Text(
+                        'Feature Coming Soon',
+                        style: TextStyle(
+                          color: Color(0xFF1E293B),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Document previews are not available in this build.',
+                        style: TextStyle(
+                          color: Color(0xFF64748B),
+                          fontSize: 11,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 16),
                 if (docStatus == 'REJECTED' && rejectionReason != null && rejectionReason.isNotEmpty) ...[
                   Container(
@@ -1341,48 +1489,6 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                   ),
                   const SizedBox(height: 16),
                 ],
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF7F8FA),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFE9ECF0)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.link_rounded, color: Color(0xFF6B7785), size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          fileUrl,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF1A3D6B),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.copy_rounded, color: Color(0xFF1A3D6B), size: 18),
-                        onPressed: () {
-                          Clipboard.setData(ClipboardData(text: fileUrl));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Document link copied to clipboard!'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                        constraints: const BoxConstraints(),
-                        padding: EdgeInsets.zero,
-                      ),
-                    ],
-                  ),
-                ),
                 if (_showRejectInput) ...[
                   const SizedBox(height: 16),
                   Form(
@@ -1890,6 +1996,423 @@ class _UpdateStatusConfirmationDialogState extends State<UpdateStatusConfirmatio
           ),
         ),
       ),
+    );
+  }
+}
+
+class EditDriverDialog extends StatefulWidget {
+  final AdminDriverModel driver;
+  final ValueChanged<AdminDriverModel> onSaved;
+
+  const EditDriverDialog({super.key, required this.driver, required this.onSaved});
+
+  @override
+  State<EditDriverDialog> createState() => _EditDriverDialogState();
+}
+
+class _EditDriverDialogState extends State<EditDriverDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _licenseNoController;
+  late final TextEditingController _licenseExpiryController;
+  late final TextEditingController _insuranceExpiryController;
+  late final TextEditingController _bioController;
+  late final TextEditingController _dobController;
+  late final TextEditingController _registrationNumberController;
+  late final TextEditingController _colorController;
+  late final TextEditingController _mfgYearController;
+
+  String? _gender;
+  String? _vehicleStatus;
+  bool _online = false;
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _licenseNoController = TextEditingController(text: widget.driver.licenseNumber);
+    _licenseExpiryController = TextEditingController(text: widget.driver.licenseExpiry);
+    _insuranceExpiryController = TextEditingController(text: widget.driver.insuranceExpiry);
+    _bioController = TextEditingController(text: widget.driver.bio);
+    _dobController = TextEditingController(text: widget.driver.dob);
+    _registrationNumberController = TextEditingController(text: widget.driver.vehicleNumber);
+    _colorController = TextEditingController(text: widget.driver.color);
+    _mfgYearController = TextEditingController(text: widget.driver.manufacturingYear?.toString());
+
+    _gender = widget.driver.gender;
+    _vehicleStatus = widget.driver.vehicleStatus ?? 'PENDING';
+    _online = widget.driver.isOnline;
+  }
+
+  @override
+  void dispose() {
+    _licenseNoController.dispose();
+    _licenseExpiryController.dispose();
+    _insuranceExpiryController.dispose();
+    _bioController.dispose();
+    _dobController.dispose();
+    _registrationNumberController.dispose();
+    _colorController.dispose();
+    _mfgYearController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selectDate(TextEditingController controller) async {
+    DateTime initialDate = DateTime.now();
+    if (controller.text.isNotEmpty) {
+      try {
+        initialDate = DateTime.parse(controller.text);
+      } catch (_) {}
+    }
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(1940),
+      lastDate: DateTime(2050),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF1A3D6B),
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF1A2233),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (selected != null) {
+      setState(() {
+        controller.text = selected.toIso8601String().split('T')[0];
+      });
+    }
+  }
+
+  void _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    final updateData = {
+      'licenseNumber': _licenseNoController.text.trim(),
+      'licenseExpiry': _licenseExpiryController.text.trim(),
+      'insuranceExpiry': _insuranceExpiryController.text.trim(),
+      'bio': _bioController.text.trim(),
+      'gender': _gender,
+      'dob': _dobController.text.trim(),
+      'online': _online,
+      'registrationNumber': _registrationNumberController.text.trim(),
+      'color': _colorController.text.trim(),
+      'manufacturingYear': int.tryParse(_mfgYearController.text.trim()),
+      'vehicleStatus': _vehicleStatus,
+    };
+
+    final provider = context.read<RiderVerificationProvider>();
+    final result = await provider.updateDriverProfileAdmin(
+      userId: widget.driver.userId,
+      updateData: updateData,
+    );
+
+    if (mounted) {
+      setState(() {
+        _isSubmitting = false;
+      });
+      if (result != null) {
+        widget.onSaved(result);
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Driver details updated successfully!'),
+            backgroundColor: Color(0xFF0F9B6E),
+          ),
+        );
+      } else if (provider.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(provider.errorMessage!),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: Colors.white,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+          maxWidth: 450,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Title
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Edit Driver Information',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Color(0xFF1A2233),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Color(0xFF6B7785), size: 20),
+                    onPressed: () => Navigator.pop(context),
+                    constraints: const BoxConstraints(),
+                    padding: EdgeInsets.zero,
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1, color: Color(0xFFE9ECF0)),
+            // Form fields
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Bio
+                      _buildTextField('Bio', _bioController),
+                      const SizedBox(height: 12),
+                      
+                      // DOB (DatePicker)
+                      _buildDatePickerField('Date of Birth', _dobController),
+                      const SizedBox(height: 12),
+
+                      // Gender Dropdown
+                      _buildDropdownField<String>(
+                        label: 'Gender',
+                        value: _gender,
+                        items: ['MALE', 'FEMALE', 'OTHER'],
+                        onChanged: (val) => setState(() => _gender = val),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // License Number
+                      _buildTextField('License Number', _licenseNoController),
+                      const SizedBox(height: 12),
+
+                      // License Expiry
+                      _buildDatePickerField('License Expiry', _licenseExpiryController),
+                      const SizedBox(height: 12),
+
+                      // Insurance Expiry
+                      _buildDatePickerField('Insurance Expiry', _insuranceExpiryController),
+                      const SizedBox(height: 12),
+
+                      // Registration Number
+                      _buildTextField('Registration Number', _registrationNumberController),
+                      const SizedBox(height: 12),
+
+                      // Color
+                      _buildTextField('Vehicle Color', _colorController),
+                      const SizedBox(height: 12),
+
+                      // Manufacturing Year
+                      _buildTextField(
+                        'Manufacturing Year',
+                        _mfgYearController,
+                        keyboardType: TextInputType.number,
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Vehicle Status Dropdown
+                      _buildDropdownField<String>(
+                        label: 'Vehicle Status',
+                        value: _vehicleStatus,
+                        items: ['PENDING', 'ACTIVE', 'INACTIVE'],
+                        onChanged: (val) => setState(() => _vehicleStatus = val),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Online Status Dropdown
+                      _buildDropdownField<bool>(
+                        label: 'Online Status',
+                        value: _online,
+                        items: [true, false],
+                        itemLabel: (val) => val ? 'Online' : 'Offline',
+                        onChanged: (val) => setState(() => _online = val ?? false),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const Divider(height: 1, color: Color(0xFFE9ECF0)),
+            // Buttons
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel', style: TextStyle(color: Color(0xFF4A5568))),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1A3D6B),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        elevation: 0,
+                      ),
+                      onPressed: _isSubmitting ? null : _submit,
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Text('Save Details', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller, {
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A2233)),
+        ),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          style: const TextStyle(fontSize: 13),
+          decoration: InputDecoration(
+            hintText: 'Enter $label',
+            hintStyle: const TextStyle(color: Color(0xFFB0B8C4), fontSize: 13),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFF1A3D6B), width: 1.5),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDatePickerField(String label, TextEditingController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A2233)),
+        ),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: controller,
+          readOnly: true,
+          style: const TextStyle(fontSize: 13),
+          onTap: () => _selectDate(controller),
+          decoration: InputDecoration(
+            hintText: 'Select $label',
+            hintStyle: const TextStyle(color: Color(0xFFB0B8C4), fontSize: 13),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            suffixIcon: const Icon(Icons.calendar_today_rounded, size: 16, color: Color(0xFF6B7785)),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFF1A3D6B), width: 1.5),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDropdownField<T>({
+    required String label,
+    required T? value,
+    required List<T> items,
+    required ValueChanged<T?> onChanged,
+    String Function(T)? itemLabel,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A2233)),
+        ),
+        const SizedBox(height: 6),
+        DropdownButtonFormField<T>(
+          value: value,
+          onChanged: onChanged,
+          style: const TextStyle(fontSize: 13, color: Color(0xFF1A2233)),
+          decoration: InputDecoration(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFF1A3D6B), width: 1.5),
+            ),
+          ),
+          items: items.map((item) {
+            return DropdownMenuItem<T>(
+              value: item,
+              child: Text(itemLabel != null ? itemLabel(item) : item.toString()),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 }

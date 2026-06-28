@@ -1,6 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:riderzz_app/core/network/api_client.dart';
 import 'package:riderzz_app/core/network/api_constants.dart';
 import 'package:riderzz_app/core/models/user_model.dart';
+import 'package:riderzz_app/core/models/customer_profile_model.dart';
 
 class AuthRemoteDataSource {
   final ApiClient _apiClient;
@@ -11,8 +13,8 @@ class AuthRemoteDataSource {
     final response = await _apiClient.post(
       ApiConstants.sendOtp,
       data: {
-        'destination': phone,
-        'type': 'MOBILE',
+        'phone': phone,
+        'otpType': 'REGISTRATION',
       },
     );
     final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
@@ -28,8 +30,9 @@ class AuthRemoteDataSource {
     final response = await _apiClient.post(
       ApiConstants.register,
       data: {
-        'name': name,
+        'fullName': name,
         'phone': phone,
+        'email': '${phone.trim()}@riderzz.com',
         'password': password,
         'otp': otp,
       },
@@ -42,8 +45,8 @@ class AuthRemoteDataSource {
     final response = await _apiClient.post(
       ApiConstants.sendOtp,
       data: {
-        'destination': phone,
-        'type': 'MOBILE',
+        'phone': phone,
+        'otpType': 'LOGIN',
       },
     );
     final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
@@ -57,9 +60,8 @@ class AuthRemoteDataSource {
     final response = await _apiClient.post(
       ApiConstants.loginVerifyOtp,
       data: {
-        'destination': phone,
+        'phone': phone,
         'otp': otp,
-        'type': 'MOBILE',
       },
     );
     final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
@@ -92,5 +94,45 @@ class AuthRemoteDataSource {
       phone: phone,
       token: nestedData['accessToken'] as String?,
     );
+  }
+
+  Future<CustomerProfileModel> getCustomerProfile() async {
+    final response = await _apiClient.get(ApiConstants.customerProfileMe);
+    final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
+    return CustomerProfileModel.fromJson(data);
+  }
+
+  Future<CustomerProfileModel> updateCustomerProfile({
+    String? dob,
+    String? gender,
+    String? bio,
+    String? emergencyContactName,
+    String? emergencyContactPhone,
+  }) async {
+    final response = await _apiClient.put(
+      ApiConstants.customerProfileUpdate,
+      data: {
+        if (dob != null) 'dob': dob,
+        if (gender != null) 'gender': gender,
+        if (bio != null) 'bio': bio,
+        if (emergencyContactName != null) 'emergencyContactName': emergencyContactName,
+        if (emergencyContactPhone != null) 'emergencyContactPhone': emergencyContactPhone,
+      },
+    );
+    final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
+    return CustomerProfileModel.fromJson(data);
+  }
+
+  Future<String> uploadProfileImage(String filePath, String fileName) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath, filename: fileName),
+    });
+
+    final response = await _apiClient.post(
+      ApiConstants.uploadProfileImage,
+      data: formData,
+    );
+    final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
+    return data['data'] as String;
   }
 }

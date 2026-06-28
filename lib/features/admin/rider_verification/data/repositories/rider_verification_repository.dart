@@ -1,5 +1,7 @@
 import 'package:riderzz_app/features/admin/rider_verification/data/datasource/rider_verification_datasource.dart';
 import 'package:riderzz_app/core/models/driver_wallet_model.dart';
+import 'package:riderzz_app/core/models/admin_driver_model.dart';
+
 
 class RiderVerificationRepository {
   final RiderVerificationRemoteDataSource _remoteDataSource;
@@ -15,6 +17,20 @@ class RiderVerificationRepository {
       page: page,
       size: size,
       status: status,
+    );
+  }
+
+  Future<AdminDriverModel> getDriverById(int userId) async {
+    return await _remoteDataSource.getDriverById(userId);
+  }
+
+  Future<AdminDriverModel> updateDriverProfileAdmin({
+    required int userId,
+    required Map<String, dynamic> updateData,
+  }) async {
+    return await _remoteDataSource.updateDriverProfileAdmin(
+      userId: userId,
+      updateData: updateData,
     );
   }
 

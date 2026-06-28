@@ -13,6 +13,19 @@ class AdminDriverModel {
   final AdminDriverVehicleModel? vehicle;
   final List<AdminDriverDocumentModel> documents;
   final String createdAt;
+  // Full profile fields
+  final String? email;
+  final String? profileImage;
+  final String? vehicleTypeName;
+  final String? color;
+  final int? manufacturingYear;
+  final String? vehicleStatus;
+  final String? licenseExpiry;
+  final String? insuranceExpiry;
+  final String? bio;
+  final String? gender;
+  final String? dob;
+  final String? approvedAt;
 
   AdminDriverModel({
     required this.id,
@@ -29,6 +42,18 @@ class AdminDriverModel {
     this.vehicle,
     required this.documents,
     required this.createdAt,
+    this.email,
+    this.profileImage,
+    this.vehicleTypeName,
+    this.color,
+    this.manufacturingYear,
+    this.vehicleStatus,
+    this.licenseExpiry,
+    this.insuranceExpiry,
+    this.bio,
+    this.gender,
+    this.dob,
+    this.approvedAt,
   });
 
   factory AdminDriverModel.fromJson(Map<String, dynamic> json) {
@@ -43,22 +68,34 @@ class AdminDriverModel {
     }
 
     return AdminDriverModel(
-      id: json['id'] as int? ?? 0,
-      userId: json['userId'] as int? ?? 0,
-      name: json['name'] as String? ?? '',
+      id: json['id'] as int? ?? json['userId'] as int? ?? 0,
+      userId: json['userId'] as int? ?? json['id'] as int? ?? 0,
+      name: json['fullName'] as String? ?? json['name'] as String? ?? '',
       phone: json['phone'] as String? ?? '',
       userStatus: json['userStatus'] as String? ?? 'INACTIVE',
       approvalStatus: json['approvalStatus'] as String? ?? 'PENDING',
       licenseNumber: json['licenseNumber'] as String? ?? '',
-      vehicleNumber: json['vehicleNumber'] as String? ?? '',
-      isOnline: json['isOnline'] as bool? ?? false,
+      vehicleNumber: json['registrationNumber'] as String? ?? json['vehicleNumber'] as String? ?? '',
+      isOnline: json['online'] as bool? ?? json['isOnline'] as bool? ?? false,
       rating: ratingValue,
-      totalTrips: json['totalTrips'] as int? ?? 0,
+      totalTrips: json['completedTrips'] as int? ?? json['totalTrips'] as int? ?? 0,
       vehicle: json['vehicle'] != null
           ? AdminDriverVehicleModel.fromJson(Map<String, dynamic>.from(json['vehicle']))
           : null,
       documents: parsedDocs,
       createdAt: json['createdAt'] as String? ?? '',
+      email: json['email'] as String?,
+      profileImage: json['profileImage'] as String?,
+      vehicleTypeName: json['vehicleTypeName'] as String?,
+      color: json['color'] as String?,
+      manufacturingYear: json['manufacturingYear'] as int?,
+      vehicleStatus: json['vehicleStatus'] as String?,
+      licenseExpiry: json['licenseExpiry'] as String?,
+      insuranceExpiry: json['insuranceExpiry'] as String?,
+      bio: json['bio'] as String?,
+      gender: json['gender'] as String?,
+      dob: json['dob'] as String?,
+      approvedAt: json['approvedAt'] as String?,
     );
   }
 }
@@ -131,9 +168,9 @@ class AdminDriverDocumentModel {
 
   factory AdminDriverDocumentModel.fromJson(Map<String, dynamic> json) {
     return AdminDriverDocumentModel(
-      id: json['id'] as int? ?? 0,
-      docType: json['docType'] as String? ?? '',
-      fileUrl: json['fileUrl'] as String? ?? '',
+      id: json['documentId'] as int? ?? json['id'] as int? ?? 0,
+      docType: json['documentType'] as String? ?? json['docType'] as String? ?? '',
+      fileUrl: json['documentUrl'] as String? ?? json['fileUrl'] as String? ?? '',
       status: json['status'] as String? ?? 'PENDING',
       rejectionReason: json['rejectionReason'] as String?,
       uploadedAt: json['uploadedAt'] as String? ?? '',

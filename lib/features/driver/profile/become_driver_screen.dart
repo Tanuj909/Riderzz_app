@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -21,21 +23,31 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
   final _formKey = GlobalKey<FormState>();
   final _licenseController = TextEditingController();
   final _plateController = TextEditingController();
+  final _colorController = TextEditingController(text: 'White');
+  final _yearController = TextEditingController(text: '2020');
+  final _licenseExpiryController = TextEditingController(text: '2028-06-30');
+  final _insuranceExpiryController = TextEditingController(text: '2025-12-31');
+  final _bioController = TextEditingController(text: 'Experienced goods delivery driver');
+  String _selectedGender = 'MALE';
   
-  // Document text inputs (pre-filled for premium user convenience)
-  final _aadharController = TextEditingController(text: 'https://cdn.riderzz.com/docs/aadhar.pdf');
-  final _panController = TextEditingController(text: 'https://cdn.riderzz.com/docs/pan.pdf');
-  final _dlDocController = TextEditingController(text: 'https://cdn.riderzz.com/docs/license.pdf');
-  final _rcBookController = TextEditingController(text: 'https://cdn.riderzz.com/docs/rc_book.pdf');
-  final _insuranceController = TextEditingController(text: 'https://cdn.riderzz.com/docs/insurance.pdf');
+  // Document text inputs
+  final _aadharFrontController = TextEditingController();
+  final _aadharBackController = TextEditingController();
+  final _panCardController = TextEditingController();
+  final _dlFrontController = TextEditingController();
+  final _dlBackController = TextEditingController();
+  final _rcBookController = TextEditingController();
+  final _insuranceController = TextEditingController();
 
   AvailableVehicleModel? _selectedVehicle;
 
   // Image picker and picked file references
   final ImagePicker _picker = ImagePicker();
-  XFile? _aadharFile;
-  XFile? _panFile;
-  XFile? _dlFile;
+  XFile? _aadharFrontFile;
+  XFile? _aadharBackFile;
+  XFile? _panCardFile;
+  XFile? _dlFrontFile;
+  XFile? _dlBackFile;
   XFile? _rcBookFile;
   XFile? _insuranceFile;
 
@@ -53,9 +65,16 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
   void dispose() {
     _licenseController.dispose();
     _plateController.dispose();
-    _aadharController.dispose();
-    _panController.dispose();
-    _dlDocController.dispose();
+    _colorController.dispose();
+    _yearController.dispose();
+    _licenseExpiryController.dispose();
+    _insuranceExpiryController.dispose();
+    _bioController.dispose();
+    _aadharFrontController.dispose();
+    _aadharBackController.dispose();
+    _panCardController.dispose();
+    _dlFrontController.dispose();
+    _dlBackController.dispose();
     _rcBookController.dispose();
     _insuranceController.dispose();
     super.dispose();
@@ -73,9 +92,11 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
     }
 
     if (_formKey.currentState!.validate()) {
-      if (_aadharController.text.trim().isEmpty ||
-          _panController.text.trim().isEmpty ||
-          _dlDocController.text.trim().isEmpty ||
+      if (_aadharFrontController.text.trim().isEmpty ||
+          _aadharBackController.text.trim().isEmpty ||
+          _panCardController.text.trim().isEmpty ||
+          _dlFrontController.text.trim().isEmpty ||
+          _dlBackController.text.trim().isEmpty ||
           _rcBookController.text.trim().isEmpty ||
           _insuranceController.text.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -88,28 +109,34 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
       }
 
       final body = {
+        "vehicleId": _selectedVehicle!.id,
+        "registrationNumber": _plateController.text.trim(),
+        "color": _colorController.text.trim(),
+        "manufacturingYear": int.tryParse(_yearController.text.trim()) ?? 2020,
         "licenseNumber": _licenseController.text.trim(),
-        "vehicleNumber": _plateController.text.trim(),
-        "vehicle": {
-          "id": _selectedVehicle!.id,
-          "vehicleTypeId": _selectedVehicle!.vehicleTypeId,
-          "vehicleTypeName": _selectedVehicle!.vehicleTypeName,
-          "make": _selectedVehicle!.make,
-          "model": _selectedVehicle!.model,
-          "vehicleNumber": _plateController.text.trim(),
-          "perKmRate": _selectedVehicle!.perKmRate,
-          "status": "APPROVED",
-          "existing": true
-        }
+        "licenseExpiry": _licenseExpiryController.text.trim(),
+        "insuranceExpiry": _insuranceExpiryController.text.trim(),
+        "bio": _bioController.text.trim(),
+        "gender": _selectedGender,
       };
+
+      final aadharFrontPath = await _getUploadPath(_aadharFrontFile, 'aadhar_front');
+      final aadharBackPath = await _getUploadPath(_aadharBackFile, 'aadhar_back');
+      final panCardPath = await _getUploadPath(_panCardFile, 'pan_card');
+      final dlFrontPath = await _getUploadPath(_dlFrontFile, 'dl_front');
+      final dlBackPath = await _getUploadPath(_dlBackFile, 'dl_back');
+      final rcBookPath = await _getUploadPath(_rcBookFile, 'rc_book');
+      final insurancePath = await _getUploadPath(_insuranceFile, 'insurance');
 
       final success = await provider.applyAsDriver(
         body,
-        aadharUrl: _aadharController.text.trim(),
-        panUrl: _panController.text.trim(),
-        dlUrl: _dlDocController.text.trim(),
-        rcBookUrl: _rcBookController.text.trim(),
-        insuranceUrl: _insuranceController.text.trim(),
+        aadharFrontPath: aadharFrontPath,
+        aadharBackPath: aadharBackPath,
+        panCardPath: panCardPath,
+        dlFrontPath: dlFrontPath,
+        dlBackPath: dlBackPath,
+        rcBookPath: rcBookPath,
+        insurancePath: insurancePath,
       );
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -121,12 +148,20 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
         setState(() {
           _forceShowForm = false;
           _currentStep = 1;
-          _aadharFile = null;
-          _panFile = null;
-          _dlFile = null;
-          _aadharController.text = 'https://cdn.riderzz.com/docs/aadhar.pdf';
-          _panController.text = 'https://cdn.riderzz.com/docs/pan.pdf';
-          _dlDocController.text = 'https://cdn.riderzz.com/docs/license.pdf';
+          _aadharFrontFile = null;
+          _aadharBackFile = null;
+          _panCardFile = null;
+          _dlFrontFile = null;
+          _dlBackFile = null;
+          _rcBookFile = null;
+          _insuranceFile = null;
+          _aadharFrontController.clear();
+          _aadharBackController.clear();
+          _panCardController.clear();
+          _dlFrontController.clear();
+          _dlBackController.clear();
+          _rcBookController.clear();
+          _insuranceController.clear();
         });
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -164,15 +199,21 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
       if (image != null) {
         final fileUrl = 'https://cdn.riderzz.com/docs/uploaded_${image.name}';
         setState(() {
-          if (type == 'AADHAR') {
-            _aadharFile = image;
-            _aadharController.text = fileUrl;
-          } else if (type == 'PAN') {
-            _panFile = image;
-            _panController.text = fileUrl;
-          } else if (type == 'DRIVING_LICENSE' || type == 'DL') {
-            _dlFile = image;
-            _dlDocController.text = fileUrl;
+          if (type == 'AADHAAR_FRONT') {
+            _aadharFrontFile = image;
+            _aadharFrontController.text = fileUrl;
+          } else if (type == 'AADHAAR_BACK') {
+            _aadharBackFile = image;
+            _aadharBackController.text = fileUrl;
+          } else if (type == 'PAN_CARD') {
+            _panCardFile = image;
+            _panCardController.text = fileUrl;
+          } else if (type == 'DRIVING_LICENSE_FRONT') {
+            _dlFrontFile = image;
+            _dlFrontController.text = fileUrl;
+          } else if (type == 'DRIVING_LICENSE_BACK') {
+            _dlBackFile = image;
+            _dlBackController.text = fileUrl;
           } else if (type == 'RC_BOOK') {
             _rcBookFile = image;
             _rcBookController.text = fileUrl;
@@ -184,8 +225,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
 
         // If user already has a profile (submitted/pending/rejected), upload immediately!
         if (provider.profile != null) {
-          final docType = (type == 'DL' || type == 'DRIVING_LICENSE') ? 'DRIVING_LICENSE' : type;
-          final uploadSuccess = await provider.uploadDocument(docType, fileUrl);
+          final uploadSuccess = await provider.uploadDocument(type, image.path);
           if (uploadSuccess && mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -212,6 +252,16 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
         ),
       );
     }
+  }
+
+  Future<String> _getUploadPath(XFile? file, String prefix) async {
+    if (file != null) return file.path;
+    final tempDir = await getTemporaryDirectory();
+    final tempFile = File('${tempDir.path}/dummy_${prefix}_doc.png');
+    if (!await tempFile.exists()) {
+      await tempFile.writeAsString('Dummy document content for $prefix');
+    }
+    return tempFile.path;
   }
 
   Widget _buildDocumentUploadCard({
@@ -245,11 +295,11 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
     Color statusBadgeColor = Colors.grey;
 
     if (hasFile) {
-      cardBgColor = const Color(0xFFEFF6FF);
-      cardBorderColor = const Color(0xFFBFDBFE);
+      cardBgColor = const Color(0xFFEEF2FF);
+      cardBorderColor = const Color(0xFFE0E7FF);
       cardBorderWidth = 1.2;
-      iconBgColor = const Color(0xFFDBEAFE);
-      iconColor = const Color(0xFF1E40AF);
+      iconBgColor = const Color(0xFFE0E7FF);
+      iconColor = const Color(0xFF4F46E5);
       cardIcon = Icons.file_present_rounded;
     } else if (existingDoc != null) {
       final status = existingDoc.status.toUpperCase();
@@ -272,14 +322,14 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
         statusBadgeText = 'REJECTED';
         statusBadgeColor = const Color(0xFFDC2626);
       } else {
-        cardBgColor = const Color(0xFFFFF7ED);
-        cardBorderColor = const Color(0xFFFFEDD5);
+        cardBgColor = const Color(0xFFF0F9FF);
+        cardBorderColor = const Color(0xFFE0F2FE);
         cardBorderWidth = 1.2;
-        iconBgColor = const Color(0xFFFFEDD5);
-        iconColor = const Color(0xFFC2410C);
+        iconBgColor = const Color(0xFFE0F2FE);
+        iconColor = const Color(0xFF0284C7);
         cardIcon = Icons.hourglass_empty_rounded;
         statusBadgeText = 'PENDING';
-        statusBadgeColor = const Color(0xFFEA580C);
+        statusBadgeColor = const Color(0xFF0284C7);
       }
     }
 
@@ -287,7 +337,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
         ? pickedFile.name 
         : (existingDoc != null 
             ? existingDoc.fileUrl.split("/").last 
-            : '$defaultFileName (Auto-attached)');
+            : 'No file selected');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -879,6 +929,140 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
               return null;
             },
           ),
+          const SizedBox(height: 20),
+
+          // Vehicle Color and Manufacturing Year
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Vehicle Color',
+                      style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _colorController,
+                      style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                      decoration: _buildInputDecoration('e.g. White', Icons.color_lens_outlined),
+                      validator: (value) => value == null || value.trim().isEmpty ? 'Color is required' : null,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Manufacturing Year',
+                      style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _yearController,
+                      keyboardType: TextInputType.number,
+                      style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                      decoration: _buildInputDecoration('e.g. 2020', Icons.calendar_today_outlined),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) return 'Year is required';
+                        if (int.tryParse(value.trim()) == null) return 'Enter valid year';
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // License Expiry and Insurance Expiry Dates
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'License Expiry',
+                      style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _licenseExpiryController,
+                      style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                      decoration: _buildInputDecoration('YYYY-MM-DD', Icons.date_range_outlined),
+                      validator: (value) => value == null || value.trim().isEmpty ? 'Expiry required' : null,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Insurance Expiry',
+                      style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _insuranceExpiryController,
+                      style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                      decoration: _buildInputDecoration('YYYY-MM-DD', Icons.date_range_outlined),
+                      validator: (value) => value == null || value.trim().isEmpty ? 'Expiry required' : null,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Driver Bio
+          const Text(
+            'Short Bio / Experience',
+            style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _bioController,
+            maxLines: 2,
+            style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+            decoration: _buildInputDecoration('Describe your experience...', Icons.info_outline),
+            validator: (value) => value == null || value.trim().isEmpty ? 'Bio is required' : null,
+          ),
+          const SizedBox(height: 20),
+
+          // Gender Selection Dropdown
+          const Text(
+            'Gender',
+            style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: _selectedGender,
+            style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+            decoration: _buildInputDecoration('Select Gender', Icons.people_outline),
+            dropdownColor: Colors.white,
+            items: const [
+              DropdownMenuItem(value: 'MALE', child: Text('Male')),
+              DropdownMenuItem(value: 'FEMALE', child: Text('Female')),
+              DropdownMenuItem(value: 'OTHER', child: Text('Other')),
+            ],
+            onChanged: (val) {
+              if (val != null) {
+                setState(() {
+                  _selectedGender = val;
+                });
+              }
+            },
+          ),
           const SizedBox(height: 24),
 
           // Upload Document Cards section
@@ -894,29 +1078,47 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
           const SizedBox(height: 16),
 
           _buildDocumentUploadCard(
-            title: 'Aadhar Card',
-            documentType: 'AADHAR',
-            pickedFile: _aadharFile,
-            defaultUrl: _aadharController.text,
-            onTap: () => _pickDocument('AADHAR', driverProvider),
+            title: 'Aadhaar Card Front',
+            documentType: 'AADHAAR_FRONT',
+            pickedFile: _aadharFrontFile,
+            defaultUrl: _aadharFrontController.text,
+            onTap: () => _pickDocument('AADHAAR_FRONT', driverProvider),
+            profile: driverProvider.profile,
+          ),
+
+          _buildDocumentUploadCard(
+            title: 'Aadhaar Card Back',
+            documentType: 'AADHAAR_BACK',
+            pickedFile: _aadharBackFile,
+            defaultUrl: _aadharBackController.text,
+            onTap: () => _pickDocument('AADHAAR_BACK', driverProvider),
             profile: driverProvider.profile,
           ),
 
           _buildDocumentUploadCard(
             title: 'PAN Card',
-            documentType: 'PAN',
-            pickedFile: _panFile,
-            defaultUrl: _panController.text,
-            onTap: () => _pickDocument('PAN', driverProvider),
+            documentType: 'PAN_CARD',
+            pickedFile: _panCardFile,
+            defaultUrl: _panCardController.text,
+            onTap: () => _pickDocument('PAN_CARD', driverProvider),
             profile: driverProvider.profile,
           ),
 
           _buildDocumentUploadCard(
-            title: 'Driving License',
-            documentType: 'DRIVING_LICENSE',
-            pickedFile: _dlFile,
-            defaultUrl: _dlDocController.text,
-            onTap: () => _pickDocument('DRIVING_LICENSE', driverProvider),
+            title: 'Driving License Front',
+            documentType: 'DRIVING_LICENSE_FRONT',
+            pickedFile: _dlFrontFile,
+            defaultUrl: _dlFrontController.text,
+            onTap: () => _pickDocument('DRIVING_LICENSE_FRONT', driverProvider),
+            profile: driverProvider.profile,
+          ),
+
+          _buildDocumentUploadCard(
+            title: 'Driving License Back',
+            documentType: 'DRIVING_LICENSE_BACK',
+            pickedFile: _dlBackFile,
+            defaultUrl: _dlBackController.text,
+            onTap: () => _pickDocument('DRIVING_LICENSE_BACK', driverProvider),
             profile: driverProvider.profile,
           ),
 
@@ -1019,22 +1221,22 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Elegant modern status banner
+          // Elegant compact soft-blue status banner
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFF7ED),
+              color: const Color(0xFFF0F9FF),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFFFEDD5)),
+              border: Border.all(color: const Color(0xFFE0F2FE)),
             ),
             child: Row(
               children: [
                 const SizedBox(
-                  width: 20,
-                  height: 20,
+                  width: 16,
+                  height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFEA580C)),
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0284C7)),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -1045,18 +1247,18 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                       const Text(
                         'Application Pending Review',
                         style: TextStyle(
-                          color: Color(0xFFC2410C),
-                          fontSize: 15,
+                          color: Color(0xFF0369A1),
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       const Text(
                         'Your details and documents are under review. We will notify you once approved.',
                         style: TextStyle(
-                          color: Color(0xFFEA580C),
-                          fontSize: 12,
-                          height: 1.4,
+                          color: Color(0xFF0284C7),
+                          fontSize: 11,
+                          height: 1.3,
                         ),
                       ),
                     ],
@@ -1065,7 +1267,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // Submitted Details Card
           Container(
@@ -1086,15 +1288,15 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                 _buildDetailRow('Submission Date', _formatDateTime(profile.createdAt)),
                 _buildDetailRow('License Number', profile.licenseNumber),
                 _buildDetailRow('Vehicle Plate Number', profile.vehicleNumber),
-                if (profile.vehicle != null) ...[
-                  _buildDetailRow('Vehicle Type', profile.vehicle!.vehicleTypeName),
-                  _buildDetailRow('Vehicle Make/Model', '${profile.vehicle!.make} ${profile.vehicle!.model}'),
-                ],
+                _buildDetailRow('Vehicle Type', profile.vehicleTypeName.isNotEmpty ? profile.vehicleTypeName : (profile.vehicle?.vehicleTypeName ?? 'N/A')),
                 _buildDetailRow('Documents Status', '${profile.documents.length} Uploaded (Pending Verification)'),
               ],
             ),
           ),
+          _buildCollapsibleProfileDetails(profile),
           const SizedBox(height: 24),
+
+          // Document section header
           const Text(
             'Verification Documents 📁',
             style: TextStyle(color: Color(0xFF1A2233), fontSize: 14, fontWeight: FontWeight.bold),
@@ -1106,30 +1308,49 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
           ),
           const SizedBox(height: 16),
 
+          // Document Upload Cards (Pending status shows here)
           _buildDocumentUploadCard(
-            title: 'Aadhar Card',
-            documentType: 'AADHAR',
-            pickedFile: _aadharFile,
-            defaultUrl: _aadharController.text,
-            onTap: () => _pickDocument('AADHAR', driverProvider),
+            title: 'Aadhaar Card Front',
+            documentType: 'AADHAAR_FRONT',
+            pickedFile: _aadharFrontFile,
+            defaultUrl: _aadharFrontController.text,
+            onTap: () => _pickDocument('AADHAAR_FRONT', driverProvider),
+            profile: profile,
+          ),
+
+          _buildDocumentUploadCard(
+            title: 'Aadhaar Card Back',
+            documentType: 'AADHAAR_BACK',
+            pickedFile: _aadharBackFile,
+            defaultUrl: _aadharBackController.text,
+            onTap: () => _pickDocument('AADHAAR_BACK', driverProvider),
             profile: profile,
           ),
 
           _buildDocumentUploadCard(
             title: 'PAN Card',
-            documentType: 'PAN',
-            pickedFile: _panFile,
-            defaultUrl: _panController.text,
-            onTap: () => _pickDocument('PAN', driverProvider),
+            documentType: 'PAN_CARD',
+            pickedFile: _panCardFile,
+            defaultUrl: _panCardController.text,
+            onTap: () => _pickDocument('PAN_CARD', driverProvider),
             profile: profile,
           ),
 
           _buildDocumentUploadCard(
-            title: 'Driving License',
-            documentType: 'DRIVING_LICENSE',
-            pickedFile: _dlFile,
-            defaultUrl: _dlDocController.text,
-            onTap: () => _pickDocument('DRIVING_LICENSE', driverProvider),
+            title: 'Driving License Front',
+            documentType: 'DRIVING_LICENSE_FRONT',
+            pickedFile: _dlFrontFile,
+            defaultUrl: _dlFrontController.text,
+            onTap: () => _pickDocument('DRIVING_LICENSE_FRONT', driverProvider),
+            profile: profile,
+          ),
+
+          _buildDocumentUploadCard(
+            title: 'Driving License Back',
+            documentType: 'DRIVING_LICENSE_BACK',
+            pickedFile: _dlBackFile,
+            defaultUrl: _dlBackController.text,
+            onTap: () => _pickDocument('DRIVING_LICENSE_BACK', driverProvider),
             profile: profile,
           ),
 
@@ -1152,7 +1373,21 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
           ),
           const SizedBox(height: 24),
 
-          // View All Details Button
+          // Grouped Buttons at the Bottom
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1A3D6B),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            icon: const Icon(Icons.edit_rounded, size: 18),
+            label: const Text('Update Profile Details', style: TextStyle(fontWeight: FontWeight.bold)),
+            onPressed: () => _showEditProfileBottomSheet(profile),
+          ),
+          const SizedBox(height: 12),
+
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Color(0xFF1A3D6B)),
@@ -1166,7 +1401,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
               style: TextStyle(color: Color(0xFF1A3D6B), fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -1249,29 +1484,29 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                       const SizedBox(height: 12),
                       _buildDetailRow('Full Name', profile.name),
                       _buildDetailRow('Phone Number', profile.phone),
-                      _buildDetailRow('User Status', profile.userStatus),
+                      _buildDetailRow('Gender', profile.gender),
+                      _buildDetailRow('Date of Birth', (profile.dob != null && profile.dob!.isNotEmpty) ? profile.dob! : 'N/A'),
+                      _buildDetailRow('Bio', profile.bio.isNotEmpty ? profile.bio : 'N/A'),
                       _buildDetailRow('Approval Status', profile.approvalStatus),
-                      _buildDetailRow('License Number', profile.licenseNumber),
                       _buildDetailRow('Rating', profile.rating.toStringAsFixed(2)),
-                      _buildDetailRow('Total Trips', profile.totalTrips.toString()),
+                      _buildDetailRow('Completed Trips', profile.totalTrips.toString()),
+                      _buildDetailRow('License Number', profile.licenseNumber),
+                      _buildDetailRow('License Expiry', profile.licenseExpiry.isNotEmpty ? profile.licenseExpiry : 'N/A'),
+                      _buildDetailRow('Insurance Expiry', profile.insuranceExpiry.isNotEmpty ? profile.insuranceExpiry : 'N/A'),
                       _buildDetailRow('Submitted On', _formatDateTime(profile.createdAt)),
+                      if (profile.approvedAt != null && profile.approvedAt!.isNotEmpty)
+                        _buildDetailRow('Approved At', _formatDateTime(profile.approvedAt!)),
 
                       const SizedBox(height: 24),
 
                       // Vehicle Info
                       _buildSectionHeader('Vehicle Information', Icons.directions_car_outlined),
                       const SizedBox(height: 12),
-                      _buildDetailRow('License Plate Number', profile.vehicleNumber),
-                      if (profile.vehicle != null) ...[
-                        _buildDetailRow('Vehicle Category', profile.vehicle!.vehicleTypeName),
-                        _buildDetailRow('Make', profile.vehicle!.make),
-                        _buildDetailRow('Model', profile.vehicle!.model),
-                        _buildDetailRow('Per Km Rate', '₹${profile.vehicle!.perKmRate.toStringAsFixed(2)}'),
-                        _buildDetailRow('Max Weight', '${profile.vehicle!.maxWeightKg} Kg'),
-                        _buildDetailRow('Vehicle Status', profile.vehicle!.status),
-                        if (profile.vehicle!.approvedAt != null)
-                          _buildDetailRow('Approved At', _formatDateTime(profile.vehicle!.approvedAt!)),
-                      ],
+                      _buildDetailRow('Vehicle Type', profile.vehicleTypeName.isNotEmpty ? profile.vehicleTypeName : (profile.vehicle?.vehicleTypeName ?? 'N/A')),
+                      _buildDetailRow('Registration Number', profile.vehicleNumber),
+                      _buildDetailRow('Vehicle Color', profile.color.isNotEmpty ? profile.color : 'N/A'),
+                      _buildDetailRow('Manufacturing Year', profile.manufacturingYear.toString()),
+                      _buildDetailRow('Vehicle Status', profile.vehicleStatus),
 
                       const SizedBox(height: 24),
 
@@ -1285,12 +1520,230 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                         )
                       else
                         ...profile.documents.map((doc) => _buildDocumentItem(doc)),
+                      const SizedBox(height: 20),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1A3D6B),
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 48),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                        icon: const Icon(Icons.edit_rounded, size: 18),
+                        label: const Text('Edit Profile Details', style: TextStyle(fontWeight: FontWeight.bold)),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _showEditProfileBottomSheet(profile);
+                        },
+                      ),
                     ],
                   ),
                 ),
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  void _showEditProfileBottomSheet(DriverProfileModel profile) {
+    final licenseController = TextEditingController(text: profile.licenseNumber);
+    final bioController = TextEditingController(text: profile.bio);
+    final dobController = TextEditingController(text: (profile.dob != null && profile.dob!.isNotEmpty) ? profile.dob : '1992-03-20');
+    String genderValue = profile.gender.isNotEmpty ? profile.gender : 'MALE';
+    final formKey = GlobalKey<FormState>();
+    bool isSaving = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+              child: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE9ECF0),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Edit Profile Details',
+                            style: TextStyle(
+                              color: Color(0xFF1A2233),
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, color: Color(0xFF6B7785)),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 16, color: Color(0xFFE9ECF0)),
+                      const SizedBox(height: 12),
+
+                      // License Number
+                      const Text(
+                        'License Number',
+                        style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: licenseController,
+                        style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                        decoration: _buildInputDecoration('License Number', Icons.badge_outlined),
+                        validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // DOB
+                      const Text(
+                        'Date of Birth',
+                        style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: dobController,
+                        style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                        decoration: _buildInputDecoration('YYYY-MM-DD', Icons.date_range_outlined),
+                        validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Gender
+                      const Text(
+                        'Gender',
+                        style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: genderValue,
+                        style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                        decoration: _buildInputDecoration('Gender', Icons.people_outline),
+                        dropdownColor: Colors.white,
+                        items: const [
+                          DropdownMenuItem(value: 'MALE', child: Text('Male')),
+                          DropdownMenuItem(value: 'FEMALE', child: Text('Female')),
+                          DropdownMenuItem(value: 'OTHER', child: Text('Other')),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            setSheetState(() {
+                              genderValue = val;
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Bio
+                      const Text(
+                        'Bio / Experience',
+                        style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: bioController,
+                        maxLines: 2,
+                        style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                        decoration: _buildInputDecoration('Short Bio', Icons.info_outline),
+                        validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Action Buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: Color(0xFFE9ECF0)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                              ),
+                              onPressed: isSaving ? null : () => Navigator.pop(context),
+                              child: const Text('Cancel', style: TextStyle(color: Color(0xFF6B7785), fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF1A3D6B),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                              ),
+                              onPressed: isSaving ? null : () async {
+                                if (!formKey.currentState!.validate()) return;
+                                setSheetState(() {
+                                  isSaving = true;
+                                });
+                                final provider = context.read<DriverHomeProvider>();
+                                final success = await provider.updateProfile(
+                                  licenseNumber: licenseController.text.trim(),
+                                  bio: bioController.text.trim(),
+                                  gender: genderValue,
+                                  dob: dobController.text.trim(),
+                                );
+                                setSheetState(() {
+                                  isSaving = false;
+                                });
+                                if (context.mounted) {
+                                  Navigator.pop(context);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(success ? 'Profile updated successfully!' : (provider.errorMessage ?? 'Update failed.')),
+                                      backgroundColor: success ? const Color(0xFF0F9B6E) : Colors.redAccent,
+                                    ),
+                                  );
+                                }
+                              },
+                              child: isSaving
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    )
+                                  : const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -1480,14 +1933,25 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                 _buildDetailRow('Submission Date', _formatDateTime(profile.createdAt)),
                 _buildDetailRow('License Number', profile.licenseNumber),
                 _buildDetailRow('Vehicle Plate', profile.vehicleNumber),
-                if (profile.vehicle != null) ...[
-                  _buildDetailRow('Vehicle Category', profile.vehicle!.vehicleTypeName),
-                  _buildDetailRow('Vehicle Model', '${profile.vehicle!.make} ${profile.vehicle!.model}'),
-                ],
+                _buildDetailRow('Vehicle Type', profile.vehicleTypeName.isNotEmpty ? profile.vehicleTypeName : (profile.vehicle?.vehicleTypeName ?? 'N/A')),
               ],
             ),
           ),
-          const SizedBox(height: 36),
+          _buildCollapsibleProfileDetails(profile),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1A3D6B),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            icon: const Icon(Icons.edit_rounded, size: 18),
+            label: const Text('Update Profile Details', style: TextStyle(fontWeight: FontWeight.bold)),
+            onPressed: () => _showEditProfileBottomSheet(profile),
+          ),
+          const SizedBox(height: 24),
 
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -1606,29 +2070,47 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
           const SizedBox(height: 16),
 
           _buildDocumentUploadCard(
-            title: 'Aadhar Card',
-            documentType: 'AADHAR',
-            pickedFile: _aadharFile,
-            defaultUrl: _aadharController.text,
-            onTap: () => _pickDocument('AADHAR', driverProvider),
+            title: 'Aadhaar Card Front',
+            documentType: 'AADHAAR_FRONT',
+            pickedFile: _aadharFrontFile,
+            defaultUrl: _aadharFrontController.text,
+            onTap: () => _pickDocument('AADHAAR_FRONT', driverProvider),
+            profile: profile,
+          ),
+
+          _buildDocumentUploadCard(
+            title: 'Aadhaar Card Back',
+            documentType: 'AADHAAR_BACK',
+            pickedFile: _aadharBackFile,
+            defaultUrl: _aadharBackController.text,
+            onTap: () => _pickDocument('AADHAAR_BACK', driverProvider),
             profile: profile,
           ),
 
           _buildDocumentUploadCard(
             title: 'PAN Card',
-            documentType: 'PAN',
-            pickedFile: _panFile,
-            defaultUrl: _panController.text,
-            onTap: () => _pickDocument('PAN', driverProvider),
+            documentType: 'PAN_CARD',
+            pickedFile: _panCardFile,
+            defaultUrl: _panCardController.text,
+            onTap: () => _pickDocument('PAN_CARD', driverProvider),
             profile: profile,
           ),
 
           _buildDocumentUploadCard(
-            title: 'Driving License',
-            documentType: 'DRIVING_LICENSE',
-            pickedFile: _dlFile,
-            defaultUrl: _dlDocController.text,
-            onTap: () => _pickDocument('DRIVING_LICENSE', driverProvider),
+            title: 'Driving License Front',
+            documentType: 'DRIVING_LICENSE_FRONT',
+            pickedFile: _dlFrontFile,
+            defaultUrl: _dlFrontController.text,
+            onTap: () => _pickDocument('DRIVING_LICENSE_FRONT', driverProvider),
+            profile: profile,
+          ),
+
+          _buildDocumentUploadCard(
+            title: 'Driving License Back',
+            documentType: 'DRIVING_LICENSE_BACK',
+            pickedFile: _dlBackFile,
+            defaultUrl: _dlBackController.text,
+            onTap: () => _pickDocument('DRIVING_LICENSE_BACK', driverProvider),
             profile: profile,
           ),
 
@@ -1648,6 +2130,21 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
             defaultUrl: _insuranceController.text,
             onTap: () => _pickDocument('INSURANCE', driverProvider),
             profile: profile,
+          ),
+          const SizedBox(height: 24),
+          _buildCollapsibleProfileDetails(profile),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1A3D6B),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            icon: const Icon(Icons.edit_rounded, size: 18),
+            label: const Text('Update Profile Details', style: TextStyle(fontWeight: FontWeight.bold)),
+            onPressed: () => _showEditProfileBottomSheet(profile),
           ),
           const SizedBox(height: 36),
 
@@ -1701,6 +2198,53 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCollapsibleProfileDetails(DriverProfileModel profile) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12, bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE9ECF0)),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          leading: const Icon(Icons.info_outline_rounded, color: Color(0xFF1A3D6B)),
+          title: const Text(
+            'View Full Profile Details',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1A2233)),
+          ),
+          subtitle: const Text(
+            'Tap to view dates, bio, gender, color etc.',
+            style: TextStyle(fontSize: 10, color: Color(0xFF6B7785)),
+          ),
+          childrenPadding: const EdgeInsets.all(16),
+          children: [
+            _buildDetailRow('Full Name', profile.name),
+            _buildDetailRow('Phone Number', profile.phone),
+            _buildDetailRow('Gender', profile.gender),
+            _buildDetailRow('Date of Birth', (profile.dob != null && profile.dob!.isNotEmpty) ? profile.dob! : 'N/A'),
+            _buildDetailRow('Bio / Intro', profile.bio.isNotEmpty ? profile.bio : 'N/A'),
+            _buildDetailRow('Approval Status', profile.approvalStatus),
+            _buildDetailRow('Rating', profile.rating.toStringAsFixed(2)),
+            _buildDetailRow('Completed Trips', profile.totalTrips.toString()),
+            _buildDetailRow('License Number', profile.licenseNumber),
+            _buildDetailRow('License Expiry', profile.licenseExpiry.isNotEmpty ? profile.licenseExpiry : 'N/A'),
+            _buildDetailRow('Insurance Expiry', profile.insuranceExpiry.isNotEmpty ? profile.insuranceExpiry : 'N/A'),
+            _buildDetailRow('Vehicle Type', profile.vehicleTypeName.isNotEmpty ? profile.vehicleTypeName : (profile.vehicle?.vehicleTypeName ?? 'N/A')),
+            _buildDetailRow('Registration Number', profile.vehicleNumber),
+            _buildDetailRow('Vehicle Color', profile.color.isNotEmpty ? profile.color : 'N/A'),
+            _buildDetailRow('Manufacturing Year', profile.manufacturingYear.toString()),
+            _buildDetailRow('Vehicle Status', profile.vehicleStatus),
+            _buildDetailRow('Submitted On', _formatDateTime(profile.createdAt)),
+            if (profile.approvedAt != null && profile.approvedAt!.isNotEmpty)
+              _buildDetailRow('Approved At', _formatDateTime(profile.approvedAt!)),
+          ],
+        ),
       ),
     );
   }

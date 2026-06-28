@@ -32,15 +32,25 @@ class DriverRepository {
     return await _remoteDataSource.getAvailableVehicles();
   }
 
+  Future<DriverProfileModel> updateDriverProfile({
+    required String licenseNumber,
+    required String bio,
+    required String gender,
+    required String dob,
+  }) async {
+    return await _remoteDataSource.updateDriverProfile(
+      licenseNumber: licenseNumber,
+      bio: bio,
+      gender: gender,
+      dob: dob,
+    );
+  }
+
   Future<void> applyDriver(Map<String, dynamic> data) async {
     await _remoteDataSource.applyDriver(data);
   }
 
-  Future<void> uploadDriverDocument(String docType, String fileUrl) async {
-    await _remoteDataSource.uploadDriverDocument(docType, fileUrl);
-  }
-
-  Future<List<DriverDocumentModel>> getDriverDocuments() async {
-    return await _remoteDataSource.getDriverDocuments();
+  Future<void> uploadDriverDocument(String docType, String filePath) async {
+    await _remoteDataSource.uploadDriverDocument(docType, filePath);
   }
 }

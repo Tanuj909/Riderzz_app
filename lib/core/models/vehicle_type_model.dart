@@ -10,6 +10,9 @@ class VehicleTypeModel {
   final bool isActive;
   final String updatedAt;
   final String? deletedAt;
+  final String? iconUrl;
+  final bool? tollEnabled;
+  final bool? dynamicPricingEnabled;
 
   VehicleTypeModel({
     required this.id,
@@ -23,6 +26,9 @@ class VehicleTypeModel {
     required this.isActive,
     required this.updatedAt,
     this.deletedAt,
+    this.iconUrl,
+    this.tollEnabled,
+    this.dynamicPricingEnabled,
   });
 
   factory VehicleTypeModel.fromJson(Map<String, dynamic> json) {
@@ -32,12 +38,15 @@ class VehicleTypeModel {
       baseFare: (json['baseFare'] as num).toDouble(),
       perKmRate: (json['perKmRate'] as num).toDouble(),
       maxWeightKg: json['maxWeightKg'] as int,
-      commissionPct: (json['commissionPct'] as num).toDouble(),
-      minWalletBalance: (json['minWalletBalance'] as num).toDouble(),
+      commissionPct: ((json['commissionPct'] ?? 0.0) as num).toDouble(),
+      minWalletBalance: ((json['minimumWalletBalance'] ?? json['minWalletBalance'] ?? 0.0) as num).toDouble(),
       description: json['description'] as String? ?? '',
-      isActive: json['isActive'] as bool? ?? true,
+      isActive: json['active'] ?? json['isActive'] ?? true,
       updatedAt: json['updatedAt'] as String? ?? '',
       deletedAt: json['deletedAt'] as String?,
+      iconUrl: json['iconUrl'] as String?,
+      tollEnabled: json['tollEnabled'] as bool?,
+      dynamicPricingEnabled: json['dynamicPricingEnabled'] as bool?,
     );
   }
 
@@ -54,6 +63,9 @@ class VehicleTypeModel {
       'isActive': isActive,
       'updatedAt': updatedAt,
       'deletedAt': deletedAt,
+      'iconUrl': iconUrl,
+      'tollEnabled': tollEnabled,
+      'dynamicPricingEnabled': dynamicPricingEnabled,
     };
   }
 }

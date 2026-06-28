@@ -38,11 +38,11 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
           children: const [
             Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
             SizedBox(width: 8),
-            Text('Delete Category', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('Delete Type', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
         content: Text(
-          'Are you sure you want to delete the vehicle category "${vehicleType.name}"? This action cannot be undone.',
+          'Are you sure you want to delete the vehicle type "${vehicleType.name}"? This action cannot be undone.',
           style: const TextStyle(color: Color(0xFF4A5568), height: 1.4),
         ),
         actions: [
@@ -64,7 +64,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
               if (context.mounted) {
                 if (success) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Vehicle category deleted successfully!')),
+                    const SnackBar(content: Text('Vehicle type deleted successfully!')),
                   );
                 } else if (provider.errorMessage != null) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -147,7 +147,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '${provider.vehicleTypes.length} Active Categories',
+                                  '${provider.vehicleTypes.length} Active Types',
                                   style: const TextStyle(
                                     color: Color(0xFF6B7785),
                                     fontSize: 12,
@@ -166,7 +166,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               ),
                               icon: const Icon(Icons.add_rounded, size: 16),
-                              label: const Text('Add Category', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              label: const Text('Add Type', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                               onPressed: () => _showFormBottomSheet(),
                             ),
                           ],
@@ -270,12 +270,27 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                width: 40,
+                height: 40,
                 decoration: const BoxDecoration(
                   color: Color(0xFFE8F0FB),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(_getVehicleIcon(vehicle.name), color: const Color(0xFF1A3D6B), size: 20),
+                alignment: Alignment.center,
+                child: (vehicle.iconUrl != null && vehicle.iconUrl!.isNotEmpty)
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4.0),
+                          child: Image.network(
+                            vehicle.iconUrl!,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Icon(_getVehicleIcon(vehicle.name), color: const Color(0xFF1A3D6B), size: 20),
+                          ),
+                        ),
+                      )
+                    : Icon(_getVehicleIcon(vehicle.name), color: const Color(0xFF1A3D6B), size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -292,7 +307,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      vehicle.description.isNotEmpty ? vehicle.description : 'No description provided',
+                      'Capacity: ${vehicle.maxWeightKg} kg',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -303,41 +318,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                   ],
                 ),
               ),
-            ],
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12.0),
-            child: Divider(height: 1, color: Color(0xFFE9ECF0)),
-          ),
-          // Parameters Grid (3 columns on first row, 2 columns on second row)
-          Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(child: _buildParamItem('Base Fare', '₹${vehicle.baseFare.toStringAsFixed(0)}')),
-                  Expanded(child: _buildParamItem('Rate/Km', '₹${vehicle.perKmRate.toStringAsFixed(0)}')),
-                  Expanded(child: _buildParamItem('Max weight', '${vehicle.maxWeightKg} kg')),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(child: _buildParamItem('Commission', '${vehicle.commissionPct.toStringAsFixed(0)}%')),
-                  Expanded(child: _buildParamItem('Min Wallet Bal.', '₹${vehicle.minWalletBalance.toStringAsFixed(0)}')),
-                  const Expanded(child: SizedBox.shrink()),
-                ],
-              ),
-            ],
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12.0),
-            child: Divider(height: 1, color: Color(0xFFE9ECF0)),
-          ),
-          // Status and Action buttons Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Status Badge
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -353,35 +334,51 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                   ),
                 ),
               ),
-              // Action Buttons
+            ],
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.0),
+            child: Divider(height: 1, color: Color(0xFFE9ECF0)),
+          ),
+          // Parameters Grid
+          Column(
+            children: [
               Row(
                 children: [
-                  TextButton.icon(
-                    icon: const Icon(Icons.edit_rounded, color: Color(0xFF1A3D6B), size: 14),
-                    label: const Text('Edit', style: TextStyle(color: Color(0xFF1A3D6B), fontSize: 11, fontWeight: FontWeight.bold)),
-                    onPressed: () => _showFormBottomSheet(vehicleType: vehicle),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      backgroundColor: const Color(0xFFE8F0FB),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  TextButton.icon(
-                    icon: const Icon(Icons.delete_rounded, color: Colors.redAccent, size: 14),
-                    label: const Text('Delete', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
-                    onPressed: () => _confirmDelete(context, vehicle),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      backgroundColor: const Color(0xFFFFF0F0),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
+                  Expanded(child: _buildParamItem('Base Fare', '₹${vehicle.baseFare.toStringAsFixed(1)}')),
+                  Expanded(child: _buildParamItem('Rate/Km', '₹${vehicle.perKmRate.toStringAsFixed(1)}')),
+                  Expanded(child: _buildParamItem('Max Weight', '${vehicle.maxWeightKg} kg')),
                 ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(child: _buildParamItem('Min Wallet Bal.', '₹${vehicle.minWalletBalance.toStringAsFixed(1)}')),
+                  Expanded(child: _buildParamItem('Toll Fee', (vehicle.tollEnabled ?? false) ? 'Enabled' : 'Disabled')),
+                  Expanded(child: _buildParamItem('Dynamic pricing', (vehicle.dynamicPricingEnabled ?? false) ? 'Active' : 'Inactive')),
+                ],
+              ),
+            ],
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.0),
+            child: Divider(height: 1, color: Color(0xFFE9ECF0)),
+          ),
+          // Action buttons Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              TextButton.icon(
+                icon: const Icon(Icons.edit_rounded, color: Color(0xFF1A3D6B), size: 14),
+                label: const Text('Edit', style: TextStyle(color: Color(0xFF1A3D6B), fontSize: 11, fontWeight: FontWeight.bold)),
+                onPressed: () => _showFormBottomSheet(vehicleType: vehicle),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  backgroundColor: const Color(0xFFE8F0FB),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
               ),
             ],
           ),
@@ -429,13 +426,15 @@ class VehicleTypeFormBottomSheet extends StatefulWidget {
 class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
+  final _iconUrlController = TextEditingController();
   final _baseFareController = TextEditingController();
   final _perKmRateController = TextEditingController();
   final _maxWeightController = TextEditingController();
-  final _commissionController = TextEditingController();
   final _minWalletController = TextEditingController();
 
+  bool _tollEnabled = false;
+  bool _dynamicPricingEnabled = false;
+  bool _active = true;
   bool _isSaving = false;
 
   @override
@@ -444,23 +443,29 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
     if (widget.vehicleType != null) {
       final v = widget.vehicleType!;
       _nameController.text = v.name;
-      _descriptionController.text = v.description;
-      _baseFareController.text = v.baseFare.toStringAsFixed(0);
-      _perKmRateController.text = v.perKmRate.toStringAsFixed(0);
+      _iconUrlController.text = v.iconUrl ?? '';
+      _baseFareController.text = v.baseFare.toStringAsFixed(1);
+      _perKmRateController.text = v.perKmRate.toStringAsFixed(1);
       _maxWeightController.text = v.maxWeightKg.toString();
-      _commissionController.text = v.commissionPct.toStringAsFixed(0);
-      _minWalletController.text = v.minWalletBalance.toStringAsFixed(0);
+      _minWalletController.text = v.minWalletBalance.toStringAsFixed(1);
+      _tollEnabled = v.tollEnabled ?? false;
+      _dynamicPricingEnabled = v.dynamicPricingEnabled ?? false;
+      _active = v.isActive;
+    } else {
+      _iconUrlController.text = 'https://cdn-icons-png.flaticon.com/128/11432/11432322.png';
+      _tollEnabled = false;
+      _dynamicPricingEnabled = false;
+      _active = true;
     }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _descriptionController.dispose();
+    _iconUrlController.dispose();
     _baseFareController.dispose();
     _perKmRateController.dispose();
     _maxWeightController.dispose();
-    _commissionController.dispose();
     _minWalletController.dispose();
     super.dispose();
   }
@@ -476,22 +481,26 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
     final success = widget.vehicleType == null
         ? await provider.createVehicleType(
             name: _nameController.text.trim(),
+            iconUrl: _iconUrlController.text.trim(),
+            maxWeightKg: int.parse(_maxWeightController.text.trim()),
             baseFare: double.parse(_baseFareController.text.trim()),
             perKmRate: double.parse(_perKmRateController.text.trim()),
-            maxWeightKg: int.parse(_maxWeightController.text.trim()),
-            commissionPct: double.parse(_commissionController.text.trim()),
-            minWalletBalance: double.parse(_minWalletController.text.trim()),
-            description: _descriptionController.text.trim(),
+            minimumWalletBalance: double.parse(_minWalletController.text.trim()),
+            tollEnabled: _tollEnabled,
+            dynamicPricingEnabled: _dynamicPricingEnabled,
+            active: _active,
           )
         : await provider.updateVehicleType(
             id: widget.vehicleType!.id,
             name: _nameController.text.trim(),
+            iconUrl: _iconUrlController.text.trim(),
+            maxWeightKg: int.parse(_maxWeightController.text.trim()),
             baseFare: double.parse(_baseFareController.text.trim()),
             perKmRate: double.parse(_perKmRateController.text.trim()),
-            maxWeightKg: int.parse(_maxWeightController.text.trim()),
-            commissionPct: double.parse(_commissionController.text.trim()),
-            minWalletBalance: double.parse(_minWalletController.text.trim()),
-            description: _descriptionController.text.trim(),
+            minimumWalletBalance: double.parse(_minWalletController.text.trim()),
+            tollEnabled: _tollEnabled,
+            dynamicPricingEnabled: _dynamicPricingEnabled,
+            active: _active,
           );
 
     setState(() {
@@ -505,8 +514,8 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
           SnackBar(
             content: Text(
               widget.vehicleType == null
-                  ? 'Vehicle category created successfully!'
-                  : 'Vehicle category updated successfully!',
+                  ? 'Vehicle type created successfully!'
+                  : 'Vehicle type updated successfully!',
             ),
           ),
         );
@@ -546,33 +555,73 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
               ),
               const SizedBox(height: 16),
               Text(
-                widget.vehicleType == null ? 'Create Vehicle Category' : 'Edit Vehicle Category',
+                widget.vehicleType == null ? 'Create Vehicle Type' : 'Edit Vehicle Type',
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A2233)),
               ),
               const SizedBox(height: 20),
 
               // Inputs
-              _buildTextField(_nameController, 'Category Name', 'e.g. Mini Truck'),
+              _buildTextField(_nameController, 'Type Name', 'e.g. Bike'),
               const SizedBox(height: 12),
-              _buildTextField(_descriptionController, 'Description', 'e.g. Suitable for small loads'),
+              _buildTextField(_iconUrlController, 'Icon URL', 'e.g. https://...'),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: _buildNumField(_baseFareController, 'Base Fare (₹)', 'e.g. 100')),
+                  Expanded(child: _buildNumField(_baseFareController, 'Base Fare (₹)', 'e.g. 20')),
                   const SizedBox(width: 12),
-                  Expanded(child: _buildNumField(_perKmRateController, 'Rate/Km (₹)', 'e.g. 15')),
+                  Expanded(child: _buildNumField(_perKmRateController, 'Rate/Km (₹)', 'e.g. 13')),
                 ],
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: _buildNumField(_maxWeightController, 'Max Weight (kg)', 'e.g. 1000', isInteger: true)),
+                  Expanded(child: _buildNumField(_maxWeightController, 'Max Weight (kg)', 'e.g. 20', isInteger: true)),
                   const SizedBox(width: 12),
-                  Expanded(child: _buildNumField(_commissionController, 'Commission (%)', 'e.g. 15')),
+                  Expanded(child: _buildNumField(_minWalletController, 'Min Wallet Balance (₹)', 'e.g. 100')),
                 ],
               ),
-              const SizedBox(height: 12),
-              _buildNumField(_minWalletController, 'Min Wallet Balance (₹)', 'e.g. 100'),
+              const SizedBox(height: 16),
+              const Text(
+                'Settings & Status',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1A2233)),
+              ),
+              const SizedBox(height: 4),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                activeColor: const Color(0xFF1A3D6B),
+                title: const Text('Toll Enabled', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1A2233))),
+                subtitle: const Text('Calculate toll fees on this vehicle type', style: TextStyle(fontSize: 11, color: Color(0xFF6B7785))),
+                value: _tollEnabled,
+                onChanged: (val) {
+                  setState(() {
+                    _tollEnabled = val;
+                  });
+                },
+              ),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                activeColor: const Color(0xFF1A3D6B),
+                title: const Text('Dynamic Pricing', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1A2233))),
+                subtitle: const Text('Adjust fare based on demand / peak hours', style: TextStyle(fontSize: 11, color: Color(0xFF6B7785))),
+                value: _dynamicPricingEnabled,
+                onChanged: (val) {
+                  setState(() {
+                    _dynamicPricingEnabled = val;
+                  });
+                },
+              ),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                activeColor: const Color(0xFF1A3D6B),
+                title: const Text('Active Status', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1A2233))),
+                subtitle: const Text('Allow new bookings with this vehicle type', style: TextStyle(fontSize: 11, color: Color(0xFF6B7785))),
+                value: _active,
+                onChanged: (val) {
+                  setState(() {
+                    _active = val;
+                  });
+                },
+              ),
               const SizedBox(height: 24),
 
               // Buttons

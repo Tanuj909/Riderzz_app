@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:riderzz_app/features/user/addresses/location_picker_screen.dart';
 import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
 
@@ -16,48 +17,37 @@ class _AddressListScreenState extends State<AddressListScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<AddressProvider>(context, listen: false).fetchAddresses();
+      context.read<AddressProvider>().fetchAddresses();
     });
   }
 
   void _deleteAddress(int id) async {
-    final success = await Provider.of<AddressProvider>(context, listen: false).deleteAddress(id);
+    final provider = context.read<AddressProvider>();
+    final success = await provider.deleteAddress(id);
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Address deleted successfully')),
       );
     } else if (mounted) {
-      final error = Provider.of<AddressProvider>(context, listen: false).errorMessage;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error ?? 'Failed to delete address')),
+        SnackBar(content: Text(provider.errorMessage ?? 'Failed to delete address')),
       );
     }
   }
 
   void _saveAddress({
     int? id,
-    required String label,
-    required String address,
-    required double latitude,
-    required double longitude,
+    required Map<String, dynamic> data,
   }) async {
-    final provider = Provider.of<AddressProvider>(context, listen: false);
+    final provider = context.read<AddressProvider>();
     bool success;
     if (id != null) {
       success = await provider.updateAddress(
         id: id,
-        label: label,
-        address: address,
-        latitude: latitude,
-        longitude: longitude,
+        data: data,
       );
     } else {
-      success = await provider.addAddress(
-        label: label,
-        address: address,
-        latitude: latitude,
-        longitude: longitude,
-      );
+      success = await provider.addAddress(data);
     }
 
     if (success && mounted) {
@@ -72,21 +62,27 @@ class _AddressListScreenState extends State<AddressListScreen> {
   }
 
   void _showAddressBottomSheet(BuildContext context, {Map<String, dynamic>? addressToEdit}) {
+    final _formKey = GlobalKey<FormState>();
+
     final labelController = TextEditingController(text: addressToEdit?['label'] ?? '');
-    final addressController = TextEditingController(text: addressToEdit?['address'] ?? '');
+    final addressLine1Controller = TextEditingController(text: addressToEdit?['addressLine1'] ?? addressToEdit?['address'] ?? '');
+    final addressLine2Controller = TextEditingController(text: addressToEdit?['addressLine2'] ?? '');
+    final landmarkController = TextEditingController(text: addressToEdit?['landmark'] ?? '');
+    final cityController = TextEditingController(text: addressToEdit?['city'] ?? 'Mumbai');
+    final stateController = TextEditingController(text: addressToEdit?['state'] ?? 'Maharashtra');
+    final countryController = TextEditingController(text: 'India');
+    final postalCodeController = TextEditingController(text: addressToEdit?['postalCode'] ?? '400001');
     final locationController = TextEditingController(text: addressToEdit?['address'] ?? '');
+
     double? latitude = addressToEdit != null ? (addressToEdit['lat'] is num ? (addressToEdit['lat'] as num).toDouble() : null) : null;
     double? longitude = addressToEdit != null ? (addressToEdit['lng'] is num ? (addressToEdit['lng'] as num).toDouble() : null) : null;
 
-    String selectedType = 'other';
+    String selectedType = 'HOME';
     if (addressToEdit != null) {
-      final lbl = (addressToEdit['label'] ?? '').toString().toLowerCase();
-      if (lbl == 'home') {
-        selectedType = 'home';
-      } else if (lbl == 'office') {
-        selectedType = 'office';
-      }
+      selectedType = (addressToEdit['addressType'] ?? 'HOME').toString().toUpperCase();
     }
+    bool isDefault = addressToEdit?['defaultAddress'] ?? false;
+    bool showAdvanced = false;
 
     showModalBottomSheet(
       context: context,
@@ -98,279 +94,441 @@ class _AddressListScreenState extends State<AddressListScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            final double keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+            final double maxHeight = keyboardHeight > 0
+                ? (MediaQuery.of(context).size.height - keyboardHeight - 50)
+                : (MediaQuery.of(context).size.height * 0.60);
+
             return Padding(
               padding: EdgeInsets.fromLTRB(
                 20,
                 20,
                 20,
-                MediaQuery.of(context).viewInsets.bottom + 24,
+                keyboardHeight + 24,
               ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Container(
+                constraints: BoxConstraints(maxHeight: maxHeight),
+                child: Form(
+                  key: _formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          addressToEdit != null ? 'Edit Address' : 'Add New Address',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1A2233),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.close_rounded, color: Color(0xFF6B7785)),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Top Field: Enter / Choose Location (Map trigger)
-                    const Text(
-                      'Choose Location',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6B7785),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    GestureDetector(
-                      onTap: () async {
-                        final result = await Navigator.push<Map<String, dynamic>>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => LocationPickerScreen(
-                              initialLatitude: latitude,
-                              initialLongitude: longitude,
-                              showSaveOption: false,
-                            ),
-                          ),
-                        );
-                        if (result != null) {
-                          setModalState(() {
-                            latitude = result['latitude'];
-                            longitude = result['longitude'];
-                            final addr = result['address'] ?? '';
-                            locationController.text = addr;
-                            // Pre-fill Full Address if it's currently empty
-                            if (addressController.text.isEmpty) {
-                              addressController.text = addr;
-                            }
-                          });
-                        }
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF7F8FA),
-                          border: Border.all(color: const Color(0xFFE9ECF0)),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        child: Row(
+                        // Bottom Sheet header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Icon(Icons.map_outlined, size: 18, color: Color(0xFF1A3D6B)),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                locationController.text.isNotEmpty
-                                    ? locationController.text
-                                    : 'Tap to choose from Map',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: locationController.text.isNotEmpty
-                                      ? const Color(0xFF1A2233)
-                                      : const Color(0xFFB0B8C4),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                            Text(
+                              addressToEdit != null ? 'Edit Address' : 'Add New Address',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1A2233),
                               ),
                             ),
-                            const Icon(Icons.chevron_right_rounded, color: Color(0xFF6B7785)),
+                            IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.close_rounded, color: Color(0xFF6B7785)),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
                           ],
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                    // Second Field: Full Address (Manual Text Entry)
-                    const Text(
-                      'Full Address',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6B7785),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF7F8FA),
-                        border: Border.all(color: const Color(0xFFE9ECF0)),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                      child: TextFormField(
-                        controller: addressController,
-                        style: const TextStyle(fontSize: 14, color: Color(0xFF1A2233)),
-                        maxLines: 3,
-                        decoration: const InputDecoration(
-                          hintText: 'Enter full location details manually',
-                          hintStyle: TextStyle(color: Color(0xFFB0B8C4)),
-                          border: InputBorder.none,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                        // Choose Location Trigger Card
+                        GestureDetector(
+                          onTap: () async {
+                            final result = await Navigator.push<Map<String, dynamic>>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => LocationPickerScreen(
+                                  initialLatitude: latitude,
+                                  initialLongitude: longitude,
+                                  showSaveOption: false,
+                                ),
+                              ),
+                            );
+                            if (result != null) {
+                              setModalState(() {
+                                latitude = result['latitude'];
+                                longitude = result['longitude'];
+                                final addr = result['address'] ?? '';
+                                locationController.text = addr;
+                              });
 
-                    // Third Field: Address Type / Preset Chips
-                    const Text(
-                      'Address Type / Preset',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6B7785),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        _buildTypeChip(
-                          label: 'Home',
-                          icon: Icons.home_rounded,
-                          isSelected: selectedType == 'home',
-                          onTap: () {
-                            setModalState(() {
-                              selectedType = 'home';
-                              labelController.text = 'Home';
-                            });
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _buildTypeChip(
-                          label: 'Office',
-                          icon: Icons.business_rounded,
-                          isSelected: selectedType == 'office',
-                          onTap: () {
-                            setModalState(() {
-                              selectedType = 'office';
-                              labelController.text = 'Office';
-                            });
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _buildTypeChip(
-                          label: 'Other',
-                          icon: Icons.location_on_rounded,
-                          isSelected: selectedType == 'other',
-                          onTap: () {
-                            setModalState(() {
-                              selectedType = 'other';
-                              if (labelController.text == 'Home' || labelController.text == 'Office') {
-                                labelController.clear();
+                              try {
+                                final placemarks = await placemarkFromCoordinates(latitude!, longitude!);
+                                if (placemarks.isNotEmpty) {
+                                  final pm = placemarks.first;
+                                  setModalState(() {
+                                    final street = pm.street ?? '';
+                                    final subLocality = pm.subLocality ?? '';
+                                    addressLine1Controller.text = street.isNotEmpty ? street : (result['address'] ?? '');
+                                    addressLine2Controller.text = subLocality;
+                                    landmarkController.text = pm.thoroughfare ?? '';
+                                    cityController.text = pm.locality ?? 'Mumbai';
+                                    stateController.text = pm.administrativeArea ?? 'Maharashtra';
+                                    postalCodeController.text = pm.postalCode ?? '400001';
+                                  });
+                                }
+                              } catch (_) {
+                                final parts = (result['address'] ?? '').toString().split(',');
+                                if (parts.isNotEmpty) {
+                                  setModalState(() {
+                                    addressLine1Controller.text = parts[0].trim();
+                                    if (parts.length > 1) {
+                                      addressLine2Controller.text = parts[1].trim();
+                                    }
+                                    if (parts.length > 2) {
+                                      cityController.text = parts[parts.length - 2].trim();
+                                    }
+                                  });
+                                }
                               }
+                            }
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF7F8FA),
+                              border: Border.all(color: const Color(0xFFE9ECF0)),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.map_outlined, size: 20, color: Color(0xFF1A3D6B)),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    locationController.text.isNotEmpty
+                                        ? locationController.text
+                                        : 'Choose Location from Map',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: locationController.text.isNotEmpty
+                                          ? const Color(0xFF1A2233)
+                                          : const Color(0xFF6B7785),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const Icon(Icons.chevron_right_rounded, color: Color(0xFF6B7785), size: 20),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Preset chips row
+                        Row(
+                          children: [
+                            _buildTypeChip(
+                              label: 'Home',
+                              icon: Icons.home_rounded,
+                              isSelected: selectedType == 'HOME',
+                              onTap: () {
+                                setModalState(() {
+                                  selectedType = 'HOME';
+                                  labelController.text = 'Home';
+                                });
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            _buildTypeChip(
+                              label: 'Office',
+                              icon: Icons.business_rounded,
+                              isSelected: selectedType == 'OFFICE',
+                              onTap: () {
+                                setModalState(() {
+                                  selectedType = 'OFFICE';
+                                  labelController.text = 'Office';
+                                });
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            _buildTypeChip(
+                              label: 'Other',
+                              icon: Icons.location_on_rounded,
+                              isSelected: selectedType == 'OTHER',
+                              onTap: () {
+                                setModalState(() {
+                                  selectedType = 'OTHER';
+                                  if (labelController.text == 'Home' || labelController.text == 'Office') {
+                                    labelController.clear();
+                                  }
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Label Input
+                        _buildInputField(
+                          label: 'Address Label',
+                          hint: 'e.g. Friend\'s House, Factory',
+                          controller: labelController,
+                          prefixIcon: Icons.bookmark_border_rounded,
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return 'Label is required';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Address Line 1
+                        _buildInputField(
+                          label: 'Address Line 1',
+                          hint: 'Flat/House No., Building, Street',
+                          controller: addressLine1Controller,
+                          prefixIcon: Icons.location_on_outlined,
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return 'Address Line 1 is required';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+
+                        // City & Postal Code Row
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _buildInputField(
+                                label: 'City',
+                                hint: 'City name',
+                                controller: cityController,
+                                prefixIcon: Icons.location_city_outlined,
+                                validator: (val) {
+                                  if (val == null || val.trim().isEmpty) {
+                                    return 'Required';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildInputField(
+                                label: 'Postal Code',
+                                hint: 'Pin code',
+                                controller: postalCodeController,
+                                prefixIcon: Icons.pin_drop_outlined,
+                                keyboardType: TextInputType.number,
+                                validator: (val) {
+                                  if (val == null || val.trim().isEmpty) {
+                                    return 'Required';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Accordion Toggle for Optional Details
+                        InkWell(
+                          onTap: () {
+                            setModalState(() {
+                              showAdvanced = !showAdvanced;
                             });
                           },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  showAdvanced ? 'Hide Optional Details' : 'Show Optional Details',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1A3D6B),
+                                  ),
+                                ),
+                                Icon(
+                                  showAdvanced ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                                  color: const Color(0xFF1A3D6B),
+                                  size: 20,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+
+                        // Optional Advanced Fields (Collapsed/Expanded)
+                        if (showAdvanced) ...[
+                          const SizedBox(height: 8),
+                          _buildInputField(
+                            label: 'Address Line 2 (Optional)',
+                            hint: 'Locality, Sector, Area',
+                            controller: addressLine2Controller,
+                            prefixIcon: Icons.home_outlined,
+                          ),
+                          const SizedBox(height: 12),
+                          _buildInputField(
+                            label: 'Landmark (Optional)',
+                            hint: 'Opposite, Near by reference point',
+                            controller: landmarkController,
+                            prefixIcon: Icons.flag_outlined,
+                          ),
+                          const SizedBox(height: 12),
+                          _buildInputField(
+                            label: 'State',
+                            hint: 'State name',
+                            controller: stateController,
+                            prefixIcon: Icons.map_outlined,
+                            validator: (val) {
+                              if (val == null || val.trim().isEmpty) {
+                                return 'Required';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+
+                        // Set Default Address Switch Row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Set as Default Address',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1A2233),
+                              ),
+                            ),
+                            Switch(
+                              value: isDefault,
+                              activeColor: const Color(0xFF1A3D6B),
+                              onChanged: (val) {
+                                setModalState(() {
+                                  isDefault = val;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Save Button Card
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1A3D6B),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            onPressed: () {
+                              if (!_formKey.currentState!.validate()) return;
+
+                              if (latitude == null || longitude == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Coordinates are required. Please choose from Map.')),
+                                );
+                                return;
+                              }
+
+                              final mapData = {
+                                'addressType': selectedType,
+                                'label': labelController.text.trim(),
+                                'addressLine1': addressLine1Controller.text.trim(),
+                                'addressLine2': addressLine2Controller.text.trim(),
+                                'landmark': landmarkController.text.trim(),
+                                'city': cityController.text.trim(),
+                                'state': stateController.text.trim(),
+                                'country': countryController.text.trim(),
+                                'postalCode': postalCodeController.text.trim(),
+                                'latitude': latitude!,
+                                'longitude': longitude!,
+                                'defaultAddress': isDefault,
+                              };
+
+                              _saveAddress(
+                                id: addressToEdit?['id'],
+                                data: mapData,
+                              );
+                              Navigator.pop(context);
+                            },
+                            child: Text(
+                              addressToEdit != null ? 'Update Address' : 'Save Address',
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-
-                    // Address Label Field
-                    const Text(
-                      'Address Label',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6B7785),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF7F8FA),
-                        border: Border.all(color: const Color(0xFFE9ECF0)),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                      child: TextFormField(
-                        controller: labelController,
-                        style: const TextStyle(fontSize: 14, color: Color(0xFF1A2233)),
-                        decoration: const InputDecoration(
-                          hintText: 'e.g. Friend\'s House, Gym, Factory',
-                          hintStyle: TextStyle(color: Color(0xFFB0B8C4)),
-                          border: InputBorder.none,
-                        ),
-                        onChanged: (val) {
-                          final lower = val.trim().toLowerCase();
-                          if (lower == 'home') {
-                            if (selectedType != 'home') setModalState(() => selectedType = 'home');
-                          } else if (lower == 'office') {
-                            if (selectedType != 'office') setModalState(() => selectedType = 'office');
-                          } else {
-                            if (selectedType != 'other') setModalState(() => selectedType = 'other');
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Save Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1A3D6B),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () {
-                          final label = labelController.text.trim();
-                          final address = addressController.text.trim();
-                          if (label.isEmpty || address.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please fill out all fields')),
-                            );
-                            return;
-                          }
-                          if (latitude == null || longitude == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Coordinates are required. Please select a location using Choose From Map.')),
-                            );
-                            return;
-                          }
-                          _saveAddress(
-                            id: addressToEdit?['id'],
-                            label: label,
-                            address: address,
-                            latitude: latitude!,
-                            longitude: longitude!,
-                          );
-                          Navigator.pop(context);
-                        },
-                        child: Text(
-                          addressToEdit != null ? 'Update Address' : 'Save Address',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             );
           },
         );
       },
+    );
+  }
+
+  Widget _buildInputField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    required IconData prefixIcon,
+    TextInputType? keyboardType,
+    FormFieldValidator<String>? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: Color(0xFF6B7785),
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF7F8FA),
+            border: Border.all(color: const Color(0xFFE9ECF0)),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: TextFormField(
+            controller: controller,
+            style: const TextStyle(fontSize: 14, color: Color(0xFF1A2233), fontWeight: FontWeight.w500),
+            keyboardType: keyboardType,
+            validator: validator,
+            decoration: InputDecoration(
+              prefixIcon: Icon(prefixIcon, size: 18, color: const Color(0xFF6B7785)),
+              prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 20),
+              hintText: hint,
+              hintStyle: const TextStyle(color: Color(0xFFB0B8C4), fontSize: 13),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

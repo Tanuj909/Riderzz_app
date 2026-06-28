@@ -12,43 +12,51 @@ class AdminVehiclesRepository {
 
   Future<VehicleTypeModel> createVehicleType({
     required String name,
+    required String iconUrl,
+    required int maxWeightKg,
     required double baseFare,
     required double perKmRate,
-    required int maxWeightKg,
-    required double commissionPct,
-    required double minWalletBalance,
-    required String description,
+    required double minimumWalletBalance,
+    required bool tollEnabled,
+    required bool dynamicPricingEnabled,
+    required bool active,
   }) async {
     return await _remoteDataSource.createVehicleType(
       name: name,
+      iconUrl: iconUrl,
+      maxWeightKg: maxWeightKg,
       baseFare: baseFare,
       perKmRate: perKmRate,
-      maxWeightKg: maxWeightKg,
-      commissionPct: commissionPct,
-      minWalletBalance: minWalletBalance,
-      description: description,
+      minimumWalletBalance: minimumWalletBalance,
+      tollEnabled: tollEnabled,
+      dynamicPricingEnabled: dynamicPricingEnabled,
+      active: active,
     );
   }
 
   Future<VehicleTypeModel> updateVehicleType({
     required int id,
     required String name,
+    required String iconUrl,
+    required int maxWeightKg,
     required double baseFare,
     required double perKmRate,
-    required int maxWeightKg,
-    required double commissionPct,
-    required double minWalletBalance,
-    required String description,
+    required double minimumWalletBalance,
+    required bool tollEnabled,
+    required bool dynamicPricingEnabled,
+    required bool active,
   }) async {
     return await _remoteDataSource.updateVehicleType(
       id: id,
       name: name,
+      iconUrl: iconUrl,
+      maxWeightKg: maxWeightKg,
       baseFare: baseFare,
       perKmRate: perKmRate,
-      maxWeightKg: maxWeightKg,
-      commissionPct: commissionPct,
-      minWalletBalance: minWalletBalance,
-      description: description,
+      minimumWalletBalance: minimumWalletBalance,
+      tollEnabled: tollEnabled,
+      dynamicPricingEnabled: dynamicPricingEnabled,
+      active: active,
     );
   }
 

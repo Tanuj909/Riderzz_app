@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/user/addresses/address_list_screen.dart';
+import 'package:riderzz_app/features/user/saved_routes/screens/saved_route_list_screen.dart';
 import 'package:riderzz_app/features/driver/profile/become_driver_screen.dart';
+import 'package:riderzz_app/features/user/profile/screens/customer_profile_screen.dart';
 
 class UserAccountPage extends StatelessWidget {
   final VoidCallback onNavigateToHistory;
@@ -105,8 +107,13 @@ class UserAccountPage extends StatelessWidget {
             icon: Icons.person_outline_rounded,
             color: const Color(0xFFE8F0FB),
             iconColor: const Color(0xFF1A3D6B),
-            label: 'Edit Profile',
-            onTap: () {},
+            label: 'View My Profile',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CustomerProfileScreen()),
+              );
+            },
           ),
           _buildMenuItem(
             icon: Icons.home_outlined,
@@ -117,6 +124,18 @@ class UserAccountPage extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const AddressListScreen()),
+              );
+            },
+          ),
+          _buildMenuItem(
+            icon: Icons.directions_outlined,
+            color: const Color(0xFFFDF2F8),
+            iconColor: const Color(0xFFDB2777),
+            label: 'Saved Routes',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SavedRouteListScreen()),
               );
             },
           ),

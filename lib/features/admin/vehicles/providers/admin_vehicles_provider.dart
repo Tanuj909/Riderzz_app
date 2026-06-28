@@ -39,12 +39,14 @@ class AdminVehiclesProvider extends ChangeNotifier {
 
   Future<bool> createVehicleType({
     required String name,
+    required String iconUrl,
+    required int maxWeightKg,
     required double baseFare,
     required double perKmRate,
-    required int maxWeightKg,
-    required double commissionPct,
-    required double minWalletBalance,
-    required String description,
+    required double minimumWalletBalance,
+    required bool tollEnabled,
+    required bool dynamicPricingEnabled,
+    required bool active,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -53,12 +55,14 @@ class AdminVehiclesProvider extends ChangeNotifier {
     try {
       final newType = await _repository.createVehicleType(
         name: name,
+        iconUrl: iconUrl,
+        maxWeightKg: maxWeightKg,
         baseFare: baseFare,
         perKmRate: perKmRate,
-        maxWeightKg: maxWeightKg,
-        commissionPct: commissionPct,
-        minWalletBalance: minWalletBalance,
-        description: description,
+        minimumWalletBalance: minimumWalletBalance,
+        tollEnabled: tollEnabled,
+        dynamicPricingEnabled: dynamicPricingEnabled,
+        active: active,
       );
       _vehicleTypes.add(newType);
       _isLoading = false;
@@ -75,12 +79,14 @@ class AdminVehiclesProvider extends ChangeNotifier {
   Future<bool> updateVehicleType({
     required int id,
     required String name,
+    required String iconUrl,
+    required int maxWeightKg,
     required double baseFare,
     required double perKmRate,
-    required int maxWeightKg,
-    required double commissionPct,
-    required double minWalletBalance,
-    required String description,
+    required double minimumWalletBalance,
+    required bool tollEnabled,
+    required bool dynamicPricingEnabled,
+    required bool active,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -90,12 +96,14 @@ class AdminVehiclesProvider extends ChangeNotifier {
       final updatedType = await _repository.updateVehicleType(
         id: id,
         name: name,
+        iconUrl: iconUrl,
+        maxWeightKg: maxWeightKg,
         baseFare: baseFare,
         perKmRate: perKmRate,
-        maxWeightKg: maxWeightKg,
-        commissionPct: commissionPct,
-        minWalletBalance: minWalletBalance,
-        description: description,
+        minimumWalletBalance: minimumWalletBalance,
+        tollEnabled: tollEnabled,
+        dynamicPricingEnabled: dynamicPricingEnabled,
+        active: active,
       );
       final index = _vehicleTypes.indexWhere((element) => element.id == id);
       if (index != -1) {

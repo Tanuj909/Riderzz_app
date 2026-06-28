@@ -1,4 +1,5 @@
 import 'package:riderzz_app/core/models/user_model.dart';
+import 'package:riderzz_app/core/models/customer_profile_model.dart';
 import 'package:riderzz_app/features/auth/data/datasource/auth_remote_datasource.dart';
 
 class AuthRepository {
@@ -44,5 +45,29 @@ class AuthRepository {
     required String password,
   }) async {
     return await _remoteDataSource.adminLogin(phone: phone, password: password);
+  }
+
+  Future<CustomerProfileModel> getCustomerProfile() async {
+    return await _remoteDataSource.getCustomerProfile();
+  }
+
+  Future<CustomerProfileModel> updateCustomerProfile({
+    String? dob,
+    String? gender,
+    String? bio,
+    String? emergencyContactName,
+    String? emergencyContactPhone,
+  }) async {
+    return await _remoteDataSource.updateCustomerProfile(
+      dob: dob,
+      gender: gender,
+      bio: bio,
+      emergencyContactName: emergencyContactName,
+      emergencyContactPhone: emergencyContactPhone,
+    );
+  }
+
+  Future<String> uploadProfileImage(String filePath, String fileName) async {
+    return await _remoteDataSource.uploadProfileImage(filePath, fileName);
   }
 }

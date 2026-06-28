@@ -231,7 +231,27 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
             // Layout Body containing currently active subpage view
             Expanded(
-              child: _buildTabContent(context),
+              child: IndexedStack(
+                index: _currentIndex,
+                children: [
+                  UserHomePage(
+                    onBookingConfirmed: () {
+                      setState(() {
+                        _currentIndex = 1;
+                      });
+                    },
+                  ),
+                  const UserBookingsPage(),
+                  const UserPaymentsPage(),
+                  UserAccountPage(
+                    onNavigateToHistory: () {
+                      setState(() {
+                        _currentIndex = 2;
+                      });
+                    },
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -273,38 +293,5 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         ],
       ),
     );
-  }
-
-  Widget _buildTabContent(BuildContext context) {
-    switch (_currentIndex) {
-      case 0:
-        return UserHomePage(
-          onBookingConfirmed: () {
-            setState(() {
-              _currentIndex = 1; // Transition to bookings tab on confirmation
-            });
-          },
-        );
-      case 1:
-        return const UserBookingsPage();
-      case 2:
-        return const UserPaymentsPage();
-      case 3:
-        return UserAccountPage(
-          onNavigateToHistory: () {
-            setState(() {
-              _currentIndex = 2; // Transition to payments tab
-            });
-          },
-        );
-      default:
-        return UserHomePage(
-          onBookingConfirmed: () {
-            setState(() {
-              _currentIndex = 1;
-            });
-          },
-        );
-    }
   }
 }

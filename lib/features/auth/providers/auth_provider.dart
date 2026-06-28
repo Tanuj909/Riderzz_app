@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:riderzz_app/core/models/user_model.dart';
+import 'package:riderzz_app/core/models/customer_profile_model.dart';
 import 'package:riderzz_app/core/storage/secure_storage_service.dart';
 import 'package:riderzz_app/core/utils/jwt_helper.dart';
 import 'package:riderzz_app/features/auth/data/repositories/auth_repository.dart';
@@ -9,6 +10,7 @@ class AuthProvider extends ChangeNotifier {
   final SecureStorageService _storageService;
 
   UserModel? _currentUser;
+  CustomerProfileModel? _customerProfile;
   bool _isLoading = false;
   String? _errorMessage;
   bool _isOtpSent = false;
@@ -21,6 +23,7 @@ class AuthProvider extends ChangeNotifier {
         _storageService = storageService;
 
   UserModel? get currentUser => _currentUser;
+  CustomerProfileModel? get customerProfile => _customerProfile;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isOtpSent => _isOtpSent;
@@ -31,6 +34,7 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = null;
     _isOtpSent = false;
     _isLoginOtpSent = false;
+    _customerProfile = null;
     notifyListeners();
   }
 
@@ -76,6 +80,7 @@ class AuthProvider extends ChangeNotifier {
       _currentUser = user;
       await _storageService.saveAuthData(
         token: user.token ?? '',
+        refreshToken: user.refreshToken,
         role: user.role,
         userId: user.userId,
       );
@@ -102,6 +107,7 @@ class AuthProvider extends ChangeNotifier {
 
     final role = await _storageService.getRole();
     final userIdStr = await _storageService.getUserId();
+    final refreshToken = await _storageService.getRefreshToken();
 
     if (token != null && role != null && userIdStr != null) {
       final userId = int.tryParse(userIdStr);
@@ -110,6 +116,7 @@ class AuthProvider extends ChangeNotifier {
           userId: userId,
           role: role,
           token: token,
+          refreshToken: refreshToken,
         );
         try {
           await fetchUserProfile();
@@ -129,9 +136,11 @@ class AuthProvider extends ChangeNotifier {
         userId: user.userId,
         role: user.role,
         token: _currentUser?.token,
+        refreshToken: _currentUser?.refreshToken,
         name: user.name,
         phone: user.phone,
         status: user.status,
+        profileImage: user.profileImage,
       );
       notifyListeners();
     } catch (e) {
@@ -184,6 +193,7 @@ class AuthProvider extends ChangeNotifier {
       _currentUser = user;
       await _storageService.saveAuthData(
         token: user.token ?? '',
+        refreshToken: user.refreshToken,
         role: user.role,
         userId: user.userId,
       );
@@ -217,6 +227,7 @@ class AuthProvider extends ChangeNotifier {
       _currentUser = user;
       await _storageService.saveAuthData(
         token: user.token ?? '',
+        refreshToken: user.refreshToken,
         role: user.role,
         userId: user.userId,
       );
@@ -242,6 +253,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       await _storageService.saveAuthData(
         token: _currentUser!.token ?? '',
+        refreshToken: _currentUser!.refreshToken,
         role: newRole,
         userId: _currentUser!.userId,
       );
@@ -250,10 +262,117 @@ class AuthProvider extends ChangeNotifier {
         userId: _currentUser!.userId,
         role: newRole,
         token: _currentUser!.token,
+        refreshToken: _currentUser!.refreshToken,
         name: _currentUser!.name,
         phone: _currentUser!.phone,
         status: _currentUser!.status,
+        profileImage: _currentUser!.profileImage,
       );
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Fetch customer profile details
+  Future<bool> fetchCustomerProfile() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final profile = await _authRepository.getCustomerProfile();
+      _customerProfile = profile;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Update customer profile details
+  Future<bool> updateCustomerProfile({
+    String? dob,
+    String? gender,
+    String? bio,
+    String? emergencyContactName,
+    String? emergencyContactPhone,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final updatedProfile = await _authRepository.updateCustomerProfile(
+        dob: dob,
+        gender: gender,
+        bio: bio,
+        emergencyContactName: emergencyContactName,
+        emergencyContactPhone: emergencyContactPhone,
+      );
+      _customerProfile = updatedProfile;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Upload customer profile image and update local state
+  Future<bool> updateProfileImage(String filePath, String fileName) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final imageUrl = await _authRepository.uploadProfileImage(filePath, fileName);
+      
+      // Update local customer profile if loaded
+      if (_customerProfile != null) {
+        _customerProfile = CustomerProfileModel(
+          userId: _customerProfile!.userId,
+          fullName: _customerProfile!.fullName,
+          phone: _customerProfile!.phone,
+          email: _customerProfile!.email,
+          profileImage: imageUrl,
+          role: _customerProfile!.role,
+          rating: _customerProfile!.rating,
+          totalBookings: _customerProfile!.totalBookings,
+          gender: _customerProfile!.gender,
+          dob: _customerProfile!.dob,
+          bio: _customerProfile!.bio,
+          emergencyContactName: _customerProfile!.emergencyContactName,
+          emergencyContactPhone: _customerProfile!.emergencyContactPhone,
+        );
+      }
+
+      // Update local current user
+      if (_currentUser != null) {
+        _currentUser = UserModel(
+          userId: _currentUser!.userId,
+          role: _currentUser!.role,
+          token: _currentUser!.token,
+          refreshToken: _currentUser!.refreshToken,
+          name: _currentUser!.name,
+          phone: _currentUser!.phone,
+          status: _currentUser!.status,
+          profileImage: imageUrl,
+        );
+      }
 
       _isLoading = false;
       notifyListeners();

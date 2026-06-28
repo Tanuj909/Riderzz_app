@@ -3,9 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/admin/vehicles/screens/admin_vehicles_screen.dart';
+import 'package:riderzz_app/features/admin/vehicles/screens/admin_vehicles_list_screen.dart';
+import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_list_provider.dart';
 import 'package:riderzz_app/features/admin/rider_verification/rider_verification_screen.dart';
 import 'package:riderzz_app/features/admin/rider_verification/providers/rider_verification_provider.dart';
 import 'package:riderzz_app/features/admin/wallets/screens/admin_wallets_screen.dart';
+import 'package:riderzz_app/features/admin/commission/screens/admin_commission_screen.dart';
+
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -221,6 +225,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 provider.fetchDrivers(isRefresh: true);
               }
             });
+          } else if (index == 2) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              context.read<AdminVehiclesListProvider>().fetchVehicles(isRefresh: true);
+            });
           }
         },
         type: BottomNavigationBarType.fixed,
@@ -241,9 +249,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             label: 'Pending Requests',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.local_shipping_outlined),
+            activeIcon: Icon(Icons.local_shipping_rounded),
+            label: 'Vehicles',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.airport_shuttle_outlined),
             activeIcon: Icon(Icons.airport_shuttle_rounded),
-            label: 'Vehicles',
+            label: 'Vehicle Types',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.account_balance_wallet_outlined),
@@ -262,8 +275,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       case 1:
         return const RiderVerificationScreen();
       case 2:
-        return const AdminVehiclesScreen();
+        return const AdminVehiclesListScreen();
       case 3:
+        return const AdminVehiclesScreen();
+      case 4:
         return const AdminWalletsScreen();
       default:
         return _buildDashboardTab();
@@ -409,8 +424,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               iconColor: const Color(0xFF1A3D6B),
               onTap: () {
                 setState(() {
-                  _currentIndex = 3; // Transition to Wallets tab
+                  _currentIndex = 4; // Correct index for Wallets is 4
                 });
+              },
+            ),
+            _buildActionItem(
+              title: 'Commission Configurations',
+              subtitle: 'Configure vehicle-specific commission percentages',
+              icon: Icons.percent_rounded,
+              iconBgColor: const Color(0xFFFFFBEB),
+              iconColor: const Color(0xFFD97706),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AdminCommissionScreen()),
+                );
               },
             ),
           ],

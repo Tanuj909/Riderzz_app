@@ -89,6 +89,49 @@ class RiderVerificationProvider extends ChangeNotifier {
     }
   }
 
+  /// Fetches full driver details by user ID and updates local list.
+  Future<AdminDriverModel?> fetchDriverById(int userId) async {
+    try {
+      final driver = await _repository.getDriverById(userId);
+      // Update the local list with full details
+      final index = _drivers.indexWhere((d) => d.userId == userId || d.id == userId);
+      if (index != -1) {
+        _drivers[index] = driver;
+        notifyListeners();
+      }
+      return driver;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return null;
+    }
+  }
+  /// Updates a driver profile from the admin view.
+  Future<AdminDriverModel?> updateDriverProfileAdmin({
+    required int userId,
+    required Map<String, dynamic> updateData,
+  }) async {
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final updatedDriver = await _repository.updateDriverProfileAdmin(
+        userId: userId,
+        updateData: updateData,
+      );
+
+      final index = _drivers.indexWhere((d) => d.userId == userId || d.id == userId);
+      if (index != -1) {
+        _drivers[index] = updatedDriver;
+        notifyListeners();
+      }
+      return updatedDriver;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return null;
+    }
+  }
   /// Updates the approval status of a driver.
   Future<bool> updateDriverStatus(int driverId, String status, {String? rejectionReason}) async {
     _errorMessage = null;

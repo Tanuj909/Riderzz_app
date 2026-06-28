@@ -57,11 +57,26 @@ class ApiException implements Exception {
       case 422:
         return ApiException(message.isNotEmpty ? message : 'Unprocessable Entity', statusCode: statusCode);
       case 500:
-        return ApiException('Internal server error', statusCode: statusCode);
+        return ApiException(
+          (message.isNotEmpty && message != "Something went wrong")
+              ? message
+              : 'Internal server error',
+          statusCode: statusCode,
+        );
       case 502:
-        return ApiException('Bad gateway', statusCode: statusCode);
+        return ApiException(
+          (message.isNotEmpty && message != "Something went wrong")
+              ? message
+              : 'Bad gateway',
+          statusCode: statusCode,
+        );
       case 503:
-        return ApiException('Service unavailable', statusCode: statusCode);
+        return ApiException(
+          (message.isNotEmpty && message != "Something went wrong")
+              ? message
+              : 'Service unavailable',
+          statusCode: statusCode,
+        );
       default:
         return ApiException(message, statusCode: statusCode);
     }

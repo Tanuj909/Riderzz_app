@@ -2,17 +2,21 @@ class UserModel {
   final int userId;
   final String role;
   final String? token;
+  final String? refreshToken;
   final String? name;
   final String? phone;
   final String? status;
+  final String? profileImage;
 
   UserModel({
     required this.userId,
     required this.role,
     this.token,
+    this.refreshToken,
     this.name,
     this.phone,
     this.status,
+    this.profileImage,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json, {String? name, String? phone, String? token}) {
@@ -51,9 +55,16 @@ class UserModel {
           json['token'] as String? ??
           json['accessToken'] as String? ??
           token,
-      name: targetJson['name'] as String? ?? json['name'] as String? ?? name,
+      refreshToken: targetJson['refreshToken'] as String? ??
+          json['refreshToken'] as String?,
+      name: targetJson['name'] as String? ??
+          targetJson['fullName'] as String? ??
+          json['name'] as String? ??
+          json['fullName'] as String? ??
+          name,
       phone: targetJson['phone'] as String? ?? json['phone'] as String? ?? phone,
       status: targetJson['status'] as String? ?? json['status'] as String?,
+      profileImage: targetJson['profileImage'] as String? ?? json['profileImage'] as String?,
     );
   }
 
@@ -62,9 +73,11 @@ class UserModel {
       'userId': userId,
       'role': role,
       'token': token,
+      'refreshToken': refreshToken,
       'name': name,
       'phone': phone,
       'status': status,
+      'profileImage': profileImage,
     };
   }
 }

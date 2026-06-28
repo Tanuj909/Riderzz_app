@@ -604,13 +604,66 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                   return;
                                 }
 
-                                final provider = Provider.of<AddressProvider>(context, listen: false);
-                                final success = await provider.addAddress(
-                                  label: label,
-                                  address: address,
-                                  latitude: _latitude,
-                                  longitude: _longitude,
-                                );
+                                 String addressType = 'OTHER';
+                                 final lowerLabel = label.toLowerCase();
+                                 if (lowerLabel == 'home') {
+                                   addressType = 'HOME';
+                                 } else if (lowerLabel == 'office') {
+                                   addressType = 'OFFICE';
+                                 }
+
+                                 String addressLine1 = address;
+                                 String addressLine2 = '';
+                                 String landmark = '';
+                                 String city = 'Mumbai';
+                                 String state = 'Maharashtra';
+                                 String country = 'India';
+                                 String postalCode = '400001';
+
+                                 try {
+                                   final placemarks = await placemarkFromCoordinates(_latitude, _longitude);
+                                   if (placemarks.isNotEmpty) {
+                                     final pm = placemarks.first;
+                                     final street = pm.street ?? '';
+                                     final subLocality = pm.subLocality ?? '';
+                                     addressLine1 = street.isNotEmpty ? street : address;
+                                     addressLine2 = street.isNotEmpty ? subLocality : '';
+                                     landmark = pm.thoroughfare ?? '';
+                                     city = pm.locality ?? city;
+                                     state = pm.administrativeArea ?? state;
+                                     country = pm.country ?? country;
+                                     postalCode = pm.postalCode ?? postalCode;
+                                   }
+                                 } catch (_) {
+                                   final parts = address.split(',');
+                                   if (parts.isNotEmpty) {
+                                     addressLine1 = parts[0].trim();
+                                     if (parts.length > 1) {
+                                       addressLine2 = parts[1].trim();
+                                     }
+                                     if (parts.length > 2) {
+                                       city = parts[parts.length - 2].trim();
+                                     }
+                                   }
+                                 }
+
+                                 final data = {
+                                   'addressType': addressType,
+                                   'label': label,
+                                   'addressLine1': addressLine1,
+                                   'addressLine2': addressLine2,
+                                   'landmark': landmark,
+                                   'city': city,
+                                   'state': state,
+                                   'country': country,
+                                   'postalCode': postalCode,
+                                   'latitude': _latitude,
+                                   'longitude': _longitude,
+                                   'defaultAddress': false,
+                                 };
+
+                                 final provider = Provider.of<AddressProvider>(context, listen: false);
+                                 final success = await provider.addAddress(data);
 
                                 if (success) {
                                   if (context.mounted) {

@@ -14,13 +14,19 @@ class RiderVerificationRemoteDataSource {
     required int size,
     required String status,
   }) async {
+    final Map<String, dynamic> queryParams = {
+      'page': page,
+      'size': size,
+      'sort': 'createdAt,desc',
+    };
+    // Only add status filter if it's not 'ALL'
+    if (status.isNotEmpty && status != 'ALL') {
+      queryParams['status'] = status;
+    }
+
     final response = await _apiClient.get(
-      ApiConstants.adminDrivers,
-      queryParameters: {
-        'page': page,
-        'size': size,
-        'status': status,
-      },
+      ApiConstants.adminDriverList,
+      queryParameters: queryParams,
     );
 
     final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
@@ -40,6 +46,17 @@ class RiderVerificationRemoteDataSource {
     };
   }
 
+  /// Fetches full driver profile by user ID.
+  Future<AdminDriverModel> getDriverById(int userId) async {
+    final response = await _apiClient.get(
+      '${ApiConstants.adminDriverList.replaceAll('/list', '')}/$userId',
+    );
+
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
+    return AdminDriverModel.fromJson(data);
+  }
+
   /// Updates the driver approval status (APPROVED, REJECTED, SUSPENDED).
   Future<void> updateDriverStatus({
     required int driverId,
@@ -47,15 +64,12 @@ class RiderVerificationRemoteDataSource {
     String? rejectionReason,
   }) async {
     if (status == 'APPROVED') {
-      await _apiClient.patch(
-        '${ApiConstants.adminDrivers}/$driverId/approve',
+      await _apiClient.put(
+        '${ApiConstants.adminDriverList.replaceAll('/list', '')}/$driverId/approve',
       );
     } else if (status == 'REJECTED') {
-      await _apiClient.patch(
-        '${ApiConstants.adminDrivers}/$driverId/reject',
-        data: {
-          'reason': rejectionReason ?? 'Application rejected',
-        },
+      await _apiClient.put(
+        '${ApiConstants.adminDriverList.replaceAll('/list', '')}/$driverId/reject',
       );
     } else if (status == 'SUSPENDED') {
       await _apiClient.patch(
@@ -70,6 +84,20 @@ class RiderVerificationRemoteDataSource {
     }
   }
 
+  /// Updates driver details as an admin.
+  Future<AdminDriverModel> updateDriverProfileAdmin({
+    required int userId,
+    required Map<String, dynamic> updateData,
+  }) async {
+    final response = await _apiClient.put(
+      '${ApiConstants.adminDriverList.replaceAll('/list', '')}/$userId',
+      data: updateData,
+    );
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
+    return AdminDriverModel.fromJson(data);
+  }
+
   /// Verifies a specific driver document (APPROVED, REJECTED).
   Future<void> verifyDriverDocument({
     required int driverId,
@@ -77,13 +105,17 @@ class RiderVerificationRemoteDataSource {
     required String status,
     String? rejectionReason,
   }) async {
-    await _apiClient.patch(
-      '${ApiConstants.adminDrivers}/$driverId/documents/$documentId/verify',
-      data: {
-        'status': status,
-        if (rejectionReason != null && rejectionReason.isNotEmpty)
-          'rejectionReason': rejectionReason,
-      },
+    final bool isApproved = status == 'APPROVED';
+    final Map<String, dynamic> queryParams = {
+      'approved': isApproved,
+    };
+    if (!isApproved && rejectionReason != null && rejectionReason.isNotEmpty) {
+      queryParams['rejectionReason'] = rejectionReason;
+    }
+
+    await _apiClient.put(
+      '${ApiConstants.adminDriverList.replaceAll('/list', '')}/documents/$documentId/verify',
+      queryParameters: queryParams,
     );
   }
 

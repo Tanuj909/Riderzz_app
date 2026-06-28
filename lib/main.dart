@@ -15,9 +15,15 @@ import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/user/addresses/data/datasource/address_remote_datasource.dart';
 import 'package:riderzz_app/features/user/addresses/data/repositories/address_repository.dart';
 import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
+import 'package:riderzz_app/features/user/saved_routes/data/datasource/saved_route_remote_datasource.dart';
+import 'package:riderzz_app/features/user/saved_routes/data/repositories/saved_route_repository.dart';
+import 'package:riderzz_app/features/user/saved_routes/providers/saved_route_provider.dart';
 import 'package:riderzz_app/features/admin/vehicles/data/datasource/admin_vehicles_remote_datasource.dart';
 import 'package:riderzz_app/features/admin/vehicles/data/repositories/admin_vehicles_repository.dart';
 import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_provider.dart';
+import 'package:riderzz_app/features/admin/vehicles/data/datasource/admin_vehicles_list_remote_datasource.dart';
+import 'package:riderzz_app/features/admin/vehicles/data/repositories/admin_vehicles_list_repository.dart';
+import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_list_provider.dart';
 import 'package:riderzz_app/features/admin/rider_verification/data/datasource/rider_verification_datasource.dart';
 import 'package:riderzz_app/features/admin/rider_verification/data/repositories/rider_verification_repository.dart';
 import 'package:riderzz_app/features/admin/rider_verification/providers/rider_verification_provider.dart';
@@ -25,6 +31,10 @@ import 'package:riderzz_app/features/admin/wallets/providers/admin_wallets_provi
 import 'package:riderzz_app/features/driver/home/data/datasource/driver_remote_datasource.dart';
 import 'package:riderzz_app/features/driver/home/data/repositories/driver_repository.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
+import 'package:riderzz_app/features/admin/commission/data/datasource/commission_datasource.dart';
+import 'package:riderzz_app/features/admin/commission/data/repositories/commission_repository.dart';
+import 'package:riderzz_app/features/admin/commission/providers/commission_provider.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,14 +69,23 @@ class MyApp extends StatelessWidget {
         ProxyProvider<ApiClient, AddressRemoteDataSource>(
           update: (_, apiClient, previous) => AddressRemoteDataSource(apiClient),
         ),
+        ProxyProvider<ApiClient, SavedRouteRemoteDataSource>(
+          update: (_, apiClient, previous) => SavedRouteRemoteDataSource(apiClient),
+        ),
         ProxyProvider<ApiClient, AdminVehiclesRemoteDataSource>(
           update: (_, apiClient, previous) => AdminVehiclesRemoteDataSource(apiClient),
+        ),
+        ProxyProvider<ApiClient, AdminVehiclesListRemoteDataSource>(
+          update: (_, apiClient, previous) => AdminVehiclesListRemoteDataSource(apiClient),
         ),
         ProxyProvider<ApiClient, RiderVerificationRemoteDataSource>(
           update: (_, apiClient, previous) => RiderVerificationRemoteDataSource(apiClient),
         ),
         ProxyProvider<ApiClient, DriverRemoteDataSource>(
           update: (_, apiClient, previous) => DriverRemoteDataSource(apiClient),
+        ),
+        ProxyProvider<ApiClient, CommissionRemoteDataSource>(
+          update: (_, apiClient, previous) => CommissionRemoteDataSource(apiClient),
         ),
 
         // 3. Repositories
@@ -76,14 +95,23 @@ class MyApp extends StatelessWidget {
         ProxyProvider<AddressRemoteDataSource, AddressRepository>(
           update: (_, addressDataSource, previous) => AddressRepository(addressDataSource),
         ),
+        ProxyProvider<SavedRouteRemoteDataSource, SavedRouteRepository>(
+          update: (_, dataSource, previous) => SavedRouteRepository(dataSource),
+        ),
         ProxyProvider<AdminVehiclesRemoteDataSource, AdminVehiclesRepository>(
           update: (_, vehiclesDataSource, previous) => AdminVehiclesRepository(vehiclesDataSource),
+        ),
+        ProxyProvider<AdminVehiclesListRemoteDataSource, AdminVehiclesListRepository>(
+          update: (_, listDataSource, previous) => AdminVehiclesListRepository(listDataSource),
         ),
         ProxyProvider<RiderVerificationRemoteDataSource, RiderVerificationRepository>(
           update: (_, dataSource, previous) => RiderVerificationRepository(dataSource),
         ),
         ProxyProvider<DriverRemoteDataSource, DriverRepository>(
           update: (_, dataSource, previous) => DriverRepository(dataSource),
+        ),
+        ProxyProvider<CommissionRemoteDataSource, CommissionRepository>(
+          update: (_, dataSource, previous) => CommissionRepository(dataSource),
         ),
         
         // 4. State Management (Providers)
@@ -100,9 +128,17 @@ class MyApp extends StatelessWidget {
           create: (context) => AddressProvider(context.read<AddressRepository>()),
           update: (_, addressRepo, previous) => previous ?? AddressProvider(addressRepo),
         ),
+        ChangeNotifierProxyProvider<SavedRouteRepository, SavedRouteProvider>(
+          create: (context) => SavedRouteProvider(context.read<SavedRouteRepository>()),
+          update: (_, repo, previous) => previous ?? SavedRouteProvider(repo),
+        ),
         ChangeNotifierProxyProvider<AdminVehiclesRepository, AdminVehiclesProvider>(
           create: (context) => AdminVehiclesProvider(context.read<AdminVehiclesRepository>()),
           update: (_, repository, previous) => previous ?? AdminVehiclesProvider(repository),
+        ),
+        ChangeNotifierProxyProvider<AdminVehiclesListRepository, AdminVehiclesListProvider>(
+          create: (context) => AdminVehiclesListProvider(context.read<AdminVehiclesListRepository>()),
+          update: (_, repository, previous) => previous ?? AdminVehiclesListProvider(repository),
         ),
         ChangeNotifierProxyProvider<RiderVerificationRepository, RiderVerificationProvider>(
           create: (context) => RiderVerificationProvider(context.read<RiderVerificationRepository>()),
@@ -115,6 +151,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProxyProvider<DriverRepository, DriverHomeProvider>(
           create: (context) => DriverHomeProvider(context.read<DriverRepository>()),
           update: (_, repository, previous) => previous ?? DriverHomeProvider(repository),
+        ),
+        ChangeNotifierProxyProvider<CommissionRepository, CommissionProvider>(
+          create: (context) => CommissionProvider(context.read<CommissionRepository>()),
+          update: (_, repository, previous) => previous ?? CommissionProvider(repository),
         ),
 
         // LocationProvider for current device location

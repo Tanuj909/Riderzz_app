@@ -37,23 +37,13 @@ class AddressProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> addAddress({
-    required String label,
-    required String address,
-    required double latitude,
-    required double longitude,
-  }) async {
+  Future<bool> addAddress(Map<String, dynamic> data) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final response = await _addressRepository.addAddress(
-        label: label,
-        address: address,
-        latitude: latitude,
-        longitude: longitude,
-      );
+      final response = await _addressRepository.addAddress(data);
 
       if (response.success) {
         await fetchAddresses();
@@ -79,10 +69,7 @@ class AddressProvider extends ChangeNotifier {
 
   Future<bool> updateAddress({
     required int id,
-    required String label,
-    required String address,
-    required double latitude,
-    required double longitude,
+    required Map<String, dynamic> data,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -91,10 +78,7 @@ class AddressProvider extends ChangeNotifier {
     try {
       final response = await _addressRepository.updateAddress(
         id: id,
-        label: label,
-        address: address,
-        latitude: latitude,
-        longitude: longitude,
+        data: data,
       );
 
       if (response.success) {
@@ -126,6 +110,36 @@ class AddressProvider extends ChangeNotifier {
 
     try {
       final response = await _addressRepository.deleteAddress(id);
+
+      if (response.success) {
+        await fetchAddresses();
+        return true;
+      } else {
+        _errorMessage = response.message;
+      }
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> setDefaultAddress(int id) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _addressRepository.setDefaultAddress(id);
 
       if (response.success) {
         await fetchAddresses();
