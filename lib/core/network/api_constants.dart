@@ -21,6 +21,7 @@ class ApiConstants {
   // User Endpoints
   static const String addresses = '/addresses';
   static const String savedRoutes = '/saved-routes';
+  static const String bookings = '/bookings';
 
   // Driver Endpoints
   static const String driverProfile = '/driver/profile';

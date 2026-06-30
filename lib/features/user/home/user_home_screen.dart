@@ -71,7 +71,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             // Reusable User Layout App Bar Header
             Container(
               color: const Color(0xFF1A3D6B),
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -86,30 +86,6 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      if (user?.status != null) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: user?.status == 'ACTIVE' ? Colors.greenAccent : Colors.orangeAccent,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              user?.status ?? '',
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                     ],
                   ),
                   PopupMenuButton<String>(

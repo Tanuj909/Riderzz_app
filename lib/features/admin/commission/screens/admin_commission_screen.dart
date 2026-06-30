@@ -33,12 +33,17 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
             Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
             SizedBox(width: 8),
-            Text('Delete Config', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              'Delete Config',
+              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A2233)),
+            ),
           ],
         ),
         content: Text(
@@ -401,12 +406,15 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                 const SizedBox(height: 6),
                 DropdownButtonFormField<int>(
                   value: _selectedVehicleTypeId,
+                  dropdownColor: Colors.white,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6B7785)),
+                  borderRadius: BorderRadius.circular(12),
                   onChanged: (val) {
                     setState(() {
                       _selectedVehicleTypeId = val;
                     });
                   },
-                  style: const TextStyle(fontSize: 13, color: Color(0xFF1A2233)),
+                  style: const TextStyle(fontSize: 13, color: Color(0xFF1A2233), fontWeight: FontWeight.w500),
                   decoration: InputDecoration(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     filled: true,
@@ -423,7 +431,10 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                   items: vehicleTypes.map((type) {
                     return DropdownMenuItem<int>(
                       value: type.id,
-                      child: Text(type.name),
+                      child: Text(
+                        type.name,
+                        style: const TextStyle(color: Color(0xFF1A2233), fontSize: 13),
+                      ),
                     );
                   }).toList(),
                   validator: (val) => val == null ? 'Vehicle type is required' : null,
@@ -440,7 +451,7 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                 TextFormField(
                   controller: _percentController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  style: const TextStyle(fontSize: 13),
+                  style: const TextStyle(fontSize: 13, color: Color(0xFF1A2233), fontWeight: FontWeight.w500),
                   decoration: InputDecoration(
                     hintText: 'e.g., 15.5',
                     hintStyle: const TextStyle(color: Color(0xFFB0B8C4), fontSize: 13),

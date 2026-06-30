@@ -317,6 +317,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            /*
             const Text(
               'Operational Overview',
               style: TextStyle(
@@ -363,6 +364,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ],
             ),
             const SizedBox(height: 24),
+            */
    
             const Text(
               'Administrative Tasks',

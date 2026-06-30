@@ -34,6 +34,10 @@ import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.
 import 'package:riderzz_app/features/admin/commission/data/datasource/commission_datasource.dart';
 import 'package:riderzz_app/features/admin/commission/data/repositories/commission_repository.dart';
 import 'package:riderzz_app/features/admin/commission/providers/commission_provider.dart';
+import 'package:riderzz_app/features/user/home/data/datasource/booking_datasource.dart';
+import 'package:riderzz_app/features/user/home/data/repositories/booking_repository.dart';
+import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
+
 
 
 void main() async {
@@ -87,6 +91,9 @@ class MyApp extends StatelessWidget {
         ProxyProvider<ApiClient, CommissionRemoteDataSource>(
           update: (_, apiClient, previous) => CommissionRemoteDataSource(apiClient),
         ),
+        ProxyProvider<ApiClient, BookingRemoteDataSource>(
+          update: (_, apiClient, previous) => BookingRemoteDataSource(apiClient),
+        ),
 
         // 3. Repositories
         ProxyProvider<AuthRemoteDataSource, AuthRepository>(
@@ -112,6 +119,9 @@ class MyApp extends StatelessWidget {
         ),
         ProxyProvider<CommissionRemoteDataSource, CommissionRepository>(
           update: (_, dataSource, previous) => CommissionRepository(dataSource),
+        ),
+        ProxyProvider<BookingRemoteDataSource, BookingRepository>(
+          update: (_, dataSource, previous) => BookingRepository(dataSource),
         ),
         
         // 4. State Management (Providers)
@@ -155,6 +165,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProxyProvider<CommissionRepository, CommissionProvider>(
           create: (context) => CommissionProvider(context.read<CommissionRepository>()),
           update: (_, repository, previous) => previous ?? CommissionProvider(repository),
+        ),
+        ChangeNotifierProxyProvider<BookingRepository, BookingProvider>(
+          create: (context) => BookingProvider(context.read<BookingRepository>()),
+          update: (_, repository, previous) => previous ?? BookingProvider(repository),
         ),
 
         // LocationProvider for current device location

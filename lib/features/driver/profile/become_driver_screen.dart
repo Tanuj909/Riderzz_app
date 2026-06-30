@@ -5,8 +5,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
-import 'package:riderzz_app/core/models/available_vehicle_model.dart';
 import 'package:riderzz_app/core/models/driver_profile_model.dart';
+import 'package:riderzz_app/core/models/vehicle_type_model.dart';
+import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_provider.dart';
 
 class BecomeDriverScreen extends StatefulWidget {
   const BecomeDriverScreen({super.key});
@@ -39,7 +40,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
   final _rcBookController = TextEditingController();
   final _insuranceController = TextEditingController();
 
-  AvailableVehicleModel? _selectedVehicle;
+  VehicleTypeModel? _selectedVehicle;
 
   // Image picker and picked file references
   final ImagePicker _picker = ImagePicker();
@@ -57,7 +58,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = Provider.of<DriverHomeProvider>(context, listen: false);
       provider.fetchDriverProfile();
-      provider.fetchAvailableVehicles();
+      Provider.of<AdminVehiclesProvider>(context, listen: false).fetchVehicleTypes();
     });
   }
 
@@ -452,6 +453,111 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
     );
   }
 
+  Future<void> _selectYear(BuildContext context) async {
+    final DateTime now = DateTime.now();
+    final DateTime initialDate = DateTime(
+      int.tryParse(_yearController.text) ?? now.year,
+      1,
+      1,
+    );
+
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(1980),
+      lastDate: now,
+      initialDatePickerMode: DatePickerMode.year,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF1A3D6B),
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF1A2233),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _yearController.text = picked.year.toString();
+      });
+    }
+  }
+
+  Future<void> _selectLicenseExpiry(BuildContext context) async {
+    DateTime initialDate = DateTime.now().add(const Duration(days: 365));
+    if (_licenseExpiryController.text.isNotEmpty) {
+      try {
+        initialDate = DateTime.parse(_licenseExpiryController.text);
+      } catch (_) {}
+    }
+
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 20)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF1A3D6B),
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF1A2233),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _licenseExpiryController.text =
+            "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      });
+    }
+  }
+
+  Future<void> _selectInsuranceExpiry(BuildContext context) async {
+    DateTime initialDate = DateTime.now().add(const Duration(days: 365));
+    if (_insuranceExpiryController.text.isNotEmpty) {
+      try {
+        initialDate = DateTime.parse(_insuranceExpiryController.text);
+      } catch (_) {}
+    }
+
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF1A3D6B),
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF1A2233),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _insuranceExpiryController.text =
+            "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -720,7 +826,8 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
   }
 
   Widget _buildStep2Form(String? name, String? phone, DriverHomeProvider driverProvider) {
-    final vehicles = driverProvider.availableVehicles;
+    final vehiclesProvider = Provider.of<AdminVehiclesProvider>(context);
+    final vehicleTypes = vehiclesProvider.vehicleTypes;
 
     return Form(
       key: _formKey,
@@ -781,14 +888,14 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
           ),
           const SizedBox(height: 20),
 
-          // Select Available Vehicle Category
+          // Select Available Vehicle Type
           const Text(
-            'Select Vehicle Category',
+            'Select Vehicle Type',
             style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 10),
           
-          if (driverProvider.isLoading && vehicles.isEmpty) ...[
+          if (vehiclesProvider.isLoading && vehicleTypes.isEmpty) ...[
             const Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 20.0),
@@ -802,7 +909,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                 ),
               ),
             )
-          ] else if (vehicles.isEmpty) ...[
+          ] else if (vehicleTypes.isEmpty) ...[
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -811,34 +918,54 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                 border: Border.all(color: Colors.redAccent.withOpacity(0.2)),
               ),
               child: const Text(
-                'No available vehicles found. Please contact admin.',
+                'No available vehicle types found. Please contact admin.',
                 style: TextStyle(color: Colors.redAccent, fontSize: 13),
               ),
             ),
           ] else ...[
             SizedBox(
-              height: 96,
+              height: 80,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: vehicles.length,
+                itemCount: vehicleTypes.length,
                 itemBuilder: (context, index) {
-                  final v = vehicles[index];
-                  final isSelected = _selectedVehicle?.id == v.id;
+                  final vt = vehicleTypes[index];
+                  final isSelected = _selectedVehicle?.id == vt.id;
                   
-                  IconData categoryIcon = Icons.directions_car_rounded;
-                  if (v.vehicleTypeName.toLowerCase().contains('bike')) {
-                    categoryIcon = Icons.directions_bike_rounded;
-                  } else if (v.vehicleTypeName.toLowerCase().contains('cart')) {
-                    categoryIcon = Icons.local_shipping_rounded;
+                  Widget vehicleIcon;
+                  if (vt.iconUrl != null && vt.iconUrl!.isNotEmpty) {
+                    vehicleIcon = Image.network(
+                      vt.iconUrl!,
+                      width: 20,
+                      height: 20,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        Icons.local_shipping_rounded,
+                        color: isSelected ? const Color(0xFF1A3D6B) : const Color(0xFF6B7785),
+                        size: 18,
+                      ),
+                    );
+                  } else {
+                    IconData typeIcon = Icons.directions_car_rounded;
+                    if (vt.name.toLowerCase().contains('bike') || vt.name.toLowerCase().contains('scoot')) {
+                      typeIcon = Icons.directions_bike_rounded;
+                    } else if (vt.name.toLowerCase().contains('cart') || vt.name.toLowerCase().contains('truck')) {
+                      typeIcon = Icons.local_shipping_rounded;
+                    }
+                    vehicleIcon = Icon(
+                      typeIcon,
+                      color: isSelected ? const Color(0xFF1A3D6B) : const Color(0xFF6B7785),
+                      size: 20,
+                    );
                   }
 
                   return GestureDetector(
                     onTap: () {
-                      setState(() => _selectedVehicle = v);
+                      setState(() => _selectedVehicle = vt);
                     },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      width: 110,
+                      width: 90,
                       margin: const EdgeInsets.only(right: 12),
                       decoration: BoxDecoration(
                         color: isSelected ? const Color(0xFFE8F0FB) : const Color(0xFFF7F8FA),
@@ -851,29 +978,25 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            categoryIcon,
-                            color: isSelected ? const Color(0xFF1A3D6B) : const Color(0xFF6B7785),
-                            size: 24,
-                          ),
+                          vehicleIcon,
                           const SizedBox(height: 4),
                           Text(
-                            '${v.make} ${v.model}',
+                            vt.name,
                             textAlign: TextAlign.center,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: isSelected ? const Color(0xFF1A3D6B) : const Color(0xFF1A2233),
-                              fontSize: 11,
+                              fontSize: 10,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 1),
                           Text(
-                            '₹${v.perKmRate.toStringAsFixed(0)}/km',
+                            '₹${vt.perKmRate.toStringAsFixed(0)}/km',
                             style: TextStyle(
                               color: isSelected ? const Color(0xFF1A3D6B).withOpacity(0.7) : const Color(0xFFB0B8C4),
-                              fontSize: 10,
+                              fontSize: 8.5,
                             ),
                           ),
                         ],
@@ -964,9 +1087,10 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _yearController,
-                      keyboardType: TextInputType.number,
+                      readOnly: true,
+                      onTap: () => _selectYear(context),
                       style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
-                      decoration: _buildInputDecoration('e.g. 2020', Icons.calendar_today_outlined),
+                      decoration: _buildInputDecoration('Select Year', Icons.calendar_today_outlined),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) return 'Year is required';
                         if (int.tryParse(value.trim()) == null) return 'Enter valid year';
@@ -994,8 +1118,10 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _licenseExpiryController,
+                      readOnly: true,
+                      onTap: () => _selectLicenseExpiry(context),
                       style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
-                      decoration: _buildInputDecoration('YYYY-MM-DD', Icons.date_range_outlined),
+                      decoration: _buildInputDecoration('Select Expiry Date', Icons.date_range_outlined),
                       validator: (value) => value == null || value.trim().isEmpty ? 'Expiry required' : null,
                     ),
                   ],
@@ -1013,8 +1139,10 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _insuranceExpiryController,
+                      readOnly: true,
+                      onTap: () => _selectInsuranceExpiry(context),
                       style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
-                      decoration: _buildInputDecoration('YYYY-MM-DD', Icons.date_range_outlined),
+                      decoration: _buildInputDecoration('Select Expiry Date', Icons.date_range_outlined),
                       validator: (value) => value == null || value.trim().isEmpty ? 'Expiry required' : null,
                     ),
                   ],
@@ -1047,13 +1175,25 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             value: _selectedGender,
-            style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+            style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14, fontWeight: FontWeight.w500),
             decoration: _buildInputDecoration('Select Gender', Icons.people_outline),
             dropdownColor: Colors.white,
+            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6B7785)),
+            isExpanded: true,
+            borderRadius: BorderRadius.circular(12),
             items: const [
-              DropdownMenuItem(value: 'MALE', child: Text('Male')),
-              DropdownMenuItem(value: 'FEMALE', child: Text('Female')),
-              DropdownMenuItem(value: 'OTHER', child: Text('Other')),
+              DropdownMenuItem(
+                value: 'MALE',
+                child: Text('Male', style: TextStyle(color: Color(0xFF1A2233), fontSize: 14)),
+              ),
+              DropdownMenuItem(
+                value: 'FEMALE',
+                child: Text('Female', style: TextStyle(color: Color(0xFF1A2233), fontSize: 14)),
+              ),
+              DropdownMenuItem(
+                value: 'OTHER',
+                child: Text('Other', style: TextStyle(color: Color(0xFF1A2233), fontSize: 14)),
+              ),
             ],
             onChanged: (val) {
               if (val != null) {

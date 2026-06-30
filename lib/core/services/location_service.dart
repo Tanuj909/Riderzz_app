@@ -7,13 +7,6 @@ class LocationService {
   /// Checks and requests location permission.
   /// Returns the resulting [LocationPermission] status.
   Future<LocationPermission> requestPermission() async {
-    // First check if location services are enabled
-    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      debugPrint('LocationService: Location services are disabled.');
-      return LocationPermission.denied;
-    }
-
     // Check current permission status
     LocationPermission permission = await Geolocator.checkPermission();
 
@@ -21,6 +14,15 @@ class LocationService {
       // Request permission from the user
       permission = await Geolocator.requestPermission();
       debugPrint('LocationService: Permission after request → $permission');
+    }
+
+    // If permission is active, check if device GPS / location services are on
+    if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint('LocationService: Location services are disabled. Prompting to enable.');
+        await Geolocator.openLocationSettings();
+      }
     }
 
     if (permission == LocationPermission.deniedForever) {
