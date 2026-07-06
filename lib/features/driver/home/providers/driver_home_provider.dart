@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:riderzz_app/core/models/driver_profile_model.dart';
 import 'package:riderzz_app/core/models/driver_wallet_model.dart';
 import 'package:riderzz_app/core/models/available_vehicle_model.dart';
+import 'package:riderzz_app/core/models/bank_account_model.dart';
 import 'package:riderzz_app/core/network/api_exception.dart';
 import 'package:riderzz_app/features/driver/home/data/repositories/driver_repository.dart';
 
@@ -17,6 +18,12 @@ class DriverHomeProvider extends ChangeNotifier {
   bool _isWalletLoading = false;
   String? _walletError;
 
+  // Bank Accounts properties
+  List<BankAccountModel> _bankAccounts = [];
+  BankAccountModel? _primaryBankAccount;
+  bool _isBankAccountsLoading = false;
+  String? _bankAccountsError;
+
   DriverHomeProvider(this._driverRepository);
 
   DriverProfileModel? get profile => _profile;
@@ -27,6 +34,12 @@ class DriverHomeProvider extends ChangeNotifier {
   DriverWalletModel? get wallet => _wallet;
   bool get isWalletLoading => _isWalletLoading;
   String? get walletError => _walletError;
+
+  // Bank Accounts getters
+  List<BankAccountModel> get bankAccounts => _bankAccounts;
+  BankAccountModel? get primaryBankAccount => _primaryBankAccount;
+  bool get isBankAccountsLoading => _isBankAccountsLoading;
+  String? get bankAccountsError => _bankAccountsError;
 
   Future<void> fetchDriverProfile() async {
     _isLoading = true;
@@ -276,6 +289,96 @@ class DriverHomeProvider extends ChangeNotifier {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
       notifyListeners();
       return false;
+    }
+  }
+
+  // Bank Accounts operations
+  Future<void> fetchBankAccounts() async {
+    _isBankAccountsLoading = true;
+    _bankAccountsError = null;
+    notifyListeners();
+
+    try {
+      _bankAccounts = await _driverRepository.getBankAccounts();
+      // Update _primaryBankAccount locally based on the list
+      final primary = _bankAccounts.firstWhere(
+        (acc) => acc.primaryAccount,
+        orElse: () => BankAccountModel(id: 0, accountHolderName: '', bankName: '', accountNumber: '', ifscCode: '', primaryAccount: false),
+      );
+      _primaryBankAccount = primary.id != 0 ? primary : null;
+      _isBankAccountsLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isBankAccountsLoading = false;
+      _bankAccountsError = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+    }
+  }
+
+  Future<bool> addBankAccount(Map<String, dynamic> data) async {
+    _isBankAccountsLoading = true;
+    _bankAccountsError = null;
+    notifyListeners();
+
+    try {
+      await _driverRepository.addBankAccount(data);
+      await fetchBankAccounts(); // Refresh the list
+      return true;
+    } catch (e) {
+      _isBankAccountsLoading = false;
+      _bankAccountsError = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateBankAccount(int id, Map<String, dynamic> data) async {
+    _isBankAccountsLoading = true;
+    _bankAccountsError = null;
+    notifyListeners();
+
+    try {
+      await _driverRepository.updateBankAccount(id, data);
+      await fetchBankAccounts(); // Refresh the list
+      return true;
+    } catch (e) {
+      _isBankAccountsLoading = false;
+      _bankAccountsError = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteBankAccount(int id) async {
+    _isBankAccountsLoading = true;
+    _bankAccountsError = null;
+    notifyListeners();
+
+    try {
+      await _driverRepository.deleteBankAccount(id);
+      await fetchBankAccounts(); // Refresh the list
+      return true;
+    } catch (e) {
+      _isBankAccountsLoading = false;
+      _bankAccountsError = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<void> fetchPrimaryBankAccount() async {
+    _isBankAccountsLoading = true;
+    _bankAccountsError = null;
+    notifyListeners();
+
+    try {
+      _primaryBankAccount = await _driverRepository.getPrimaryBankAccount();
+      _isBankAccountsLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isBankAccountsLoading = false;
+      _bankAccountsError = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
     }
   }
 }

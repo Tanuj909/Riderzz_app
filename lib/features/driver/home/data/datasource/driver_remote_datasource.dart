@@ -5,6 +5,7 @@ import 'package:riderzz_app/core/network/api_exception.dart';
 import 'package:riderzz_app/core/models/driver_profile_model.dart';
 import 'package:riderzz_app/core/models/driver_wallet_model.dart';
 import 'package:riderzz_app/core/models/available_vehicle_model.dart';
+import 'package:riderzz_app/core/models/bank_account_model.dart';
 
 class DriverRemoteDataSource {
   final ApiClient _apiClient;
@@ -96,5 +97,48 @@ class DriverRemoteDataSource {
       ApiConstants.driverDocuments,
       data: formData,
     );
+  }
+
+  Future<List<BankAccountModel>> getBankAccounts() async {
+    final response = await _apiClient.get(ApiConstants.bankAccounts);
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final List<dynamic> list = resBody['data'] as List? ?? [];
+    return list.map((item) => BankAccountModel.fromJson(Map<String, dynamic>.from(item))).toList();
+  }
+
+  Future<BankAccountModel> addBankAccount(Map<String, dynamic> data) async {
+    final response = await _apiClient.post(
+      ApiConstants.bankAccounts,
+      data: data,
+    );
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final Map<String, dynamic> dataMap = Map<String, dynamic>.from(resBody['data'] ?? {});
+    return BankAccountModel.fromJson(dataMap);
+  }
+
+  Future<BankAccountModel> updateBankAccount(int id, Map<String, dynamic> data) async {
+    final response = await _apiClient.put(
+      '${ApiConstants.bankAccounts}/$id',
+      data: data,
+    );
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final Map<String, dynamic> dataMap = Map<String, dynamic>.from(resBody['data'] ?? {});
+    return BankAccountModel.fromJson(dataMap);
+  }
+
+  Future<void> deleteBankAccount(int id) async {
+    await _apiClient.delete('${ApiConstants.bankAccounts}/$id');
+  }
+
+  Future<BankAccountModel?> getPrimaryBankAccount() async {
+    try {
+      final response = await _apiClient.get(ApiConstants.primaryBankAccount);
+      final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+      if (resBody['data'] == null) return null;
+      final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data']);
+      return BankAccountModel.fromJson(data);
+    } catch (_) {
+      return null;
+    }
   }
 }

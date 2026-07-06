@@ -6,6 +6,7 @@ import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.
 import 'package:riderzz_app/features/driver/home/pages/driver_home_page.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_history_page.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_wallet_page.dart';
+import 'package:riderzz_app/features/driver/home/pages/driver_bank_accounts_page.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_profile_page.dart';
 
 class DriverHomeScreen extends StatefulWidget {
@@ -507,6 +508,11 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
             label: 'Wallet',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.account_balance_outlined),
+            activeIcon: Icon(Icons.account_balance_rounded),
+            label: 'Accounts',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.person_outline_rounded),
             activeIcon: Icon(Icons.person_rounded),
             label: 'Profile',
@@ -525,6 +531,8 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
       case 2:
         return const DriverWalletPage();
       case 3:
+        return const DriverBankAccountsPage();
+      case 4:
         return const DriverProfilePage();
       default:
         return const DriverHomePage();

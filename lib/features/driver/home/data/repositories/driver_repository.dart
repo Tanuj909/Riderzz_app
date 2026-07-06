@@ -1,6 +1,7 @@
 import 'package:riderzz_app/core/models/driver_profile_model.dart';
 import 'package:riderzz_app/core/models/driver_wallet_model.dart';
 import 'package:riderzz_app/core/models/available_vehicle_model.dart';
+import 'package:riderzz_app/core/models/bank_account_model.dart';
 import 'package:riderzz_app/features/driver/home/data/datasource/driver_remote_datasource.dart';
 
 class DriverRepository {
@@ -52,5 +53,25 @@ class DriverRepository {
 
   Future<void> uploadDriverDocument(String docType, String filePath) async {
     await _remoteDataSource.uploadDriverDocument(docType, filePath);
+  }
+
+  Future<List<BankAccountModel>> getBankAccounts() async {
+    return await _remoteDataSource.getBankAccounts();
+  }
+
+  Future<BankAccountModel> addBankAccount(Map<String, dynamic> data) async {
+    return await _remoteDataSource.addBankAccount(data);
+  }
+
+  Future<BankAccountModel> updateBankAccount(int id, Map<String, dynamic> data) async {
+    return await _remoteDataSource.updateBankAccount(id, data);
+  }
+
+  Future<void> deleteBankAccount(int id) async {
+    await _remoteDataSource.deleteBankAccount(id);
+  }
+
+  Future<BankAccountModel?> getPrimaryBankAccount() async {
+    return await _remoteDataSource.getPrimaryBankAccount();
   }
 }
