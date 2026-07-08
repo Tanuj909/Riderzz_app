@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/features/user/addresses/location_picker_screen.dart';
 import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
 
 class AddressListScreen extends StatefulWidget {
-  const AddressListScreen({super.key});
+  final bool showBackButton;
+  const AddressListScreen({super.key, this.showBackButton = true});
 
   @override
   State<AddressListScreen> createState() => _AddressListScreenState();
@@ -120,15 +122,19 @@ class _AddressListScreenState extends State<AddressListScreen> {
                           children: [
                             Text(
                               addressToEdit != null ? 'Edit Address' : 'Add New Address',
-                              style: const TextStyle(
+                              style: GoogleFonts.poppins(
                                 fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A2233),
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF121214),
                               ),
                             ),
                             IconButton(
                               onPressed: () => Navigator.pop(context),
-                              icon: const Icon(Icons.close_rounded, color: Color(0xFF6B7785)),
+                              icon: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: const BoxDecoration(color: Color(0xFFF1F1F4), shape: BoxShape.circle),
+                                child: const Icon(Icons.close_rounded, color: Color(0xFF121214), size: 18),
+                              ),
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                             ),
@@ -190,32 +196,32 @@ class _AddressListScreenState extends State<AddressListScreen> {
                           },
                           child: Container(
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF7F8FA),
-                              border: Border.all(color: const Color(0xFFE9ECF0)),
-                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.white,
+                              border: Border.all(color: const Color(0xFFE7E7EB)),
+                              borderRadius: BorderRadius.circular(24),
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             child: Row(
                               children: [
-                                const Icon(Icons.map_outlined, size: 20, color: Color(0xFF1A3D6B)),
-                                const SizedBox(width: 10),
+                                const Icon(Icons.my_location_rounded, size: 18, color: Color(0xFFE31C2E)),
+                                const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
                                     locationController.text.isNotEmpty
                                         ? locationController.text
                                         : 'Choose Location from Map',
-                                    style: TextStyle(
-                                      fontSize: 14,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 13,
                                       fontWeight: FontWeight.w500,
                                       color: locationController.text.isNotEmpty
-                                          ? const Color(0xFF1A2233)
-                                          : const Color(0xFF6B7785),
+                                          ? const Color(0xFF121214)
+                                          : const Color(0xFF6C6F79),
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                const Icon(Icons.chevron_right_rounded, color: Color(0xFF6B7785), size: 20),
+                                const Icon(Icons.chevron_right_rounded, color: Color(0xFF6C6F79), size: 18),
                               ],
                             ),
                           ),
@@ -349,15 +355,15 @@ class _AddressListScreenState extends State<AddressListScreen> {
                               children: [
                                 Text(
                                   showAdvanced ? 'Hide Optional Details' : 'Show Optional Details',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A3D6B),
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF121214),
                                   ),
                                 ),
                                 Icon(
                                   showAdvanced ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                                  color: const Color(0xFF1A3D6B),
+                                  color: const Color(0xFFE31C2E),
                                   size: 20,
                                 ),
                               ],
@@ -402,17 +408,17 @@ class _AddressListScreenState extends State<AddressListScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            Text(
                               'Set as Default Address',
-                              style: TextStyle(
-                                fontSize: 14,
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF1A2233),
+                                color: const Color(0xFF121214),
                               ),
                             ),
                             Switch(
                               value: isDefault,
-                              activeColor: const Color(0xFF1A3D6B),
+                              activeColor: const Color(0xFFE31C2E),
                               onChanged: (val) {
                                 setModalState(() {
                                   isDefault = val;
@@ -429,11 +435,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
                           height: 48,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1A3D6B),
+                              backgroundColor: const Color(0xFFE31C2E),
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(24),
                               ),
                             ),
                             onPressed: () {
@@ -469,7 +475,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                             },
                             child: Text(
                               addressToEdit != null ? 'Update Address' : 'Save Address',
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                              style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
                             ),
                           ),
                         ),
@@ -498,33 +504,38 @@ class _AddressListScreenState extends State<AddressListScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 11,
-            color: Color(0xFF6B7785),
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: const Color(0xFF121214),
             fontWeight: FontWeight.w600,
-            letterSpacing: 0.3,
           ),
         ),
-        const SizedBox(height: 5),
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFF7F8FA),
-            border: Border.all(color: const Color(0xFFE9ECF0)),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: TextFormField(
-            controller: controller,
-            style: const TextStyle(fontSize: 14, color: Color(0xFF1A2233), fontWeight: FontWeight.w500),
-            keyboardType: keyboardType,
-            validator: validator,
-            decoration: InputDecoration(
-              prefixIcon: Icon(prefixIcon, size: 18, color: const Color(0xFF6B7785)),
-              prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 20),
-              hintText: hint,
-              hintStyle: const TextStyle(color: Color(0xFFB0B8C4), fontSize: 13),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: controller,
+          style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
+          keyboardType: keyboardType,
+          validator: validator,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.white,
+            prefixIcon: Icon(prefixIcon, size: 18, color: const Color(0xFF6C6F79)),
+            prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            hintText: hint,
+            hintStyle: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13),
+            contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            isDense: true,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: const BorderSide(color: Color(0xFF121214)),
             ),
           ),
         ),
@@ -541,15 +552,16 @@ class _AddressListScreenState extends State<AddressListScreen> {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFE8F0FB) : const Color(0xFFF7F8FA),
+            color: isSelected ? const Color(0xFFE31C2E) : Colors.white,
             border: Border.all(
-              color: isSelected ? const Color(0xFF1A3D6B) : const Color(0xFFE9ECF0),
-              width: 1.5,
+              color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
+              width: 1,
             ),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -557,15 +569,15 @@ class _AddressListScreenState extends State<AddressListScreen> {
               Icon(
                 icon,
                 size: 16,
-                color: isSelected ? const Color(0xFF1A3D6B) : const Color(0xFF6B7785),
+                color: isSelected ? Colors.white : const Color(0xFF6C6F79),
               ),
               const SizedBox(width: 6),
               Text(
                 label,
-                style: TextStyle(
+                style: GoogleFonts.poppins(
                   fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: isSelected ? const Color(0xFF1A3D6B) : const Color(0xFF4A5568),
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : const Color(0xFF6C6F79),
                 ),
               ),
             ],
@@ -582,28 +594,54 @@ class _AddressListScreenState extends State<AddressListScreen> {
     final isLoading = addressProvider.isLoading;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: const Color(0xFFF6F6F8),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A3D6B),
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-        ),
-        title: const Text(
+        centerTitle: false,
+        automaticallyImplyLeading: widget.showBackButton,
+        leading: widget.showBackButton
+            ? IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF121214), size: 20),
+              )
+            : null,
+        title: Text(
           'Saved Addresses',
-          style: TextStyle(
-            color: Colors.white,
+          style: GoogleFonts.poppins(
+            color: const Color(0xFF121214),
             fontSize: 18,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.5,
           ),
         ),
-        systemOverlayStyle: SystemUiOverlayStyle.light,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: Center(
+              child: ElevatedButton.icon(
+                onPressed: () => _showAddressBottomSheet(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE31C2E),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+                  minimumSize: const Size(0, 32),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: Text('Add', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
+            ),
+          ),
+        ],
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
       body: isLoading && addresses.isEmpty
           ? const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B)),
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
               ),
             )
           : addresses.isEmpty
@@ -611,41 +649,60 @@ class _AddressListScreenState extends State<AddressListScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
-                        Icons.home_work_outlined,
-                        size: 80,
-                        color: Color(0xFFB0B8C4),
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.location_off_rounded,
+                          size: 64,
+                          color: Color(0xFFD0D5DD),
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
+                      const SizedBox(height: 24),
+                      Text(
                         'No Saved Addresses',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A2233),
+                          color: const Color(0xFF121214),
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      const Text(
+                      const SizedBox(height: 8),
+                      Text(
                         'Save your locations for instant booking.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF6B7785),
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: const Color(0xFF6C6F79),
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 32),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1A3D6B),
+                          backgroundColor: const Color(0xFF121214),
                           foregroundColor: Colors.white,
                           elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         onPressed: () => _showAddressBottomSheet(context),
-                        icon: const Icon(Icons.add_rounded, size: 16),
-                        label: const Text('Add Address'),
+                        icon: const Icon(Icons.add_location_alt_rounded, size: 20),
+                        label: Text(
+                          'Add New Address',
+                          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+                        ),
                       ),
                     ],
                   ),
@@ -659,76 +716,119 @@ class _AddressListScreenState extends State<AddressListScreen> {
                     final address = item['address'] ?? '';
 
                     IconData leadIcon = Icons.location_on_rounded;
-                    Color leadBg = const Color(0xFFFFF3E8);
-                    Color leadIconColor = const Color(0xFFF97316);
+                    Color leadBg = const Color(0xFFF1F1F4);
+                    Color leadIconColor = const Color(0xFF121214);
 
                     final lowerLabel = label.toLowerCase();
                     if (lowerLabel == 'home') {
                       leadIcon = Icons.home_rounded;
-                      leadBg = const Color(0xFFE6F7F2);
-                      leadIconColor = const Color(0xFF0F9B6E);
+                      leadBg = const Color(0xFFE7F7EF);
+                      leadIconColor = const Color(0xFF1C9A5B);
                     } else if (lowerLabel == 'office') {
                       leadIcon = Icons.business_rounded;
-                      leadBg = const Color(0xFFE8F0FB);
-                      leadIconColor = const Color(0xFF1A3D6B);
+                      leadBg = const Color(0xFFFDEBEC);
+                      leadIconColor = const Color(0xFFE31C2E);
                     }
 
                     return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
+                      margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFFE9ECF0)),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                        border: Border.all(color: const Color(0xFFF1F1F4)),
                       ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        leading: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: leadBg,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          alignment: Alignment.center,
-                          child: Icon(leadIcon, color: leadIconColor, size: 20),
-                        ),
-                        title: Text(
-                          label,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1A2233),
-                          ),
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 4.0),
-                          child: Text(
-                            address,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF6B7785),
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            IconButton(
-                              onPressed: () => _showAddressBottomSheet(context, addressToEdit: item),
-                              icon: const Icon(
-                                Icons.edit_outlined,
-                                color: Color(0xFF1A3D6B),
-                                size: 20,
-                              ),
+                            Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: leadBg,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Icon(leadIcon, color: leadIconColor, size: 20),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        label,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: const Color(0xFF121214),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        address,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 12,
+                                          color: const Color(0xFF6C6F79),
+                                          fontWeight: FontWeight.w500,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                            IconButton(
-                              onPressed: () => _deleteAddress(item['id']),
-                              icon: const Icon(
-                                Icons.delete_outline_rounded,
-                                color: Colors.redAccent,
-                                size: 20,
-                              ),
+                            const SizedBox(height: 12),
+                            const Divider(height: 1, color: Color(0xFFF1F1F4)),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                TextButton(
+                                  onPressed: () => _showAddressBottomSheet(context, addressToEdit: item),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(
+                                    'Edit',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF121214),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                TextButton(
+                                  onPressed: () => _deleteAddress(item['id']),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(
+                                    'Delete',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFFE31C2E),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -736,15 +836,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                     );
                   },
                 ),
-      floatingActionButton: addresses.isNotEmpty
-          ? FloatingActionButton(
-              onPressed: () => _showAddressBottomSheet(context),
-              backgroundColor: const Color(0xFF1A3D6B),
-              elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
-            )
-          : null,
+
     );
   }
 }

@@ -17,6 +17,7 @@ class DriverHomeProvider extends ChangeNotifier {
   DriverWalletModel? _wallet;
   bool _isWalletLoading = false;
   String? _walletError;
+  bool _isWalletNotCreated = false;
 
   // Bank Accounts properties
   List<BankAccountModel> _bankAccounts = [];
@@ -34,6 +35,7 @@ class DriverHomeProvider extends ChangeNotifier {
   DriverWalletModel? get wallet => _wallet;
   bool get isWalletLoading => _isWalletLoading;
   String? get walletError => _walletError;
+  bool get isWalletNotCreated => _isWalletNotCreated;
 
   // Bank Accounts getters
   List<BankAccountModel> get bankAccounts => _bankAccounts;
@@ -53,7 +55,8 @@ class DriverHomeProvider extends ChangeNotifier {
       notifyListeners();
     } on ApiException catch (e) {
       _isLoading = false;
-      if (e.statusCode == 404 || e.message.toLowerCase().contains('not found')) {
+      if (e.statusCode == 404 ||
+          e.message.toLowerCase().contains('not found')) {
         _profile = null;
         _errorMessage = null;
       } else {
@@ -70,10 +73,39 @@ class DriverHomeProvider extends ChangeNotifier {
   Future<void> fetchDriverWallet() async {
     _isWalletLoading = true;
     _walletError = null;
+    _isWalletNotCreated = false;
     notifyListeners();
 
     try {
       _wallet = await _driverRepository.getDriverWallet();
+      _isWalletLoading = false;
+      notifyListeners();
+    } on ApiException catch (e) {
+      if (e.statusCode == 404 ||
+          e.message.toLowerCase().contains('not found')) {
+        _isWalletNotCreated = true;
+        _isWalletLoading = false;
+        notifyListeners();
+      } else {
+        _isWalletLoading = false;
+        _walletError = e.message;
+        notifyListeners();
+      }
+    } catch (e) {
+      _isWalletLoading = false;
+      _walletError = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+    }
+  }
+
+  Future<void> createDriverWallet() async {
+    _isWalletLoading = true;
+    _walletError = null;
+    notifyListeners();
+
+    try {
+      _wallet = await _driverRepository.createDriverWallet();
+      _isWalletNotCreated = false;
       _isWalletLoading = false;
       notifyListeners();
     } catch (e) {
@@ -83,15 +115,33 @@ class DriverHomeProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> rechargeWallet(double amount) async {
+  Future<RechargeInitiateResponse?> initiateRecharge(double amount) async {
     _isWalletLoading = true;
     _walletError = null;
     notifyListeners();
 
     try {
-      _wallet = await _driverRepository.rechargeDriverWallet(amount);
+      final res = await _driverRepository.initiateWalletRecharge(amount);
       _isWalletLoading = false;
       notifyListeners();
+      return res;
+    } catch (e) {
+      _isWalletLoading = false;
+      _walletError = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<bool> verifyRecharge(int rechargeId, String orderId, String paymentId, String signature) async {
+    _isWalletLoading = true;
+    _walletError = null;
+    notifyListeners();
+
+    try {
+      await _driverRepository.verifyWalletRecharge(rechargeId, orderId, paymentId, signature);
+      // Re-fetch wallet to get updated balance
+      await fetchDriverWallet();
       return true;
     } catch (e) {
       _isWalletLoading = false;
@@ -109,10 +159,10 @@ class DriverHomeProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final success = online 
-          ? await _driverRepository.goOnline() 
+      final success = online
+          ? await _driverRepository.goOnline()
           : await _driverRepository.goOffline();
-      
+
       _profile = DriverProfileModel(
         id: _profile!.id,
         userId: _profile!.userId,
@@ -195,12 +245,18 @@ class DriverHomeProvider extends ChangeNotifier {
 
       // 2. Upload documents to /driver/documents sequentially
       try {
-        await _driverRepository.uploadDriverDocument("AADHAAR_FRONT", aadharFrontPath);
+        await _driverRepository.uploadDriverDocument(
+          "AADHAAR_FRONT",
+          aadharFrontPath,
+        );
       } catch (e) {
         debugPrint('Failed to upload Aadhar Front: $e');
       }
       try {
-        await _driverRepository.uploadDriverDocument("AADHAAR_BACK", aadharBackPath);
+        await _driverRepository.uploadDriverDocument(
+          "AADHAAR_BACK",
+          aadharBackPath,
+        );
       } catch (e) {
         debugPrint('Failed to upload Aadhar Back: $e');
       }
@@ -210,12 +266,18 @@ class DriverHomeProvider extends ChangeNotifier {
         debugPrint('Failed to upload PAN Card: $e');
       }
       try {
-        await _driverRepository.uploadDriverDocument("DRIVING_LICENSE_FRONT", dlFrontPath);
+        await _driverRepository.uploadDriverDocument(
+          "DRIVING_LICENSE_FRONT",
+          dlFrontPath,
+        );
       } catch (e) {
         debugPrint('Failed to upload DL Front: $e');
       }
       try {
-        await _driverRepository.uploadDriverDocument("DRIVING_LICENSE_BACK", dlBackPath);
+        await _driverRepository.uploadDriverDocument(
+          "DRIVING_LICENSE_BACK",
+          dlBackPath,
+        );
       } catch (e) {
         debugPrint('Failed to upload DL Back: $e');
       }
@@ -225,14 +287,17 @@ class DriverHomeProvider extends ChangeNotifier {
         debugPrint('Failed to upload RC Book: $e');
       }
       try {
-        await _driverRepository.uploadDriverDocument("INSURANCE", insurancePath);
+        await _driverRepository.uploadDriverDocument(
+          "INSURANCE",
+          insurancePath,
+        );
       } catch (e) {
         debugPrint('Failed to upload Insurance: $e');
       }
-      
+
       // 3. Re-fetch profile to load state immediately
       await fetchDriverProfile();
-      
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -303,7 +368,14 @@ class DriverHomeProvider extends ChangeNotifier {
       // Update _primaryBankAccount locally based on the list
       final primary = _bankAccounts.firstWhere(
         (acc) => acc.primaryAccount,
-        orElse: () => BankAccountModel(id: 0, accountHolderName: '', bankName: '', accountNumber: '', ifscCode: '', primaryAccount: false),
+        orElse: () => BankAccountModel(
+          id: 0,
+          accountHolderName: '',
+          bankName: '',
+          accountNumber: '',
+          ifscCode: '',
+          primaryAccount: false,
+        ),
       );
       _primaryBankAccount = primary.id != 0 ? primary : null;
       _isBankAccountsLoading = false;
@@ -382,4 +454,3 @@ class DriverHomeProvider extends ChangeNotifier {
     }
   }
 }
-

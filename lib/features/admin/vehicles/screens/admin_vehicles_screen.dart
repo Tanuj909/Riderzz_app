@@ -48,7 +48,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF6B7785))),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF6C6F79))),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -83,13 +83,13 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: const Color(0xFFF6F6F8),
       body: Consumer<AdminVehiclesProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading && provider.vehicleTypes.isEmpty) {
             return const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B)),
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
               ),
             );
           }
@@ -110,7 +110,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A3D6B)),
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE31C2E)),
                       onPressed: () => provider.fetchVehicleTypes(),
                       child: const Text('Retry', style: TextStyle(color: Colors.white)),
                     ),
@@ -122,7 +122,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
 
           return RefreshIndicator(
             onRefresh: () => provider.fetchVehicleTypes(),
-            color: const Color(0xFF1A3D6B),
+            color: const Color(0xFFE31C2E),
             child: CustomScrollView(
               slivers: [
                 SliverPadding(
@@ -140,7 +140,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                                 const Text(
                                   'Vehicle Managment',
                                   style: TextStyle(
-                                    color: Color(0xFF1A2233),
+                                    color: Color(0xFF121214),
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -149,7 +149,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                                 Text(
                                   '${provider.vehicleTypes.length} Active Types',
                                   style: const TextStyle(
-                                    color: Color(0xFF6B7785),
+                                    color: Color(0xFF6C6F79),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -157,7 +157,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                             ),
                             ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1A3D6B),
+                                backgroundColor: const Color(0xFFE31C2E),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
@@ -188,21 +188,21 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: const BoxDecoration(
-                                color: Color(0xFFE8F0FB),
+                                color: Color(0xFFFDEBEC),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.airport_shuttle_outlined, size: 48, color: Color(0xFF1A3D6B)),
+                              child: const Icon(Icons.airport_shuttle_outlined, size: 48, color: Color(0xFFE31C2E)),
                             ),
                             const SizedBox(height: 16),
                             const Text(
                               'No Vehicle Categories',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A2233)),
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
                             ),
                             const SizedBox(height: 8),
                             const Text(
                               'Create categories to configure pricing, commission, and weight capacities for booking dispatches.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 13, color: Color(0xFF6B7785), height: 1.4),
+                              style: TextStyle(fontSize: 13, color: Color(0xFF6C6F79), height: 1.4),
                             ),
                           ],
                         ),
@@ -254,7 +254,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE9ECF0)),
+        border: Border.all(color: const Color(0xFFE7E7EB)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -273,7 +273,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                 width: 40,
                 height: 40,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFE8F0FB),
+                  color: Color(0xFFFDEBEC),
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
@@ -286,11 +286,11 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                             vehicle.iconUrl!,
                             fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) =>
-                                Icon(_getVehicleIcon(vehicle.name), color: const Color(0xFF1A3D6B), size: 20),
+                                Icon(_getVehicleIcon(vehicle.name), color: const Color(0xFFE31C2E), size: 20),
                           ),
                         ),
                       )
-                    : Icon(_getVehicleIcon(vehicle.name), color: const Color(0xFF1A3D6B), size: 20),
+                    : Icon(_getVehicleIcon(vehicle.name), color: const Color(0xFFE31C2E), size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -300,7 +300,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                     Text(
                       vehicle.name,
                       style: const TextStyle(
-                        color: Color(0xFF1A2233),
+                        color: Color(0xFF121214),
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
                       ),
@@ -311,7 +311,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Color(0xFF6B7785),
+                        color: Color(0xFF6C6F79),
                         fontSize: 12,
                       ),
                     ),
@@ -328,7 +328,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                 child: Text(
                   vehicle.isActive ? 'ACTIVE' : 'INACTIVE',
                   style: TextStyle(
-                    color: vehicle.isActive ? const Color(0xFF0F9B6E) : Colors.redAccent,
+                    color: vehicle.isActive ? const Color(0xFF1C9A5B) : Colors.redAccent,
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
                   ),
@@ -338,7 +338,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
           ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12.0),
-            child: Divider(height: 1, color: Color(0xFFE9ECF0)),
+            child: Divider(height: 1, color: Color(0xFFE7E7EB)),
           ),
           // Parameters Grid
           Column(
@@ -362,21 +362,21 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
           ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12.0),
-            child: Divider(height: 1, color: Color(0xFFE9ECF0)),
+            child: Divider(height: 1, color: Color(0xFFE7E7EB)),
           ),
           // Action buttons Row
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               TextButton.icon(
-                icon: const Icon(Icons.edit_rounded, color: Color(0xFF1A3D6B), size: 14),
-                label: const Text('Edit', style: TextStyle(color: Color(0xFF1A3D6B), fontSize: 11, fontWeight: FontWeight.bold)),
+                icon: const Icon(Icons.edit_rounded, color: Color(0xFFE31C2E), size: 14),
+                label: const Text('Edit', style: TextStyle(color: Color(0xFFE31C2E), fontSize: 11, fontWeight: FontWeight.bold)),
                 onPressed: () => _showFormBottomSheet(vehicleType: vehicle),
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  backgroundColor: const Color(0xFFE8F0FB),
+                  backgroundColor: const Color(0xFFFDEBEC),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
@@ -394,7 +394,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
         Text(
           label,
           style: const TextStyle(
-            color: Color(0xFF6B7785),
+            color: Color(0xFF6C6F79),
             fontSize: 10,
             fontWeight: FontWeight.w500,
           ),
@@ -403,7 +403,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
         Text(
           value,
           style: const TextStyle(
-            color: Color(0xFF1A2233),
+            color: Color(0xFF121214),
             fontSize: 13,
             fontWeight: FontWeight.bold,
           ),
@@ -548,7 +548,7 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE9ECF0),
+                    color: const Color(0xFFE7E7EB),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -556,7 +556,7 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
               const SizedBox(height: 16),
               Text(
                 widget.vehicleType == null ? 'Create Vehicle Type' : 'Edit Vehicle Type',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A2233)),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
               ),
               const SizedBox(height: 20),
 
@@ -583,14 +583,14 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
               const SizedBox(height: 16),
               const Text(
                 'Settings & Status',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1A2233)),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
               ),
               const SizedBox(height: 4),
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                activeColor: const Color(0xFF1A3D6B),
-                title: const Text('Toll Enabled', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1A2233))),
-                subtitle: const Text('Calculate toll fees on this vehicle type', style: TextStyle(fontSize: 11, color: Color(0xFF6B7785))),
+                activeColor: const Color(0xFFE31C2E),
+                title: const Text('Toll Enabled', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF121214))),
+                subtitle: const Text('Calculate toll fees on this vehicle type', style: TextStyle(fontSize: 11, color: Color(0xFF6C6F79))),
                 value: _tollEnabled,
                 onChanged: (val) {
                   setState(() {
@@ -600,9 +600,9 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
               ),
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                activeColor: const Color(0xFF1A3D6B),
-                title: const Text('Dynamic Pricing', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1A2233))),
-                subtitle: const Text('Adjust fare based on demand / peak hours', style: TextStyle(fontSize: 11, color: Color(0xFF6B7785))),
+                activeColor: const Color(0xFFE31C2E),
+                title: const Text('Dynamic Pricing', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF121214))),
+                subtitle: const Text('Adjust fare based on demand / peak hours', style: TextStyle(fontSize: 11, color: Color(0xFF6C6F79))),
                 value: _dynamicPricingEnabled,
                 onChanged: (val) {
                   setState(() {
@@ -612,9 +612,9 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
               ),
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                activeColor: const Color(0xFF1A3D6B),
-                title: const Text('Active Status', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1A2233))),
-                subtitle: const Text('Allow new bookings with this vehicle type', style: TextStyle(fontSize: 11, color: Color(0xFF6B7785))),
+                activeColor: const Color(0xFFE31C2E),
+                title: const Text('Active Status', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF121214))),
+                subtitle: const Text('Allow new bookings with this vehicle type', style: TextStyle(fontSize: 11, color: Color(0xFF6C6F79))),
                 value: _active,
                 onChanged: (val) {
                   setState(() {
@@ -630,19 +630,19 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
                   Expanded(
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFFE9ECF0)),
+                        side: const BorderSide(color: Color(0xFFE7E7EB)),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       onPressed: _isSaving ? null : () => Navigator.pop(context),
-                      child: const Text('Cancel', style: TextStyle(color: Color(0xFF6B7785), fontWeight: FontWeight.bold)),
+                      child: const Text('Cancel', style: TextStyle(color: Color(0xFF6C6F79), fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A3D6B),
+                        backgroundColor: const Color(0xFFE31C2E),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -676,19 +676,19 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF6B7785), fontWeight: FontWeight.w500),
+          style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79), fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFF7F8FA),
-            border: Border.all(color: const Color(0xFFE9ECF0)),
+            color: const Color(0xFFF6F6F8),
+            border: Border.all(color: const Color(0xFFE7E7EB)),
             borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
           child: TextFormField(
             controller: controller,
-            style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+            style: const TextStyle(color: Color(0xFF121214), fontSize: 14),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: const TextStyle(color: Color(0xFFB0B8C4)),
@@ -713,20 +713,20 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF6B7785), fontWeight: FontWeight.w500),
+          style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79), fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFF7F8FA),
-            border: Border.all(color: const Color(0xFFE9ECF0)),
+            color: const Color(0xFFF6F6F8),
+            border: Border.all(color: const Color(0xFFE7E7EB)),
             borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
           child: TextFormField(
             controller: controller,
             keyboardType: isInteger ? TextInputType.number : const TextInputType.numberWithOptions(decimal: true),
-            style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+            style: const TextStyle(color: Color(0xFF121214), fontSize: 14),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: const TextStyle(color: Color(0xFFB0B8C4)),

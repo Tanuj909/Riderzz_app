@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/core/providers/location_provider.dart';
+import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/user/addresses/location_picker_screen.dart';
 import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
 import 'package:riderzz_app/features/user/saved_routes/providers/saved_route_provider.dart';
 import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_provider.dart';
 import 'package:riderzz_app/features/user/home/pages/choose_vehicle_screen.dart';
+import 'package:riderzz_app/features/user/home/pages/booking_flow_bottom_sheet.dart';
+import 'package:riderzz_app/features/user/home/pages/finding_driver_screen.dart';
+import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
+import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
+import 'package:riderzz_app/features/user/home/widgets/booking_details_bottom_sheet.dart';
+import 'dart:ui';
+import 'dart:math';
 
 class UserHomePage extends StatefulWidget {
   final VoidCallback onBookingConfirmed;
@@ -19,757 +27,709 @@ class UserHomePage extends StatefulWidget {
   State<UserHomePage> createState() => _UserHomePageState();
 }
 
-class _UserHomePageState extends State<UserHomePage> {
-
-
-  final _pickupController = TextEditingController();
-  final _dropController = TextEditingController();
-  final _goodsDescriptionController = TextEditingController();
-  final _weightController = TextEditingController();
-
-  double? _pickupLatitude;
-  double? _pickupLongitude;
-  double? _dropLatitude;
-  double? _dropLongitude;
-
-  String? _parcelType;
-  bool _isCreatingBooking = false;
-  bool _showQuickBook = true;
-  LocationProvider? _locationProvider;
+class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderStateMixin {
+  late AnimationController _animController;
+  Map<String, dynamic>? _selectedRoute;
 
   @override
   void initState() {
     super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 12600),
+    )..repeat();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<AddressProvider>(context, listen: false).fetchAddresses();
       Provider.of<SavedRouteProvider>(context, listen: false).fetchSavedRoutes();
-      Provider.of<AdminVehiclesProvider>(context, listen: false).fetchVehicleTypes();
-      
-      _locationProvider = Provider.of<LocationProvider>(context, listen: false);
-      _locationProvider?.addListener(_onLocationChanged);
-      
-      _setCurrentLocationAsPickup();
+      Provider.of<BookingProvider>(context, listen: false).fetchBookings();
     });
-  }
-
-  void _onLocationChanged() {
-    if (mounted && _pickupController.text.isEmpty) {
-      _setCurrentLocationAsPickup();
-    }
-  }
-
-  /// If the user granted location permission, auto-fill pickup with current location.
-  void _setCurrentLocationAsPickup() {
-    final locationProvider = Provider.of<LocationProvider>(context, listen: false);
-    if (locationProvider.hasLocation) {
-      setState(() {
-        _pickupController.text = locationProvider.currentAddress ?? '';
-        _pickupLatitude = locationProvider.currentLatitude;
-        _pickupLongitude = locationProvider.currentLongitude;
-      });
-    }
   }
 
   @override
   void dispose() {
-    _locationProvider?.removeListener(_onLocationChanged);
-    _pickupController.dispose();
-    _dropController.dispose();
-    _goodsDescriptionController.dispose();
-    _weightController.dispose();
+    _animController.dispose();
     super.dispose();
   }
-
-
-
-  Future<int?> _resolveOrCreateAddressId({
-    required String addressText,
-    required double? lat,
-    required double? lng,
-    required String label,
-  }) async {
-    if (addressText.isEmpty) return null;
-
-    final addressProvider = Provider.of<AddressProvider>(context, listen: false);
-    for (final addr in addressProvider.addresses) {
-      if (addr['address'] == addressText || 
-          (lat != null && lng != null && 
-           ((addr['lat'] as num).toDouble() - lat).abs() < 0.005 && 
-           ((addr['lng'] as num).toDouble() - lng).abs() < 0.005)) {
-        return addr['id'] as int;
-      }
+  String _getInitials(String? name) {
+    if (name == null || name.trim().isEmpty) return 'U';
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
-
-    final data = {
-      'label': label,
-      'addressLine1': addressText,
-      'latitude': lat ?? 28.6139,
-      'longitude': lng ?? 77.2090,
-      'city': 'Delhi',
-      'state': 'Delhi',
-      'country': 'India',
-      'postalCode': '110001',
-      'addressType': 'OTHER',
-    };
-
-    try {
-      final success = await addressProvider.addAddress(data);
-      if (success) {
-        final fresh = addressProvider.addresses;
-        if (fresh.isNotEmpty) {
-          final found = fresh.firstWhere(
-            (a) => a['addressLine1'] == addressText || a['label'] == label,
-            orElse: () => fresh.last,
-          );
-          return found['id'] as int;
-        }
-      }
-    } catch (e) {
-      debugPrint('Failed to save address on-the-fly: $e');
-    }
-    return null;
-  }
-
-  void _handleContinueFlow(BuildContext context) async {
-    final pickupText = _pickupController.text.trim();
-    final dropText = _dropController.text.trim();
-    final weightText = _weightController.text.trim();
-    final descriptionText = _goodsDescriptionController.text.trim();
-
-    if (pickupText.isEmpty || dropText.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select pickup and drop locations'), backgroundColor: Colors.redAccent),
-      );
-      return;
-    }
-
-    if (_parcelType == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a goods type'), backgroundColor: Colors.redAccent),
-      );
-      return;
-    }
-
-    if (weightText.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter weight'), backgroundColor: Colors.redAccent),
-      );
-      return;
-    }
-
-    final double? weight = double.tryParse(weightText);
-    if (weight == null || weight <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid weight'), backgroundColor: Colors.redAccent),
-      );
-      return;
-    }
-
-    if (descriptionText.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter goods description'), backgroundColor: Colors.redAccent),
-      );
-      return;
-    }
-
-    setState(() {
-      _isCreatingBooking = true;
-    });
-
-    final pickupId = await _resolveOrCreateAddressId(
-      addressText: pickupText,
-      lat: _pickupLatitude,
-      lng: _pickupLongitude,
-      label: 'Pickup Location',
-    );
-
-    final dropId = await _resolveOrCreateAddressId(
-      addressText: dropText,
-      lat: _dropLatitude,
-      lng: _dropLongitude,
-      label: 'Drop Location',
-    );
-
-    if (pickupId == null || dropId == null) {
-      setState(() {
-        _isCreatingBooking = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to resolve address coordinates. Please try again.'), backgroundColor: Colors.redAccent),
-        );
-      }
-      return;
-    }
-
-    setState(() {
-      _isCreatingBooking = false;
-    });
-
-    if (!mounted) return;
-
-    final bookingData = {
-      'pickupAddressId': pickupId,
-      'dropAddressId': dropId,
-      'pickupAddressText': pickupText,
-      'dropAddressText': dropText,
-      'pickupLatitude': _pickupLatitude,
-      'pickupLongitude': _pickupLongitude,
-      'dropLatitude': _dropLatitude,
-      'dropLongitude': _dropLongitude,
-      'goodsType': _parcelType,
-      'goodsDescription': _goodsDescriptionController.text.trim(),
-      'weightKg': _weightController.text.trim(),
-      'onBookingConfirmed': widget.onBookingConfirmed,
-    };
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ChooseVehicleScreen(
-          bookingData: bookingData,
-        ),
-      ),
-    );
-  }
-
-  void _showLocationActionSheet(BuildContext context, Map<String, dynamic> item, String label) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Set Location: $label',
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A2233),
-                ),
-              ),
-              const SizedBox(height: 12),
-              ListTile(
-                leading: const Icon(Icons.pin_drop_rounded, color: Color(0xFF0F9B6E)),
-                title: const Text('Set as Pickup Location', style: TextStyle(fontSize: 14,color: Colors.black87,)),
-                onTap: () {
-                  setState(() {
-                    _pickupController.text = item['address'] ?? '';
-                    _pickupLatitude = item['lat'] is num ? (item['lat'] as num).toDouble() : null;
-                    _pickupLongitude = item['lng'] is num ? (item['lng'] as num).toDouble() : null;
-                  });
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(this.context).showSnackBar(
-                    SnackBar(
-                      content: Text('Pickup set to $label'),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-                },
-              ),
-              const Divider(height: 1, color: Color(0xFFE9ECF0)),
-              ListTile(
-                leading: const Icon(Icons.location_on_rounded, color: Color(0xFFF97316)),
-                title: const Text('Set as Drop Location', style: TextStyle(fontSize: 14,color: Colors.black87,)),
-                onTap: () {
-                  setState(() {
-                    _dropController.text = item['address'] ?? '';
-                    _dropLatitude = item['lat'] is num ? (item['lat'] as num).toDouble() : null;
-                    _dropLongitude = item['lng'] is num ? (item['lng'] as num).toDouble() : null;
-                  });
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(this.context).showSnackBar(
-                    SnackBar(
-                      content: Text('Drop set to $label'),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
+    return parts[0][0].toUpperCase();
   }
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.currentUser;
+
     return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Booking card sitting below header
-          Container(
-            margin: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x0F1A3D6B),
-                  offset: Offset(0, 4),
-                  blurRadius: 16,
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Pickup Location Row
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF0F9B6E),
-                        shape: BoxShape.circle,
-                      ),
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'GOOD AFTERNOON',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.1,
+                      color: Color(0xFFA2A5AE),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _pickupController,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF1A2233),
-                          fontWeight: FontWeight.w400,
-                        ),
-                        onChanged: (value) {
-                          _pickupLatitude = null;
-                          _pickupLongitude = null;
-                        },
-                        decoration: const InputDecoration(
-                          hintText: 'Enter pickup location',
-                          hintStyle: TextStyle(color: Color(0xFFB0B8C4)),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(vertical: 8),
-                        ),
-                      ),
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    "Where's it going?",
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                      height: 1.18,
+                      color: Color(0xFF121214),
                     ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () async {
-                        final result = await Navigator.push<Map<String, dynamic>>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => LocationPickerScreen(
-                              initialLatitude: _pickupLatitude,
-                              initialLongitude: _pickupLongitude,
-                            ),
-                          ),
-                        );
-                        if (result != null) {
-                          setState(() {
-                            _pickupController.text = result['address'] ?? '';
-                            _pickupLatitude = result['latitude'];
-                            _pickupLongitude = result['longitude'];
-                          });
-                        }
-                      },
-                      child: const Icon(
-                        Icons.map_outlined,
-                        size: 20,
-                        color: Color(0xFF1A3D6B),
-                      ),
-                    ),
-                  ],
-                ),
-                // Connection line
-                Padding(
-                  padding: const EdgeInsets.only(left: 4.0),
-                  child: Container(
-                    width: 1.5,
-                    height: 20,
-                    color: const Color(0xFFE9ECF0),
+                  ),
+                ],
+              ),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFE31C2E), Color(0xFFAE1220)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                 ),
-                // Drop Location Row
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFF97316),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _dropController,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF1A2233),
-                          fontWeight: FontWeight.w400,
-                        ),
-                        onChanged: (value) {
-                          _dropLatitude = null;
-                          _dropLongitude = null;
-                        },
-                        decoration: const InputDecoration(
-                          hintText: 'Add drop location',
-                          hintStyle: TextStyle(color: Color(0xFFB0B8C4)),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(vertical: 8),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () async {
-                        final result = await Navigator.push<Map<String, dynamic>>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => LocationPickerScreen(
-                              initialLatitude: _dropLatitude,
-                              initialLongitude: _dropLongitude,
-                            ),
-                          ),
-                        );
-                        if (result != null) {
-                          setState(() {
-                            _dropController.text = result['address'] ?? '';
-                            _dropLatitude = result['latitude'];
-                            _dropLongitude = result['longitude'];
-                          });
-                        }
-                      },
-                      child: const Icon(
-                        Icons.map_outlined,
-                        size: 20,
-                        color: Color(0xFF1A3D6B),
-                      ),
-                    ),
-                  ],
+                alignment: Alignment.center,
+                child: Text(
+                  _getInitials(user?.name),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
                 ),
-                // Collapsible Quick Saved destinations and routes dropdown
-                Consumer2<AddressProvider, SavedRouteProvider>(
-                  builder: (context, addressProvider, savedRouteProvider, _) {
-                    final addresses = addressProvider.addresses;
-                    final routes = savedRouteProvider.savedRoutes;
-                    if (addresses.isEmpty && routes.isEmpty) return const SizedBox.shrink();
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
 
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 10),
-                        InkWell(
-                          onTap: () {
-                            setState(() {
-                              _showQuickBook = !_showQuickBook;
-                            });
-                          },
-                          borderRadius: BorderRadius.circular(8),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Map Hero
+          GestureDetector(
+            onTap: () => _showNewBookingModal(),
+            child: Container(
+              height: 172,
+              margin: const EdgeInsets.only(bottom: 18),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: const Color(0xFFE7E7EB)),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFF9F9FA), Color(0xFFE8E8ED)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+              clipBehavior: Clip.hardEdge,
+              child: Stack(
+                children: [
+                  // Animated Route and Map Pins
+                  AnimatedBuilder(
+                    animation: _animController,
+                    builder: (context, child) {
+                      return LayoutBuilder(
+                        builder: (context, constraints) {
+                          final double t = _animController.value;
+                          final double T = t * 12600;
+                          
+                          double cameraX = 60.0;
+                          double cameraY = 70.0;
+                          double cameraScale = 1.0;
+                          
+                          double pickupReveal = 0.0;
+                          double dropReveal = 0.0;
+                          double drawProgress = 0.0;
+                          
+                          // Continuous pulse for revealed markers
+                          final double pulseT = (T % 2000) / 2000;
+                          double pulseScale = 0.5;
+                          double pulseOpacity = 0.0;
+                          if (pulseT <= 0.7) {
+                            final pt = pulseT / 0.7;
+                            pulseScale = 0.5 + (2.0 * pt);
+                            pulseOpacity = 0.6 * (1.0 - pt);
+                          }
+                          
+                          if (T < 1400) {
+                            cameraX = 60; cameraY = 70; cameraScale = 1.6;
+                            pickupReveal = T > 400 ? ((T - 400) / 400).clamp(0.0, 1.0) : 0.0;
+                            drawProgress = 0.0;
+                            dropReveal = 0.0;
+                          } else if (T < 4900) {
+                            pickupReveal = 1.0;
+                            dropReveal = 0.0;
+                            final progress = (T - 1400) / 3500;
+                            final easeProgress = -(cos(pi * progress) - 1) / 2;
+                            drawProgress = easeProgress;
+                            cameraX = 60 + (320 - 60) * easeProgress;
+                            
+                            // Accurately track the HTML bezier Y
+                            if (easeProgress < 0.5) {
+                              final rt = easeProgress * 2;
+                              cameraY = (pow(1 - rt, 2) * 70 + 2 * (1 - rt) * rt * 130 + pow(rt, 2) * 86).toDouble();
+                            } else {
+                              final rt = (easeProgress - 0.5) * 2;
+                              cameraY = (pow(1 - rt, 2) * 86 + 2 * (1 - rt) * rt * 42 + pow(rt, 2) * 60).toDouble();
+                            }
+                            cameraScale = 1.6;
+                          } else if (T < 6100) {
+                            drawProgress = 1.0;
+                            cameraX = 320; cameraY = 60; cameraScale = 1.6;
+                            pickupReveal = 1.0;
+                            dropReveal = ((T - 4900) / 400).clamp(0.0, 1.0);
+                          } else if (T < 7100) {
+                            drawProgress = 1.0;
+                            pickupReveal = 1.0;
+                            dropReveal = 1.0;
+                            final zoomProgress = (T - 6100) / 1000;
+                            final easeZoom = sin(zoomProgress * pi / 2);
+                            final midX = 190.0;
+                            final midY = 65.0; 
+                            cameraX = 320 + (midX - 320) * easeZoom;
+                            cameraY = 60 + (midY - 60) * easeZoom;
+                            cameraScale = 1.6 + (1.0 - 1.6) * easeZoom;
+                          } else {
+                            drawProgress = 1.0;
+                            pickupReveal = 1.0;
+                            dropReveal = 1.0;
+                            cameraX = 190.0; cameraY = 65.0; cameraScale = 1.0;
+                          }
+                          
+                          final routeFlowValue = drawProgress >= 1.0 ? ((T % 1000) / 1000) : 0.0;
+                          
+                          final centerX = constraints.maxWidth / 2;
+                          // Shift the visual center slightly up (-10) so the deep curve doesn't clip behind the button
+                          final centerY = (constraints.maxHeight / 2) - 10; 
+                          final transform = Matrix4.identity()
+                            ..translate(centerX - cameraX * cameraScale, centerY - cameraY * cameraScale)
+                            ..scale(cameraScale);
+
+                          return Transform(
+                            transform: transform,
+                            child: Stack(
+                              clipBehavior: Clip.none,
                               children: [
-                                  const Text(
-                                    'Quick Book Options',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF1A3D6B),
+                                Positioned.fill(
+                                  child: CustomPaint(
+                                    painter: _RoutePainter(
+                                      animationValue: routeFlowValue,
+                                      drawProgress: drawProgress,
                                     ),
                                   ),
-                                Icon(
-                                  _showQuickBook
-                                      ? Icons.keyboard_arrow_up_rounded
-                                      : Icons.keyboard_arrow_down_rounded,
-                                  color: const Color(0xFF1A3D6B),
-                                  size: 20,
+                                ),
+                                // Pickup Marker
+                                Positioned(
+                                  left: 60 - 24, top: 70 - 38,
+                                  child: Transform.scale(
+                                    scale: pickupReveal,
+                                    child: SizedBox(
+                                      width: 48, height: 48,
+                                      child: Stack(
+                                        alignment: Alignment.center,
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          Positioned(top: 31, child: Transform.scale(scale: pulseScale, child: Opacity(opacity: pulseOpacity, child: Container(width: 14, height: 14, decoration: const BoxDecoration(color: Color(0xFF121214), shape: BoxShape.circle))))),
+                                          const Positioned(top: 10, child: Icon(Icons.location_on, color: Color(0xFF121214), size: 28)),
+                                          Positioned(bottom: 42, child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: const Color(0xFF121214), borderRadius: BorderRadius.circular(6), boxShadow: const [BoxShadow(color: Color(0x26000000), blurRadius: 10, offset: Offset(0, 4))]), child: const Text('Pickup', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)))),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Drop Marker
+                                Positioned(
+                                  left: 320 - 24, top: 60 - 38,
+                                  child: Transform.scale(
+                                    scale: dropReveal,
+                                    child: SizedBox(
+                                      width: 48, height: 48,
+                                      child: Stack(
+                                        alignment: Alignment.center,
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          Positioned(top: 31, child: Transform.scale(scale: pulseScale, child: Opacity(opacity: pulseOpacity, child: Container(width: 14, height: 14, decoration: const BoxDecoration(color: Color(0xFFE31C2E), shape: BoxShape.circle))))),
+                                          const Positioned(top: 10, child: Icon(Icons.location_on, color: Color(0xFFE31C2E), size: 28)),
+                                          Positioned(bottom: 42, child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: const Color(0xFFE31C2E), borderRadius: BorderRadius.circular(6), boxShadow: const [BoxShadow(color: Color(0x26000000), blurRadius: 10, offset: Offset(0, 4))]), child: const Text('Drop', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)))),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
+                          );
+                        },
+                      );
+                    }
+                  ),
+
+                  // New booking button
+                  Positioned(
+                    bottom: 14,
+                    left: 14,
+                    right: 14,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x2E121214),
+                            offset: Offset(0, 10),
+                            blurRadius: 26,
+                            spreadRadius: -10,
                           ),
-                        ),
-                        if (_showQuickBook) ...[
-                          if (addresses.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Saved Destinations',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF4A5568),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            SizedBox(
-                              height: 38,
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: addresses.length,
-                                itemBuilder: (context, index) {
-                                  final item = addresses[index];
-                                  final label = item['label'] ?? '';
-                                  final lowerLabel = label.toLowerCase();
-
-                                  IconData chipIcon = Icons.location_on_rounded;
-                                  Color chipBg = const Color(0xFFFFF3E8);
-                                  Color chipIconColor = const Color(0xFFF97316);
-
-                                  if (lowerLabel == 'home') {
-                                    chipIcon = Icons.home_rounded;
-                                    chipBg = const Color(0xFFE6F7F2);
-                                    chipIconColor = const Color(0xFF0F9B6E);
-                                  } else if (lowerLabel == 'office') {
-                                    chipIcon = Icons.business_rounded;
-                                    chipBg = const Color(0xFFE8F0FB);
-                                    chipIconColor = const Color(0xFF1A3D6B);
-                                  }
-
-                                  return Padding(
-                                    padding: const EdgeInsets.only(right: 8.0),
-                                    child: InkWell(
-                                      onTap: () => _showLocationActionSheet(context, item, label),
-                                      borderRadius: BorderRadius.circular(20),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: chipBg,
-                                          border: Border.all(color: chipIconColor.withValues(alpha: 0.15)),
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(chipIcon, size: 14, color: chipIconColor),
-                                            const SizedBox(width: 5),
-                                            Text(
-                                              label,
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w500,
-                                                color: Color(0xFF1A2233),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                          if (routes.isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            const Text(
-                              'Saved Routes',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF4A5568),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            SizedBox(
-                              height: 38,
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: routes.length,
-                                itemBuilder: (context, index) {
-                                  final item = routes[index];
-                                  final routeName = item['routeName'] ?? '';
-                                  
-                                  Color chipBg = const Color(0xFFFDF2F8);
-                                  Color chipIconColor = const Color(0xFFDB2777);
-
-                                  return Padding(
-                                    padding: const EdgeInsets.only(right: 8.0),
-                                    child: InkWell(
-                                      onTap: () {
-                                        final pickup = item['pickupAddress'] ?? {};
-                                        final drop = item['dropAddress'] ?? {};
-                                        setState(() {
-                                          _pickupController.text = pickup['address'] ?? '';
-                                          _pickupLatitude = pickup['lat'] is num ? (pickup['lat'] as num).toDouble() : null;
-                                          _pickupLongitude = pickup['lng'] is num ? (pickup['lng'] as num).toDouble() : null;
-
-                                          _dropController.text = drop['address'] ?? '';
-                                          _dropLatitude = drop['lat'] is num ? (drop['lat'] as num).toDouble() : null;
-                                          _dropLongitude = drop['lng'] is num ? (drop['lng'] as num).toDouble() : null;
-                                        });
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text('Route set to "$routeName"'),
-                                            duration: const Duration(seconds: 2),
-                                          ),
-                                        );
-                                      },
-                                      borderRadius: BorderRadius.circular(20),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: chipBg,
-                                          border: Border.all(color: chipIconColor.withValues(alpha: 0.15)),
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.directions_outlined, size: 14, color: chipIconColor),
-                                            const SizedBox(width: 5),
-                                            Text(
-                                              routeName,
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w500,
-                                                color: Color(0xFF1A2233),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
                         ],
-                      ],
-                    );
-                  },
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'New booking',
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF121214),
+                            ),
+                          ),
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFE31C2E),
+                              shape: BoxShape.circle,
+                            ),
+                            alignment: Alignment.center,
+                            child: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Saved Location Dropdown
+          Container(
+            margin: const EdgeInsets.only(bottom: 22),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F1F4),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.transparent, width: 1.5),
+            ),
+            child: Row(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(left: 14),
+                  child: Icon(Icons.location_on_outlined, color: Color(0xFFA2A5AE), size: 16),
+                ),
+                Expanded(
+                  child: DropdownButtonHideUnderline(
+                    child: Consumer<SavedRouteProvider>(
+                      builder: (context, savedRouteProvider, child) {
+                        return DropdownButton<String>(
+                          isExpanded: true,
+                          dropdownColor: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          hint: const Center(child: Text('Saved locations', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF16171C)))),
+                          value: _selectedRoute?['id']?.toString(), // Track selected route
+                          items: savedRouteProvider.savedRoutes.map((route) {
+                            return DropdownMenuItem<String>(
+                              value: route['id']?.toString() ?? route['routeName']?.toString(),
+                              alignment: Alignment.center,
+                              child: Text(
+                                route['routeName'] ?? 'Unknown Route',
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF121214)),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                _selectedRoute = savedRouteProvider.savedRoutes.firstWhere(
+                                  (r) => (r['id']?.toString() ?? r['routeName']?.toString()) == val
+                                );
+                              });
+                            }
+                          },
+                          icon: const Padding(
+                            padding: EdgeInsets.only(right: 8.0),
+                            child: Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFFA2A5AE), size: 24),
+                          ),
+                        );
+                      }
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-
-          // Goods & Payment details section card
-          Container(
-            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x0F1A3D6B),
-                  offset: Offset(0, 4),
-                  blurRadius: 16,
+          
+          if (_selectedRoute != null) ...[
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: () => _showNewBookingModal(_selectedRoute),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                margin: const EdgeInsets.only(bottom: 22),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE31C2E),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: const [BoxShadow(color: Color(0x337E22CE), blurRadius: 10, offset: Offset(0, 4))],
                 ),
-              ],
+                alignment: Alignment.center,
+                child: const Text(
+                  'Continue with route',
+                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _parcelType,
-                        onChanged: (val) {
-                          if (val != null) setState(() => _parcelType = val);
-                        },
-                        isExpanded: true,
-                        dropdownColor: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF1A3D6B)),
-                        style: const TextStyle(fontSize: 14, color: Color(0xFF1A2233), fontWeight: FontWeight.w500),
-                        items: ['DOCUMENT', 'CLOTHES', 'ELECTRONICS', 'GROCERY', 'MEDICINE', 'FOOD', 'OTHER'].map((type) {
-                          return DropdownMenuItem(value: type, child: Text(type, style: const TextStyle(fontSize: 14, color: Color(0xFF1A2233), fontWeight: FontWeight.w500)));
-                        }).toList(),
-                        decoration: InputDecoration(
-                          labelText: 'Goods Type',
-                          labelStyle: const TextStyle(fontSize: 12, color: Color(0xFF6B7785)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          filled: true,
-                          fillColor: const Color(0xFFF7F8FA),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE9ECF0))),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE9ECF0))),
-                        ),
-                      ),
+          ] else ...[
+            const SizedBox(height: 22),
+          ],
+
+          Consumer2<BookingProvider, AdminVehiclesProvider>(
+            builder: (context, bookingProvider, vehiclesProvider, child) {
+              if (bookingProvider.isLoading && bookingProvider.bookings.isEmpty) {
+                return const Center(child: Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E))),
+                ));
+              }
+
+              final activeStatuses = ['PENDING', 'ASSIGNED', 'EN_ROUTE', 'ACCEPTED'];
+              BookingModel? activeBooking;
+              
+              try {
+                activeBooking = bookingProvider.bookings.firstWhere(
+                  (b) => activeStatuses.contains(b.status.toUpperCase()),
+                );
+              } catch (e) {
+                activeBooking = null;
+              }
+
+              final recentBookings = bookingProvider.bookings
+                  .where((b) => activeBooking == null || b.id != activeBooking!.id)
+                  .take(2)
+                  .toList();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (activeBooking != null) ...[
+                    const Text(
+                      'ACTIVE SHIPMENT',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.1, color: Color(0xFFA2A5AE)),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _weightController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        style: const TextStyle(fontSize: 14, color: Color(0xFF1A2233), fontWeight: FontWeight.w500),
-                        decoration: InputDecoration(
-                          labelText: 'Weight (KG)',
-                          labelStyle: const TextStyle(fontSize: 12, color: Color(0xFF6B7785)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          filled: true,
-                          fillColor: const Color(0xFFF7F8FA),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE9ECF0))),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE9ECF0))),
+                    const SizedBox(height: 12),
+                    GestureDetector(
+                      onTap: () {
+                        // TODO: Navigate to active booking details
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 22),
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFE7E7EB)),
+                          boxShadow: const [BoxShadow(color: Color(0x0D121214), offset: Offset(0, 1), blurRadius: 2)],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    gradient: const LinearGradient(colors: [Color(0xFFE31C2E), Color(0xFFAE1220)]),
+                                    boxShadow: const [BoxShadow(color: Color(0x667E22CE), offset: Offset(0, 6), blurRadius: 12, spreadRadius: -4)],
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: const Icon(Icons.local_shipping_outlined, color: Colors.white, size: 19),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              vehiclesProvider.vehicleTypes.where((v) => v.id == activeBooking!.vehicleTypeId).map((v) => v.name).firstWhere((name) => true, orElse: () => 'Vehicle'),
+                                              style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFE7F7EF),
+                                              borderRadius: BorderRadius.circular(999),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFF1C9A5B), shape: BoxShape.circle)),
+                                                const SizedBox(width: 5),
+                                                Text(
+                                                  activeBooking.status.toUpperCase(),
+                                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF1C9A5B)),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Booking: ${activeBooking.bookingId}',
+                                        style: const TextStyle(fontSize: 11.5, fontFamily: 'IBM Plex Mono', color: Color(0xFF6C6F79)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () => showBookingDetailsBottomSheet(context, activeBooking!),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                      side: const BorderSide(color: Color(0xFFE7E7EB), width: 1.5),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                                      foregroundColor: const Color(0xFF121214),
+                                      elevation: 0,
+                                    ),
+                                    child: const Text('View details', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      final vName = vehiclesProvider.vehicleTypes.where((v) => v.id == activeBooking!.vehicleTypeId).map((v) => v.name).firstWhere((name) => true, orElse: () => 'Vehicle');
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => FindingDriverScreen(
+                                            booking: activeBooking!,
+                                            vehicleName: vName,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                      backgroundColor: const Color(0xFFE31C2E),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                                      elevation: 0,
+                                      shadowColor: const Color(0x8C7E22CE),
+                                    ),
+                                    child: const Text('Track', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.white)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  controller: _goodsDescriptionController,
-                  style: const TextStyle(fontSize: 14, color: Color(0xFF1A2233), fontWeight: FontWeight.w500),
-                  decoration: InputDecoration(
-                    labelText: 'Goods Description',
-                    labelStyle: const TextStyle(fontSize: 12, color: Color(0xFF6B7785)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                    filled: true,
-                    fillColor: const Color(0xFFF7F8FA),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE9ECF0))),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE9ECF0))),
-                  ),
-                ),
-              ],
-            ),
-          ),
 
-          // Continue Button
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            child: SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A3D6B),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                onPressed: _isCreatingBooking
-                    ? null
-                    : () => _handleContinueFlow(context),
-                child: _isCreatingBooking
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Text(
-                        'Continue',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  if (recentBookings.isNotEmpty) ...[
+                    const Text(
+                      'RECENT BOOKINGS',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.1, color: Color(0xFFA2A5AE)),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.only(left: 18, right: 18),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFE7E7EB)),
+                        boxShadow: const [BoxShadow(color: Color(0x0D121214), offset: Offset(0, 1), blurRadius: 2)],
                       ),
-              ),
-            ),
+                      child: Column(
+                        children: recentBookings.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final booking = entry.value;
+                          final vehicleName = vehiclesProvider.vehicleTypes.where((v) => v.id == booking.vehicleTypeId).map((v) => v.name).firstWhere((name) => true, orElse: () => 'Vehicle');
+                          
+                          String dateStr = '';
+                          try {
+                            if (booking.createdAt.isNotEmpty) {
+                              final dt = DateTime.parse(booking.createdAt).toLocal();
+                              const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                              dateStr = '${months[dt.month - 1]} ${dt.day}';
+                            }
+                          } catch (_) {}
+
+                          return _buildRecentBookingRow(
+                            '${booking.pickupAddressName.split(',').first} → ${booking.dropAddressName.split(',').first}',
+                            '$dateStr · $vehicleName',
+                            '₹${booking.totalFare.toStringAsFixed(0)}',
+                            showDivider: index < recentBookings.length - 1,
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildRecentBookingRow(String title, String subtitle, String price, {required bool showDivider}) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFDEBEC),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                alignment: Alignment.center,
+                child: const Icon(Icons.history_rounded, color: Color(0xFFE31C2E), size: 19),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF121214))),
+                    const SizedBox(height: 2),
+                    Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79))),
+                  ],
+                ),
+              ),
+              Text(price, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'IBM Plex Mono', color: Color(0xFF121214))),
+            ],
+          ),
+        ),
+        if (showDivider) const Divider(color: Color(0xFFE7E7EB), height: 1, thickness: 1),
+      ],
+    );
+  }
+  void _showNewBookingModal([Map<String, dynamic>? route]) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => BookingFlowBottomSheet(
+        onBookingConfirmed: widget.onBookingConfirmed,
+        initialRoute: route,
+      ),
+    );
+  }
+}
+
+
+class _RoutePainter extends CustomPainter {
+  final double animationValue;
+  final double drawProgress;
+
+  _RoutePainter({required this.animationValue, required this.drawProgress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (drawProgress <= 0.0) return;
+
+    final paint = Paint()
+      ..color = const Color(0xFFE31C2E)
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path();
+    // The exact steep S-curve from the original HTML design: M60,70 Q 120,130 200,86 T 320,60
+    path.moveTo(60, 70);
+    path.quadraticBezierTo(120, 160, 200, 86);
+    path.quadraticBezierTo(280, 12, 320, 60);
+
+    final dashWidth = 6.0;
+    final dashSpace = 8.0;
+    final totalDashLength = dashWidth + dashSpace;
+    final offset = animationValue * totalDashLength;
+
+    final metrics = path.computeMetrics().toList();
+    if (metrics.isEmpty) return;
+    
+    final metric = metrics.first;
+    final length = metric.length;
+    
+    final limit = length * drawProgress;
+    
+    final dashedPath = Path();
+    double distance = offset - totalDashLength; // move dashes forwards
+    
+    while (distance < limit) {
+      if (distance + dashWidth > 0) {
+        final start = distance < 0 ? 0.0 : distance;
+        final end = (distance + dashWidth) > limit ? limit : distance + dashWidth;
+        dashedPath.addPath(metric.extractPath(start, end), Offset.zero);
+      }
+      distance += dashWidth + dashSpace;
+    }
+    
+    // Optional subtle drop shadow for the line
+    final shadowPaint = Paint()
+      ..color = const Color(0x4DE31C2E)
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+    canvas.drawPath(dashedPath, shadowPaint);
+    
+    canvas.drawPath(dashedPath, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _RoutePainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue || oldDelegate.drawProgress != drawProgress;
   }
 }

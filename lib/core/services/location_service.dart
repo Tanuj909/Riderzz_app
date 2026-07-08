@@ -21,7 +21,7 @@ class LocationService {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         debugPrint('LocationService: Location services are disabled. Prompting to enable.');
-        await Geolocator.openLocationSettings();
+        // Removed auto open location settings to prevent jumping to settings on app start
       }
     }
 

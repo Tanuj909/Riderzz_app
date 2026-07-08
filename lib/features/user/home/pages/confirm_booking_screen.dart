@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/core/models/vehicle_type_model.dart';
+import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
-import 'package:riderzz_app/features/user/home/pages/finding_driver_screen.dart';
 
-class ConfirmBookingScreen extends StatefulWidget {
+class ConfirmBookingView extends StatefulWidget {
   final Map<String, dynamic> bookingData;
+  final Function(BookingModel) onConfirm;
+  final VoidCallback onBack;
 
-  const ConfirmBookingScreen({
+  const ConfirmBookingView({
     super.key,
     required this.bookingData,
+    required this.onConfirm,
+    required this.onBack,
   });
 
   @override
-  State<ConfirmBookingScreen> createState() => _ConfirmBookingScreenState();
+  State<ConfirmBookingView> createState() => _ConfirmBookingViewState();
 }
 
-class _ConfirmBookingScreenState extends State<ConfirmBookingScreen> {
+class _ConfirmBookingViewState extends State<ConfirmBookingView> {
   String _selectedPaymentMethod = 'CASH'; // 'CASH' or 'WALLET'
   bool _isBookingInProgress = false;
 
@@ -29,7 +32,15 @@ class _ConfirmBookingScreenState extends State<ConfirmBookingScreen> {
     final vehicle = widget.bookingData['vehicleType'] as VehicleTypeModel;
     final pickupId = widget.bookingData['pickupAddressId'] as int;
     final dropId = widget.bookingData['dropAddressId'] as int;
-    final weight = double.tryParse(widget.bookingData['weightKg']?.toString() ?? '10.0') ?? 10.0;
+    double weight = 10.0;
+    final wStr = widget.bookingData['weightKg']?.toString().toLowerCase() ?? '';
+    if (wStr.contains('0-5')) weight = 5.0;
+    else if (wStr.contains('5-10')) weight = 10.0;
+    else if (wStr.contains('10-50')) weight = 50.0;
+    else if (wStr.contains('50-200')) weight = 200.0;
+    else if (wStr.contains('200-500')) weight = 500.0;
+    else if (wStr.contains('500+')) weight = 1000.0;
+    else weight = double.tryParse(wStr) ?? 10.0;
 
     final requestData = {
       'pickupAddressId': pickupId,
@@ -55,22 +66,11 @@ class _ConfirmBookingScreenState extends State<ConfirmBookingScreen> {
 
     if (result != null) {
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => FindingDriverScreen(
-            booking: result,
-            vehicleName: vehicle.name,
-          ),
-        ),
-      );
+      widget.onConfirm(result);
     } else {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(bookingProvider.errorMessage ?? 'Failed to create booking'),
-          backgroundColor: Colors.redAccent,
-        ),
+        const SnackBar(content: Text('Failed to create booking')),
       );
     }
   }
@@ -78,253 +78,200 @@ class _ConfirmBookingScreenState extends State<ConfirmBookingScreen> {
   @override
   Widget build(BuildContext context) {
     final vehicle = widget.bookingData['vehicleType'] as VehicleTypeModel;
-    final pickupText = widget.bookingData['pickupAddressText'] as String;
-    final dropText = widget.bookingData['dropAddressText'] as String;
-    final finalFare = widget.bookingData['finalFare'] as double;
-    final goodsType = widget.bookingData['goodsType'] as String;
+    final String pickupText = widget.bookingData['pickupAddressText'] as String? ?? 'Pickup Location';
+    final String dropText = widget.bookingData['dropAddressText'] as String? ?? 'Drop Location';
+    final double finalFare = widget.bookingData['finalFare'] as double? ?? 0.0;
+    final String goodsType = widget.bookingData['goodsType'] as String? ?? 'OTHER';
+    final int estimatedTime = widget.bookingData['estimatedTimeMin'] as int? ?? 0;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFFF1F3F6),
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF1A2233), size: 20),
-              onPressed: () => Navigator.pop(context),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          ),
-        ),
-        title: const Text(
-          'Confirm Booking',
-          style: TextStyle(
-            color: Color(0xFF1A2233),
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
-      ),
-      body: Column(
+    return Column(
         children: [
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Route Details Card
+                  // Ticket Layout
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFE7E7EB)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'ROUTE',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF6B7785),
-                            letterSpacing: 1.0,
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Booking summary',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF6C6F79),
+                                letterSpacing: 1.0,
+                                textBaseline: TextBaseline.alphabetic,
+                              ),
+                            ),
+                            Text(
+                              vehicle.name,
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                fontFamily: 'monospace',
+                                color: Color(0xFF6C6F79),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 16),
-                        Column(
+                        // Pickup Stop
+                        Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Pickup Stop
-                            IntrinsicHeight(
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                            Container(
+                              margin: const EdgeInsets.only(top: 4, right: 10),
+                              child: Icon(
+                                Icons.circle_outlined,
+                                size: 16,
+                                color: const Color(0xFFE31C2E), // --red
+                              ),
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Column(
-                                    children: [
-                                      const SizedBox(height: 3), // Align visually with label
-                                      Container(
-                                        width: 10,
-                                        height: 10,
-                                        decoration: const BoxDecoration(
-                                          color: Color(0xFF0F9B6E), // Green dot
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Container(
-                                          width: 1.5,
-                                          color: const Color(0xFFE2E8F0),
-                                        ),
-                                      ),
-                                    ],
+                                  Text(
+                                    pickupText,
+                                    style: const TextStyle(
+                                      fontSize: 13.5,
+                                      color: Color(0xFF121214),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'PICKUP',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF6B7785),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          pickupText,
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            color: Color(0xFF1A2233),
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Pickup · Goods Type: $goodsType',
+                                    style: const TextStyle(
+                                      fontSize: 11.5,
+                                      color: Color(0xFF6C6F79),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            // Connecting line in between pickup and drop blocks
-                            IntrinsicHeight(
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                          ],
+                        ),
+                        // Dashed connecting line
+                        Container(
+                          height: 16,
+                          margin: const EdgeInsets.only(left: 7),
+                          decoration: const BoxDecoration(
+                            border: Border(
+                              left: BorderSide(
+                                color: Color(0xFFE7E7EB),
+                                width: 2,
+                                style: BorderStyle.solid, // Flutter dashed border requires custom painter, solid is fallback
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Drop Stop
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(top: 4, right: 10),
+                              child: const Icon(
+                                Icons.arrow_downward_rounded,
+                                size: 16,
+                                color: Color(0xFF121214),
+                              ),
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Container(
-                                    width: 10,
-                                    alignment: Alignment.center,
-                                    child: Container(
-                                      width: 1.5,
-                                      color: const Color(0xFFE2E8F0),
+                                  Text(
+                                    dropText,
+                                    style: const TextStyle(
+                                      fontSize: 13.5,
+                                      color: Color(0xFF121214),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Drop · Est. Time: $estimatedTime min',
+                                    style: const TextStyle(
+                                      fontSize: 11.5,
+                                      color: Color(0xFF6C6F79),
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
-                                  const SizedBox(height: 12), // Height of spacing between blocks
                                 ],
                               ),
                             ),
-                            // Drop Stop
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Column(
-                                  children: [
-                                    const SizedBox(height: 3), // Align visually with label
-                                    Container(
-                                      width: 10,
-                                      height: 10,
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFFF97316), // Orange dot
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'DROP',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF6B7785),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        dropText,
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          color: Color(0xFF1A2233),
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        const Divider(height: 1, thickness: 1, color: Color(0xFFE7E7EB)), // Dashed equivalent
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Text(
+                              'Total payable',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: Color(0xFF6C6F79),
+                              ),
+                            ),
+                            Text(
+                              '₹${finalFare.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'monospace',
+                                color: Color(0xFF121214),
+                              ),
                             ),
                           ],
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-
-                  // Goods, Vehicle, Total row Card
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildSummaryColumn('GOODS', goodsType),
-                        _buildSummaryColumn('VEHICLE', vehicle.name),
-                        _buildSummaryColumn('TOTAL', '₹${finalFare.toStringAsFixed(0)}', isPrice: true),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
                   // Payment Method Selector Card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 10),
+                    child: Text(
+                      'PAYMENT METHOD',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF6C6F79),
+                        letterSpacing: 1.0,
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Payment Method',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1A2233),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildPaymentMethodOption(
-                          value: 'WALLET',
-                          title: 'Online Payment',
-                          subtitle: 'UPI, Card, Net Banking',
-                          icon: Icons.credit_card_rounded,
-                        ),
-                        const Divider(height: 1, thickness: 0.5, color: Color(0xFFE2E8F0)),
-                        _buildPaymentMethodOption(
-                          value: 'CASH',
-                          title: 'Cash on Delivery',
-                          subtitle: 'Pay driver directly',
-                          icon: Icons.payments_rounded,
-                        ),
-                      ],
-                    ),
+                  ),
+                  _buildPaymentMethodOption(
+                    value: 'WALLET',
+                    title: 'Online Payment (Wallet, UPI)',
+                    icon: Icons.account_balance_wallet_outlined,
+                  ),
+                  _buildPaymentMethodOption(
+                    value: 'CASH',
+                    title: 'Cash on delivery',
+                    icon: Icons.money_rounded,
                   ),
                 ],
               ),
@@ -332,139 +279,114 @@ class _ConfirmBookingScreenState extends State<ConfirmBookingScreen> {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            child: SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF97316),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: widget.onBack,
+                  child: Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F1F4),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.arrow_back, color: Color(0xFF121214)),
                   ),
                 ),
-                onPressed: _isBookingInProgress ? null : () => _handleConfirmBooking(context),
-                child: _isBookingInProgress
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 52,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE31C2E), // var(--red)
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                      )
-                    : const Text(
-                        'Confirm Booking',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                       ),
-              ),
+                      onPressed: _isBookingInProgress ? null : () => _handleConfirmBooking(context),
+                      child: _isBookingInProgress
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Text(
+                              'Confirm Booking',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                            ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryColumn(String label, String value, {bool isPrice = false}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF6B7785),
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: isPrice ? 16 : 13,
-            fontWeight: FontWeight.bold,
-            color: isPrice ? const Color(0xFF1A3D6B) : const Color(0xFF1A2233),
-          ),
-        ),
-      ],
-    );
+      );
   }
 
   Widget _buildPaymentMethodOption({
     required String value,
     required String title,
-    required String subtitle,
     required IconData icon,
   }) {
     final isSelected = _selectedPaymentMethod == value;
 
-    return InkWell(
+    return GestureDetector(
       onTap: () {
         setState(() {
           _selectedPaymentMethod = value;
         });
       },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFDEBEC) : Colors.white,
+          border: Border.all(
+            color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
+            width: 1.5,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
         child: Row(
           children: [
             Container(
-              width: 20,
-              height: 20,
+              width: 18,
+              height: 18,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? const Color(0xFF1A3D6B) : const Color(0xFFB0B8C4),
+                  color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFA2A5AE),
                   width: 2,
                 ),
               ),
               alignment: Alignment.center,
               child: isSelected
                   ? Container(
-                      width: 10,
-                      height: 10,
+                      width: 8,
+                      height: 8,
                       decoration: const BoxDecoration(
-                        color: Color(0xFF1A3D6B),
+                        color: Color(0xFFE31C2E),
                         shape: BoxShape.circle,
                       ),
                     )
                   : null,
             ),
             const SizedBox(width: 14),
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F3F6),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              alignment: Alignment.center,
-              child: Icon(icon, color: const Color(0xFF1A3D6B), size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A2233),
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF6B7785),
-                    ),
-                  ),
-                ],
+            Icon(icon, color: const Color(0xFF121214), size: 20),
+            const SizedBox(width: 10),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF121214),
               ),
             ),
           ],

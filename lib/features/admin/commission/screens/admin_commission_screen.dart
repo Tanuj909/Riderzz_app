@@ -42,7 +42,7 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
             SizedBox(width: 8),
             Text(
               'Delete Config',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A2233)),
+              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF121214)),
             ),
           ],
         ),
@@ -53,7 +53,7 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF6B7785))),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF6C6F79))),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -71,7 +71,7 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Commission config deleted successfully!'),
-                      backgroundColor: Color(0xFF0F9B6E),
+                      backgroundColor: Color(0xFF1C9A5B),
                     ),
                   );
                 } else if (provider.errorMessage != null) {
@@ -94,10 +94,10 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: const Color(0xFFF6F6F8),
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFF1A3D6B),
+        backgroundColor: const Color(0xFFE31C2E),
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           'Commission Configurations',
@@ -119,7 +119,7 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
           if (provider.isLoading && provider.configs.isEmpty) {
             return const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B)),
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
               ),
             );
           }
@@ -140,7 +140,7 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A3D6B)),
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE31C2E)),
                       onPressed: () => provider.fetchCommissionConfigs(),
                       child: const Text('Retry', style: TextStyle(color: Colors.white)),
                     ),
@@ -161,18 +161,18 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
                     const SizedBox(height: 12),
                     const Text(
                       'No configurations found',
-                      style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A2233), fontSize: 15),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF121214), fontSize: 15),
                     ),
                     const SizedBox(height: 4),
                     const Text(
                       'Create custom commission percentages for your vehicle types.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Color(0xFF6B7785), fontSize: 12),
+                      style: TextStyle(color: Color(0xFF6C6F79), fontSize: 12),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A3D6B),
+                        backgroundColor: const Color(0xFFE31C2E),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                       icon: const Icon(Icons.add_rounded, color: Colors.white),
@@ -187,7 +187,7 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
 
           return RefreshIndicator(
             onRefresh: () => provider.fetchCommissionConfigs(),
-            color: const Color(0xFF1A3D6B),
+            color: const Color(0xFFE31C2E),
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: provider.configs.length,
@@ -198,7 +198,7 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFE9ECF0)),
+                    border: Border.all(color: const Color(0xFFE7E7EB)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.02),
@@ -214,10 +214,10 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: const BoxDecoration(
-                            color: Color(0xFFE8F0FB),
+                            color: Color(0xFFFDEBEC),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.airport_shuttle_rounded, color: Color(0xFF1A3D6B), size: 20),
+                          child: const Icon(Icons.airport_shuttle_rounded, color: Color(0xFFE31C2E), size: 20),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -229,7 +229,7 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
-                                  color: Color(0xFF1A2233),
+                                  color: Color(0xFF121214),
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -244,7 +244,7 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
                                     child: Text(
                                       '${config.commissionPercent.toStringAsFixed(1)}% Commission',
                                       style: const TextStyle(
-                                        color: Color(0xFF0F9B6E),
+                                        color: Color(0xFF1C9A5B),
                                         fontSize: 10,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -256,7 +256,7 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.edit_rounded, color: Color(0xFF6B7785), size: 20),
+                          icon: const Icon(Icons.edit_rounded, color: Color(0xFF6C6F79), size: 20),
                           onPressed: () => _showFormDialog(config: config),
                         ),
                         IconButton(
@@ -350,7 +350,7 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                   ? 'Commission config updated successfully!'
                   : 'Commission config created successfully!',
             ),
-            backgroundColor: const Color(0xFF0F9B6E),
+            backgroundColor: const Color(0xFF1C9A5B),
           ),
         );
       } else if (provider.errorMessage != null) {
@@ -386,10 +386,10 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                   children: [
                     Text(
                       widget.config != null ? 'Edit Configuration' : 'Add Configuration',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1A2233)),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF121214)),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Color(0xFF6B7785), size: 20),
+                      icon: const Icon(Icons.close_rounded, color: Color(0xFF6C6F79), size: 20),
                       onPressed: () => Navigator.pop(context),
                       constraints: const BoxConstraints(),
                       padding: EdgeInsets.zero,
@@ -401,31 +401,31 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                 // Vehicle Type Dropdown
                 const Text(
                   'Vehicle Type',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A2233)),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
                 ),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<int>(
                   value: _selectedVehicleTypeId,
                   dropdownColor: Colors.white,
-                  icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6B7785)),
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6C6F79)),
                   borderRadius: BorderRadius.circular(12),
                   onChanged: (val) {
                     setState(() {
                       _selectedVehicleTypeId = val;
                     });
                   },
-                  style: const TextStyle(fontSize: 13, color: Color(0xFF1A2233), fontWeight: FontWeight.w500),
+                  style: const TextStyle(fontSize: 13, color: Color(0xFF121214), fontWeight: FontWeight.w500),
                   decoration: InputDecoration(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     filled: true,
                     fillColor: const Color(0xFFF8FAFC),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFF1A3D6B), width: 1.5),
+                      borderSide: const BorderSide(color: Color(0xFFE31C2E), width: 1.5),
                     ),
                   ),
                   items: vehicleTypes.map((type) {
@@ -433,7 +433,7 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                       value: type.id,
                       child: Text(
                         type.name,
-                        style: const TextStyle(color: Color(0xFF1A2233), fontSize: 13),
+                        style: const TextStyle(color: Color(0xFF121214), fontSize: 13),
                       ),
                     );
                   }).toList(),
@@ -445,13 +445,13 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                 // Commission Percent
                 const Text(
                   'Commission Percent (%)',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A2233)),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _percentController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  style: const TextStyle(fontSize: 13, color: Color(0xFF1A2233), fontWeight: FontWeight.w500),
+                  style: const TextStyle(fontSize: 13, color: Color(0xFF121214), fontWeight: FontWeight.w500),
                   decoration: InputDecoration(
                     hintText: 'e.g., 15.5',
                     hintStyle: const TextStyle(color: Color(0xFFB0B8C4), fontSize: 13),
@@ -460,11 +460,11 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                     fillColor: const Color(0xFFF8FAFC),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFF1A3D6B), width: 1.5),
+                      borderSide: const BorderSide(color: Color(0xFFE31C2E), width: 1.5),
                     ),
                   ),
                   validator: (val) {
@@ -489,7 +489,7 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          side: const BorderSide(color: Color(0xFFE2E8F0)),
+                          side: const BorderSide(color: Color(0xFFE7E7EB)),
                         ),
                         onPressed: () => Navigator.pop(context),
                         child: const Text('Cancel', style: TextStyle(color: Color(0xFF4A5568))),
@@ -499,7 +499,7 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1A3D6B),
+                          backgroundColor: const Color(0xFFE31C2E),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           elevation: 0,

@@ -56,17 +56,17 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'APPROVED':
-        return const Color(0xFF0F9B6E);
+        return const Color(0xFF1C9A5B);
       case 'PENDING':
         return const Color(0xFFD97706);
       case 'UNDER_REVIEW':
-        return const Color(0xFF1A3D6B);
+        return const Color(0xFFE31C2E);
       case 'REJECTED':
         return Colors.redAccent;
       case 'SUSPENDED':
-        return const Color(0xFF6B7785);
+        return const Color(0xFF6C6F79);
       default:
-        return const Color(0xFF1A2233);
+        return const Color(0xFF121214);
     }
   }
 
@@ -77,20 +77,20 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
       case 'PENDING':
         return const Color(0xFFFFF7E6);
       case 'UNDER_REVIEW':
-        return const Color(0xFFE8F0FB);
+        return const Color(0xFFFDEBEC);
       case 'REJECTED':
         return const Color(0xFFFFF0F0);
       case 'SUSPENDED':
-        return const Color(0xFFF7F8FA);
+        return const Color(0xFFF6F6F8);
       default:
-        return const Color(0xFFF7F8FA);
+        return const Color(0xFFF6F6F8);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: const Color(0xFFF6F6F8),
       body: Consumer<RiderVerificationProvider>(
         builder: (context, provider, child) {
           return Column(
@@ -124,7 +124,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                           child: Text(
                             status.replaceFirst('_', ' '),
                             style: TextStyle(
-                              color: isSelected ? _getStatusColor(status) : const Color(0xFF6B7785),
+                              color: isSelected ? _getStatusColor(status) : const Color(0xFF6C6F79),
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
@@ -136,17 +136,17 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                 ),
               ),
 
-              const Divider(height: 1, color: Color(0xFFE9ECF0)),
+              const Divider(height: 1, color: Color(0xFFE7E7EB)),
 
               // Driver List Container
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: () => provider.fetchDrivers(isRefresh: true),
-                  color: const Color(0xFF1A3D6B),
+                  color: const Color(0xFFE31C2E),
                   child: provider.isLoading && provider.drivers.isEmpty
                       ? const Center(
                           child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B)),
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
                           ),
                         )
                       : provider.errorMessage != null && provider.drivers.isEmpty
@@ -165,7 +165,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                                     ),
                                     const SizedBox(height: 16),
                                     ElevatedButton(
-                                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A3D6B)),
+                                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE31C2E)),
                                       onPressed: () => provider.fetchDrivers(isRefresh: true),
                                       child: const Text('Retry', style: TextStyle(color: Colors.white)),
                                     ),
@@ -184,10 +184,10 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                                           Container(
                                             padding: const EdgeInsets.all(16),
                                             decoration: const BoxDecoration(
-                                              color: Color(0xFFE8F0FB),
+                                              color: Color(0xFFFDEBEC),
                                               shape: BoxShape.circle,
                                             ),
-                                            child: const Icon(Icons.assignment_ind_rounded, size: 48, color: Color(0xFF1A3D6B)),
+                                            child: const Icon(Icons.assignment_ind_rounded, size: 48, color: Color(0xFFE31C2E)),
                                           ),
                                           const SizedBox(height: 16),
                                           Text(
@@ -195,7 +195,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                                             style: const TextStyle(
                                               fontSize: 15,
                                               fontWeight: FontWeight.bold,
-                                              color: Color(0xFF1A2233),
+                                              color: Color(0xFF121214),
                                             ),
                                           ),
                                         ],
@@ -218,7 +218,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                                             height: 24,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2.5,
-                                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B)),
+                                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
                                             ),
                                           ),
                                         ),
@@ -244,7 +244,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE9ECF0)),
+        border: Border.all(color: const Color(0xFFE7E7EB)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -275,7 +275,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                           Text(
                             driver.name,
                             style: const TextStyle(
-                              color: Color(0xFF1A2233),
+                              color: Color(0xFF121214),
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
                             ),
@@ -284,7 +284,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                           Text(
                             '+91 ${driver.phone}',
                             style: const TextStyle(
-                              color: Color(0xFF6B7785),
+                              color: Color(0xFF6C6F79),
                               fontSize: 12,
                             ),
                           ),
@@ -311,7 +311,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                 
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12.0),
-                  child: Divider(height: 1, color: Color(0xFFE9ECF0)),
+                  child: Divider(height: 1, color: Color(0xFFE7E7EB)),
                 ),
 
                 // Vehicle Information
@@ -320,10 +320,10 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: const BoxDecoration(
-                        color: Color(0xFFE8F0FB),
+                        color: Color(0xFFFDEBEC),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.airport_shuttle_rounded, color: Color(0xFF1A3D6B), size: 18),
+                      child: const Icon(Icons.airport_shuttle_rounded, color: Color(0xFFE31C2E), size: 18),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -335,7 +335,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                                 ? '${driver.vehicle!.make} ${driver.vehicle!.model}'
                                 : 'No vehicle info',
                             style: const TextStyle(
-                              color: Color(0xFF1A2233),
+                              color: Color(0xFF121214),
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),
@@ -344,7 +344,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                           Text(
                             'Plate: ${driver.vehicleNumber}',
                             style: const TextStyle(
-                              color: Color(0xFF6B7785),
+                              color: Color(0xFF6C6F79),
                               fontSize: 11,
                             ),
                           ),
@@ -367,18 +367,18 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                         Text(
                           driver.rating.toStringAsFixed(1),
                           style: const TextStyle(
-                            color: Color(0xFF1A2233),
+                            color: Color(0xFF121214),
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
                         ),
                         const SizedBox(width: 16),
-                        const Icon(Icons.local_shipping_rounded, color: Color(0xFF1A3D6B), size: 16),
+                        const Icon(Icons.local_shipping_rounded, color: Color(0xFFE31C2E), size: 16),
                         const SizedBox(width: 4),
                         Text(
                           '${driver.totalTrips} Trips',
                           style: const TextStyle(
-                            color: Color(0xFF1A2233),
+                            color: Color(0xFF121214),
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
@@ -390,13 +390,13 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                         Text(
                           'Verify Documents',
                           style: TextStyle(
-                            color: Color(0xFF1A3D6B),
+                            color: Color(0xFFE31C2E),
                             fontWeight: FontWeight.bold,
                             fontSize: 11,
                           ),
                         ),
                         SizedBox(width: 4),
-                        Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF1A3D6B), size: 10),
+                        Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFE31C2E), size: 10),
                       ],
                     ),
                   ],
@@ -516,7 +516,7 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
   Color _getDocStatusColor(String status) {
     switch (status) {
       case 'APPROVED':
-        return const Color(0xFF0F9B6E);
+        return const Color(0xFF1C9A5B);
       case 'REJECTED':
         return Colors.redAccent;
       default:
@@ -530,11 +530,11 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Color(0xFF6B7785), fontSize: 12)),
+          Text(label, style: const TextStyle(color: Color(0xFF6C6F79), fontSize: 12)),
           Flexible(
             child: Text(
               value,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A2233)),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
               textAlign: TextAlign.end,
             ),
           ),
@@ -582,7 +582,7 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                     height: 200,
                     child: Center(
                       child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B)),
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
                       ),
                     ),
                   )
@@ -597,7 +597,7 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                             width: 36,
                             height: 4,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE9ECF0),
+                              color: const Color(0xFFE7E7EB),
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
@@ -612,12 +612,12 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                 children: [
                                   Text(
                                     driver.name,
-                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A2233)),
+                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     'Phone: +91 ${driver.phone}${driver.email != null ? ' • ${driver.email}' : ''}',
-                                    style: const TextStyle(fontSize: 12, color: Color(0xFF6B7785)),
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79)),
                                   ),
                                 ],
                               ),
@@ -629,14 +629,14 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFE8F0FB),
+                                      color: const Color(0xFFFDEBEC),
                                       borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(color: const Color(0xFF1A3D6B).withValues(alpha: 0.15)),
+                                      border: Border.all(color: const Color(0xFFE31C2E).withValues(alpha: 0.15)),
                                     ),
                                     child: Text(
                                       driver.vehicleTypeName!,
                                       style: const TextStyle(
-                                        color: Color(0xFF1A3D6B),
+                                        color: Color(0xFFE31C2E),
                                         fontSize: 11,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -645,8 +645,8 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                 const SizedBox(height: 6),
                                 TextButton.icon(
                                   onPressed: () => _showEditDriverDialog(driver),
-                                  icon: const Icon(Icons.edit_rounded, size: 14, color: Color(0xFF1A3D6B)),
-                                  label: const Text('Edit Info', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1A3D6B))),
+                                  icon: const Icon(Icons.edit_rounded, size: 14, color: Color(0xFFE31C2E)),
+                                  label: const Text('Edit Info', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFE31C2E))),
                                   style: TextButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     minimumSize: Size.zero,
@@ -660,14 +660,14 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                         const SizedBox(height: 16),
 
                         // Personal Information Section
-                        const Text('Personal Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1A2233))),
+                        const Text('Personal Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF121214))),
                         const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF7F8FA),
+                            color: const Color(0xFFF6F6F8),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFE9ECF0)),
+                            border: Border.all(color: const Color(0xFFE7E7EB)),
                           ),
                           child: Column(
                             children: [
@@ -686,14 +686,14 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                         const SizedBox(height: 16),
 
                         // Vehicle Information Section
-                        const Text('Vehicle Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1A2233))),
+                        const Text('Vehicle Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF121214))),
                         const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF7F8FA),
+                            color: const Color(0xFFF6F6F8),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFE9ECF0)),
+                            border: Border.all(color: const Color(0xFFE7E7EB)),
                           ),
                           child: Column(
                             children: [
@@ -719,21 +719,21 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                         // Documents Verification list
                         Text(
                           'Verification Documents (${driver.documents.length})',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1A2233)),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF121214)),
                         ),
                         const SizedBox(height: 8),
                         if (driver.documents.isEmpty)
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF7F8FA),
+                              color: const Color(0xFFF6F6F8),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFE9ECF0)),
+                              border: Border.all(color: const Color(0xFFE7E7EB)),
                             ),
                             child: const Center(
                               child: Text(
                                 'No documents uploaded yet.',
-                                style: TextStyle(color: Color(0xFF6B7785), fontSize: 13),
+                                style: TextStyle(color: Color(0xFF6C6F79), fontSize: 13),
                               ),
                             ),
                           )
@@ -745,7 +745,7 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFE9ECF0)),
+                                border: Border.all(color: const Color(0xFFE7E7EB)),
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -753,7 +753,7 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                   Expanded(
                                     child: Row(
                                       children: [
-                                        const Icon(Icons.description_outlined, color: Color(0xFF1A3D6B), size: 20),
+                                        const Icon(Icons.description_outlined, color: Color(0xFFE31C2E), size: 20),
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Column(
@@ -761,7 +761,7 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                             children: [
                                               Text(
                                                 doc.docType.replaceAll('_', ' '),
-                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A2233)),
+                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
                                               ),
                                               const SizedBox(height: 2),
                                               Text(
@@ -783,8 +783,8 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                   ),
                                   ElevatedButton.icon(
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFE8F0FB),
-                                      foregroundColor: const Color(0xFF1A3D6B),
+                                      backgroundColor: const Color(0xFFFDEBEC),
+                                      foregroundColor: const Color(0xFFE31C2E),
                                       elevation: 0,
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -804,28 +804,28 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                             margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF7F8FA),
+                              color: const Color(0xFFF6F6F8),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFE9ECF0)),
+                              border: Border.all(color: const Color(0xFFE7E7EB)),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(Icons.warning_amber_rounded, color: Color(0xFF6B7785), size: 20),
+                                    const Icon(Icons.warning_amber_rounded, color: Color(0xFF6C6F79), size: 20),
                                     const SizedBox(width: 8),
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           docType.replaceAll('_', ' '),
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF6B7785)),
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF6C6F79)),
                                         ),
                                         const SizedBox(height: 2),
                                         const Text(
                                           'Not Uploaded',
-                                          style: TextStyle(color: Color(0xFF6B7785), fontSize: 10, fontWeight: FontWeight.bold),
+                                          style: TextStyle(color: Color(0xFF6C6F79), fontSize: 10, fontWeight: FontWeight.bold),
                                         ),
                                       ],
                                     ),
@@ -834,12 +834,12 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFF1F5F9),
+                                    color: const Color(0xFFF1F1F4),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: const Text(
                                     'Missing',
-                                    style: TextStyle(color: Color(0xFF6B7785), fontSize: 10, fontWeight: FontWeight.bold),
+                                    style: TextStyle(color: Color(0xFF6C6F79), fontSize: 10, fontWeight: FontWeight.bold),
                                   ),
                                 ),
                               ],
@@ -854,7 +854,7 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                           const Center(
                             child: Padding(
                               padding: EdgeInsets.symmetric(vertical: 8.0),
-                              child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B))),
+                              child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E))),
                             ),
                           )
                         else if (driver.approvalStatus == 'REJECTED')
@@ -865,14 +865,14 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF1F5F9),
+                                  color: const Color(0xFFF1F1F4),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                  border: Border.all(color: const Color(0xFFE7E7EB)),
                                 ),
                                 child: const Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF6B7785)),
+                                    Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF6C6F79)),
                                     SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
@@ -893,7 +893,7 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                   Expanded(
                                     child: ElevatedButton(
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF0F9B6E),
+                                        backgroundColor: const Color(0xFF1C9A5B),
                                         foregroundColor: Colors.white,
                                         padding: const EdgeInsets.symmetric(vertical: 14),
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -916,7 +916,7 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                     Expanded(
                                       child: ElevatedButton(
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFF0F9B6E),
+                                          backgroundColor: const Color(0xFF1C9A5B),
                                           foregroundColor: Colors.white,
                                           padding: const EdgeInsets.symmetric(vertical: 14),
                                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -954,7 +954,7 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                     Expanded(
                                       child: ElevatedButton(
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFF6B7785),
+                                          backgroundColor: const Color(0xFF6C6F79),
                                           foregroundColor: Colors.white,
                                           padding: const EdgeInsets.symmetric(vertical: 12),
                                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1009,7 +1009,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
   Color _getDocStatusColor(String status) {
     switch (status) {
       case 'APPROVED':
-        return const Color(0xFF0F9B6E);
+        return const Color(0xFF1C9A5B);
       case 'REJECTED':
         return Colors.redAccent;
       default:
@@ -1109,7 +1109,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
       cardIcon = Icons.verified_user_rounded;
     } else {
       cardGradient = const LinearGradient(
-        colors: [Color(0xFF1A3D6B), Color(0xFF1D5A9C)],
+        colors: [Color(0xFFE31C2E), Color(0xFF1D5A9C)],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       );
@@ -1343,7 +1343,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
             content: Text(
               'Document ${widget.document.docType.replaceAll('_', ' ')} status updated to $status successfully!',
             ),
-            backgroundColor: status == 'APPROVED' ? const Color(0xFF0F9B6E) : Colors.redAccent,
+            backgroundColor: status == 'APPROVED' ? const Color(0xFF1C9A5B) : Colors.redAccent,
           ),
         );
       } else if (provider.errorMessage != null) {
@@ -1389,11 +1389,11 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: Color(0xFF1A2233),
+                  color: Color(0xFF121214),
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close_rounded, color: Color(0xFF6B7785), size: 20),
+                icon: const Icon(Icons.close_rounded, color: Color(0xFF6C6F79), size: 20),
                 onPressed: () => Navigator.pop(context),
                 constraints: const BoxConstraints(),
                 padding: EdgeInsets.zero,
@@ -1411,7 +1411,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: const Color(0xFFE7E7EB)),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1419,7 +1419,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: const BoxDecoration(
-                          color: Color(0xFFF1F5F9),
+                          color: Color(0xFFF1F1F4),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -1501,7 +1501,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
-                            color: Color(0xFF1A2233),
+                            color: Color(0xFF121214),
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -1514,18 +1514,18 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                             hintStyle: const TextStyle(color: Color(0xFFB0B8C4), fontSize: 13),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             filled: true,
-                            fillColor: const Color(0xFFF7F8FA),
+                            fillColor: const Color(0xFFF6F6F8),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(color: Color(0xFFE9ECF0)),
+                              borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(color: Color(0xFFE9ECF0)),
+                              borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(color: Color(0xFF1A3D6B), width: 1.5),
+                              borderSide: const BorderSide(color: Color(0xFFE31C2E), width: 1.5),
                             ),
                             errorBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
@@ -1552,7 +1552,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 8.0),
                   child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B)),
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
                   ),
                 ),
               )
@@ -1562,8 +1562,8 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                   Expanded(
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF6B7785),
-                        side: const BorderSide(color: Color(0xFFE9ECF0)),
+                        foregroundColor: const Color(0xFF6C6F79),
+                        side: const BorderSide(color: Color(0xFFE7E7EB)),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
@@ -1599,7 +1599,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0F9B6E),
+                          backgroundColor: const Color(0xFF1C9A5B),
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -1634,8 +1634,8 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                   Expanded(
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF1A3D6B),
-                        side: const BorderSide(color: Color(0xFF1A3D6B)),
+                        foregroundColor: const Color(0xFFE31C2E),
+                        side: const BorderSide(color: Color(0xFFE31C2E)),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
@@ -1752,7 +1752,7 @@ class _UpdateStatusConfirmationDialogState extends State<UpdateStatusConfirmatio
     late Widget subtitleWidget;
 
     if (status == 'APPROVED') {
-      themeColor = const Color(0xFF0F9B6E); // Green
+      themeColor = const Color(0xFF1C9A5B); // Green
       iconData = Icons.verified_user_rounded;
       title = 'Approve Application';
       actionText = 'Approve';
@@ -1768,7 +1768,7 @@ class _UpdateStatusConfirmationDialogState extends State<UpdateStatusConfirmatio
             const TextSpan(text: 'Are you sure you want to '),
             const TextSpan(
               text: 'approve ',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F9B6E)),
+              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1C9A5B)),
             ),
             TextSpan(
               text: widget.driverName,
@@ -1779,7 +1779,7 @@ class _UpdateStatusConfirmationDialogState extends State<UpdateStatusConfirmatio
         ),
       );
     } else if (status == 'ACTIVATED') {
-      themeColor = const Color(0xFF0F9B6E); // Green
+      themeColor = const Color(0xFF1C9A5B); // Green
       iconData = Icons.verified_user_rounded;
       title = 'Activate Driver';
       actionText = 'Activate';
@@ -1795,7 +1795,7 @@ class _UpdateStatusConfirmationDialogState extends State<UpdateStatusConfirmatio
             const TextSpan(text: 'Are you sure you want to '),
             const TextSpan(
               text: 'activate ',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F9B6E)),
+              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1C9A5B)),
             ),
             TextSpan(
               text: widget.driverName,
@@ -1833,7 +1833,7 @@ class _UpdateStatusConfirmationDialogState extends State<UpdateStatusConfirmatio
         ),
       );
     } else {
-      themeColor = const Color(0xFF6B7785); // Grey for suspended
+      themeColor = const Color(0xFF6C6F79); // Grey for suspended
       iconData = Icons.block_flipped;
       title = 'Suspend Driver';
       actionText = 'Suspend';
@@ -1849,7 +1849,7 @@ class _UpdateStatusConfirmationDialogState extends State<UpdateStatusConfirmatio
             const TextSpan(text: 'Are you sure you want to '),
             const TextSpan(
               text: 'suspend ',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6B7785)),
+              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6C6F79)),
             ),
             TextSpan(
               text: widget.driverName,
@@ -1935,7 +1935,7 @@ class _UpdateStatusConfirmationDialogState extends State<UpdateStatusConfirmatio
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                        borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -1968,7 +1968,7 @@ class _UpdateStatusConfirmationDialogState extends State<UpdateStatusConfirmatio
                         text: 'Cancel',
                         backgroundColor: Colors.transparent,
                         textColor: const Color(0xFF4A5568),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        border: Border.all(color: const Color(0xFFE7E7EB)),
                         onTap: () => Navigator.pop(context),
                       ),
                     ),
@@ -2072,9 +2072,9 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFF1A3D6B),
+              primary: Color(0xFFE31C2E),
               onPrimary: Colors.white,
-              onSurface: Color(0xFF1A2233),
+              onSurface: Color(0xFF121214),
             ),
           ),
           child: child!,
@@ -2125,7 +2125,7 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Driver details updated successfully!'),
-            backgroundColor: Color(0xFF0F9B6E),
+            backgroundColor: Color(0xFF1C9A5B),
           ),
         );
       } else if (provider.errorMessage != null) {
@@ -2164,11 +2164,11 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: Color(0xFF1A2233),
+                      color: Color(0xFF121214),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Color(0xFF6B7785), size: 20),
+                    icon: const Icon(Icons.close_rounded, color: Color(0xFF6C6F79), size: 20),
                     onPressed: () => Navigator.pop(context),
                     constraints: const BoxConstraints(),
                     padding: EdgeInsets.zero,
@@ -2176,7 +2176,7 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
                 ],
               ),
             ),
-            const Divider(height: 1, color: Color(0xFFE9ECF0)),
+            const Divider(height: 1, color: Color(0xFFE7E7EB)),
             // Form fields
             Expanded(
               child: SingleChildScrollView(
@@ -2253,7 +2253,7 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
                 ),
               ),
             ),
-            const Divider(height: 1, color: Color(0xFFE9ECF0)),
+            const Divider(height: 1, color: Color(0xFFE7E7EB)),
             // Buttons
             Padding(
               padding: const EdgeInsets.all(20),
@@ -2264,7 +2264,7 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                        side: const BorderSide(color: Color(0xFFE7E7EB)),
                       ),
                       onPressed: () => Navigator.pop(context),
                       child: const Text('Cancel', style: TextStyle(color: Color(0xFF4A5568))),
@@ -2274,7 +2274,7 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A3D6B),
+                        backgroundColor: const Color(0xFFE31C2E),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         elevation: 0,
@@ -2311,7 +2311,7 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A2233)),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
         ),
         const SizedBox(height: 6),
         TextFormField(
@@ -2326,11 +2326,11 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
             fillColor: const Color(0xFFF8FAFC),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFF1A3D6B), width: 1.5),
+              borderSide: const BorderSide(color: Color(0xFFE31C2E), width: 1.5),
             ),
           ),
         ),
@@ -2344,7 +2344,7 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A2233)),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
         ),
         const SizedBox(height: 6),
         TextFormField(
@@ -2358,14 +2358,14 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             filled: true,
             fillColor: const Color(0xFFF8FAFC),
-            suffixIcon: const Icon(Icons.calendar_today_rounded, size: 16, color: Color(0xFF6B7785)),
+            suffixIcon: const Icon(Icons.calendar_today_rounded, size: 16, color: Color(0xFF6C6F79)),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFF1A3D6B), width: 1.5),
+              borderSide: const BorderSide(color: Color(0xFFE31C2E), width: 1.5),
             ),
           ),
         ),
@@ -2385,24 +2385,24 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1A2233)),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<T>(
           value: value,
           onChanged: onChanged,
-          style: const TextStyle(fontSize: 13, color: Color(0xFF1A2233)),
+          style: const TextStyle(fontSize: 13, color: Color(0xFF121214)),
           decoration: InputDecoration(
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             filled: true,
             fillColor: const Color(0xFFF8FAFC),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFF1A3D6B), width: 1.5),
+              borderSide: const BorderSide(color: Color(0xFFE31C2E), width: 1.5),
             ),
           ),
           items: items.map((item) {

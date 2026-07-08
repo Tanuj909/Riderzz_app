@@ -70,9 +70,9 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFF1A3D6B),
+              primary: Color(0xFFE31C2E),
               onPrimary: Colors.white,
-              onSurface: Color(0xFF1A2233),
+              onSurface: Color(0xFF121214),
             ),
           ),
           child: child!,
@@ -101,7 +101,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Profile image updated successfully!'),
-                backgroundColor: Color(0xFF0F9B6E),
+                backgroundColor: Color(0xFF1C9A5B),
               ),
             );
           } else {
@@ -142,7 +142,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Profile updated successfully!'),
-            backgroundColor: Color(0xFF0F9B6E),
+            backgroundColor: Color(0xFF1C9A5B),
           ),
         );
       } else {
@@ -175,15 +175,15 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     final profileImageUrl = profile?.profileImage ?? user?.profileImage;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: const Color(0xFFF6F6F8),
       appBar: AppBar(
-        title: const Text('My Profile', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A2233))),
+        title: const Text('My Profile', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF121214))),
         backgroundColor: Colors.white,
         elevation: 0.5,
-        iconTheme: const IconThemeData(color: Color(0xFF1A2233)),
+        iconTheme: const IconThemeData(color: Color(0xFF121214)),
       ),
       body: isLoading && profile == null
-          ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B))))
+          ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E))))
           : RefreshIndicator(
               onRefresh: () async {
                 _loadProfile();
@@ -212,7 +212,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                                         width: 72,
                                         height: 72,
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFF1A3D6B),
+                                          color: const Color(0xFFE31C2E),
                                           shape: BoxShape.circle,
                                           image: (profileImageUrl != null && profileImageUrl.isNotEmpty)
                                               ? DecorationImage(
@@ -247,7 +247,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                                         child: Container(
                                           padding: const EdgeInsets.all(4),
                                           decoration: const BoxDecoration(
-                                            color: Color(0xFF1A3D6B),
+                                            color: Color(0xFFE31C2E),
                                             shape: BoxShape.circle,
                                           ),
                                           child: const Icon(
@@ -271,7 +271,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                                         style: const TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.bold,
-                                          color: Color(0xFF1A2233),
+                                          color: Color(0xFF121214),
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -281,7 +281,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                                         user?.phone ?? 'N/A',
                                         style: const TextStyle(
                                           fontSize: 12,
-                                          color: Color(0xFF6B7785),
+                                          color: Color(0xFF6C6F79),
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -297,7 +297,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                             flex: 2,
                             child: _buildStatCard(
                               icon: Icons.local_shipping_rounded,
-                              iconColor: const Color(0xFF0F9B6E),
+                              iconColor: const Color(0xFF1C9A5B),
                               value: profile != null ? profile.totalBookings.toString() : '0',
                               label: 'Bookings',
                             ),
@@ -309,7 +309,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                       // Section Title: Personal Info
                       const Text(
                         'Personal Information',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1A2233)),
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
                       ),
                       const SizedBox(height: 12),
 
@@ -331,7 +331,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                         controller: _dobController,
                         readOnly: true,
                         onTap: () => _selectDate(context),
-                        style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14, fontWeight: FontWeight.w500),
+                        style: const TextStyle(color: Color(0xFF121214), fontSize: 14, fontWeight: FontWeight.w500),
                         decoration: _buildInputDecoration(
                           label: 'Date of Birth',
                           suffixIcon: Icons.calendar_today_rounded,
@@ -343,7 +343,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                       TextFormField(
                         controller: _bioController,
                         maxLines: 3,
-                        style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14, fontWeight: FontWeight.w500),
+                        style: const TextStyle(color: Color(0xFF121214), fontSize: 14, fontWeight: FontWeight.w500),
                         decoration: _buildInputDecoration(
                           label: 'Bio',
                           hint: 'Describe yourself or details about your goods',
@@ -354,14 +354,14 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                       // Section Title: Emergency Contacts
                       const Text(
                         'Emergency Contact',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1A2233)),
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
                       ),
                       const SizedBox(height: 12),
 
                       // Emergency Contact Name
                       TextFormField(
                         controller: _emergencyNameController,
-                        style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14, fontWeight: FontWeight.w500),
+                        style: const TextStyle(color: Color(0xFF121214), fontSize: 14, fontWeight: FontWeight.w500),
                         decoration: _buildInputDecoration(
                           label: 'Contact Person Name',
                           hint: 'e.g. Tanuj Kashyap',
@@ -373,7 +373,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                       TextFormField(
                         controller: _emergencyPhoneController,
                         keyboardType: TextInputType.phone,
-                        style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14, fontWeight: FontWeight.w500),
+                        style: const TextStyle(color: Color(0xFF121214), fontSize: 14, fontWeight: FontWeight.w500),
                         validator: (value) {
                           if (value != null && value.isNotEmpty && value.length < 10) {
                             return 'Please enter a valid 10-digit number';
@@ -394,7 +394,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                         child: ElevatedButton(
                           onPressed: isLoading ? null : () => _saveProfile(authProvider),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1A3D6B),
+                            backgroundColor: const Color(0xFFE31C2E),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -436,7 +436,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE9ECF0)),
+        border: Border.all(color: const Color(0xFFE7E7EB)),
       ),
       child: Row(
         children: [
@@ -447,11 +447,11 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
             children: [
               Text(
                 value,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A2233)),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
               ),
               Text(
                 label,
-                style: const TextStyle(fontSize: 11, color: Color(0xFF6B7785)),
+                style: const TextStyle(fontSize: 11, color: Color(0xFF6C6F79)),
               ),
             ],
           ),
@@ -470,9 +470,9 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
       value: value,
       isExpanded: true,
       dropdownColor: Colors.white,
-      icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF6B7785)),
+      icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF6C6F79)),
       borderRadius: BorderRadius.circular(12),
-      style: const TextStyle(fontSize: 14, color: Color(0xFF1A2233), fontWeight: FontWeight.w500),
+      style: const TextStyle(fontSize: 14, color: Color(0xFF121214), fontWeight: FontWeight.w500),
       items: items.map((String item) {
         return DropdownMenuItem<String>(
           value: item,
@@ -480,7 +480,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
             item,
             style: const TextStyle(
               fontSize: 14,
-              color: Color(0xFF1A2233),
+              color: Color(0xFF121214),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -499,20 +499,20 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: const TextStyle(color: Color(0xFF6B7785), fontSize: 13),
+      labelStyle: const TextStyle(color: Color(0xFF6C6F79), fontSize: 13),
       hintStyle: const TextStyle(color: Color(0xFFA0AEC0), fontSize: 13),
       floatingLabelBehavior: FloatingLabelBehavior.always,
       filled: true,
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      suffixIcon: suffixIcon != null ? Icon(suffixIcon, color: const Color(0xFF6B7785), size: 20) : null,
+      suffixIcon: suffixIcon != null ? Icon(suffixIcon, color: const Color(0xFF6C6F79), size: 20) : null,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: Color(0xFFD2D6DC)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF1A3D6B), width: 1.5),
+        borderSide: const BorderSide(color: Color(0xFFE31C2E), width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

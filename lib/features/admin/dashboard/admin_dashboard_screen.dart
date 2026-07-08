@@ -56,11 +56,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final adminUser = authProvider.currentUser;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: const Color(0xFFF6F6F8),
       appBar: AppBar(
         toolbarHeight: 0,
         elevation: 0,
-        backgroundColor: const Color(0xFF1A3D6B),
+        backgroundColor: const Color(0xFFE31C2E),
         systemOverlayStyle: SystemUiOverlayStyle.light,
       ),
       body: SafeArea(
@@ -68,7 +68,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           children: [
             // Admin Reusable Header App Bar Layout (Shared across tabs)
             Container(
-              color: const Color(0xFF1A3D6B),
+              color: const Color(0xFFE31C2E),
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -134,18 +134,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
-                                  color: Color(0xFF1A2233),
+                                  color: Color(0xFF121214),
                                 ),
                               ),
                               if (adminUser?.phone != null) ...[
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    const Icon(Icons.phone_android_rounded, size: 12, color: Color(0xFF6B7785)),
+                                    const Icon(Icons.phone_android_rounded, size: 12, color: Color(0xFF6C6F79)),
                                     const SizedBox(width: 4),
                                     Text(
                                       '+91 ${adminUser!.phone}',
-                                      style: const TextStyle(fontSize: 12, color: Color(0xFF6B7785)),
+                                      style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79)),
                                     ),
                                   ],
                                 ),
@@ -159,7 +159,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         height: 1,
                         child: Divider(
                           height: 1,
-                          color: Color(0xFFE2E8F0),
+                          color: Color(0xFFE7E7EB),
                           thickness: 0.5,
                         ),
                       ),
@@ -185,7 +185,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       width: 36,
                       height: 36,
                       decoration: const BoxDecoration(
-                        color: Color(0xFF0F9B6E),
+                        color: Color(0xFF1C9A5B),
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
@@ -233,7 +233,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         },
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFF1A3D6B),
+        selectedItemColor: const Color(0xFFE31C2E),
         unselectedItemColor: const Color(0xFFB0B8C4),
         selectedFontSize: 11,
         unselectedFontSize: 11,
@@ -310,7 +310,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           await provider.fetchDrivers(isRefresh: true);
         }
       },
-      color: const Color(0xFF1A3D6B),
+      color: const Color(0xFFE31C2E),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16.0),
@@ -321,7 +321,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             const Text(
               'Operational Overview',
               style: TextStyle(
-                color: Color(0xFF1A2233),
+                color: Color(0xFF121214),
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -341,13 +341,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   title: 'Active Bookings',
                   value: '42',
                   icon: Icons.local_shipping_rounded,
-                  color: const Color(0xFF1A3D6B),
+                  color: const Color(0xFFE31C2E),
                 ),
                 _buildStatCard(
                   title: 'Total Drivers',
                   value: '18',
                   icon: Icons.sports_motorsports_rounded,
-                  color: const Color(0xFF0F9B6E),
+                  color: const Color(0xFF1C9A5B),
                 ),
                 _buildStatCard(
                   title: 'Total Customers',
@@ -369,7 +369,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             const Text(
               'Administrative Tasks',
               style: TextStyle(
-                color: Color(0xFF1A2233),
+                color: Color(0xFF121214),
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -411,7 +411,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               subtitle: 'Manage vehicle types, rates, and limits',
               icon: Icons.airport_shuttle_rounded,
               iconBgColor: const Color(0xFFEBFDF6),
-              iconColor: const Color(0xFF0F9B6E),
+              iconColor: const Color(0xFF1C9A5B),
               onTap: () {
                 setState(() {
                   _currentIndex = 2; // Transition to Vehicles tab
@@ -423,7 +423,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               subtitle: 'Manage balances, view transactions, and force offline status',
               icon: Icons.account_balance_wallet_rounded,
               iconBgColor: const Color(0xFFEBF3FD),
-              iconColor: const Color(0xFF1A3D6B),
+              iconColor: const Color(0xFFE31C2E),
               onTap: () {
                 setState(() {
                   _currentIndex = 4; // Correct index for Wallets is 4
@@ -463,7 +463,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE9ECF0)),
+        border: Border.all(color: const Color(0xFFE7E7EB)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -482,7 +482,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               Text(
                 title,
                 style: const TextStyle(
-                  color: Color(0xFF6B7785),
+                  color: Color(0xFF6C6F79),
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                 ),
@@ -501,7 +501,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           Text(
             value,
             style: const TextStyle(
-              color: Color(0xFF1A2233),
+              color: Color(0xFF121214),
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -525,7 +525,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE9ECF0)),
+        border: Border.all(color: const Color(0xFFE7E7EB)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -548,7 +548,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         title: Text(
           title,
           style: const TextStyle(
-            color: Color(0xFF1A2233),
+            color: Color(0xFF121214),
             fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
@@ -556,7 +556,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         subtitle: Text(
           subtitle,
           style: const TextStyle(
-            color: Color(0xFF6B7785),
+            color: Color(0xFF6C6F79),
             fontSize: 12,
           ),
         ),

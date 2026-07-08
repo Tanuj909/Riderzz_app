@@ -28,7 +28,7 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
           future: context.read<AdminVehiclesListProvider>().fetchVehicleById(vehicleId),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator(color: Color(0xFF1A3D6B)));
+              return const Center(child: CircularProgressIndicator(color: Color(0xFFE31C2E)));
             }
             if (snapshot.hasError || snapshot.data == null) {
               return AlertDialog(
@@ -47,7 +47,7 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               title: const Text(
                 'Vehicle Details',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A2233)),
+                style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF121214)),
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -68,7 +68,7 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
               actions: [
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A3D6B),
+                    backgroundColor: const Color(0xFFE31C2E),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
@@ -89,12 +89,12 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
       children: [
         Text(
           '$label: ',
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6B7785)),
+          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6C6F79)),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(color: Color(0xFF1A2233)),
+            style: const TextStyle(color: Color(0xFF121214)),
           ),
         ),
       ],
@@ -104,13 +104,13 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
   Color _getStatusColor(String status) {
     switch (status.toUpperCase()) {
       case 'APPROVED':
-        return const Color(0xFF0F9B6E);
+        return const Color(0xFF1C9A5B);
       case 'PENDING':
         return Colors.amber;
       case 'REJECTED':
         return Colors.redAccent;
       default:
-        return const Color(0xFF6B7785);
+        return const Color(0xFF6C6F79);
     }
   }
 
@@ -132,10 +132,10 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
     final provider = Provider.of<AdminVehiclesListProvider>(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: const Color(0xFFF6F6F8),
       body: RefreshIndicator(
         onRefresh: () => provider.fetchVehicles(isRefresh: true),
-        color: const Color(0xFF1A3D6B),
+        color: const Color(0xFFE31C2E),
         child: Column(
           children: [
             // Custom Title Banner
@@ -144,7 +144,7 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  const Icon(Icons.local_shipping_rounded, color: Color(0xFF1A3D6B)),
+                  const Icon(Icons.local_shipping_rounded, color: Color(0xFFE31C2E)),
                   const SizedBox(width: 8),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,7 +154,7 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A2233),
+                          color: Color(0xFF121214),
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -164,7 +164,7 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
                             : '${provider.vehicles.length} vehicles registered in system',
                         style: const TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF6B7785),
+                          color: Color(0xFF6C6F79),
                         ),
                       ),
                     ],
@@ -174,7 +174,7 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
             ),
             Expanded(
               child: provider.isLoading
-                  ? const Center(child: CircularProgressIndicator(color: Color(0xFF1A3D6B)))
+                  ? const Center(child: CircularProgressIndicator(color: Color(0xFFE31C2E)))
                   : provider.errorMessage != null
                       ? Center(
                           child: Column(
@@ -188,7 +188,7 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
                               const SizedBox(height: 16),
                               ElevatedButton(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF1A3D6B),
+                                  backgroundColor: const Color(0xFFE31C2E),
                                   foregroundColor: Colors.white,
                                 ),
                                 onPressed: () => provider.fetchVehicles(isRefresh: true),
@@ -201,7 +201,7 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
                           ? const Center(
                               child: Text(
                                 'No registered vehicles found.',
-                                style: TextStyle(color: Color(0xFF6B7785)),
+                                style: TextStyle(color: Color(0xFF6C6F79)),
                               ),
                             )
                           : ListView.builder(
@@ -213,7 +213,7 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    side: const BorderSide(color: Color(0xFFE9ECF0)),
+                                    side: const BorderSide(color: Color(0xFFE7E7EB)),
                                   ),
                                   margin: const EdgeInsets.only(bottom: 12),
                                   color: Colors.white,
@@ -221,14 +221,14 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                     onTap: () => _showVehicleDetails(context, vehicle.id),
                                     leading: const CircleAvatar(
-                                      backgroundColor: Color(0xFFE8F0FB),
-                                      child: Icon(Icons.local_shipping_rounded, color: Color(0xFF1A3D6B)),
+                                      backgroundColor: Color(0xFFFDEBEC),
+                                      child: Icon(Icons.local_shipping_rounded, color: Color(0xFFE31C2E)),
                                     ),
                                     title: Text(
                                       vehicle.vehicleTypeName,
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: Color(0xFF1A2233),
+                                        color: Color(0xFF121214),
                                       ),
                                     ),
                                     subtitle: Padding(
@@ -237,7 +237,7 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
                                         vehicle.driverName != null && vehicle.driverName!.isNotEmpty
                                             ? 'Driver: ${vehicle.driverName}'
                                             : 'Driver: Not assigned',
-                                        style: const TextStyle(color: Color(0xFF6B7785), fontSize: 13),
+                                        style: const TextStyle(color: Color(0xFF6C6F79), fontSize: 13),
                                       ),
                                     ),
                                     trailing: Container(

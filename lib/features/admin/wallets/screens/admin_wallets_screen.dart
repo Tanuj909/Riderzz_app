@@ -70,7 +70,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: const Color(0xFFF6F6F8),
       body: Column(
         children: [
           // Search & Header Title Section
@@ -88,7 +88,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A2233),
+                        color: Color(0xFF121214),
                       ),
                     ),
                   ],
@@ -107,15 +107,15 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                           )
                         : null,
                     filled: true,
-                    fillColor: const Color(0xFFF7F8FA),
+                    fillColor: const Color(0xFFF6F6F8),
                     contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE9ECF0)),
+                      borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF1A3D6B)),
+                      borderSide: const BorderSide(color: Color(0xFFE31C2E)),
                     ),
                   ),
                 ),
@@ -130,7 +130,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                 if (provider.isLoading && provider.approvedDrivers.isEmpty) {
                   return const Center(
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B)),
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
                     ),
                   );
                 }
@@ -151,7 +151,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A3D6B)),
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE31C2E)),
                             onPressed: () => provider.fetchApprovedDrivers(isRefresh: true),
                             child: const Text('Retry', style: TextStyle(color: Colors.white)),
                           ),
@@ -178,10 +178,10 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: const BoxDecoration(
-                                color: Color(0xFFE8F0FB),
+                                color: Color(0xFFFDEBEC),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.account_balance_wallet_rounded, size: 44, color: Color(0xFF1A3D6B)),
+                              child: const Icon(Icons.account_balance_wallet_rounded, size: 44, color: Color(0xFFE31C2E)),
                             ),
                             const SizedBox(height: 16),
                             Text(
@@ -191,7 +191,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A2233),
+                                color: Color(0xFF121214),
                               ),
                             ),
                           ],
@@ -203,7 +203,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
 
                 return RefreshIndicator(
                   onRefresh: () => provider.fetchApprovedDrivers(isRefresh: true),
-                  color: const Color(0xFF1A3D6B),
+                  color: const Color(0xFFE31C2E),
                   child: ListView.builder(
                     controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -219,7 +219,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                               height: 24,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2.5,
-                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B)),
+                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
                               ),
                             ),
                           ),
@@ -245,7 +245,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE9ECF0)),
+        border: Border.all(color: const Color(0xFFE7E7EB)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -270,7 +270,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                       Text(
                         driver.name,
                         style: const TextStyle(
-                          color: Color(0xFF1A2233),
+                          color: Color(0xFF121214),
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
                         ),
@@ -279,7 +279,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                       Text(
                         '+91 ${driver.phone}',
                         style: const TextStyle(
-                          color: Color(0xFF6B7785),
+                          color: Color(0xFF6C6F79),
                           fontSize: 12,
                         ),
                       ),
@@ -289,7 +289,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: driver.isOnline ? const Color(0xFFEBFDF6) : const Color(0xFFF1F5F9),
+                    color: driver.isOnline ? const Color(0xFFEBFDF6) : const Color(0xFFF1F1F4),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
@@ -299,7 +299,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                         width: 6,
                         height: 6,
                         decoration: BoxDecoration(
-                          color: driver.isOnline ? const Color(0xFF0F9B6E) : const Color(0xFF64748B),
+                          color: driver.isOnline ? const Color(0xFF1C9A5B) : const Color(0xFF64748B),
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -307,7 +307,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                       Text(
                         driver.isOnline ? 'ONLINE' : 'OFFLINE',
                         style: TextStyle(
-                          color: driver.isOnline ? const Color(0xFF0F9B6E) : const Color(0xFF64748B),
+                          color: driver.isOnline ? const Color(0xFF1C9A5B) : const Color(0xFF64748B),
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
                         ),
@@ -320,7 +320,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
             
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12.0),
-              child: Divider(height: 1, color: Color(0xFFE9ECF0)),
+              child: Divider(height: 1, color: Color(0xFFE7E7EB)),
             ),
 
             // Performance/Trips/Rating info row
@@ -331,24 +331,24 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                 Text(
                   driver.rating.toStringAsFixed(1),
                   style: const TextStyle(
-                    color: Color(0xFF1A2233),
+                    color: Color(0xFF121214),
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
                 ),
                 const SizedBox(width: 16),
-                const Icon(Icons.local_shipping_rounded, color: Color(0xFF1A3D6B), size: 16),
+                const Icon(Icons.local_shipping_rounded, color: Color(0xFFE31C2E), size: 16),
                 const SizedBox(width: 4),
                 Text(
                   '${driver.totalTrips} Trips',
                   style: const TextStyle(
-                    color: Color(0xFF1A2233),
+                    color: Color(0xFF121214),
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
                 ),
                 const SizedBox(width: 16),
-                const Icon(Icons.directions_car_rounded, color: Color(0xFF0F9B6E), size: 16),
+                const Icon(Icons.directions_car_rounded, color: Color(0xFF1C9A5B), size: 16),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
@@ -357,7 +357,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                         : 'No vehicle',
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Color(0xFF1A2233),
+                      color: Color(0xFF121214),
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -375,14 +375,14 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                   child: OutlinedButton(
                     onPressed: () => _showDriverDetailsBottomSheet(driver),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF1A3D6B), width: 1.2),
+                      side: const BorderSide(color: Color(0xFFE31C2E), width: 1.2),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     child: const Text(
                       'View Details',
                       style: TextStyle(
-                        color: Color(0xFF1A3D6B),
+                        color: Color(0xFFE31C2E),
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
@@ -394,7 +394,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                   child: ElevatedButton(
                     onPressed: () => _showDriverOperationsBottomSheet(driver),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A3D6B),
+                      backgroundColor: const Color(0xFFE31C2E),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       elevation: 0,
@@ -488,7 +488,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
           content: Text(
             success ? 'Driver forced offline successfully' : 'Failed to force driver offline',
           ),
-          backgroundColor: success ? const Color(0xFF0F9B6E) : Colors.redAccent,
+          backgroundColor: success ? const Color(0xFF1C9A5B) : Colors.redAccent,
         ),
       );
 
@@ -533,7 +533,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
           content: Text(
             success ? 'Wallet adjusted successfully' : 'Failed to adjust wallet',
           ),
-          backgroundColor: success ? const Color(0xFF0F9B6E) : Colors.redAccent,
+          backgroundColor: success ? const Color(0xFF1C9A5B) : Colors.redAccent,
         ),
       );
 
@@ -569,7 +569,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
               width: 40,
               height: 4.5,
               decoration: BoxDecoration(
-                color: const Color(0xFFE2E8F0),
+                color: const Color(0xFFE7E7EB),
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
@@ -582,7 +582,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
               children: [
                 if (_currentView != 'MENU')
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1A2233), size: 18),
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF121214), size: 18),
                     onPressed: () {
                       setState(() {
                         _currentView = 'MENU';
@@ -603,14 +603,14 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                         style: const TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A2233),
+                          color: Color(0xFF121214),
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         '${widget.driver.name} • +91 ${widget.driver.phone}',
                         style: const TextStyle(
-                          color: Color(0xFF6B7785),
+                          color: Color(0xFF6C6F79),
                           fontSize: 12,
                         ),
                       ),
@@ -618,13 +618,13 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, color: Color(0xFF6B7785)),
+                  icon: const Icon(Icons.close_rounded, color: Color(0xFF6C6F79)),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
           ),
-          const Divider(color: Color(0xFFE9ECF0)),
+          const Divider(color: Color(0xFFE7E7EB)),
 
           // Content Area (Scrollable)
           Expanded(
@@ -673,7 +673,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
           subtitle: 'Recharge, debit, or view transactions',
           icon: Icons.account_balance_wallet_rounded,
           iconBgColor: const Color(0xFFEBF3FD),
-          iconColor: const Color(0xFF1A3D6B),
+          iconColor: const Color(0xFFE31C2E),
           onTap: () {
             setState(() {
               _currentView = 'WALLET';
@@ -694,9 +694,9 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F8FA),
+        color: const Color(0xFFF6F6F8),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE9ECF0)),
+        border: Border.all(color: const Color(0xFFE7E7EB)),
       ),
       child: ListTile(
         onTap: onTap,
@@ -713,7 +713,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
         title: Text(
           title,
           style: const TextStyle(
-            color: Color(0xFF1A2233),
+            color: Color(0xFF121214),
             fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
@@ -721,7 +721,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
         subtitle: Text(
           subtitle,
           style: const TextStyle(
-            color: Color(0xFF6B7785),
+            color: Color(0xFF6C6F79),
             fontSize: 12,
           ),
         ),
@@ -738,9 +738,9 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFFF7F8FA),
+            color: const Color(0xFFF6F6F8),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE9ECF0)),
+            border: Border.all(color: const Color(0xFFE7E7EB)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -765,7 +765,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: Color(0xFF1A2233),
+                            color: Color(0xFF121214),
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -774,7 +774,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: isDriverOnline ? const Color(0xFF0F9B6E) : const Color(0xFF64748B),
+                            color: isDriverOnline ? const Color(0xFF1C9A5B) : const Color(0xFF64748B),
                           ),
                         ),
                       ],
@@ -784,13 +784,13 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16.0),
-                child: Divider(height: 1, color: Color(0xFFE9ECF0)),
+                child: Divider(height: 1, color: Color(0xFFE7E7EB)),
               ),
               Text(
                 isDriverOnline
                     ? 'Forcing the driver offline will stop them from receiving new ride bookings immediately. You should only use this if there is an issue with the driver or if they are in violation of platform rules.'
                     : 'The driver is currently offline. No action is required.',
-                style: const TextStyle(fontSize: 12, color: Color(0xFF6B7785), height: 1.4),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79), height: 1.4),
               ),
               const SizedBox(height: 20),
               SizedBox(
@@ -813,7 +813,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.redAccent,
-                    disabledBackgroundColor: const Color(0xFFE2E8F0),
+                    disabledBackgroundColor: const Color(0xFFE7E7EB),
                     foregroundColor: Colors.white,
                     disabledForegroundColor: const Color(0xFF94A3B8),
                     elevation: 0,
@@ -864,7 +864,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
 
         final wallet = provider.selectedDriverWallet;
         if (wallet == null) {
-          return const Center(child: Text('No wallet data available.', style: TextStyle(fontSize: 12, color: Color(0xFF6B7785))));
+          return const Center(child: Text('No wallet data available.', style: TextStyle(fontSize: 12, color: Color(0xFF6C6F79))));
         }
 
         return Column(
@@ -876,14 +876,14 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF1A3D6B), Color(0xFF0F2D54)],
+                  colors: [Color(0xFFE31C2E), Color(0xFF0F2D54)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF1A3D6B).withValues(alpha: 0.15),
+                    color: const Color(0xFFE31C2E).withValues(alpha: 0.15),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   )
@@ -966,7 +966,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFE9ECF0)),
+                  border: Border.all(color: const Color(0xFFE7E7EB)),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.01),
@@ -988,10 +988,10 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                               decoration: BoxDecoration(
-                                color: _selectedType == 'RECHARGE' ? const Color(0xFFEBFDF6) : const Color(0xFFF7F8FA),
+                                color: _selectedType == 'RECHARGE' ? const Color(0xFFEBFDF6) : const Color(0xFFF6F6F8),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: _selectedType == 'RECHARGE' ? const Color(0xFF0F9B6E) : const Color(0xFFE2E8F0),
+                                  color: _selectedType == 'RECHARGE' ? const Color(0xFF1C9A5B) : const Color(0xFFE7E7EB),
                                   width: 1.5,
                                 ),
                               ),
@@ -1000,14 +1000,14 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                                 children: [
                                   Icon(
                                     Icons.add_circle_outline_rounded,
-                                    color: _selectedType == 'RECHARGE' ? const Color(0xFF0F9B6E) : const Color(0xFF6B7785),
+                                    color: _selectedType == 'RECHARGE' ? const Color(0xFF1C9A5B) : const Color(0xFF6C6F79),
                                     size: 16,
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
                                     'RECHARGE',
                                     style: TextStyle(
-                                      color: _selectedType == 'RECHARGE' ? const Color(0xFF0F9B6E) : const Color(0xFF6B7785),
+                                      color: _selectedType == 'RECHARGE' ? const Color(0xFF1C9A5B) : const Color(0xFF6C6F79),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 11,
                                       letterSpacing: 0.5,
@@ -1026,10 +1026,10 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                               decoration: BoxDecoration(
-                                color: _selectedType == 'DEBIT' ? const Color(0xFFFFECEC) : const Color(0xFFF7F8FA),
+                                color: _selectedType == 'DEBIT' ? const Color(0xFFFFECEC) : const Color(0xFFF6F6F8),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: _selectedType == 'DEBIT' ? Colors.redAccent : const Color(0xFFE2E8F0),
+                                  color: _selectedType == 'DEBIT' ? Colors.redAccent : const Color(0xFFE7E7EB),
                                   width: 1.5,
                                 ),
                               ),
@@ -1038,14 +1038,14 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                                 children: [
                                   Icon(
                                     Icons.remove_circle_outline_rounded,
-                                    color: _selectedType == 'DEBIT' ? Colors.redAccent : const Color(0xFF6B7785),
+                                    color: _selectedType == 'DEBIT' ? Colors.redAccent : const Color(0xFF6C6F79),
                                     size: 16,
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
                                     'DEBIT',
                                     style: TextStyle(
-                                      color: _selectedType == 'DEBIT' ? Colors.redAccent : const Color(0xFF6B7785),
+                                      color: _selectedType == 'DEBIT' ? Colors.redAccent : const Color(0xFF6C6F79),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 11,
                                       letterSpacing: 0.5,
@@ -1064,15 +1064,15 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                     TextFormField(
                       controller: _amountController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14, fontWeight: FontWeight.bold),
+                      style: const TextStyle(color: Color(0xFF121214), fontSize: 14, fontWeight: FontWeight.bold),
                       decoration: InputDecoration(
                         labelText: 'Adjustment Amount (₹)',
                         labelStyle: const TextStyle(color: Color(0xFF4A5568), fontSize: 12, fontWeight: FontWeight.w500),
                         hintText: 'Enter amount (e.g., 500)',
                         hintStyle: const TextStyle(color: Color(0xFFB0B8C4), fontSize: 13),
-                        prefixIcon: const Icon(Icons.currency_rupee_rounded, size: 16, color: Color(0xFF1A3D6B)),
+                        prefixIcon: const Icon(Icons.currency_rupee_rounded, size: 16, color: Color(0xFFE31C2E)),
                         filled: true,
-                        fillColor: const Color(0xFFF7F8FA),
+                        fillColor: const Color(0xFFF6F6F8),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -1080,11 +1080,11 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
+                          borderSide: const BorderSide(color: Color(0xFFE7E7EB), width: 1),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFF1A3D6B), width: 1.5),
+                          borderSide: const BorderSide(color: Color(0xFFE31C2E), width: 1.5),
                         ),
                         errorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -1106,15 +1106,15 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                     // Description input field (premium input decoration)
                     TextFormField(
                       controller: _descriptionController,
-                      style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                      style: const TextStyle(color: Color(0xFF121214), fontSize: 14),
                       decoration: InputDecoration(
                         labelText: 'Reason / Description',
                         labelStyle: const TextStyle(color: Color(0xFF4A5568), fontSize: 12, fontWeight: FontWeight.w500),
                         hintText: 'Describe why balance is being adjusted',
                         hintStyle: const TextStyle(color: Color(0xFFB0B8C4), fontSize: 13),
-                        prefixIcon: const Icon(Icons.notes_rounded, size: 16, color: Color(0xFF1A3D6B)),
+                        prefixIcon: const Icon(Icons.notes_rounded, size: 16, color: Color(0xFFE31C2E)),
                         filled: true,
-                        fillColor: const Color(0xFFF7F8FA),
+                        fillColor: const Color(0xFFF6F6F8),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -1122,11 +1122,11 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
+                          borderSide: const BorderSide(color: Color(0xFFE7E7EB), width: 1),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFF1A3D6B), width: 1.5),
+                          borderSide: const BorderSide(color: Color(0xFFE31C2E), width: 1.5),
                         ),
                         errorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -1169,14 +1169,14 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _selectedType == 'RECHARGE' ? const Color(0xFF0F9B6E) : Colors.redAccent,
-                          disabledBackgroundColor: const Color(0xFFE2E8F0),
+                          backgroundColor: _selectedType == 'RECHARGE' ? const Color(0xFF1C9A5B) : Colors.redAccent,
+                          disabledBackgroundColor: const Color(0xFFE7E7EB),
                           foregroundColor: Colors.white,
                           disabledForegroundColor: const Color(0xFF94A3B8),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           elevation: 1,
-                          shadowColor: (_selectedType == 'RECHARGE' ? const Color(0xFF0F9B6E) : Colors.redAccent).withValues(alpha: 0.2),
+                          shadowColor: (_selectedType == 'RECHARGE' ? const Color(0xFF1C9A5B) : Colors.redAccent).withValues(alpha: 0.2),
                         ),
                       ),
                     ),
@@ -1195,14 +1195,14 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF7F8FA),
+                  color: const Color(0xFFF6F6F8),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE9ECF0)),
+                  border: Border.all(color: const Color(0xFFE7E7EB)),
                 ),
                 child: const Center(
                   child: Text(
                     'No transactions recorded yet.',
-                    style: TextStyle(color: Color(0xFF6B7785), fontSize: 12),
+                    style: TextStyle(color: Color(0xFF6C6F79), fontSize: 12),
                   ),
                 ),
               )
@@ -1215,7 +1215,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                   // Access transactions in reverse chronological order to show the latest first
                   final tx = wallet.transactions[wallet.transactions.length - 1 - index];
                   final isRecharge = tx.type == 'RECHARGE' || tx.type == 'CREDIT';
-                  final typeColor = isRecharge ? const Color(0xFF0F9B6E) : Colors.redAccent;
+                  final typeColor = isRecharge ? const Color(0xFF1C9A5B) : Colors.redAccent;
                   final typeBg = isRecharge ? const Color(0xFFEBFDF6) : const Color(0xFFFFECEC);
 
                   return Container(
@@ -1224,7 +1224,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE9ECF0)),
+                      border: Border.all(color: const Color(0xFFE7E7EB)),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1282,7 +1282,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                               Text(
                                 tx.description,
                                 style: const TextStyle(
-                                  color: Color(0xFF1A2233),
+                                  color: Color(0xFF121214),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -1301,7 +1301,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                                   Text(
                                     'Closing: ₹${tx.closingBalance.toStringAsFixed(2)}',
                                     style: const TextStyle(
-                                      color: Color(0xFF6B7785),
+                                      color: Color(0xFF6C6F79),
                                       fontSize: 10,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -1326,7 +1326,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
     return Text(
       title,
       style: const TextStyle(
-        color: Color(0xFF1A2233),
+        color: Color(0xFF121214),
         fontSize: 13,
         fontWeight: FontWeight.bold,
         letterSpacing: 0.3,
@@ -1341,7 +1341,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE9ECF0)),
+        border: Border.all(color: const Color(0xFFE7E7EB)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1349,18 +1349,18 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(width: 100, height: 10, color: const Color(0xFFE2E8F0)),
-              Container(width: 20, height: 20, color: const Color(0xFFE2E8F0)),
+              Container(width: 100, height: 10, color: const Color(0xFFE7E7EB)),
+              Container(width: 20, height: 20, color: const Color(0xFFE7E7EB)),
             ],
           ),
           const SizedBox(height: 10),
-          Container(width: 140, height: 24, color: const Color(0xFFE2E8F0)),
+          Container(width: 140, height: 24, color: const Color(0xFFE7E7EB)),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(width: 60, height: 12, color: const Color(0xFFE2E8F0)),
-              Container(width: 80, height: 12, color: const Color(0xFFE2E8F0)),
+              Container(width: 60, height: 12, color: const Color(0xFFE7E7EB)),
+              Container(width: 80, height: 12, color: const Color(0xFFE7E7EB)),
             ],
           ),
         ],

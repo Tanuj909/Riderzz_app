@@ -1,23 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/core/models/vehicle_type_model.dart';
 import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_provider.dart';
-import 'package:riderzz_app/features/user/home/pages/fare_estimate_screen.dart';
 
-class ChooseVehicleScreen extends StatefulWidget {
+class ChooseVehicleView extends StatefulWidget {
   final Map<String, dynamic> bookingData;
+  final Function(Map<String, dynamic>) onNext;
+  final VoidCallback onBack;
 
-  const ChooseVehicleScreen({
+  const ChooseVehicleView({
     super.key,
     required this.bookingData,
+    required this.onNext,
+    required this.onBack,
   });
 
   @override
-  State<ChooseVehicleScreen> createState() => _ChooseVehicleScreenState();
+  State<ChooseVehicleView> createState() => _ChooseVehicleViewState();
 }
 
-class _ChooseVehicleScreenState extends State<ChooseVehicleScreen> {
+class _ChooseVehicleViewState extends State<ChooseVehicleView> {
   int _selectedVehicleIndex = 0;
 
   @override
@@ -45,44 +47,14 @@ class _ChooseVehicleScreenState extends State<ChooseVehicleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFFF1F3F6),
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF1A2233), size: 20),
-              onPressed: () => Navigator.pop(context),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          ),
-        ),
-        title: const Text(
-          'Choose Vehicle',
-          style: TextStyle(
-            color: Color(0xFF1A2233),
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
-      ),
-      body: Consumer<AdminVehiclesProvider>(
-        builder: (context, vehiclesProvider, child) {
+    return Consumer<AdminVehiclesProvider>(
+      builder: (context, vehiclesProvider, child) {
           final vehicleTypes = vehiclesProvider.vehicleTypes;
 
           if (vehiclesProvider.isLoading && vehicleTypes.isEmpty) {
             return const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B)),
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
               ),
             );
           }
@@ -91,7 +63,7 @@ class _ChooseVehicleScreenState extends State<ChooseVehicleScreen> {
             return const Center(
               child: Text(
                 'No available vehicle types',
-                style: TextStyle(color: Color(0xFF6B7785), fontSize: 14),
+                style: TextStyle(color: Color(0xFF6C6F79), fontSize: 14),
               ),
             );
           }
@@ -120,24 +92,24 @@ class _ChooseVehicleScreenState extends State<ChooseVehicleScreen> {
                         });
                       },
                       child: Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFFE8F0FB) : Colors.white,
+                          color: isSelected ? const Color(0xFFFDEBEC) : Colors.white,
                           border: Border.all(
-                            color: isSelected ? const Color(0xFF1A3D6B) : const Color(0xFFE2E8F0),
+                            color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
                             width: 1.5,
                           ),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF7F8FA),
-                                borderRadius: BorderRadius.circular(12),
+                              width: 50,
+                              height: 50,
+                              decoration: const BoxDecoration(
+                                color: Colors.transparent,
                               ),
                               alignment: Alignment.center,
                               child: vehicle.iconUrl != null && vehicle.iconUrl!.isNotEmpty
@@ -148,14 +120,10 @@ class _ChooseVehicleScreenState extends State<ChooseVehicleScreen> {
                                       errorBuilder: (context, error, stackTrace) => const Icon(
                                         Icons.local_shipping_rounded,
                                         size: 28,
-                                        color: Color(0xFF1A3D6B),
+                                        color: Color(0xFFE31C2E),
                                       ),
                                     )
-                                  : const Icon(
-                                      Icons.local_shipping_rounded,
-                                      size: 28,
-                                      color: Color(0xFF1A3D6B),
-                                    ),
+                                  : const Icon(Icons.local_shipping_rounded, size: 28, color: Color(0xFFE31C2E)),
                             ),
                             const SizedBox(width: 14),
                             Expanded(
@@ -167,22 +135,22 @@ class _ChooseVehicleScreenState extends State<ChooseVehicleScreen> {
                                     style: const TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold,
-                                      color: Color(0xFF1A2233),
+                                      color: Color(0xFF121214),
                                     ),
                                   ),
-                                  const SizedBox(height: 6),
+                                  const SizedBox(height: 2),
                                   Row(
                                     children: [
                                       Text(
-                                        'Max ${vehicle.maxWeightKg} KG',
-                                        style: const TextStyle(fontSize: 12, color: Color(0xFF6B7785)),
+                                        'Up to ${vehicle.maxWeightKg} kg',
+                                        style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79)),
                                       ),
-                                      const SizedBox(width: 8),
-                                      Container(width: 4, height: 4, decoration: const BoxDecoration(color: Color(0xFF6B7785), shape: BoxShape.circle)),
-                                      const SizedBox(width: 8),
+                                      const SizedBox(width: 4),
+                                      const Text('·', style: TextStyle(fontSize: 12, color: Color(0xFF6C6F79))),
+                                      const SizedBox(width: 4),
                                       Text(
-                                        '$estTime min',
-                                        style: const TextStyle(fontSize: 12, color: Color(0xFF6B7785)),
+                                        '$estTime min away',
+                                        style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79)),
                                       ),
                                     ],
                                   ),
@@ -195,81 +163,75 @@ class _ChooseVehicleScreenState extends State<ChooseVehicleScreen> {
                                 Text(
                                   '₹${vehicle.baseFare.toStringAsFixed(0)}',
                                   style: const TextStyle(
-                                    fontSize: 16,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A2233),
+                                    color: Color(0xFF121214),
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '+₹${vehicle.perKmRate.toStringAsFixed(0)}/km',
-                                  style: const TextStyle(fontSize: 11, color: Color(0xFF6B7785)),
+                                const SizedBox(height: 2),
+                                const Text(
+                                  'est.',
+                                  style: TextStyle(fontSize: 11, color: Color(0xFF6C6F79)),
                                 ),
                               ],
                             ),
-                            if (isSelected) ...[
-                              const SizedBox(width: 14),
-                              Container(
-                                width: 22,
-                                height: 22,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF1A3D6B),
-                                  shape: BoxShape.circle,
-                                ),
-                                alignment: Alignment.center,
-                                child: const Icon(
-                                  Icons.check,
-                                  size: 13,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
                           ],
                         ),
                       ),
                     );
-                  },
-                ),
+                },
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A3D6B),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: widget.onBack,
+                    child: Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F1F4),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                    ),
-                    onPressed: () {
-                      final updatedBookingData = Map<String, dynamic>.from(widget.bookingData);
-                      updatedBookingData['vehicleType'] = selectedType;
-                      updatedBookingData['estTime'] = _getEstTime(_selectedVehicleIndex);
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => FareEstimateScreen(
-                            bookingData: updatedBookingData,
-                          ),
-                        ),
-                      );
-                    },
-                    child: Text(
-                      'Continue with ${selectedType.name}',
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      child: const Icon(Icons.arrow_back, color: Color(0xFF121214)),
                     ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE31C2E),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        onPressed: () {
+                          final selectedVehicle = vehicleTypes[_selectedVehicleIndex];
+                          final updatedBookingData = Map<String, dynamic>.from(widget.bookingData);
+                          updatedBookingData['vehicleId'] = selectedVehicle.id;
+                          updatedBookingData['vehicleType'] = selectedVehicle;
+
+                          widget.onNext(updatedBookingData);
+                        },
+                        child: const Text(
+                          'Continue',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          );
-        },
-      ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -107,7 +107,7 @@ class _RoleRedirectScreenState extends State<RoleRedirectScreen> {
               
               // Loading Dots Blue Animation
               const BouncingDotsIndicator(
-                color: Color(0xFF1A3D6B),
+                color: Color(0xFFE31C2E),
                 size: 11.0,
               ),
             ],

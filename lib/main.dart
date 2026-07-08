@@ -37,8 +37,7 @@ import 'package:riderzz_app/features/admin/commission/providers/commission_provi
 import 'package:riderzz_app/features/user/home/data/datasource/booking_datasource.dart';
 import 'package:riderzz_app/features/user/home/data/repositories/booking_repository.dart';
 import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
-
-
+import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -181,6 +180,7 @@ class MyApp extends StatelessWidget {
         navigatorKey: AppRoutes.navigatorKey,
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
+          textTheme: GoogleFonts.interTextTheme(),
           colorScheme: ColorScheme.fromSeed(
             seedColor: Colors.cyanAccent,
             brightness: Brightness.dark,

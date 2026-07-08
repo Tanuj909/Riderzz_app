@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/user/home/pages/user_home_page.dart';
 import 'package:riderzz_app/features/user/home/pages/user_bookings_page.dart';
-import 'package:riderzz_app/features/user/home/pages/user_payments_page.dart';
+import 'package:riderzz_app/features/user/addresses/address_list_screen.dart';
 import 'package:riderzz_app/features/user/home/pages/user_account_page.dart';
 
 class UserHomeScreen extends StatefulWidget {
@@ -33,7 +33,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: const [
-            Icon(Icons.help_outline_rounded, color: Color(0xFF1A3D6B)),
+            Icon(Icons.help_outline_rounded, color: Color(0xFFE31C2E)),
             SizedBox(width: 8),
             Text('Help & Support', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
@@ -45,7 +45,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close', style: TextStyle(color: Color(0xFF1A3D6B), fontWeight: FontWeight.bold)),
+            child: const Text('Close', style: TextStyle(color: Color(0xFFE31C2E), fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -58,153 +58,16 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     final user = authProvider.currentUser;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: const Color(0xFFF6F6F8),
       appBar: AppBar(
         toolbarHeight: 0,
         elevation: 0,
-        backgroundColor: const Color(0xFF1A3D6B),
-        systemOverlayStyle: SystemUiOverlayStyle.light,
+        backgroundColor: Colors.transparent,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
       body: SafeArea(
         child: Column(
           children: [
-            // Reusable User Layout App Bar Header
-            Container(
-              color: const Color(0xFF1A3D6B),
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user?.name ?? '',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  PopupMenuButton<String>(
-                    color: Colors.white,
-                    surfaceTintColor: Colors.white,
-                    onSelected: (value) async {
-                      if (value == 'support') {
-                        _showSupportDialog(context);
-                      } else if (value == 'logout') {
-                        await authProvider.logout();
-                        if (context.mounted) {
-                          Navigator.pushReplacementNamed(context, '/login');
-                        }
-                      }
-                    },
-                    offset: const Offset(0, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    itemBuilder: (context) => [
-                      // Profile Header
-                      PopupMenuItem(
-                        enabled: false,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                user?.name ?? 'Customer',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  color: Color(0xFF1A2233),
-                                ),
-                              ),
-                              if (user?.phone != null) ...[
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.phone_android_rounded, size: 12, color: Color(0xFF6B7785)),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '+91 ${user!.phone}',
-                                      style: const TextStyle(fontSize: 12, color: Color(0xFF6B7785)),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                      const PopupMenuItem<String>(
-                        enabled: false,
-                        height: 1,
-                        child: Divider(
-                          height: 1,
-                          color: Color(0xFFE2E8F0),
-                          thickness: 0.5,
-                        ),
-                      ),
-                      // Help & Support
-                      PopupMenuItem(
-                        value: 'support',
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            children: const [
-                              Icon(Icons.help_outline_rounded, size: 16, color: Color(0xFF4A5568)),
-                              SizedBox(width: 8),
-                              Text(
-                                'Help & Support',
-                                style: TextStyle(fontSize: 13, color: Color(0xFF1A2233), fontWeight: FontWeight.w500),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      // Logout
-                      PopupMenuItem(
-                        value: 'logout',
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            children: const [
-                              Icon(Icons.logout_rounded, size: 16, color: Colors.redAccent),
-                              SizedBox(width: 8),
-                              Text(
-                                'Logout',
-                                style: TextStyle(fontSize: 13, color: Colors.redAccent, fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF0F9B6E),
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        _getInitials(user?.name),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
             // Layout Body containing currently active subpage view
             Expanded(
               child: IndexedStack(
@@ -218,7 +81,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     },
                   ),
                   const UserBookingsPage(),
-                  const UserPaymentsPage(),
+                  const AddressListScreen(showBackButton: false),
                   UserAccountPage(
                     onNavigateToHistory: () {
                       setState(() {
@@ -241,11 +104,12 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         },
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFF1A3D6B),
-        unselectedItemColor: const Color(0xFFB0B8C4),
+        selectedItemColor: const Color(0xFFE31C2E), // var(--red)
+        unselectedItemColor: const Color(0xFFA2A5AE), // var(--ink-faint)
         selectedFontSize: 11,
         unselectedFontSize: 11,
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
+        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_rounded),
@@ -257,9 +121,9 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             label: 'Bookings',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            activeIcon: Icon(Icons.account_balance_wallet_rounded),
-            label: 'Payments',
+            icon: Icon(Icons.location_on_outlined),
+            activeIcon: Icon(Icons.location_on_rounded),
+            label: 'Address',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline_rounded),

@@ -5,8 +5,10 @@ import 'package:flutter/foundation.dart';
 class LoggerInterceptor extends Interceptor {
   bool _shouldLog(String path) {
     final excludedPaths = [
-      '/driver/wallet',
-      '/driver/wallet/recharge',
+      '/wallet',
+      '/wallet/recharge',
+      '/wallet/transactions',
+      '/wallet/create',
     ];
     return !excludedPaths.any((p) => path.contains(p));
   }
@@ -30,7 +32,9 @@ class LoggerInterceptor extends Interceptor {
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     if (kDebugMode && _shouldLog(response.requestOptions.path)) {
       debugPrint('====================================');
-      debugPrint('⬅️ RESPONSE[${response.statusCode}] => PATH: ${response.requestOptions.path}');
+      debugPrint(
+        '⬅️ RESPONSE[${response.statusCode}] => PATH: ${response.requestOptions.path}',
+      );
       debugPrint('Data: ${_prettyPrint(response.data)}');
       debugPrint('====================================');
     }
@@ -41,7 +45,9 @@ class LoggerInterceptor extends Interceptor {
   void onError(DioException err, ErrorInterceptorHandler handler) {
     if (kDebugMode && _shouldLog(err.requestOptions.path)) {
       debugPrint('====================================');
-      debugPrint('🛑 ERROR[${err.response?.statusCode}] => PATH: ${err.requestOptions.path}');
+      debugPrint(
+        '🛑 ERROR[${err.response?.statusCode}] => PATH: ${err.requestOptions.path}',
+      );
       debugPrint('Message: ${err.message}');
       debugPrint('Error Data: ${_prettyPrint(err.response?.data)}');
       debugPrint('====================================');

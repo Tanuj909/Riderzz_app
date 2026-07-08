@@ -142,7 +142,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF1A2233),
+                        color: Color(0xFF121214),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -161,7 +161,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       'Mobile Number',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF6B7785),
+                        color: Color(0xFF6C6F79),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -170,8 +170,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     // Input Row
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF7F8FA),
-                        border: Border.all(color: const Color(0xFFE9ECF0)),
+                        color: const Color(0xFFF6F6F8),
+                        border: Border.all(color: const Color(0xFFE7E7EB)),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
@@ -179,14 +179,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         children: [
                           Container(
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE8F0FB),
+                              color: const Color(0xFFFDEBEC),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             child: const Text(
                               '🇮🇳 +91',
                               style: TextStyle(
-                                color: Color(0xFF1A3D6B),
+                                color: Color(0xFFE31C2E),
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -198,7 +198,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                               controller: _phoneController,
                               keyboardType: TextInputType.phone,
                               style: const TextStyle(
-                                color: Color(0xFF1A2233),
+                                color: Color(0xFF121214),
                                 fontSize: 14,
                               ),
                               decoration: const InputDecoration(
@@ -227,14 +227,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     authProvider.isLoading
                         ? const Center(
                             child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B)),
+                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
                             ),
                           )
                         : SizedBox(
                             height: 56,
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1A3D6B),
+                                backgroundColor: const Color(0xFFE31C2E),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
@@ -268,7 +268,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           TextSpan(
                             text: 'Terms of Service',
                             style: TextStyle(
-                              color: Color(0xFF2563A8),
+                              color: Color(0xFFAE1220),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -276,7 +276,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           TextSpan(
                             text: 'Privacy Policy',
                             style: TextStyle(
-                              color: Color(0xFF2563A8),
+                              color: Color(0xFFAE1220),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -285,7 +285,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF6B7785),
+                        color: Color(0xFF6C6F79),
                         height: 1.6,
                       ),
                     ),
@@ -297,13 +297,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         width: 56,
                         height: 56,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE8F0FB),
+                          color: const Color(0xFFFDEBEC),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Icon(
                           Icons.message_rounded,
                           size: 28,
-                          color: Color(0xFF1A3D6B),
+                          color: Color(0xFFE31C2E),
                         ),
                       ),
                     ),
@@ -316,7 +316,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF1A2233),
+                        color: Color(0xFF121214),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -336,22 +336,22 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       'Full Name',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF6B7785),
+                        color: Color(0xFF6C6F79),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF7F8FA),
-                        border: Border.all(color: const Color(0xFFE9ECF0)),
+                        color: const Color(0xFFF6F6F8),
+                        border: Border.all(color: const Color(0xFFE7E7EB)),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       child: TextFormField(
                         controller: _nameController,
                         style: const TextStyle(
-                          color: Color(0xFF1A2233),
+                          color: Color(0xFF121214),
                           fontSize: 14,
                         ),
                         decoration: const InputDecoration(
@@ -370,15 +370,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       'Password',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF6B7785),
+                        color: Color(0xFF6C6F79),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF7F8FA),
-                        border: Border.all(color: const Color(0xFFE9ECF0)),
+                        color: const Color(0xFFF6F6F8),
+                        border: Border.all(color: const Color(0xFFE7E7EB)),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -386,7 +386,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         controller: _passwordController,
                         obscureText: true,
                         style: const TextStyle(
-                          color: Color(0xFF1A2233),
+                          color: Color(0xFF121214),
                           fontSize: 14,
                         ),
                         decoration: const InputDecoration(
@@ -405,7 +405,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       'Verification Code',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF6B7785),
+                        color: Color(0xFF6C6F79),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -432,10 +432,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                   height: 50,
                                   margin: const EdgeInsets.symmetric(horizontal: 4),
                                   decoration: BoxDecoration(
-                                    color: isFocused ? const Color(0xFFE8F0FB) : const Color(0xFFF7F8FA),
+                                    color: isFocused ? const Color(0xFFFDEBEC) : const Color(0xFFF6F6F8),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: isFocused ? const Color(0xFF1A3D6B) : const Color(0xFFE9ECF0),
+                                      color: isFocused ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
                                       width: 1.5,
                                     ),
                                   ),
@@ -445,7 +445,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.w500,
-                                      color: isFocused ? const Color(0xFF1A3D6B) : const Color(0xFF1A2233),
+                                      color: isFocused ? const Color(0xFFE31C2E) : const Color(0xFF121214),
                                     ),
                                   ),
                                 );
@@ -487,14 +487,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     authProvider.isLoading
                         ? const Center(
                             child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B)),
+                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
                             ),
                           )
                         : SizedBox(
                             height: 56,
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1A3D6B),
+                                backgroundColor: const Color(0xFFE31C2E),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
@@ -529,7 +529,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       child: const Text(
                         'Change Phone Number',
                         style: TextStyle(
-                          color: Color(0xFF6B7785),
+                          color: Color(0xFF6C6F79),
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                         ),
@@ -555,7 +555,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           child: const Text(
                             "Login",
                             style: TextStyle(
-                              color: Color(0xFF2563A8),
+                              color: Color(0xFFAE1220),
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),

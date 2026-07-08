@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
@@ -143,7 +144,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Application submitted successfully!'),
-            backgroundColor: Color(0xFF0F9B6E),
+            backgroundColor: Color(0xFF1C9A5B),
           ),
         );
         setState(() {
@@ -231,7 +232,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('$type uploaded successfully!'),
-                backgroundColor: const Color(0xFF0F9B6E),
+                backgroundColor: const Color(0xFF1C9A5B),
               ),
             );
           } else if (mounted) {
@@ -287,9 +288,9 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
     final hasFile = pickedFile != null;
     
     Color cardBgColor = const Color(0xFFF8FAFC);
-    Color cardBorderColor = const Color(0xFFE2E8F0);
+    Color cardBorderColor = const Color(0xFFE7E7EB);
     double cardBorderWidth = 1.0;
-    Color iconBgColor = const Color(0xFFF1F5F9);
+    Color iconBgColor = const Color(0xFFF1F1F4);
     Color iconColor = const Color(0xFF64748B);
     IconData cardIcon = Icons.cloud_upload_outlined;
     String statusBadgeText = '';
@@ -314,7 +315,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
         statusBadgeText = 'APPROVED';
         statusBadgeColor = const Color(0xFF16A34A);
       } else if (status == 'REJECTED') {
-        cardBgColor = const Color(0xFFFEF2F2);
+        cardBgColor = const Color(0xFFFDEBEC);
         cardBorderColor = const Color(0xFFFEE2E2);
         cardBorderWidth = 1.2;
         iconBgColor = const Color(0xFFFEE2E2);
@@ -345,7 +346,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: cardBgColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: cardBorderColor,
           width: cardBorderWidth,
@@ -368,7 +369,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
               size: 20,
             ),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -378,7 +379,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                     Expanded(
                       child: Text(
                         title,
-                        style: const TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Color(0xFF1E293B),
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -394,7 +395,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                         ),
                         child: Text(
                           statusBadgeText,
-                          style: TextStyle(
+                          style: GoogleFonts.poppins(
                             color: statusBadgeColor,
                             fontSize: 9,
                             fontWeight: FontWeight.bold,
@@ -403,21 +404,21 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                       ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: GoogleFonts.poppins(
                     color: (hasFile || existingDoc != null) ? const Color(0xFF334155) : const Color(0xFF64748B),
                     fontSize: 11.5,
                   ),
                 ),
                 if (existingDoc != null && existingDoc.status.toUpperCase() == 'REJECTED' && existingDoc.rejectionReason != null) ...[
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     'Reason: ${existingDoc.rejectionReason}',
-                    style: const TextStyle(
+                    style: GoogleFonts.poppins(
                       color: Color(0xFFB91C1C),
                       fontSize: 10.5,
                       fontWeight: FontWeight.bold,
@@ -427,10 +428,10 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: (hasFile || existingDoc != null) ? const Color(0xFFEFF6FF) : const Color(0xFF1A3D6B),
+              backgroundColor: (hasFile || existingDoc != null) ? const Color(0xFFEFF6FF) : const Color(0xFFE31C2E),
               foregroundColor: (hasFile || existingDoc != null) ? const Color(0xFF1E40AF) : Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -442,7 +443,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
             onPressed: onTap,
             child: Text(
               (hasFile || existingDoc != null) ? 'Change' : 'Upload',
-              style: const TextStyle(
+              style: GoogleFonts.poppins(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
               ),
@@ -471,9 +472,9 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFF1A3D6B),
+              primary: Color(0xFFE31C2E),
               onPrimary: Colors.white,
-              onSurface: Color(0xFF1A2233),
+              onSurface: Color(0xFF121214),
             ),
           ),
           child: child!,
@@ -505,9 +506,9 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFF1A3D6B),
+              primary: Color(0xFFE31C2E),
               onPrimary: Colors.white,
-              onSurface: Color(0xFF1A2233),
+              onSurface: Color(0xFF121214),
             ),
           ),
           child: child!,
@@ -540,9 +541,9 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFF1A3D6B),
+              primary: Color(0xFFE31C2E),
               onPrimary: Colors.white,
-              onSurface: Color(0xFF1A2233),
+              onSurface: Color(0xFF121214),
             ),
           ),
           child: child!,
@@ -568,9 +569,9 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
     Widget bodyWidget;
 
     if (driverProvider.isLoading && profile == null) {
-      bodyWidget = const Center(
+      bodyWidget = Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B)),
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
         ),
       );
     } else if (profile != null && !_forceShowForm) {
@@ -585,7 +586,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF1A2233)),
+          icon: Icon(Icons.arrow_back_rounded, color: Color(0xFF121214)),
           onPressed: () {
             if (profile == null && _currentStep == 2) {
               setState(() => _currentStep = 1);
@@ -594,9 +595,9 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
             }
           },
         ),
-        title: const Text(
+        title: Text(
           'Register as Driver',
-          style: TextStyle(color: Color(0xFF1A2233), fontSize: 18, fontWeight: FontWeight.bold),
+          style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 18, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -609,9 +610,9 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
   Widget _buildRegistrationFlow(String? name, String? phone, DriverHomeProvider driverProvider) {
     return Column(
       children: [
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
         _buildStepIndicator(),
-        const SizedBox(height: 24),
+        SizedBox(height: 24),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
@@ -650,32 +651,32 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
           height: 32,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isActive ? const Color(0xFFE8F0FB) : const Color(0xFFF7F8FA),
+            color: isActive ? const Color(0xFFFDEBEC) : const Color(0xFFF6F6F8),
             border: Border.all(
-              color: isActive ? const Color(0xFF1A3D6B) : const Color(0xFFE9ECF0),
+              color: isActive ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
               width: 1.5,
             ),
             boxShadow: isCurrent 
-                ? [BoxShadow(color: const Color(0xFF1A3D6B).withOpacity(0.1), blurRadius: 6, spreadRadius: 1)]
+                ? [BoxShadow(color: const Color(0xFFE31C2E).withOpacity(0.1), blurRadius: 6, spreadRadius: 1)]
                 : [],
           ),
           alignment: Alignment.center,
           child: isActive && _currentStep > step
-              ? const Icon(Icons.check_rounded, color: Color(0xFF1A3D6B), size: 16)
+              ? Icon(Icons.check_rounded, color: Color(0xFFE31C2E), size: 16)
               : Text(
                   step.toString(),
-                  style: TextStyle(
-                    color: isActive ? const Color(0xFF1A3D6B) : const Color(0xFFB0B8C4),
+                  style: GoogleFonts.poppins(
+                    color: isActive ? const Color(0xFFE31C2E) : const Color(0xFFB0B8C4),
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
                 ),
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: 6),
         Text(
           label,
-          style: TextStyle(
-            color: isActive ? const Color(0xFF1A2233) : const Color(0xFFB0B8C4),
+          style: GoogleFonts.poppins(
+            color: isActive ? const Color(0xFF121214) : const Color(0xFFB0B8C4),
             fontSize: 11,
             fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
           ),
@@ -690,7 +691,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
       child: Container(
         height: 2,
         margin: const EdgeInsets.only(bottom: 18),
-        color: isPassed ? const Color(0xFF1A3D6B) : const Color(0xFFE9ECF0),
+        color: isPassed ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
       ),
     );
   }
@@ -699,39 +700,39 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 12),
-        const Text(
+        SizedBox(height: 12),
+        Text(
           'Registration Form',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Color(0xFF1A2233),
+          style: GoogleFonts.poppins(
+            color: Color(0xFF121214),
             fontSize: 22,
             fontWeight: FontWeight.bold,
             letterSpacing: -0.5,
           ),
         ),
-        const SizedBox(height: 10),
-        const Padding(
+        SizedBox(height: 10),
+        Padding(
           padding: EdgeInsets.symmetric(horizontal: 8.0),
           child: Text(
             'Register your vehicle, share your details, and start taking bookings in your area. Get verified within minutes!',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: GoogleFonts.poppins(
               color: Color(0xFF4A5568),
               fontSize: 13,
               height: 1.5,
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: 24),
         
         // Perks Section (Grouped in a single clean modern Card container to fit without scrolling)
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFFF7F8FA),
+            color: const Color(0xFFF6F6F8),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE9ECF0)),
+            border: Border.all(color: const Color(0xFFE7E7EB)),
           ),
           child: Column(
             children: [
@@ -740,13 +741,13 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                 title: 'Daily Payments',
                 desc: 'Direct transfer to your bank account with complete transparency on every payout.',
               ),
-              const Divider(height: 28, color: Color(0xFFE9ECF0), thickness: 1),
+              const Divider(height: 28, color: Color(0xFFE7E7EB), thickness: 1),
               _buildPerkRowSimple(
                 icon: Icons.schedule_rounded,
                 title: 'Flexible Timing',
                 desc: 'Turn on Driver Mode whenever you are ready to earn. Be your own boss.',
               ),
-              const Divider(height: 28, color: Color(0xFFE9ECF0), thickness: 1),
+              const Divider(height: 28, color: Color(0xFFE7E7EB), thickness: 1),
               _buildPerkRowSimple(
                 icon: Icons.shield_outlined,
                 title: 'Safe & Supported Rides',
@@ -756,24 +757,24 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
           ),
         ),
         
-        const SizedBox(height: 32),
+        SizedBox(height: 32),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF1A3D6B),
+            backgroundColor: const Color(0xFFE31C2E),
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             elevation: 0,
           ),
           onPressed: () {
             setState(() => _currentStep = 2);
           },
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 'Start Application',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w500),
               ),
               SizedBox(width: 8),
               Icon(Icons.arrow_forward_rounded, size: 16),
@@ -791,29 +792,29 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: const Color(0xFFE8F0FB),
+            color: const Color(0xFFFDEBEC),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: const Color(0xFF1A3D6B), size: 18),
+          child: Icon(icon, color: const Color(0xFFE31C2E), size: 18),
         ),
-        const SizedBox(width: 14),
+        SizedBox(width: 14),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  color: Color(0xFF1A2233),
+                style: GoogleFonts.poppins(
+                  color: Color(0xFF121214),
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Text(
                 desc,
-                style: const TextStyle(
-                  color: Color(0xFF6B7785),
+                style: GoogleFonts.poppins(
+                  color: Color(0xFF6C6F79),
                   fontSize: 11.5,
                   height: 1.4,
                 ),
@@ -834,40 +835,40 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Vehicle & License Info',
-            style: TextStyle(color: Color(0xFF1A2233), fontSize: 18, fontWeight: FontWeight.bold),
+            style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 6),
-          const Text(
+          SizedBox(height: 6),
+          Text(
             'Provide accurate details so our admin team can approve your application quickly.',
-            style: TextStyle(color: Color(0xFF6B7785), fontSize: 13),
+            style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 13),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
 
           // User Personal Info (Read-only)
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF7F8FA),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE9ECF0)),
+              color: const Color(0xFFF6F6F8),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: const Color(0xFFE7E7EB)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.person_rounded, color: Color(0xFFB0B8C4), size: 20),
-                const SizedBox(width: 12),
+                Icon(Icons.person_rounded, color: Color(0xFFB0B8C4), size: 20),
+                SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       name ?? 'Applicant Name',
-                      style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14, fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       phone ?? '+91 9999999999',
-                      style: const TextStyle(color: Color(0xFF6B7785), fontSize: 12),
+                      style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 12),
                     ),
                   ],
                 ),
@@ -875,28 +876,28 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE6F7F2),
+                    color: const Color(0xFFE7F7EF),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Verified Profile',
-                    style: TextStyle(color: Color(0xFF0F9B6E), fontSize: 10, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.poppins(color: Color(0xFF1C9A5B), fontSize: 10, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
 
           // Select Available Vehicle Type
-          const Text(
+          Text(
             'Select Vehicle Type',
-            style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+            style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 12, fontWeight: FontWeight.w500),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           
           if (vehiclesProvider.isLoading && vehicleTypes.isEmpty) ...[
-            const Center(
+            Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 20.0),
                 child: SizedBox(
@@ -904,7 +905,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                   height: 32,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B)),
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
                   ),
                 ),
               ),
@@ -914,12 +915,12 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: const Color(0xFFFFF2F2),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: Colors.redAccent.withOpacity(0.2)),
               ),
-              child: const Text(
+              child: Text(
                 'No available vehicle types found. Please contact admin.',
-                style: TextStyle(color: Colors.redAccent, fontSize: 13),
+                style: GoogleFonts.poppins(color: Colors.redAccent, fontSize: 13),
               ),
             ),
           ] else ...[
@@ -941,7 +942,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                       fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) => Icon(
                         Icons.local_shipping_rounded,
-                        color: isSelected ? const Color(0xFF1A3D6B) : const Color(0xFF6B7785),
+                        color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFF6C6F79),
                         size: 18,
                       ),
                     );
@@ -954,7 +955,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                     }
                     vehicleIcon = Icon(
                       typeIcon,
-                      color: isSelected ? const Color(0xFF1A3D6B) : const Color(0xFF6B7785),
+                      color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFF6C6F79),
                       size: 20,
                     );
                   }
@@ -968,10 +969,10 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                       width: 90,
                       margin: const EdgeInsets.only(right: 12),
                       decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFFE8F0FB) : const Color(0xFFF7F8FA),
-                        borderRadius: BorderRadius.circular(12),
+                        color: isSelected ? const Color(0xFFFDEBEC) : const Color(0xFFF6F6F8),
+                        borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: isSelected ? const Color(0xFF1A3D6B) : const Color(0xFFE9ECF0),
+                          color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
                           width: 1.5,
                         ),
                       ),
@@ -979,23 +980,23 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           vehicleIcon,
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             vt.name,
                             textAlign: TextAlign.center,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: isSelected ? const Color(0xFF1A3D6B) : const Color(0xFF1A2233),
+                            style: GoogleFonts.poppins(
+                              color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFF121214),
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 1),
+                          SizedBox(height: 1),
                           Text(
                             '₹${vt.perKmRate.toStringAsFixed(0)}/km',
-                            style: TextStyle(
-                              color: isSelected ? const Color(0xFF1A3D6B).withOpacity(0.7) : const Color(0xFFB0B8C4),
+                            style: GoogleFonts.poppins(
+                              color: isSelected ? const Color(0xFFE31C2E).withOpacity(0.7) : const Color(0xFFB0B8C4),
                               fontSize: 8.5,
                             ),
                           ),
@@ -1007,17 +1008,17 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
               ),
             ),
           ],
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
 
           // Driving License Input
-          const Text(
+          Text(
             'Driving License Number',
-            style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+            style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 12, fontWeight: FontWeight.w500),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           TextFormField(
             controller: _licenseController,
-            style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+            style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14),
             decoration: _buildInputDecoration('e.g. DL1420241234567', Icons.badge_outlined),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
@@ -1029,17 +1030,17 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
               return null;
             },
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
 
           // Vehicle Plate Number Input
-          const Text(
+          Text(
             'Vehicle Plate Number',
-            style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+            style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 12, fontWeight: FontWeight.w500),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           TextFormField(
             controller: _plateController,
-            style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+            style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14),
             textCapitalization: TextCapitalization.characters,
             decoration: _buildInputDecoration('e.g. DL01AB1234', Icons.pin_outlined),
             validator: (value) {
@@ -1052,7 +1053,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
               return null;
             },
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
 
           // Vehicle Color and Manufacturing Year
           Row(
@@ -1061,35 +1062,35 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Vehicle Color',
-                      style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+                      style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 12, fontWeight: FontWeight.w500),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     TextFormField(
                       controller: _colorController,
-                      style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                      style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14),
                       decoration: _buildInputDecoration('e.g. White', Icons.color_lens_outlined),
                       validator: (value) => value == null || value.trim().isEmpty ? 'Color is required' : null,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Manufacturing Year',
-                      style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+                      style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 12, fontWeight: FontWeight.w500),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     TextFormField(
                       controller: _yearController,
                       readOnly: true,
                       onTap: () => _selectYear(context),
-                      style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                      style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14),
                       decoration: _buildInputDecoration('Select Year', Icons.calendar_today_outlined),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) return 'Year is required';
@@ -1102,7 +1103,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
 
           // License Expiry and Insurance Expiry Dates
           Row(
@@ -1111,37 +1112,37 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'License Expiry',
-                      style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+                      style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 12, fontWeight: FontWeight.w500),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     TextFormField(
                       controller: _licenseExpiryController,
                       readOnly: true,
                       onTap: () => _selectLicenseExpiry(context),
-                      style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                      style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14),
                       decoration: _buildInputDecoration('Select Expiry Date', Icons.date_range_outlined),
                       validator: (value) => value == null || value.trim().isEmpty ? 'Expiry required' : null,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Insurance Expiry',
-                      style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+                      style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 12, fontWeight: FontWeight.w500),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     TextFormField(
                       controller: _insuranceExpiryController,
                       readOnly: true,
                       onTap: () => _selectInsuranceExpiry(context),
-                      style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                      style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14),
                       decoration: _buildInputDecoration('Select Expiry Date', Icons.date_range_outlined),
                       validator: (value) => value == null || value.trim().isEmpty ? 'Expiry required' : null,
                     ),
@@ -1150,49 +1151,49 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
 
           // Driver Bio
-          const Text(
+          Text(
             'Short Bio / Experience',
-            style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+            style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 12, fontWeight: FontWeight.w500),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           TextFormField(
             controller: _bioController,
             maxLines: 2,
-            style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+            style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14),
             decoration: _buildInputDecoration('Describe your experience...', Icons.info_outline),
             validator: (value) => value == null || value.trim().isEmpty ? 'Bio is required' : null,
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
 
           // Gender Selection Dropdown
-          const Text(
+          Text(
             'Gender',
-            style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+            style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 12, fontWeight: FontWeight.w500),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           DropdownButtonFormField<String>(
             value: _selectedGender,
-            style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14, fontWeight: FontWeight.w500),
+            style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14, fontWeight: FontWeight.w500),
             decoration: _buildInputDecoration('Select Gender', Icons.people_outline),
             dropdownColor: Colors.white,
-            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6B7785)),
+            icon: Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6C6F79)),
             isExpanded: true,
-            borderRadius: BorderRadius.circular(12),
-            items: const [
+            borderRadius: BorderRadius.circular(24),
+            items: [
               DropdownMenuItem(
                 value: 'MALE',
-                child: Text('Male', style: TextStyle(color: Color(0xFF1A2233), fontSize: 14)),
+                child: Text('Male', style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14)),
               ),
               DropdownMenuItem(
                 value: 'FEMALE',
-                child: Text('Female', style: TextStyle(color: Color(0xFF1A2233), fontSize: 14)),
+                child: Text('Female', style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14)),
               ),
               DropdownMenuItem(
                 value: 'OTHER',
-                child: Text('Other', style: TextStyle(color: Color(0xFF1A2233), fontSize: 14)),
+                child: Text('Other', style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14)),
               ),
             ],
             onChanged: (val) {
@@ -1203,19 +1204,19 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
               }
             },
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
 
           // Upload Document Cards section
-          const Text(
+          Text(
             'Upload Verification Documents 📁',
-            style: TextStyle(color: Color(0xFF1A2233), fontSize: 14, fontWeight: FontWeight.bold),
+            style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 4),
-          const Text(
+          SizedBox(height: 4),
+          Text(
             'Upload your actual documents from your gallery to verify your profile:',
-            style: TextStyle(color: Color(0xFF6B7785), fontSize: 11),
+            style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 11),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
 
           _buildDocumentUploadCard(
             title: 'Aadhaar Card Front',
@@ -1279,21 +1280,21 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
             onTap: () => _pickDocument('INSURANCE', driverProvider),
             profile: driverProvider.profile,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
 
           // Submit button
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1A3D6B),
+              backgroundColor: const Color(0xFFE31C2E),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               elevation: 0,
               minimumSize: const Size(double.infinity, 50),
             ),
             onPressed: () => _submitApplication(driverProvider),
             child: driverProvider.isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
@@ -1301,12 +1302,12 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : const Text(
+                : Text(
                     'Submit Application',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                    style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w500),
                   ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
         ],
       ),
     );
@@ -1315,29 +1316,29 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
   InputDecoration _buildInputDecoration(String hint, IconData icon) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Color(0xFFB0B8C4), fontSize: 13),
+      hintStyle: GoogleFonts.poppins(color: Color(0xFFB0B8C4), fontSize: 13),
       prefixIcon: Icon(icon, color: const Color(0xFFB0B8C4), size: 20),
       filled: true,
-      fillColor: const Color(0xFFF7F8FA),
+      fillColor: Colors.white,
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE9ECF0)),
+        borderRadius: BorderRadius.circular(24),
+        borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF1A3D6B), width: 1.5),
+        borderRadius: BorderRadius.circular(24),
+        borderSide: const BorderSide(color: Color(0xFFE31C2E), width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(24),
         borderSide: const BorderSide(color: Colors.redAccent, width: 1.2),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(24),
         borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
       ),
-      errorStyle: const TextStyle(color: Colors.redAccent, fontSize: 11),
+      errorStyle: GoogleFonts.poppins(color: Colors.redAccent, fontSize: 11),
     );
   }
 
@@ -1366,12 +1367,12 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: const Color(0xFFF0F9FF),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(color: const Color(0xFFE0F2FE)),
             ),
             child: Row(
               children: [
-                const SizedBox(
+                SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
@@ -1379,23 +1380,23 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                     valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0284C7)),
                   ),
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Application Pending Review',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Color(0xFF0369A1),
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      const Text(
+                      SizedBox(height: 2),
+                      Text(
                         'Your details and documents are under review. We will notify you once approved.',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Color(0xFF0284C7),
                           fontSize: 11,
                           height: 1.3,
@@ -1407,24 +1408,24 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
 
           // Submitted Details Card
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF7F8FA),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE9ECF0)),
+              color: const Color(0xFFF6F6F8),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: const Color(0xFFE7E7EB)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Submitted Application Details',
-                  style: TextStyle(color: Color(0xFF1A2233), fontSize: 14, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14, fontWeight: FontWeight.bold),
                 ),
-                const Divider(height: 20, color: Color(0xFFE9ECF0)),
+                const Divider(height: 20, color: Color(0xFFE7E7EB)),
                 _buildDetailRow('Submission Date', _formatDateTime(profile.createdAt)),
                 _buildDetailRow('License Number', profile.licenseNumber),
                 _buildDetailRow('Vehicle Plate Number', profile.vehicleNumber),
@@ -1434,19 +1435,19 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
             ),
           ),
           _buildCollapsibleProfileDetails(profile),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
 
           // Document section header
-          const Text(
+          Text(
             'Verification Documents 📁',
-            style: TextStyle(color: Color(0xFF1A2233), fontSize: 14, fontWeight: FontWeight.bold),
+            style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 4),
-          const Text(
+          SizedBox(height: 4),
+          Text(
             'Check the status or re-upload documents if required:',
-            style: TextStyle(color: Color(0xFF6B7785), fontSize: 11),
+            style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 11),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
 
           // Document Upload Cards (Pending status shows here)
           _buildDocumentUploadCard(
@@ -1511,56 +1512,56 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
             onTap: () => _pickDocument('INSURANCE', driverProvider),
             profile: profile,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
 
           // Grouped Buttons at the Bottom
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1A3D6B),
+              backgroundColor: const Color(0xFFE31C2E),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               elevation: 0,
             ),
-            icon: const Icon(Icons.edit_rounded, size: 18),
-            label: const Text('Update Profile Details', style: TextStyle(fontWeight: FontWeight.bold)),
+            icon: Icon(Icons.edit_rounded, size: 18),
+            label: Text('Update Profile Details', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
             onPressed: () => _showEditProfileBottomSheet(profile),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
 
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFF1A3D6B)),
+              side: const BorderSide(color: Color(0xFFE31C2E)),
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             ),
             onPressed: () => _showAllDetailsBottomSheet(profile),
-            icon: const Icon(Icons.info_outline_rounded, size: 18, color: Color(0xFF1A3D6B)),
-            label: const Text(
+            icon: Icon(Icons.info_outline_rounded, size: 18, color: Color(0xFFE31C2E)),
+            label: Text(
               'View All Details',
-              style: TextStyle(color: Color(0xFF1A3D6B), fontSize: 14, fontWeight: FontWeight.w600),
+              style: GoogleFonts.poppins(color: Color(0xFFE31C2E), fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
 
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1A3D6B),
+              backgroundColor: const Color(0xFFE31C2E),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               elevation: 0,
             ),
             onPressed: () => driverProvider.fetchDriverProfile(),
             child: driverProvider.isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
                   )
-                : const Text(
+                : Text(
                     'Refresh Application Status',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                    style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w500),
                   ),
           ),
         ],
@@ -1590,30 +1591,30 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE9ECF0),
+                    color: const Color(0xFFE7E7EB),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Application Details',
-                    style: TextStyle(
-                      color: Color(0xFF1A2233),
+                    style: GoogleFonts.poppins(
+                      color: Color(0xFF121214),
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Color(0xFF6B7785)),
+                    icon: Icon(Icons.close_rounded, color: Color(0xFF6C6F79)),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),
-              const Divider(height: 16, color: Color(0xFFE9ECF0)),
+              const Divider(height: 16, color: Color(0xFFE7E7EB)),
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
@@ -1621,7 +1622,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                     children: [
                       // Applicant Info
                       _buildSectionHeader('Applicant Information', Icons.person_outline_rounded),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       _buildDetailRow('Full Name', profile.name),
                       _buildDetailRow('Phone Number', profile.phone),
                       _buildDetailRow('Gender', profile.gender),
@@ -1637,40 +1638,40 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                       if (profile.approvedAt != null && profile.approvedAt!.isNotEmpty)
                         _buildDetailRow('Approved At', _formatDateTime(profile.approvedAt!)),
 
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
 
                       // Vehicle Info
                       _buildSectionHeader('Vehicle Information', Icons.directions_car_outlined),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       _buildDetailRow('Vehicle Type', profile.vehicleTypeName.isNotEmpty ? profile.vehicleTypeName : (profile.vehicle?.vehicleTypeName ?? 'N/A')),
                       _buildDetailRow('Registration Number', profile.vehicleNumber),
                       _buildDetailRow('Vehicle Color', profile.color.isNotEmpty ? profile.color : 'N/A'),
                       _buildDetailRow('Manufacturing Year', profile.manufacturingYear.toString()),
                       _buildDetailRow('Vehicle Status', profile.vehicleStatus),
 
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
 
                       // Documents Info
                       _buildSectionHeader('Verification Documents', Icons.folder_open_outlined),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       if (profile.documents.isEmpty)
-                        const Text(
+                        Text(
                           'No documents uploaded.',
-                          style: TextStyle(color: Color(0xFF6B7785), fontSize: 13),
+                          style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 13),
                         )
                       else
                         ...profile.documents.map((doc) => _buildDocumentItem(doc)),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1A3D6B),
+                          backgroundColor: const Color(0xFFE31C2E),
                           foregroundColor: Colors.white,
                           minimumSize: const Size(double.infinity, 48),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                           elevation: 0,
                         ),
-                        icon: const Icon(Icons.edit_rounded, size: 18),
-                        label: const Text('Edit Profile Details', style: TextStyle(fontWeight: FontWeight.bold)),
+                        icon: Icon(Icons.edit_rounded, size: 18),
+                        label: Text('Edit Profile Details', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
                         onPressed: () {
                           Navigator.pop(context);
                           _showEditProfileBottomSheet(profile);
@@ -1720,69 +1721,69 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                           width: 36,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE9ECF0),
+                            color: const Color(0xFFE7E7EB),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Edit Profile Details',
-                            style: TextStyle(
-                              color: Color(0xFF1A2233),
+                            style: GoogleFonts.poppins(
+                              color: Color(0xFF121214),
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.close_rounded, color: Color(0xFF6B7785)),
+                            icon: Icon(Icons.close_rounded, color: Color(0xFF6C6F79)),
                             onPressed: () => Navigator.pop(context),
                           ),
                         ],
                       ),
-                      const Divider(height: 16, color: Color(0xFFE9ECF0)),
-                      const SizedBox(height: 12),
+                      const Divider(height: 16, color: Color(0xFFE7E7EB)),
+                      SizedBox(height: 12),
 
                       // License Number
-                      const Text(
+                      Text(
                         'License Number',
-                        style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+                        style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 12, fontWeight: FontWeight.w500),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       TextFormField(
                         controller: licenseController,
-                        style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                        style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14),
                         decoration: _buildInputDecoration('License Number', Icons.badge_outlined),
                         validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
 
                       // DOB
-                      const Text(
+                      Text(
                         'Date of Birth',
-                        style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+                        style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 12, fontWeight: FontWeight.w500),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       TextFormField(
                         controller: dobController,
-                        style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                        style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14),
                         decoration: _buildInputDecoration('YYYY-MM-DD', Icons.date_range_outlined),
                         validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
 
                       // Gender
-                      const Text(
+                      Text(
                         'Gender',
-                        style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+                        style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 12, fontWeight: FontWeight.w500),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       DropdownButtonFormField<String>(
                         value: genderValue,
-                        style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                        style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14),
                         decoration: _buildInputDecoration('Gender', Icons.people_outline),
                         dropdownColor: Colors.white,
                         items: const [
@@ -1798,22 +1799,22 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                           }
                         },
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
 
                       // Bio
-                      const Text(
+                      Text(
                         'Bio / Experience',
-                        style: TextStyle(color: Color(0xFF6B7785), fontSize: 12, fontWeight: FontWeight.w500),
+                        style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 12, fontWeight: FontWeight.w500),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       TextFormField(
                         controller: bioController,
                         maxLines: 2,
-                        style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                        style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14),
                         decoration: _buildInputDecoration('Short Bio', Icons.info_outline),
                         validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
 
                       // Action Buttons
                       Row(
@@ -1821,22 +1822,22 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                           Expanded(
                             child: OutlinedButton(
                               style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Color(0xFFE9ECF0)),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                side: const BorderSide(color: Color(0xFFE7E7EB)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
                               onPressed: isSaving ? null : () => Navigator.pop(context),
-                              child: const Text('Cancel', style: TextStyle(color: Color(0xFF6B7785), fontWeight: FontWeight.bold)),
+                              child: Text('Cancel', style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontWeight: FontWeight.bold)),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                           Expanded(
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1A3D6B),
+                                backgroundColor: const Color(0xFFE31C2E),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
                               onPressed: isSaving ? null : () async {
@@ -1859,13 +1860,13 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(success ? 'Profile updated successfully!' : (provider.errorMessage ?? 'Update failed.')),
-                                      backgroundColor: success ? const Color(0xFF0F9B6E) : Colors.redAccent,
+                                      backgroundColor: success ? const Color(0xFF1C9A5B) : Colors.redAccent,
                                     ),
                                   );
                                 }
                               },
                               child: isSaving
-                                  ? const SizedBox(
+                                  ? SizedBox(
                                       height: 20,
                                       width: 20,
                                       child: CircularProgressIndicator(
@@ -1873,7 +1874,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                       ),
                                     )
-                                  : const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.bold)),
+                                  : Text('Save Changes', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
                             ),
                           ),
                         ],
@@ -1892,12 +1893,12 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
   Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFF1A3D6B), size: 20),
-        const SizedBox(width: 8),
+        Icon(icon, color: const Color(0xFFE31C2E), size: 20),
+        SizedBox(width: 8),
         Text(
           title,
-          style: const TextStyle(
-            color: Color(0xFF1A2233),
+          style: GoogleFonts.poppins(
+            color: Color(0xFF121214),
             fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
@@ -1909,7 +1910,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
   Widget _buildDocumentItem(DriverDocumentModel doc) {
     Color statusColor = Colors.orangeAccent;
     if (doc.status.toUpperCase() == 'APPROVED') {
-      statusColor = const Color(0xFF0F9B6E);
+      statusColor = const Color(0xFF1C9A5B);
     } else if (doc.status.toUpperCase() == 'REJECTED') {
       statusColor = Colors.redAccent;
     }
@@ -1918,9 +1919,9 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F8FA),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE9ECF0)),
+        color: const Color(0xFFF6F6F8),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE7E7EB)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1930,8 +1931,8 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
             children: [
               Text(
                 doc.docType.toUpperCase(),
-                style: const TextStyle(
-                  color: Color(0xFF1A2233),
+                style: GoogleFonts.poppins(
+                  color: Color(0xFF121214),
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1944,7 +1945,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                 ),
                 child: Text(
                   doc.status,
-                  style: TextStyle(
+                  style: GoogleFonts.poppins(
                     color: statusColor,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -1953,22 +1954,22 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           InkWell(
             onTap: () {
               // Clickable link behavior, or copy to clipboard
             },
             child: Row(
               children: [
-                const Icon(Icons.link_rounded, color: Color(0xFF1A3D6B), size: 14),
-                const SizedBox(width: 4),
+                Icon(Icons.link_rounded, color: Color(0xFFE31C2E), size: 14),
+                SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     doc.fileUrl,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF1A3D6B),
+                    style: GoogleFonts.poppins(
+                      color: Color(0xFFE31C2E),
                       fontSize: 11,
                       decoration: TextDecoration.underline,
                     ),
@@ -1978,16 +1979,16 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
             ),
           ),
           if (doc.rejectionReason != null && doc.rejectionReason!.isNotEmpty) ...[
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(
               'Reason: ${doc.rejectionReason}',
-              style: const TextStyle(color: Colors.redAccent, fontSize: 11),
+              style: GoogleFonts.poppins(color: Colors.redAccent, fontSize: 11),
             ),
           ],
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             'Uploaded: ${_formatDateTime(doc.uploadedAt)}',
-            style: const TextStyle(color: Color(0xFF6B7785), fontSize: 10),
+            style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 10),
           ),
         ],
       ),
@@ -2014,10 +2015,10 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: const Color(0xFFF0FDF4),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(color: const Color(0xFFDCFCE7)),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 Icon(
                   Icons.check_circle_rounded,
@@ -2031,7 +2032,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                     children: [
                       Text(
                         'Application Approved! 🎉',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Color(0xFF166534),
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -2040,7 +2041,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                       SizedBox(height: 4),
                       Text(
                         'Congratulations, your driver partner registration is complete. Welcome to the Riderzz network.',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Color(0xFF15803D),
                           fontSize: 12,
                           height: 1.4,
@@ -2052,24 +2053,24 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
 
           // Approved details summary
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF7F8FA),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE9ECF0)),
+              color: const Color(0xFFF6F6F8),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: const Color(0xFFE7E7EB)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Approved Partner Details',
-                  style: TextStyle(color: Color(0xFF1A2233), fontSize: 14, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14, fontWeight: FontWeight.bold),
                 ),
-                const Divider(height: 20, color: Color(0xFFE9ECF0)),
+                const Divider(height: 20, color: Color(0xFFE7E7EB)),
                 _buildDetailRow('Submission Date', _formatDateTime(profile.createdAt)),
                 _buildDetailRow('License Number', profile.licenseNumber),
                 _buildDetailRow('Vehicle Plate', profile.vehicleNumber),
@@ -2078,33 +2079,33 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
             ),
           ),
           _buildCollapsibleProfileDetails(profile),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1A3D6B),
+              backgroundColor: const Color(0xFFE31C2E),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               elevation: 0,
             ),
-            icon: const Icon(Icons.edit_rounded, size: 18),
-            label: const Text('Update Profile Details', style: TextStyle(fontWeight: FontWeight.bold)),
+            icon: Icon(Icons.edit_rounded, size: 18),
+            label: Text('Update Profile Details', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
             onPressed: () => _showEditProfileBottomSheet(profile),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
 
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0F9B6E),
+              backgroundColor: const Color(0xFF1C9A5B),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               elevation: 0,
             ),
             onPressed: _handleRoleTransition,
             child: Text(
               userRole == 'ROLE_DRIVER' ? 'Go to Dashboard' : 'Enter Driver Mode',
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+              style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w500),
             ),
           ),
         ],
@@ -2124,11 +2125,11 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFFEF2F2),
-              borderRadius: BorderRadius.circular(12),
+              color: const Color(0xFFFDEBEC),
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(color: const Color(0xFFFEE2E2)),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 Icon(
                   Icons.cancel_rounded,
@@ -2142,7 +2143,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                     children: [
                       Text(
                         'Application Rejected ❌',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Color(0xFF991B1B),
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -2151,7 +2152,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                       SizedBox(height: 4),
                       Text(
                         'Please check the status of each document and re-upload rejected or missing ones.',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Color(0xFFB91C1C),
                           fontSize: 12,
                           height: 1.4,
@@ -2163,33 +2164,33 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
 
           // Rejection Reason Box
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFFEF2F2),
-              borderRadius: BorderRadius.circular(12),
+              color: const Color(0xFFFDEBEC),
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(color: Colors.redAccent.withOpacity(0.2)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.info_outline_rounded, color: Colors.redAccent, size: 20),
-                const SizedBox(width: 12),
+                Icon(Icons.info_outline_rounded, color: Colors.redAccent, size: 20),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Rejection Reason',
-                        style: TextStyle(color: Color(0xFF1A2233), fontSize: 13, fontWeight: FontWeight.bold),
+                        style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 13, fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         rejectionReason,
-                        style: const TextStyle(color: Color(0xFF6B7785), fontSize: 12, height: 1.4),
+                        style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 12, height: 1.4),
                       ),
                     ],
                   ),
@@ -2197,17 +2198,17 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 28),
-          const Text(
+          SizedBox(height: 28),
+          Text(
             'Verification Documents 📁',
-            style: TextStyle(color: Color(0xFF1A2233), fontSize: 14, fontWeight: FontWeight.bold),
+            style: GoogleFonts.poppins(color: Color(0xFF121214), fontSize: 14, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 4),
-          const Text(
+          SizedBox(height: 4),
+          Text(
             'Please update/re-upload any rejected documents below:',
-            style: TextStyle(color: Color(0xFF6B7785), fontSize: 11),
+            style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 11),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
 
           _buildDocumentUploadCard(
             title: 'Aadhaar Card Front',
@@ -2271,29 +2272,29 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
             onTap: () => _pickDocument('INSURANCE', driverProvider),
             profile: profile,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           _buildCollapsibleProfileDetails(profile),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1A3D6B),
+              backgroundColor: const Color(0xFFE31C2E),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               elevation: 0,
             ),
-            icon: const Icon(Icons.edit_rounded, size: 18),
-            label: const Text('Update Profile Details', style: TextStyle(fontWeight: FontWeight.bold)),
+            icon: Icon(Icons.edit_rounded, size: 18),
+            label: Text('Update Profile Details', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
             onPressed: () => _showEditProfileBottomSheet(profile),
           ),
-          const SizedBox(height: 36),
+          SizedBox(height: 36),
 
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1A3D6B),
+              backgroundColor: const Color(0xFFE31C2E),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               elevation: 0,
             ),
             onPressed: () {
@@ -2302,9 +2303,9 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                 _currentStep = 2; // Jump directly to form
               });
             },
-            child: const Text(
+            child: Text(
               'Modify & Re-apply',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+              style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w500),
             ),
           ),
         ],
@@ -2322,16 +2323,16 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(color: Color(0xFF6B7785), fontSize: 12),
+              style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 12),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Flexible(
             child: Text(
               value,
               textAlign: TextAlign.end,
-              style: const TextStyle(
-                color: Color(0xFF1A2233),
+              style: GoogleFonts.poppins(
+                color: Color(0xFF121214),
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
@@ -2347,20 +2348,20 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
       margin: const EdgeInsets.only(top: 12, bottom: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE9ECF0)),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE7E7EB)),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          leading: const Icon(Icons.info_outline_rounded, color: Color(0xFF1A3D6B)),
-          title: const Text(
+          leading: Icon(Icons.info_outline_rounded, color: Color(0xFFE31C2E)),
+          title: Text(
             'View Full Profile Details',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1A2233)),
+            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
           ),
-          subtitle: const Text(
+          subtitle: Text(
             'Tap to view dates, bio, gender, color etc.',
-            style: TextStyle(fontSize: 10, color: Color(0xFF6B7785)),
+            style: GoogleFonts.poppins(fontSize: 10, color: Color(0xFF6C6F79)),
           ),
           childrenPadding: const EdgeInsets.all(16),
           children: [

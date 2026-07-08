@@ -14,7 +14,11 @@ class DriverWalletModel {
   factory DriverWalletModel.fromJson(Map<String, dynamic> json) {
     var txList = json['transactions'] as List? ?? [];
     List<DriverWalletTransactionModel> parsedTx = txList
-        .map((t) => DriverWalletTransactionModel.fromJson(Map<String, dynamic>.from(t)))
+        .map(
+          (t) => DriverWalletTransactionModel.fromJson(
+            Map<String, dynamic>.from(t),
+          ),
+        )
         .toList();
 
     double balValue = 0.0;
@@ -24,7 +28,8 @@ class DriverWalletModel {
 
     double minBalValue = 0.0;
     if (json['minBalanceRequired'] != null) {
-      minBalValue = double.tryParse(json['minBalanceRequired'].toString()) ?? 0.0;
+      minBalValue =
+          double.tryParse(json['minBalanceRequired'].toString()) ?? 0.0;
     }
 
     return DriverWalletModel(
@@ -61,16 +66,47 @@ class DriverWalletTransactionModel {
 
     double closingBalValue = 0.0;
     if (json['closingBalance'] != null) {
-      closingBalValue = double.tryParse(json['closingBalance'].toString()) ?? 0.0;
+      closingBalValue =
+          double.tryParse(json['closingBalance'].toString()) ?? 0.0;
     }
 
     return DriverWalletTransactionModel(
       id: json['id'] as int? ?? 0,
-      type: json['type'] as String? ?? 'RECHARGE',
+      type:
+          json['transactionType'] as String? ??
+          json['type'] as String? ??
+          'RECHARGE',
       amount: amtValue,
       closingBalance: closingBalValue,
-      description: json['description'] as String? ?? '',
+      description:
+          json['remarks'] as String? ?? json['description'] as String? ?? '',
       createdAt: json['createdAt'] as String? ?? '',
+    );
+  }
+}
+
+class RechargeInitiateResponse {
+  final String razorpayOrderId;
+  final String razorpayKeyId;
+  final double amount;
+  final int rechargeId;
+  final String currency;
+
+  RechargeInitiateResponse({
+    required this.razorpayOrderId,
+    required this.razorpayKeyId,
+    required this.amount,
+    required this.rechargeId,
+    required this.currency,
+  });
+
+  factory RechargeInitiateResponse.fromJson(Map<String, dynamic> json) {
+    return RechargeInitiateResponse(
+      razorpayOrderId: json['razorpayOrderId'] as String? ?? '',
+      razorpayKeyId: json['razorpayKeyId'] as String? ?? '',
+      amount: double.tryParse(json['amount']?.toString() ?? '0') ?? 0.0,
+      rechargeId: json['rechargeId'] as int? ?? 0,
+      currency: json['currency'] as String? ?? 'INR',
     );
   }
 }

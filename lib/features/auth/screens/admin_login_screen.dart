@@ -71,7 +71,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1A2233), size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF121214), size: 20),
           onPressed: () {
             authProvider.resetState();
             Navigator.pop(context);
@@ -95,7 +95,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE8F0FB),
+                        color: const Color(0xFFFDEBEC),
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
@@ -108,7 +108,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       child: const Icon(
                         Icons.admin_panel_settings_rounded,
                         size: 44,
-                        color: Color(0xFF1A3D6B),
+                        color: Color(0xFFE31C2E),
                       ),
                     ),
                   ),
@@ -121,7 +121,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A2233),
+                      color: Color(0xFF121214),
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -130,7 +130,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF6B7785),
+                      color: Color(0xFF6C6F79),
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -140,7 +140,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                     'Admin Mobile Number',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF6B7785),
+                      color: Color(0xFF6C6F79),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -149,8 +149,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   // Phone Input Row
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF7F8FA),
-                      border: Border.all(color: const Color(0xFFE9ECF0)),
+                      color: const Color(0xFFF6F6F8),
+                      border: Border.all(color: const Color(0xFFE7E7EB)),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
@@ -158,14 +158,14 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       children: [
                         Container(
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE8F0FB),
+                            color: const Color(0xFFFDEBEC),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           child: const Text(
                             '🇮🇳 +91',
                             style: TextStyle(
-                              color: Color(0xFF1A3D6B),
+                              color: Color(0xFFE31C2E),
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -177,7 +177,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                             controller: _phoneController,
                             keyboardType: TextInputType.phone,
                             style: const TextStyle(
-                              color: Color(0xFF1A2233),
+                              color: Color(0xFF121214),
                               fontSize: 14,
                             ),
                             decoration: const InputDecoration(
@@ -202,7 +202,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                     'Password',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF6B7785),
+                      color: Color(0xFF6C6F79),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -211,8 +211,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   // Password Input Box
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF7F8FA),
-                      border: Border.all(color: const Color(0xFFE9ECF0)),
+                      color: const Color(0xFFF6F6F8),
+                      border: Border.all(color: const Color(0xFFE7E7EB)),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
@@ -220,7 +220,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       style: const TextStyle(
-                        color: Color(0xFF1A2233),
+                        color: Color(0xFF121214),
                         fontSize: 14,
                       ),
                       decoration: InputDecoration(
@@ -255,14 +255,14 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   authProvider.isLoading
                       ? const Center(
                           child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B)),
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
                           ),
                         )
                       : SizedBox(
                           height: 56,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1A3D6B),
+                              backgroundColor: const Color(0xFFE31C2E),
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
@@ -298,7 +298,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       child: const Text(
                         "Cancel & Return to User Login",
                         style: TextStyle(
-                          color: Color(0xFF6B7785),
+                          color: Color(0xFF6C6F79),
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                         ),

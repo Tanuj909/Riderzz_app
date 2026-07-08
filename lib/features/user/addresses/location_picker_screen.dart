@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:google_places_flutter/google_places_flutter.dart';
@@ -170,22 +171,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     final String googleApiKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1A3D6B),
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-        ),
-        title: const Text(
-          'Choose Location',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           // Google Map Widget
@@ -195,7 +181,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               zoom: 16.0,
             ),
             myLocationEnabled: true,
-            myLocationButtonEnabled: true,
+            myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
             onMapCreated: (GoogleMapController controller) {
               _mapController = controller;
@@ -211,30 +197,51 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             },
           ),
           
-          // Floating Search Bar Card with Autocomplete Suggestions Dropdown
+          // Top Row: Back Button + Search Bar
           Positioned(
-            top: 16,
+            top: MediaQuery.of(context).padding.top + 16,
             left: 16,
             right: 16,
-            child: Card(
-              elevation: 6,
-              shadowColor: Colors.black26,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              color: Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-                child: GooglePlaceAutoCompleteTextField(
-                  textEditingController: _searchController,
-                  googleAPIKey: googleApiKey,
-                  inputDecoration: const InputDecoration(
-                    hintText: 'Search for area, street, city...',
-                    hintStyle: TextStyle(color: Color(0xFFB0B8C4)),
-                    border: InputBorder.none,
-                    prefixIcon: Icon(
+            child: Row(
+              children: [
+                // Back Button
+                Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                    ],
+                  ),
+                  child: IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF121214), size: 18),
+                    padding: const EdgeInsets.all(10),
+                    constraints: const BoxConstraints(),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Search Bar
+                Expanded(
+                  child: Card(
+                    elevation: 6,
+                    shadowColor: Colors.black26,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                      child: GooglePlaceAutoCompleteTextField(
+                        textEditingController: _searchController,
+                        googleAPIKey: googleApiKey,
+                        inputDecoration: const InputDecoration(
+                          hintText: 'Search for area, street, city...',
+                          hintStyle: TextStyle(color: Color(0xFFB0B8C4)),
+                          border: InputBorder.none,
+                          prefixIcon: Icon(
                       Icons.search_rounded,
-                      color: Color(0xFF6B7785),
+                      color: Color(0xFF6C6F79),
                       size: 22,
                     ),
                     prefixIconConstraints: BoxConstraints(
@@ -270,7 +277,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                         children: [
                           const Icon(
                             Icons.location_on_outlined,
-                            color: Color(0xFF6B7785),
+                            color: Color(0xFF6C6F79),
                             size: 18,
                           ),
                           const SizedBox(width: 10),
@@ -279,7 +286,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                               prediction.description ?? '',
                               style: const TextStyle(
                                 fontSize: 13,
-                                color: Color(0xFF1A2233),
+                                color: Color(0xFF121214),
                               ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -292,11 +299,11 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   seperatedBuilder: const Divider(
                     height: 1,
                     thickness: 0.5,
-                    color: Color(0xFFE9ECF0),
+                    color: Color(0xFFE7E7EB),
                   ),
                   textStyle: const TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF1A2233),
+                    color: Color(0xFF121214),
                   ),
                   boxDecoration: const BoxDecoration(
                     color: Colors.transparent,
@@ -306,15 +313,18 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               ),
             ),
           ),
+            ],
+          ),
+        ),
           
           // Fixed center pin 📍
           Center(
             child: Container(
-              margin: const EdgeInsets.only(bottom: 36), // Align pin pointer precisely to the center coordinate
+              margin: const EdgeInsets.only(bottom: 40), // Align pin pointer precisely to the center coordinate
               child: const Icon(
                 Icons.location_on_rounded,
-                size: 48,
-                color: Colors.redAccent,
+                size: 40,
+                color: Color(0xFFB31222), // Darker red
               ),
             ),
           ),
@@ -336,7 +346,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                     elevation: 4,
                     child: const Icon(
                       Icons.my_location_rounded,
-                      color: Color(0xFF1A3D6B),
+                      color: Color(0xFFE31C2E),
                       size: 20,
                     ),
                   ),
@@ -366,7 +376,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                         'SELECTED LOCATION',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF6B7785),
+                          color: Color(0xFF6C6F79),
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.1,
                         ),
@@ -377,7 +387,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                           height: 14,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B)),
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
                           ),
                         ),
                     ],
@@ -388,7 +398,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                     children: [
                       const Icon(
                         Icons.my_location_rounded,
-                        color: Color(0xFF1A3D6B),
+                        color: Color(0xFFE31C2E),
                         size: 20,
                       ),
                       const SizedBox(width: 10),
@@ -398,7 +408,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
-                            color: _isLoading ? const Color(0xFFB0B8C4) : const Color(0xFF1A2233),
+                            color: _isLoading ? const Color(0xFFB0B8C4) : const Color(0xFF121214),
                             height: 1.4,
                           ),
                           maxLines: 3,
@@ -413,13 +423,13 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                     height: 52,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A3D6B),
+                        backgroundColor: const Color(0xFFE31C2E),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(24),
                         ),
-                        disabledBackgroundColor: const Color(0xFFE9ECF0),
+                        disabledBackgroundColor: const Color(0xFFE7E7EB),
                         disabledForegroundColor: const Color(0xFFB0B8C4),
                       ),
                       onPressed: _isLoading
@@ -435,9 +445,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                 });
                               }
                             },
-                      child: const Text(
+                      child: Text(
                         'Confirm Location',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.5,
@@ -463,7 +473,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       barrierDismissible: false,
       builder: (dialogContext) => const Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B)),
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
         ),
       ),
     );
@@ -564,12 +574,12 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A2233),
+                                color: Color(0xFF121214),
                               ),
                             ),
                             IconButton(
                               onPressed: () => Navigator.pop(context),
-                              icon: const Icon(Icons.close_rounded, color: Color(0xFF6B7785)),
+                              icon: const Icon(Icons.close_rounded, color: Color(0xFF6C6F79)),
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                             ),
@@ -707,12 +717,12 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                   style: const TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A3D6B),
+                                    color: Color(0xFFE31C2E),
                                   ),
                                 ),
                                 Icon(
                                   showAdvanced ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                                  color: const Color(0xFF1A3D6B),
+                                  color: const Color(0xFFE31C2E),
                                   size: 20,
                                 ),
                               ],
@@ -762,13 +772,13 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF1A2233),
+                                color: Color(0xFF121214),
                               ),
                             ),
                             Switch(
                               value: isDefault,
-                              activeThumbColor: const Color(0xFF1A3D6B),
-                              activeTrackColor: const Color(0xFF1A3D6B).withValues(alpha: 0.5),
+                              activeThumbColor: const Color(0xFFE31C2E),
+                              activeTrackColor: const Color(0xFFE31C2E).withValues(alpha: 0.5),
                               onChanged: (val) {
                                 setModalState(() {
                                   isDefault = val;
@@ -787,7 +797,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                 height: 48,
                                 child: OutlinedButton(
                                   style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(color: Color(0xFF1A3D6B), width: 1.5),
+                                    side: const BorderSide(color: Color(0xFFE31C2E), width: 1.5),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10),
                                     ),
@@ -804,7 +814,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                     'Just Confirm',
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: Color(0xFF1A3D6B),
+                                      color: Color(0xFFE31C2E),
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -817,7 +827,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                 height: 48,
                                 child: ElevatedButton(
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF1A3D6B),
+                                    backgroundColor: const Color(0xFFE31C2E),
                                     foregroundColor: Colors.white,
                                     elevation: 0,
                                     shape: RoundedRectangleBorder(
@@ -920,9 +930,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFE8F0FB) : const Color(0xFFF7F8FA),
+            color: isSelected ? const Color(0xFFFDEBEC) : const Color(0xFFF6F6F8),
             border: Border.all(
-              color: isSelected ? const Color(0xFF1A3D6B) : const Color(0xFFE9ECF0),
+              color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
               width: 1.5,
             ),
             borderRadius: BorderRadius.circular(10),
@@ -933,7 +943,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               Icon(
                 icon,
                 size: 16,
-                color: isSelected ? const Color(0xFF1A3D6B) : const Color(0xFF6B7785),
+                color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFF6C6F79),
               ),
               const SizedBox(width: 6),
               Text(
@@ -941,7 +951,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: isSelected ? const Color(0xFF1A3D6B) : const Color(0xFF4A5568),
+                  color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFF4A5568),
                 ),
               ),
             ],
@@ -966,7 +976,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
           label,
           style: const TextStyle(
             fontSize: 11,
-            color: Color(0xFF6B7785),
+            color: Color(0xFF6C6F79),
             fontWeight: FontWeight.w600,
             letterSpacing: 0.3,
           ),
@@ -974,18 +984,18 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         const SizedBox(height: 5),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFF7F8FA),
-            border: Border.all(color: const Color(0xFFE9ECF0)),
+            color: const Color(0xFFF6F6F8),
+            border: Border.all(color: const Color(0xFFE7E7EB)),
             borderRadius: BorderRadius.circular(10),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: TextFormField(
             controller: controller,
-            style: const TextStyle(fontSize: 14, color: Color(0xFF1A2233), fontWeight: FontWeight.w500),
+            style: const TextStyle(fontSize: 14, color: Color(0xFF121214), fontWeight: FontWeight.w500),
             keyboardType: keyboardType,
             validator: validator,
             decoration: InputDecoration(
-              prefixIcon: Icon(prefixIcon, size: 18, color: const Color(0xFF6B7785)),
+              prefixIcon: Icon(prefixIcon, size: 18, color: const Color(0xFF6C6F79)),
               prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 20),
               hintText: hint,
               hintStyle: const TextStyle(color: Color(0xFFB0B8C4), fontSize: 13),

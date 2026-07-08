@@ -83,7 +83,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen> with SingleTi
               shape: BoxShape.circle,
             ),
             child: IconButton(
-              icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF1A2233), size: 20),
+              icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF121214), size: 20),
               onPressed: () {
                 Navigator.popUntil(context, (route) => route.isFirst);
               },
@@ -97,12 +97,13 @@ class _FindingDriverScreenState extends State<FindingDriverScreen> with SingleTi
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 10),
-              
-              // Pulsing Animation Circle
-              Expanded(
+              const Spacer(),
+              // Pulsing Animation Circle (Radar)
+              SizedBox(
+                height: 180,
                 child: Center(
                   child: AnimatedBuilder(
                     animation: _animationController,
@@ -112,30 +113,47 @@ class _FindingDriverScreenState extends State<FindingDriverScreen> with SingleTi
                         alignment: Alignment.center,
                         children: [
                           Container(
-                            width: 140 + (60 * val),
-                            height: 140 + (60 * val),
+                            width: 120 + (60 * val),
+                            height: 120 + (60 * val),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1A3D6B).withValues(alpha: 0.04 * (1.0 - val)),
+                              border: Border.all(
+                                color: const Color(0xFFE31C2E).withOpacity(0.04 * (1.0 - val)),
+                                width: 1,
+                              ),
                               shape: BoxShape.circle,
                             ),
                           ),
                           Container(
-                            width: 90 + (50 * val),
-                            height: 90 + (50 * val),
+                            width: 90 + (40 * val),
+                            height: 90 + (40 * val),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1A3D6B).withValues(alpha: 0.1 * (1.0 - val)),
+                              border: Border.all(
+                                color: const Color(0xFFE31C2E).withOpacity(0.08 * (1.0 - val)),
+                                width: 1,
+                              ),
                               shape: BoxShape.circle,
                             ),
                           ),
                           Container(
-                            width: 80,
-                            height: 80,
+                            width: 70 + (20 * val),
+                            height: 70 + (20 * val),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: const Color(0xFFE31C2E).withOpacity(0.15 * (1.0 - val)),
+                                width: 1,
+                              ),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          Container(
+                            width: 60,
+                            height: 60,
                             decoration: const BoxDecoration(
-                              color: Color(0xFF1A3D6B),
+                              color: Color(0xFF121214), // var(--black)
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Color(0x201A3D6B),
+                                  color: Color(0x33121214),
                                   offset: Offset(0, 4),
                                   blurRadius: 12,
                                 ),
@@ -144,7 +162,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen> with SingleTi
                             child: const Icon(
                               Icons.local_shipping_rounded,
                               color: Colors.white,
-                              size: 36,
+                              size: 28,
                             ),
                           ),
                         ],
@@ -154,109 +172,91 @@ class _FindingDriverScreenState extends State<FindingDriverScreen> with SingleTi
                 ),
               ),
 
-              Column(
-                children: [
-                  const Text(
-                    'Finding Nearby Driver',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A2233),
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Connecting you with the best driver',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF6B7785),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Animated dots
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(5, (index) {
-                      return AnimatedBuilder(
-                        animation: _animationController,
-                        builder: (context, child) {
-                          final currentActive = (_animationController.value * 5).floor();
-                          final isActive = index == currentActive;
-                          return Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: isActive
-                                  ? const Color(0xFF1A3D6B)
-                                  : const Color(0xFFE2E8F0),
-                              shape: BoxShape.circle,
-                            ),
-                          );
-                        },
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Details card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF7F8FA),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: Column(
-                      children: [
-                        _buildDetailRow('Booking ID', widget.booking.bookingId),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 10.0),
-                          child: Divider(height: 1, color: Color(0xFFE2E8F0)),
-                        ),
-                        _buildDetailRow('Vehicle Type', widget.vehicleName),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 10.0),
-                          child: Divider(height: 1, color: Color(0xFFE2E8F0)),
-                        ),
-                        _buildDetailRow(
-                          'Total Fare',
-                          '₹${widget.booking.totalFare.toStringAsFixed(1)}',
-                          valueColor: const Color(0xFF1A3D6B),
-                          isBoldValue: true,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Cancel Search button
-                  _isCancelling
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF97316)),
-                          ),
-                        )
-                      : TextButton(
-                          onPressed: _handleCancelBooking,
-                          style: TextButton.styleFrom(
-                            foregroundColor: const Color(0xFFF97316),
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          ),
-                          child: const Text(
-                            'Cancel Search',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                  const SizedBox(height: 16),
-                ],
+              const SizedBox(height: 32),
+              
+              const Text(
+                'Finding nearby drivers…',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF121214),
+                  letterSpacing: -0.5,
+                ),
               ),
+              const SizedBox(height: 6),
+              Text(
+                'Matching you with the best ${widget.vehicleName} driver nearby',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF6C6F79),
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: 22),
+
+              // Details card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE7E7EB)), // var(--border)
+                ),
+                child: Column(
+                  children: [
+                    _buildDetailRow('Booking ref', widget.booking.bookingId),
+                    const SizedBox(height: 12),
+                    _buildDetailRow('Vehicle', widget.vehicleName),
+                    const SizedBox(height: 12),
+                    _buildDetailRow(
+                      'Est. Fare',
+                      '₹${widget.booking.totalFare.toStringAsFixed(2)}',
+                      isMono: true,
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Cancel booking button
+              _isCancelling
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(14.0),
+                        child: SizedBox(
+                          width: 24, 
+                          height: 24, 
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
+                          ),
+                        ),
+                      ),
+                    )
+                  : SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: OutlinedButton(
+                        onPressed: _handleCancelBooking,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFE31C2E), // var(--red)
+                          side: const BorderSide(color: Color(0xFFE31C2E)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancel booking',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+              const Spacer(),
             ],
           ),
         ),
@@ -269,6 +269,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen> with SingleTi
     String value, {
     Color? valueColor,
     bool isBoldValue = false,
+    bool isMono = false,
   }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -278,7 +279,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen> with SingleTi
           style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF6B7785),
+            color: Color(0xFF6C6F79),
           ),
         ),
         Text(
@@ -286,7 +287,8 @@ class _FindingDriverScreenState extends State<FindingDriverScreen> with SingleTi
           style: TextStyle(
             fontSize: 13,
             fontWeight: isBoldValue ? FontWeight.bold : FontWeight.w600,
-            color: valueColor ?? const Color(0xFF1A2233),
+            color: valueColor ?? const Color(0xFF121214),
+            fontFamily: isMono ? 'Menlo' : null,
           ),
         ),
       ],

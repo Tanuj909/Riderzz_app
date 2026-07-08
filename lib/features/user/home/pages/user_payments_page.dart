@@ -15,7 +15,7 @@ class UserPaymentsPage extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF1A3D6B), Color(0xFF2563A8)],
+                colors: [Color(0xFFE31C2E), Color(0xFFAE1220)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -59,7 +59,7 @@ class UserPaymentsPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          const Text('Recent Transactions', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF1A2233))),
+          const Text('Recent Transactions', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF121214))),
           const SizedBox(height: 10),
 
           // Transaction list
@@ -96,7 +96,7 @@ class UserPaymentsPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFE9ECF0))),
+        border: Border(bottom: BorderSide(color: Color(0xFFE7E7EB))),
       ),
       child: Row(
         children: [
@@ -104,13 +104,13 @@ class UserPaymentsPage extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: isCredit ? const Color(0xFFE6F7F2) : const Color(0xFFFEF2F2),
+              color: isCredit ? const Color(0xFFE7F7EF) : const Color(0xFFFDEBEC),
               borderRadius: BorderRadius.circular(10),
             ),
             alignment: Alignment.center,
             child: Icon(
               isCredit ? Icons.add_circle_outline_rounded : Icons.remove_circle_outline_rounded,
-              color: isCredit ? const Color(0xFF0F9B6E) : Colors.redAccent,
+              color: isCredit ? const Color(0xFF1C9A5B) : Colors.redAccent,
               size: 18,
             ),
           ),
@@ -119,9 +119,9 @@ class UserPaymentsPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF1A2233))),
+                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF121214))),
                 const SizedBox(height: 2),
-                Text(date, style: const TextStyle(fontSize: 11, color: Color(0xFF6B7785))),
+                Text(date, style: const TextStyle(fontSize: 11, color: Color(0xFF6C6F79))),
               ],
             ),
           ),
@@ -130,7 +130,7 @@ class UserPaymentsPage extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: isCredit ? const Color(0xFF0F9B6E) : Colors.redAccent,
+              color: isCredit ? const Color(0xFF1C9A5B) : Colors.redAccent,
             ),
           ),
         ],

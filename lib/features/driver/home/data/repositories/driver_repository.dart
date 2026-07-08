@@ -17,8 +17,16 @@ class DriverRepository {
     return await _remoteDataSource.getDriverWallet();
   }
 
-  Future<DriverWalletModel> rechargeDriverWallet(double amount) async {
-    return await _remoteDataSource.rechargeDriverWallet(amount);
+  Future<DriverWalletModel> createDriverWallet() async {
+    return await _remoteDataSource.createDriverWallet();
+  }
+
+  Future<RechargeInitiateResponse> initiateWalletRecharge(double amount) async {
+    return await _remoteDataSource.initiateWalletRecharge(amount);
+  }
+
+  Future<void> verifyWalletRecharge(int rechargeId, String orderId, String paymentId, String signature) async {
+    await _remoteDataSource.verifyWalletRecharge(rechargeId, orderId, paymentId, signature);
   }
 
   Future<bool> goOnline() async {
@@ -63,7 +71,10 @@ class DriverRepository {
     return await _remoteDataSource.addBankAccount(data);
   }
 
-  Future<BankAccountModel> updateBankAccount(int id, Map<String, dynamic> data) async {
+  Future<BankAccountModel> updateBankAccount(
+    int id,
+    Map<String, dynamic> data,
+  ) async {
     return await _remoteDataSource.updateBankAccount(id, data);
   }
 

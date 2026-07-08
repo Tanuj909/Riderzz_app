@@ -54,7 +54,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFE8F0FB),
+                                color: const Color(0xFFFDEBEC),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
@@ -70,13 +70,13 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 17,
-                                  color: Color(0xFF1A2233),
+                                  color: Color(0xFF121214),
                                 ),
                               ),
                             ),
                             IconButton(
                               onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext),
-                              icon: const Icon(Icons.close_rounded, color: Color(0xFF6B7785)),
+                              icon: const Icon(Icons.close_rounded, color: Color(0xFF6C6F79)),
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                             ),
@@ -88,7 +88,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                         TextFormField(
                           controller: holderNameController,
                           enabled: !isSubmitting,
-                          style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                          style: const TextStyle(color: Color(0xFF121214), fontSize: 14),
                           decoration: _buildInputDecoration('Account Holder Name', Icons.person_outline_rounded),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
@@ -103,7 +103,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                         TextFormField(
                           controller: bankNameController,
                           enabled: !isSubmitting,
-                          style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                          style: const TextStyle(color: Color(0xFF121214), fontSize: 14),
                           decoration: _buildInputDecoration('Bank Name', Icons.account_balance_outlined),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
@@ -119,7 +119,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                           controller: accountNumberController,
                           enabled: !isSubmitting,
                           keyboardType: TextInputType.number,
-                          style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                          style: const TextStyle(color: Color(0xFF121214), fontSize: 14),
                           decoration: _buildInputDecoration('Account Number', Icons.numbers_rounded),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
@@ -138,7 +138,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                           controller: ifscController,
                           enabled: !isSubmitting,
                           textCapitalization: TextCapitalization.characters,
-                          style: const TextStyle(color: Color(0xFF1A2233), fontSize: 14),
+                          style: const TextStyle(color: Color(0xFF121214), fontSize: 14),
                           decoration: _buildInputDecoration('IFSC Code', Icons.qr_code_2_rounded),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
@@ -315,7 +315,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                   SizedBox(width: 8),
                   Text(
                     'Delete Account',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A2233)),
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF121214)),
                   ),
                 ],
               ),
@@ -326,7 +326,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
               actions: [
                 TextButton(
                   onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext),
-                  child: const Text('Cancel', style: TextStyle(color: Color(0xFF6B7785))),
+                  child: const Text('Cancel', style: TextStyle(color: Color(0xFF6C6F79))),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -373,7 +373,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                                       SizedBox(width: 8),
                                       Text(
                                         'Failed to Delete',
-                                        style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A2233)),
+                                        style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF121214)),
                                       ),
                                     ],
                                   ),
@@ -414,8 +414,8 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
   InputDecoration _buildInputDecoration(String labelText, IconData icon) {
     return InputDecoration(
       labelText: labelText,
-      labelStyle: const TextStyle(color: Color(0xFF6B7785), fontSize: 13),
-      prefixIcon: Icon(icon, color: const Color(0xFF1A3D6B), size: 18),
+      labelStyle: const TextStyle(color: Color(0xFF6C6F79), fontSize: 13),
+      prefixIcon: Icon(icon, color: const Color(0xFFE31C2E), size: 18),
       filled: true,
       fillColor: const Color(0xFFF9FAFB),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -450,7 +450,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
     final bankAccounts = driverProvider.bankAccounts;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: const Color(0xFFF6F6F8),
       body: RefreshIndicator(
         onRefresh: () => context.read<DriverHomeProvider>().fetchBankAccounts(),
         color: const Color(0xFF1E3A8A),
@@ -462,7 +462,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
               const SliverFillRemaining(
                 child: Center(
                   child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A3D6B)),
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
                   ),
                 ),
               )
@@ -484,7 +484,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                         const SizedBox(height: 24),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1A3D6B),
+                            backgroundColor: const Color(0xFFE31C2E),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             elevation: 0,
@@ -513,7 +513,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                           const Text(
                             'Your Bank Accounts',
                             style: TextStyle(
-                              color: Color(0xFF1A2233),
+                              color: Color(0xFF121214),
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -522,7 +522,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                           Text(
                             'Manage payout endpoints (${bankAccounts.length} added)',
                             style: const TextStyle(
-                              color: Color(0xFF6B7785),
+                              color: Color(0xFF6C6F79),
                               fontSize: 12,
                             ),
                           ),
@@ -569,12 +569,12 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                         const SizedBox(height: 16),
                         const Text(
                           'No bank accounts configured yet.',
-                          style: TextStyle(color: Color(0xFF1A2233), fontWeight: FontWeight.bold, fontSize: 15),
+                          style: TextStyle(color: Color(0xFF121214), fontWeight: FontWeight.bold, fontSize: 15),
                         ),
                         const SizedBox(height: 6),
                         const Text(
                           'Add an account to start receiving your wallet payouts.',
-                          style: TextStyle(color: Color(0xFF6B7785), fontSize: 12),
+                          style: TextStyle(color: Color(0xFF6C6F79), fontSize: 12),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -596,12 +596,12 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: isPrimary ? const Color(0xFF0F9B6E) : const Color(0xFFE9ECF0),
+                              color: isPrimary ? const Color(0xFFD90429) : const Color(0xFFE7E7EB),
                               width: isPrimary ? 1.5 : 1,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF1A2233).withValues(alpha: 0.03),
+                                color: const Color(0xFF121214).withValues(alpha: 0.03),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -619,7 +619,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                                     child: Icon(
                                       Icons.check_circle_rounded,
                                       size: 100,
-                                      color: const Color(0xFFE6F7F2).withValues(alpha: 0.5),
+                                      color: const Color(0xFFFDEBEC).withValues(alpha: 0.5),
                                     ),
                                   ),
                                 Padding(
@@ -641,7 +641,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                                                   style: const TextStyle(
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.bold,
-                                                    color: Color(0xFF1A2233),
+                                                    color: Color(0xFF121214),
                                                   ),
                                                 ),
                                                 const SizedBox(height: 2),
@@ -649,7 +649,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                                                   'IFSC: ${account.ifscCode}',
                                                   style: const TextStyle(
                                                     fontSize: 11,
-                                                    color: Color(0xFF6B7785),
+                                                    color: Color(0xFF6C6F79),
                                                     fontWeight: FontWeight.w600,
                                                   ),
                                                 ),
@@ -660,19 +660,19 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                                             Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                               decoration: BoxDecoration(
-                                                color: const Color(0xFFE6F7F2),
+                                                color: const Color(0xFFFDEBEC),
                                                 borderRadius: BorderRadius.circular(20),
-                                                border: Border.all(color: const Color(0xFF0F9B6E), width: 0.8),
+                                                border: Border.all(color: const Color(0xFFD90429), width: 0.8),
                                               ),
                                               child: Row(
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: const [
-                                                  Icon(Icons.check_circle_rounded, size: 10, color: Color(0xFF0F9B6E)),
+                                                  Icon(Icons.check_circle_rounded, size: 10, color: Color(0xFFD90429)),
                                                   SizedBox(width: 4),
                                                   Text(
                                                     'PRIMARY',
                                                     style: TextStyle(
-                                                      color: Color(0xFF0F9B6E),
+                                                      color: Color(0xFFD90429),
                                                       fontSize: 8,
                                                       fontWeight: FontWeight.bold,
                                                     ),
@@ -690,7 +690,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                                         style: const TextStyle(
                                           fontSize: 19,
                                           fontWeight: FontWeight.bold,
-                                          color: Color(0xFF1A2233),
+                                          color: Color(0xFF121214),
                                           letterSpacing: 1.0,
                                         ),
                                       ),

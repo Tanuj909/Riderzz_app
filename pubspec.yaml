@@ -45,6 +45,8 @@ dependencies:
   geolocator: ^14.0.2
   jwt_decoder: ^2.0.1
   image_picker: ^1.2.2
+  google_fonts: ^8.1.0
+  razorpay_flutter: ^1.4.5
 
 dev_dependencies:
   flutter_test:
