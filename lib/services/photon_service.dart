@@ -9,9 +9,12 @@ class PhotonService {
       : _dio = dio ??
             Dio(
               BaseOptions(
-                baseUrl: 'https://photon.komoot.io/api/',
                 connectTimeout: const Duration(seconds: 10),
                 receiveTimeout: const Duration(seconds: 10),
+                headers: {
+                  'User-Agent': 'RiderzzApp/1.0 (Flutter; Dart)',
+                  'Accept': 'application/json',
+                },
               ),
             );
 
@@ -22,13 +25,15 @@ class PhotonService {
 
     try {
       final response = await _dio.get(
-        '',
+        'https://photon.komoot.io/api/',
         queryParameters: {
           'q': query,
           'limit': 8,
           'lang': 'en',
         },
       );
+
+      debugPrint('PhotonService: Status ${response.statusCode}, features count: ${(response.data is Map && response.data.containsKey('features')) ? (response.data['features'] as List).length : 'N/A'}');
 
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;

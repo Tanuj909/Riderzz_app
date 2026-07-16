@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/models/photon_place.dart';
@@ -46,8 +47,10 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
   }
 
   void _onSearchChanged(String query) {
+    debugPrint('SearchScreen: _onSearchChanged called with: "$query"');
     if (query.trim().length < 3) {
-      _debouncer.dispose(); // cancel any pending search
+      // Just cancel any pending timer, don't dispose the debouncer
+      _debouncer.run(() {}); // replace pending action with no-op
       setState(() {
         _suggestions = [];
         _isLoading = false;
@@ -57,10 +60,12 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
       return;
     }
 
+    debugPrint('SearchScreen: Scheduling debounced search for: "$query"');
     _debouncer.run(() => _performSearch(query));
   }
 
   Future<void> _performSearch(String query) async {
+    debugPrint('SearchScreen: _performSearch called for: "$query"');
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -69,6 +74,7 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
 
     try {
       final results = await _locationRepository.search(query);
+      debugPrint('SearchScreen: Got ${results.length} results for: "$query"');
 
       // Verify that this response is still for the most recent query
       if (_activeSearchQuery == query) {
@@ -76,8 +82,11 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
           _suggestions = results;
           _isLoading = false;
         });
+      } else {
+        debugPrint('SearchScreen: Stale response for "$query", active is "$_activeSearchQuery"');
       }
     } catch (e) {
+      debugPrint('SearchScreen: Error during search: $e');
       if (_activeSearchQuery == query) {
         setState(() {
           _suggestions = [];
