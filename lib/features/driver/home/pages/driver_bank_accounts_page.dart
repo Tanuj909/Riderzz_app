@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/core/models/bank_account_model.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 
@@ -59,7 +60,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                               ),
                               child: Icon(
                                 isEdit ? Icons.edit_note_rounded : Icons.account_balance_rounded,
-                                color: const Color(0xFF1E3A8A),
+                                color: const Color(0xFFD90429),
                                 size: 22,
                               ),
                             ),
@@ -167,7 +168,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                             'Wallet payouts will go to this account.',
                             style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
                           ),
-                          activeThumbColor: const Color(0xFF1E3A8A),
+                          activeThumbColor: const Color(0xFFD90429),
                           value: isPrimary,
                           onChanged: isSubmitting
                               ? null
@@ -204,7 +205,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                             Expanded(
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF1E3A8A),
+                                  backgroundColor: const Color(0xFFD90429),
                                   foregroundColor: Colors.white,
                                   elevation: 0,
                                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -384,7 +385,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(ctx),
-                                      child: const Text('OK', style: TextStyle(color: Color(0xFF1E3A8A), fontWeight: FontWeight.bold)),
+                                      child: const Text('OK', style: TextStyle(color: Color(0xFFD90429), fontWeight: FontWeight.bold)),
                                     ),
                                   ],
                                 ),
@@ -425,7 +426,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF1E3A8A), width: 1.5),
+        borderSide: const BorderSide(color: Color(0xFFD90429), width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -451,9 +452,33 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F8),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF121214), size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Bank Accounts',
+          style: GoogleFonts.outfit(
+            color: const Color(0xFF121214),
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline_rounded, color: Color(0xFFD90429), size: 22),
+            onPressed: () => _showAddEditAccountDialog(context),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: () => context.read<DriverHomeProvider>().fetchBankAccounts(),
-        color: const Color(0xFF1E3A8A),
+        color: const Color(0xFFD90429),
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
@@ -500,47 +525,33 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                 ),
               )
             else ...[
-              // Header description block
+              // Info banner description block instead of duplicated header and add new button
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Your Bank Accounts',
-                            style: TextStyle(
-                              color: Color(0xFF121214),
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Manage payout endpoints (${bankAccounts.length} added)',
-                            style: const TextStyle(
-                              color: Color(0xFF6C6F79),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF5F5),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFFDEBEC)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline_rounded, color: Color(0xFFD90429), size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Wallet payouts will be sent to your primary bank account automatically.',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: const Color(0xFFD90429),
                               fontSize: 12,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        ],
-                      ),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1E3A8A),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         ),
-                        onPressed: () => _showAddEditAccountDialog(context),
-                        icon: const Icon(Icons.add_rounded, size: 18),
-                        label: const Text('Add New', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -729,7 +740,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                                           Row(
                                             children: [
                                               IconButton(
-                                                icon: const Icon(Icons.edit_outlined, size: 20, color: Color(0xFF1E3A8A)),
+                                                icon: const Icon(Icons.edit_outlined, size: 20, color: Color(0xFFD90429)),
                                                 onPressed: () => _showAddEditAccountDialog(context, account: account),
                                                 tooltip: 'Edit details',
                                                 constraints: const BoxConstraints(),

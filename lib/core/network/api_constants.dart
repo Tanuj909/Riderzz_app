@@ -44,4 +44,5 @@ class ApiConstants {
   static const String driverBookings = '/driver/bookings';
   static const String driverPendingBroadcasts = '/driver/bookings/broadcasts/pending';
   static const String bookingsCurrent = '/bookings/current';
+  static const String driverEarnings = '/driver/earnings';
 }

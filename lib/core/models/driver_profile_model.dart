@@ -25,6 +25,9 @@ class DriverProfileModel {
   final String? dob;
   final String? approvedAt;
   final String vehicleTypeName;
+  final String email;
+  final String? profileImage;
+  final String? upiId;
 
   DriverProfileModel({
     required this.id,
@@ -53,6 +56,9 @@ class DriverProfileModel {
     this.dob,
     this.approvedAt,
     this.vehicleTypeName = '',
+    this.email = '',
+    this.profileImage,
+    this.upiId,
   });
 
   factory DriverProfileModel.fromJson(Map<String, dynamic> json) {
@@ -105,6 +111,9 @@ class DriverProfileModel {
       dob: json['dob'] as String?,
       approvedAt: json['approvedAt'] as String?,
       vehicleTypeName: json['vehicleTypeName'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      profileImage: json['profileImage'] as String?,
+      upiId: json['upiId'] as String?,
     );
   }
 }

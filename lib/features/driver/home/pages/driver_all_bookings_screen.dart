@@ -72,9 +72,11 @@ class _DriverAllBookingsScreenState extends State<DriverAllBookingsScreen> {
         return const Color(0xFFB9700A);
       case 'ACCEPTED':
       case 'DRIVER_ASSIGNED':
+      case 'DRIVER_ARRIVED':
       case 'OTP_VERIFIED':
       case 'GOODS_PICKED_UP':
       case 'IN_TRANSIT':
+      case 'DRIVER_ARRIVED_DROP':
         return const Color(0xFF1C9A5B);
       case 'COMPLETED':
       case 'DELIVERED':

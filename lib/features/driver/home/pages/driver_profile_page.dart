@@ -5,6 +5,8 @@ import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.
 import 'package:riderzz_app/features/driver/home/pages/driver_bank_accounts_page.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_all_bookings_screen.dart';
 import 'package:riderzz_app/core/services/location_tracking_service.dart';
+import 'package:riderzz_app/features/driver/profile/driver_profile_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class DriverProfilePage extends StatelessWidget {
   const DriverProfilePage({super.key});
@@ -153,6 +155,81 @@ class DriverProfilePage extends StatelessWidget {
                         ],
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    // Action Buttons Column on the Right side
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const DriverProfileScreen(startInEditMode: true),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF0F1),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFFFDEBEC)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.edit_rounded, size: 10, color: Color(0xFFD90429)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Edit',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFFD90429),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const DriverProfileScreen(expandDocuments: true),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF0F1),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFFFDEBEC)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.cloud_upload_rounded, size: 10, color: Color(0xFFD90429)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Upload',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFFD90429),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -173,8 +250,15 @@ class DriverProfilePage extends StatelessWidget {
                   children: [
                     _buildNavTile(
                       icon: Icons.person_outline_rounded,
-                      title: 'Edit profile',
-                      onTap: () {},
+                      title: 'My Profile',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const DriverProfileScreen(),
+                          ),
+                        );
+                      },
                       showBorder: true,
                     ),
                     _buildNavTile(

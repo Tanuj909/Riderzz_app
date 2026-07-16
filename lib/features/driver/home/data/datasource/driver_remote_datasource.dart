@@ -7,6 +7,7 @@ import 'package:riderzz_app/core/models/driver_wallet_model.dart';
 import 'package:riderzz_app/core/models/available_vehicle_model.dart';
 import 'package:riderzz_app/core/models/bank_account_model.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
+import 'package:riderzz_app/core/models/driver_earnings_model.dart';
 
 class DriverRemoteDataSource {
   final ApiClient _apiClient;
@@ -126,6 +127,7 @@ class DriverRemoteDataSource {
     required String bio,
     required String gender,
     required String dob,
+    String? upiId,
   }) async {
     final response = await _apiClient.put(
       ApiConstants.driverProfile,
@@ -134,6 +136,7 @@ class DriverRemoteDataSource {
         'bio': bio,
         'gender': gender,
         'dob': dob,
+        if (upiId != null) 'upiId': upiId,
       },
     );
     final Map<String, dynamic> resBody = Map<String, dynamic>.from(
@@ -292,5 +295,12 @@ class DriverRemoteDataSource {
       list = rawData['content'] as List;
     }
     return list.map((json) => BookingModel.fromJson(Map<String, dynamic>.from(json))).toList();
+  }
+
+  Future<DriverEarningsModel> getDriverEarnings() async {
+    final response = await _apiClient.get(ApiConstants.driverEarnings);
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
+    return DriverEarningsModel.fromJson(data);
   }
 }

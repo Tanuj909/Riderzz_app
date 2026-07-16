@@ -45,14 +45,14 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
       if (widget.initialData != null && widget.initialData!.isNotEmpty) {
         // Restore from previous input
         _pickupController.text = widget.initialData!['pickupAddressText'] ?? '';
-        final pickupLat = widget.initialData!['pickupLat'];
-        final pickupLng = widget.initialData!['pickupLng'];
+        final pickupLat = widget.initialData!['pickupLatitude'];
+        final pickupLng = widget.initialData!['pickupLongitude'];
         if (pickupLat != null) _pickupLatitude = (pickupLat as num).toDouble();
         if (pickupLng != null) _pickupLongitude = (pickupLng as num).toDouble();
 
         _dropController.text = widget.initialData!['dropAddressText'] ?? '';
-        final dropLat = widget.initialData!['dropLat'];
-        final dropLng = widget.initialData!['dropLng'];
+        final dropLat = widget.initialData!['dropLatitude'];
+        final dropLng = widget.initialData!['dropLongitude'];
         if (dropLat != null) _dropLatitude = (dropLat as num).toDouble();
         if (dropLng != null) _dropLongitude = (dropLng as num).toDouble();
 
@@ -60,6 +60,7 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
         _selectedWeight = widget.initialData!['weightKg']?.toString() ?? '0-5 Kg';
         _goodsDescriptionController.text = widget.initialData!['goodsDescription'] ?? '';
         setState(() {});
+
       } else if (widget.initialRoute != null) {
         final pickup = widget.initialRoute!['pickupAddress'];
         final drop = widget.initialRoute!['dropAddress'];

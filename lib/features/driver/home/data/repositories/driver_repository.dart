@@ -4,6 +4,7 @@ import 'package:riderzz_app/core/models/available_vehicle_model.dart';
 import 'package:riderzz_app/core/models/bank_account_model.dart';
 import 'package:riderzz_app/features/driver/home/data/datasource/driver_remote_datasource.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
+import 'package:riderzz_app/core/models/driver_earnings_model.dart';
 
 class DriverRepository {
   final DriverRemoteDataSource _remoteDataSource;
@@ -51,12 +52,14 @@ class DriverRepository {
     required String bio,
     required String gender,
     required String dob,
+    String? upiId,
   }) async {
     return await _remoteDataSource.updateDriverProfile(
       licenseNumber: licenseNumber,
       bio: bio,
       gender: gender,
       dob: dob,
+      upiId: upiId,
     );
   }
 
@@ -117,5 +120,9 @@ class DriverRepository {
 
   Future<List<BookingModel>> getPendingBroadcasts() async {
     return await _remoteDataSource.fetchPendingBroadcasts();
+  }
+
+  Future<DriverEarningsModel> getDriverEarnings() async {
+    return await _remoteDataSource.getDriverEarnings();
   }
 }

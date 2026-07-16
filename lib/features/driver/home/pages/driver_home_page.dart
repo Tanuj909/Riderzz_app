@@ -7,6 +7,7 @@ import 'package:riderzz_app/core/services/location_tracking_service.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_booking_details_screen.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_all_bookings_screen.dart';
+import 'package:riderzz_app/features/driver/profile/driver_profile_screen.dart';
 
 class DriverHomePage extends StatefulWidget {
   const DriverHomePage({super.key});
@@ -21,6 +22,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DriverHomeProvider>().fetchHomeBookings();
+      context.read<DriverHomeProvider>().fetchDriverEarnings();
     });
   }
 
@@ -56,6 +58,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
         onRefresh: () async {
           await driverProvider.fetchDriverProfile();
           await driverProvider.fetchHomeBookings();
+          await driverProvider.fetchDriverEarnings();
           await locationProvider.initialize();
         },
         child: SingleChildScrollView(
@@ -218,31 +221,41 @@ class _DriverHomePageState extends State<DriverHomePage> {
                   ),
                   const SizedBox(width: 12),
                   // Avatar Profile Button
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFFD90429), Color(0xFF900018)], // --red to --red-dark
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFD90429).withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const DriverProfileScreen(),
                         ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      _getInitials(driverName),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
+                      );
+                    },
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFFD90429), Color(0xFF900018)], // --red to --red-dark
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFD90429).withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        _getInitials(driverName),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                   ),
@@ -277,16 +290,44 @@ class _DriverHomePageState extends State<DriverHomePage> {
                         'Today\'s Earnings',
                         style: TextStyle(
                           color: Color(0xFF6C6F79),
-                          fontSize: 11,
+                          fontSize: 10,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '₹1,450', // Mock data
+                        '₹${driverProvider.earnings?.todayEarnings.toStringAsFixed(2) ?? '0.00'}',
                         style: const TextStyle(
                           color: Color(0xFF121214),
-                          fontSize: 18,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  height: 32,
+                  width: 1,
+                  color: const Color(0xFFE1E1E6),
+                ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Total Earnings',
+                        style: TextStyle(
+                          color: Color(0xFF6C6F79),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '₹${driverProvider.earnings?.totalEarnings.toStringAsFixed(2) ?? '0.00'}',
+                        style: const TextStyle(
+                          color: Color(0xFF121214),
+                          fontSize: 16,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -305,16 +346,16 @@ class _DriverHomePageState extends State<DriverHomePage> {
                         'Trips Completed',
                         style: TextStyle(
                           color: Color(0xFF6C6F79),
-                          fontSize: 11,
+                          fontSize: 10,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        totalTrips.toString(),
+                        '${driverProvider.earnings?.totalCompletedTrips ?? 0}',
                         style: const TextStyle(
                           color: Color(0xFFD90429),
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: FontWeight.w800,
                         ),
                       ),

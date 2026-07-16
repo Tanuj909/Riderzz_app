@@ -1,3 +1,32 @@
+class DriverInfo {
+  final int userId;
+  final String fullName;
+  final String phone;
+  final String? email;
+  final double rating;
+  final String? licenseNumber;
+
+  DriverInfo({
+    required this.userId,
+    required this.fullName,
+    required this.phone,
+    this.email,
+    required this.rating,
+    this.licenseNumber,
+  });
+
+  factory DriverInfo.fromJson(Map<String, dynamic> json) {
+    return DriverInfo(
+      userId: json['userId'] as int? ?? 0,
+      fullName: json['fullName'] as String? ?? 'N/A',
+      phone: json['phone'] as String? ?? 'N/A',
+      email: json['email'] as String?,
+      rating: (json['rating'] as num? ?? 0.0).toDouble(),
+      licenseNumber: json['licenseNumber'] as String?,
+    );
+  }
+}
+
 class BookingModel {
   final int id;
   final String bookingId;
@@ -22,6 +51,7 @@ class BookingModel {
   final double? dropLongitude;
   final double? estimatedDistanceKm;
   final String? routePolyline;
+  final DriverInfo? driver;
 
   BookingModel({
     required this.id,
@@ -47,6 +77,7 @@ class BookingModel {
     this.dropLongitude,
     this.estimatedDistanceKm,
     this.routePolyline,
+    this.driver,
   });
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
@@ -94,6 +125,7 @@ class BookingModel {
       dropLongitude: dropObj != null ? (dropObj['longitude'] as num?)?.toDouble() : null,
       estimatedDistanceKm: (json['estimatedDistanceKm'] as num?)?.toDouble(),
       routePolyline: json['routePolyline'] as String? ?? json['route_polyline'] as String?,
+      driver: driverObj != null ? DriverInfo.fromJson(driverObj) : null,
     );
   }
 }

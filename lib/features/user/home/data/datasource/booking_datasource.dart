@@ -62,4 +62,10 @@ class BookingRemoteDataSource {
     }
     return list.map((json) => BookingModel.fromJson(Map<String, dynamic>.from(json))).toList();
   }
+
+  Future<Map<String, dynamic>> fetchBookingOtp(int id) async {
+    final response = await _apiClient.get('${ApiConstants.bookings}/$id/otp');
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    return Map<String, dynamic>.from(resBody['data'] ?? {});
+  }
 }

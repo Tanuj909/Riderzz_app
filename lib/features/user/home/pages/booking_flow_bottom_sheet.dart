@@ -31,7 +31,8 @@ class _BookingFlowBottomSheetState extends State<BookingFlowBottomSheet> {
     'Confirm booking',
   ];
 
-  void _nextStep(Map<String, dynamic> updatedData) {
+  void _nextStep(int fromStep, Map<String, dynamic> updatedData) {
+    if (fromStep != _currentStep) return;
     setState(() {
       _bookingData = updatedData;
       if (_currentStep < 3) {
@@ -185,20 +186,20 @@ class _BookingFlowBottomSheetState extends State<BookingFlowBottomSheet> {
           key: const ValueKey(0),
           initialRoute: widget.initialRoute,
           initialData: _bookingData,
-          onContinue: _nextStep,
+          onContinue: (data) => _nextStep(0, data),
         );
       case 1:
         return ChooseVehicleView(
           key: const ValueKey(1),
           bookingData: _bookingData,
-          onNext: _nextStep,
+          onNext: (data) => _nextStep(1, data),
           onBack: () => setState(() => _currentStep--),
         );
       case 2:
         return FareEstimateView(
           key: const ValueKey(2),
           bookingData: _bookingData,
-          onNext: _nextStep,
+          onNext: (data) => _nextStep(2, data),
           onBack: () => setState(() => _currentStep--),
         );
       case 3:

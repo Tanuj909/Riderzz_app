@@ -51,51 +51,65 @@ class _UserBookingsPageState extends State<UserBookingsPage> {
               }
 
               if (provider.errorMessage != null && provider.bookings.isEmpty) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline_rounded, color: Colors.black, size: 48),
-                        const SizedBox(height: 12),
-                        Text(
-                          provider.errorMessage!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: Color(0xFF4A5568), fontSize: 14),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
-                          onPressed: () => provider.fetchBookings(),
-                          child: const Text('Retry', style: TextStyle(color: Colors.white)),
-                        ),
-                      ],
+                return RefreshIndicator(
+                  onRefresh: () => provider.fetchBookings(),
+                  color: Colors.black,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Container(
+                      height: MediaQuery.of(context).size.height * 0.6,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.error_outline_rounded, color: Colors.black, size: 48),
+                          const SizedBox(height: 12),
+                          Text(
+                            provider.errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Color(0xFF4A5568), fontSize: 14),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
+                            onPressed: () => provider.fetchBookings(),
+                            child: const Text('Retry', style: TextStyle(color: Colors.white)),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
               }
 
               if (provider.bookings.isEmpty) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.inventory_2_outlined, color: Color(0xFFB0B8C4), size: 48),
-                        SizedBox(height: 12),
-                        Text(
-                          'No Bookings Yet',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF121214), fontSize: 15),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Your ride history will appear here once you make a booking.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Color(0xFF6C6F79), fontSize: 12),
-                        ),
-                      ],
+                return RefreshIndicator(
+                  onRefresh: () => provider.fetchBookings(),
+                  color: Colors.black,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Container(
+                      height: MediaQuery.of(context).size.height * 0.6,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.inventory_2_outlined, color: Color(0xFFB0B8C4), size: 48),
+                          SizedBox(height: 12),
+                          Text(
+                            'No Bookings Yet',
+                            style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF121214), fontSize: 15),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Your ride history will appear here once you make a booking.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Color(0xFF6C6F79), fontSize: 12),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );

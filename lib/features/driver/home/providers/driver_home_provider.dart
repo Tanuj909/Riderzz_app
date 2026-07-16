@@ -6,6 +6,7 @@ import 'package:riderzz_app/core/models/bank_account_model.dart';
 import 'package:riderzz_app/core/network/api_exception.dart';
 import 'package:riderzz_app/features/driver/home/data/repositories/driver_repository.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
+import 'package:riderzz_app/core/models/driver_earnings_model.dart';
 
 class DriverHomeProvider extends ChangeNotifier {
   final DriverRepository _driverRepository;
@@ -32,6 +33,11 @@ class DriverHomeProvider extends ChangeNotifier {
   bool _isBookingsLoading = false;
   String? _bookingsError;
 
+  // Earnings properties
+  DriverEarningsModel? _earnings;
+  bool _isEarningsLoading = false;
+  String? _earningsError;
+
   DriverHomeProvider(this._driverRepository);
 
   DriverProfileModel? get profile => _profile;
@@ -55,6 +61,11 @@ class DriverHomeProvider extends ChangeNotifier {
   List<BookingModel> get pendingBookings => _pendingBookings;
   bool get isBookingsLoading => _isBookingsLoading;
   String? get bookingsError => _bookingsError;
+
+  // Earnings getters
+  DriverEarningsModel? get earnings => _earnings;
+  bool get isEarningsLoading => _isEarningsLoading;
+  String? get earningsError => _earningsError;
 
   Future<void> fetchDriverProfile() async {
     _isLoading = true;
@@ -107,6 +118,21 @@ class DriverHomeProvider extends ChangeNotifier {
     } catch (e) {
       _isWalletLoading = false;
       _walletError = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchDriverEarnings() async {
+    _isEarningsLoading = true;
+    _earningsError = null;
+    notifyListeners();
+
+    try {
+      _earnings = await _driverRepository.getDriverEarnings();
+    } catch (e) {
+      _earningsError = e.toString().replaceFirst('Exception: ', '');
+    } finally {
+      _isEarningsLoading = false;
       notifyListeners();
     }
   }
@@ -360,6 +386,7 @@ class DriverHomeProvider extends ChangeNotifier {
     required String bio,
     required String gender,
     required String dob,
+    String? upiId,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -371,6 +398,7 @@ class DriverHomeProvider extends ChangeNotifier {
         bio: bio,
         gender: gender,
         dob: dob,
+        upiId: upiId,
       );
       _profile = updatedProfile;
       _isLoading = false;
@@ -493,15 +521,11 @@ class DriverHomeProvider extends ChangeNotifier {
       BookingModel? active;
       if (driverBookings.isNotEmpty) {
         final latest = driverBookings.first;
-        // active statuses: ACCEPTED, DRIVER_ASSIGNED, OTP_VERIFIED, GOODS_PICKED_UP, IN_TRANSIT
-        const activeStatuses = {
-          'ACCEPTED',
-          'DRIVER_ASSIGNED',
-          'OTP_VERIFIED',
-          'GOODS_PICKED_UP',
-          'IN_TRANSIT'
-        };
-        if (activeStatuses.contains(latest.status.toUpperCase())) {
+        final statusUpper = latest.status.toUpperCase();
+        if (statusUpper != 'DELIVERED' && 
+            statusUpper != 'COMPLETED' && 
+            statusUpper != 'CANCELLED' && 
+            statusUpper != 'PENDING') {
           active = latest;
         }
       }

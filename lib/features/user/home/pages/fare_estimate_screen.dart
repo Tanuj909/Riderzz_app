@@ -81,6 +81,8 @@ class _FareEstimateViewState extends State<FareEstimateView> {
     final dropLat = widget.bookingData['dropLatitude'] as double?;
     final dropLng = widget.bookingData['dropLongitude'] as double?;
 
+    debugPrint('FareEstimate: Pickup ($pickupLat, $pickupLng) → Drop ($dropLat, $dropLng)');
+
     double distance = 8.4;
     int estTime = 28;
     String? encodedPolyline;

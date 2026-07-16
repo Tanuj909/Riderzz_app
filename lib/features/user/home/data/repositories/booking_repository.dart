@@ -25,4 +25,8 @@ class BookingRepository {
   Future<List<BookingModel>> fetchCurrentBookings() async {
     return await _remoteDataSource.fetchCurrentBookings();
   }
+
+  Future<Map<String, dynamic>> fetchBookingOtp(int id) async {
+    return await _remoteDataSource.fetchBookingOtp(id);
+  }
 }

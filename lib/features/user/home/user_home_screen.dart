@@ -5,6 +5,7 @@ import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/user/home/pages/user_home_page.dart';
 import 'package:riderzz_app/features/user/home/pages/user_bookings_page.dart';
 import 'package:riderzz_app/features/user/addresses/address_list_screen.dart';
+import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
 import 'package:riderzz_app/features/user/home/pages/user_account_page.dart';
 
 class UserHomeScreen extends StatefulWidget {
@@ -75,6 +76,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                 children: [
                   UserHomePage(
                     onBookingConfirmed: () {
+                      context.read<BookingProvider>().fetchBookings();
+                      context.read<BookingProvider>().fetchCurrentBookings();
                       setState(() {
                         _currentIndex = 1;
                       });
@@ -101,6 +104,12 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           setState(() {
             _currentIndex = index;
           });
+          if (index == 0) {
+            context.read<BookingProvider>().fetchCurrentBookings();
+            context.read<BookingProvider>().fetchBookings();
+          } else if (index == 1) {
+            context.read<BookingProvider>().fetchBookings();
+          }
         },
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,

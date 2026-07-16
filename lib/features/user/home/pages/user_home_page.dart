@@ -450,9 +450,9 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                 ));
               }
 
-              final activeStatuses = ['PENDING', 'ASSIGNED', 'EN_ROUTE', 'ACCEPTED'];
+              final inactiveStatuses = ['DELIVERED', 'COMPLETED', 'CANCELLED'];
               final activeBookings = bookingProvider.currentBookings.where(
-                (b) => activeStatuses.contains(b.status.toUpperCase()),
+                (b) => !inactiveStatuses.contains(b.status.toUpperCase()),
               ).toList();
 
               return Column(
@@ -467,7 +467,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                     ...activeBookings.map((activeBooking) {
                       return GestureDetector(
                         onTap: () {
-                          // TODO: Navigate to active booking details
+                          showBookingDetailsBottomSheet(context, activeBooking);
                         },
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 22),
@@ -538,6 +538,30 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                   ),
                                 ],
                               ),
+                              if (activeBooking.driver != null) ...[
+                                const SizedBox(height: 14),
+                                const Divider(height: 1, color: Color(0xFFE7E7EB)),
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.person_rounded, size: 15, color: Color(0xFF6C6F79)),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        'Driver: ${activeBooking.driver!.fullName} (${activeBooking.driver!.phone})',
+                                        style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF121214)),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const Icon(Icons.star_rounded, color: Colors.amber, size: 14),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      activeBooking.driver!.rating.toStringAsFixed(1),
+                                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
+                                    ),
+                                  ],
+                                ),
+                              ],
                               const SizedBox(height: 16),
                               Row(
                                 children: [

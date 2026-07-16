@@ -114,4 +114,22 @@ class BookingProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<Map<String, dynamic>?> fetchBookingOtp(int id) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final otpData = await _repository.fetchBookingOtp(id);
+      return otpData;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }

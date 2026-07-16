@@ -60,7 +60,7 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
       } else if (_selectedFilter == 'Cancelled') {
         return status == 'CANCELLED';
       } else if (_selectedFilter == 'Upcoming') {
-        return status == 'PENDING' || status == 'ACCEPTED' || status == 'DRIVER_ASSIGNED' || status == 'OTP_VERIFIED' || status == 'GOODS_PICKED_UP' || status == 'IN_TRANSIT';
+        return status != 'DELIVERED' && status != 'COMPLETED' && status != 'CANCELLED';
       }
       return true;
     }).toList();
