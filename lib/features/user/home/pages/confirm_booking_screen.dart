@@ -55,6 +55,7 @@ class _ConfirmBookingViewState extends State<ConfirmBookingView> {
       'nightChargeApplied': false,
       'promoCode': null,
       'estimatedDistanceKm': widget.bookingData['estimatedDistanceKm'] as double? ?? 0.0,
+      'routePolyline': widget.bookingData['routePolyline'] as String?,
     };
 
     final bookingProvider = context.read<BookingProvider>();

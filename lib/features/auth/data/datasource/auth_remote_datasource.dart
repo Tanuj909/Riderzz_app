@@ -68,6 +68,38 @@ class AuthRemoteDataSource {
     return UserModel.fromJson(data, phone: phone);
   }
 
+  Future<UserModel> loginWithPassword({
+    required String phone,
+    required String password,
+  }) async {
+    final response = await _apiClient.post(
+      ApiConstants.loginWithPassword,
+      data: {
+        'phone': phone,
+        'password': password,
+      },
+    );
+    final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
+    return UserModel.fromJson(data, phone: phone);
+  }
+
+  Future<String> forgotPassword({
+    required String phone,
+    required String otp,
+    required String newPassword,
+  }) async {
+    final response = await _apiClient.post(
+      ApiConstants.forgotPassword,
+      data: {
+        'phone': phone,
+        'otp': otp,
+        'newPassword': newPassword,
+      },
+    );
+    final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
+    return data['message'] ?? 'Password updated successfully';
+  }
+
   Future<UserModel> fetchCurrentUser() async {
     final response = await _apiClient.get(ApiConstants.me);
     final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);

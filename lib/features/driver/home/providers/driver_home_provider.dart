@@ -5,6 +5,7 @@ import 'package:riderzz_app/core/models/available_vehicle_model.dart';
 import 'package:riderzz_app/core/models/bank_account_model.dart';
 import 'package:riderzz_app/core/network/api_exception.dart';
 import 'package:riderzz_app/features/driver/home/data/repositories/driver_repository.dart';
+import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 
 class DriverHomeProvider extends ChangeNotifier {
   final DriverRepository _driverRepository;
@@ -25,6 +26,12 @@ class DriverHomeProvider extends ChangeNotifier {
   bool _isBankAccountsLoading = false;
   String? _bankAccountsError;
 
+  // Booking states
+  BookingModel? _activeBooking;
+  List<BookingModel> _pendingBookings = [];
+  bool _isBookingsLoading = false;
+  String? _bookingsError;
+
   DriverHomeProvider(this._driverRepository);
 
   DriverProfileModel? get profile => _profile;
@@ -42,6 +49,12 @@ class DriverHomeProvider extends ChangeNotifier {
   BankAccountModel? get primaryBankAccount => _primaryBankAccount;
   bool get isBankAccountsLoading => _isBankAccountsLoading;
   String? get bankAccountsError => _bankAccountsError;
+
+  // Booking getters
+  BookingModel? get activeBooking => _activeBooking;
+  List<BookingModel> get pendingBookings => _pendingBookings;
+  bool get isBookingsLoading => _isBookingsLoading;
+  String? get bookingsError => _bookingsError;
 
   Future<void> fetchDriverProfile() async {
     _isLoading = true;
@@ -244,55 +257,69 @@ class DriverHomeProvider extends ChangeNotifier {
       await _driverRepository.applyDriver(body);
 
       // 2. Upload documents to /driver/documents sequentially
-      try {
-        await _driverRepository.uploadDriverDocument(
-          "AADHAAR_FRONT",
-          aadharFrontPath,
-        );
-      } catch (e) {
-        debugPrint('Failed to upload Aadhar Front: $e');
+      if (aadharFrontPath.isNotEmpty) {
+        try {
+          await _driverRepository.uploadDriverDocument(
+            "AADHAAR_FRONT",
+            aadharFrontPath,
+          );
+        } catch (e) {
+          debugPrint('Failed to upload Aadhar Front: $e');
+        }
       }
-      try {
-        await _driverRepository.uploadDriverDocument(
-          "AADHAAR_BACK",
-          aadharBackPath,
-        );
-      } catch (e) {
-        debugPrint('Failed to upload Aadhar Back: $e');
+      if (aadharBackPath.isNotEmpty) {
+        try {
+          await _driverRepository.uploadDriverDocument(
+            "AADHAAR_BACK",
+            aadharBackPath,
+          );
+        } catch (e) {
+          debugPrint('Failed to upload Aadhar Back: $e');
+        }
       }
-      try {
-        await _driverRepository.uploadDriverDocument("PAN_CARD", panCardPath);
-      } catch (e) {
-        debugPrint('Failed to upload PAN Card: $e');
+      if (panCardPath.isNotEmpty) {
+        try {
+          await _driverRepository.uploadDriverDocument("PAN_CARD", panCardPath);
+        } catch (e) {
+          debugPrint('Failed to upload PAN Card: $e');
+        }
       }
-      try {
-        await _driverRepository.uploadDriverDocument(
-          "DRIVING_LICENSE_FRONT",
-          dlFrontPath,
-        );
-      } catch (e) {
-        debugPrint('Failed to upload DL Front: $e');
+      if (dlFrontPath.isNotEmpty) {
+        try {
+          await _driverRepository.uploadDriverDocument(
+            "DRIVING_LICENSE_FRONT",
+            dlFrontPath,
+          );
+        } catch (e) {
+          debugPrint('Failed to upload DL Front: $e');
+        }
       }
-      try {
-        await _driverRepository.uploadDriverDocument(
-          "DRIVING_LICENSE_BACK",
-          dlBackPath,
-        );
-      } catch (e) {
-        debugPrint('Failed to upload DL Back: $e');
+      if (dlBackPath.isNotEmpty) {
+        try {
+          await _driverRepository.uploadDriverDocument(
+            "DRIVING_LICENSE_BACK",
+            dlBackPath,
+          );
+        } catch (e) {
+          debugPrint('Failed to upload DL Back: $e');
+        }
       }
-      try {
-        await _driverRepository.uploadDriverDocument("RC_BOOK", rcBookPath);
-      } catch (e) {
-        debugPrint('Failed to upload RC Book: $e');
+      if (rcBookPath.isNotEmpty) {
+        try {
+          await _driverRepository.uploadDriverDocument("RC_BOOK", rcBookPath);
+        } catch (e) {
+          debugPrint('Failed to upload RC Book: $e');
+        }
       }
-      try {
-        await _driverRepository.uploadDriverDocument(
-          "INSURANCE",
-          insurancePath,
-        );
-      } catch (e) {
-        debugPrint('Failed to upload Insurance: $e');
+      if (insurancePath.isNotEmpty) {
+        try {
+          await _driverRepository.uploadDriverDocument(
+            "INSURANCE",
+            insurancePath,
+          );
+        } catch (e) {
+          debugPrint('Failed to upload Insurance: $e');
+        }
       }
 
       // 3. Re-fetch profile to load state immediately
@@ -451,6 +478,115 @@ class DriverHomeProvider extends ChangeNotifier {
       _isBankAccountsLoading = false;
       _bankAccountsError = e.toString().replaceFirst('Exception: ', '');
       notifyListeners();
+    }
+  }
+
+  Future<void> fetchHomeBookings() async {
+    _isBookingsLoading = true;
+    _bookingsError = null;
+    notifyListeners();
+
+    try {
+      // 1. Fetch My Driver Bookings first
+      final driverBookings = await _driverRepository.getDriverBookings(page: 0, size: 20);
+      
+      BookingModel? active;
+      if (driverBookings.isNotEmpty) {
+        final latest = driverBookings.first;
+        // active statuses: ACCEPTED, DRIVER_ASSIGNED, OTP_VERIFIED, GOODS_PICKED_UP, IN_TRANSIT
+        const activeStatuses = {
+          'ACCEPTED',
+          'DRIVER_ASSIGNED',
+          'OTP_VERIFIED',
+          'GOODS_PICKED_UP',
+          'IN_TRANSIT'
+        };
+        if (activeStatuses.contains(latest.status.toUpperCase())) {
+          active = latest;
+        }
+      }
+
+      _activeBooking = active;
+
+      // 2. If no active booking, fetch pending broadcasts
+      if (_activeBooking == null) {
+        _pendingBookings = await _driverRepository.getPendingBroadcasts();
+      } else {
+        _pendingBookings = [];
+      }
+    } catch (e) {
+      _bookingsError = e.toString().replaceFirst('Exception: ', '');
+    } finally {
+      _isBookingsLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> verifyOtpForBooking(int bookingId, String otp) async {
+    _isBookingsLoading = true;
+    _bookingsError = null;
+    notifyListeners();
+
+    try {
+      await _driverRepository.verifyOtp(bookingId, otp);
+      await fetchHomeBookings();
+      return true;
+    } catch (e) {
+      _bookingsError = e.toString().replaceFirst('Exception: ', '');
+      _isBookingsLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateStatusForBooking(int bookingId, String status) async {
+    _isBookingsLoading = true;
+    _bookingsError = null;
+    notifyListeners();
+
+    try {
+      await _driverRepository.updateBookingStatus(bookingId, status);
+      await fetchHomeBookings();
+      return true;
+    } catch (e) {
+      _bookingsError = e.toString().replaceFirst('Exception: ', '');
+      _isBookingsLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> acceptBookingForDriver(int bookingId) async {
+    _isBookingsLoading = true;
+    _bookingsError = null;
+    notifyListeners();
+
+    try {
+      await _driverRepository.acceptBooking(bookingId);
+      await fetchHomeBookings();
+      return true;
+    } catch (e) {
+      _bookingsError = e.toString().replaceFirst('Exception: ', '');
+      _isBookingsLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> rejectBookingForDriver(int bookingId, String reason) async {
+    _isBookingsLoading = true;
+    _bookingsError = null;
+    notifyListeners();
+
+    try {
+      await _driverRepository.rejectBooking(bookingId, reason);
+      await fetchHomeBookings();
+      return true;
+    } catch (e) {
+      _bookingsError = e.toString().replaceFirst('Exception: ', '');
+      _isBookingsLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 }

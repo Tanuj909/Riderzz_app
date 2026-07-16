@@ -28,6 +28,7 @@ class _RefundStats {
   final double baseFare;
   final double distanceFare;
   final double finalFare;
+  final String? encodedPolyline;
 
   _RefundStats({
     required this.distance,
@@ -35,6 +36,7 @@ class _RefundStats {
     required this.baseFare,
     required this.distanceFare,
     required this.finalFare,
+    this.encodedPolyline,
   });
 }
 
@@ -81,6 +83,7 @@ class _FareEstimateViewState extends State<FareEstimateView> {
 
     double distance = 8.4;
     int estTime = 28;
+    String? encodedPolyline;
 
     if (pickupLat != null && pickupLng != null && dropLat != null && dropLng != null) {
       try {
@@ -124,6 +127,7 @@ class _FareEstimateViewState extends State<FareEstimateView> {
               final route = routes.first;
               final distanceMeters = route['distanceMeters'] as int?;
               final durationStr = route['duration'] as String?;
+              encodedPolyline = route['polyline']?['encodedPolyline'] as String?;
 
               if (distanceMeters != null) {
                 distance = convertMetersToKm(distanceMeters);
@@ -164,6 +168,7 @@ class _FareEstimateViewState extends State<FareEstimateView> {
         baseFare: baseFare,
         distanceFare: distanceFare,
         finalFare: finalFare,
+        encodedPolyline: encodedPolyline,
       );
       _isLoading = false;
     });
@@ -287,6 +292,7 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                               updatedBookingData['baseFare'] = _stats!.baseFare;
                               updatedBookingData['estimatedDistanceKm'] = _stats!.distance;
                               updatedBookingData['estimatedTimeMin'] = _stats!.time;
+                              updatedBookingData['routePolyline'] = _stats!.encodedPolyline;
 
                               widget.onNext(updatedBookingData);
                             },

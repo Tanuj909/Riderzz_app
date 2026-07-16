@@ -10,6 +10,9 @@ class BookingProvider extends ChangeNotifier {
   List<BookingModel> _bookings = [];
   List<BookingModel> get bookings => _bookings;
 
+  List<BookingModel> _currentBookings = [];
+  List<BookingModel> get currentBookings => _currentBookings;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -23,6 +26,21 @@ class BookingProvider extends ChangeNotifier {
 
     try {
       _bookings = await _repository.fetchBookings();
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchCurrentBookings() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _currentBookings = await _repository.fetchCurrentBookings();
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
     } finally {
@@ -79,6 +97,12 @@ class BookingProvider extends ChangeNotifier {
       if (index != -1) {
         _bookings[index] = updatedBooking;
       }
+      
+      // Refresh current bookings so active shipments list updates immediately
+      try {
+        _currentBookings = await _repository.fetchCurrentBookings();
+      } catch (_) {}
+
       notifyListeners();
       return true;
     } catch (e) {

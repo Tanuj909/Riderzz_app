@@ -31,6 +31,7 @@ import 'package:riderzz_app/features/admin/wallets/providers/admin_wallets_provi
 import 'package:riderzz_app/features/driver/home/data/datasource/driver_remote_datasource.dart';
 import 'package:riderzz_app/features/driver/home/data/repositories/driver_repository.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
+import 'package:riderzz_app/core/services/location_tracking_service.dart';
 import 'package:riderzz_app/features/admin/commission/data/datasource/commission_datasource.dart';
 import 'package:riderzz_app/features/admin/commission/data/repositories/commission_repository.dart';
 import 'package:riderzz_app/features/admin/commission/providers/commission_provider.dart';
@@ -160,6 +161,11 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProxyProvider<DriverRepository, DriverHomeProvider>(
           create: (context) => DriverHomeProvider(context.read<DriverRepository>()),
           update: (_, repository, previous) => previous ?? DriverHomeProvider(repository),
+        ),
+        ProxyProvider<DriverRepository, LocationTrackingService>(
+          create: (context) => LocationTrackingService(context.read<DriverRepository>()),
+          update: (_, repository, previous) => previous ?? LocationTrackingService(repository),
+          dispose: (_, service) => service.dispose(),
         ),
         ChangeNotifierProxyProvider<CommissionRepository, CommissionProvider>(
           create: (context) => CommissionProvider(context.read<CommissionRepository>()),

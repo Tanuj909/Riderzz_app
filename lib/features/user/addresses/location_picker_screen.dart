@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:google_places_flutter/google_places_flutter.dart';
-import 'package:google_places_flutter/model/prediction.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:riderzz_app/screens/search_location_screen.dart';
+import 'package:riderzz_app/models/photon_place.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/core/providers/location_provider.dart';
 import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
@@ -221,7 +221,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Search Bar
                 Expanded(
                   child: Card(
                     elevation: 6,
@@ -230,89 +229,61 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                       borderRadius: BorderRadius.circular(24),
                     ),
                     color: Colors.white,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-                      child: GooglePlaceAutoCompleteTextField(
-                        textEditingController: _searchController,
-                        googleAPIKey: googleApiKey,
-                        inputDecoration: const InputDecoration(
-                          hintText: 'Search for area, street, city...',
-                          hintStyle: TextStyle(color: Color(0xFFB0B8C4)),
-                          border: InputBorder.none,
-                          prefixIcon: Icon(
-                      Icons.search_rounded,
-                      color: Color(0xFF6C6F79),
-                      size: 22,
-                    ),
-                    prefixIconConstraints: BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 22,
-                    ),
-                  ),
-                  debounceTime: 500,
-                  isLatLngRequired: true,
-                  getPlaceDetailWithLatLng: (Prediction prediction) {
-                    if (prediction.lat != null && prediction.lng != null) {
-                      double lat = double.parse(prediction.lat!);
-                      double lng = double.parse(prediction.lng!);
-                      _mapController?.animateCamera(
-                        CameraUpdate.newLatLngZoom(
-                          LatLng(lat, lng),
-                          16.0,
-                        ),
-                      );
-                    }
-                  },
-                  itemClick: (Prediction prediction) {
-                    _searchController.text = prediction.description ?? '';
-                    _searchController.selection = TextSelection.fromPosition(
-                      TextPosition(offset: (prediction.description ?? '').length),
-                    );
-                  },
-                  itemBuilder: (BuildContext context, int index, Prediction prediction) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                      color: Colors.white,
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on_outlined,
-                            color: Color(0xFF6C6F79),
-                            size: 18,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(24),
+                      onTap: () async {
+                        final place = await Navigator.push<PhotonPlace>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SearchLocationScreen(),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              prediction.description ?? '',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF121214),
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                        );
+                        if (place != null && mounted) {
+                          setState(() {
+                            _searchController.text = place.displayName;
+                            _latitude = place.latitude;
+                            _longitude = place.longitude;
+                          });
+                          _mapController?.animateCamera(
+                            CameraUpdate.newLatLngZoom(
+                              LatLng(place.latitude, place.longitude),
+                              16.0,
                             ),
-                          ),
-                        ],
+                          );
+                        }
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.search_rounded,
+                              color: Color(0xFF6C6F79),
+                              size: 22,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _searchController.text.isNotEmpty
+                                    ? _searchController.text
+                                    : 'Search for area, street, city...',
+                                style: GoogleFonts.outfit(
+                                  color: _searchController.text.isNotEmpty
+                                      ? const Color(0xFF121214)
+                                      : const Color(0xFFB0B8C4),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    );
-                  },
-                  seperatedBuilder: const Divider(
-                    height: 1,
-                    thickness: 0.5,
-                    color: Color(0xFFE7E7EB),
+                    ),
                   ),
-                  textStyle: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF121214),
-                  ),
-                  boxDecoration: const BoxDecoration(
-                    color: Colors.transparent,
-                  ),
-                  isCrossBtnShown: true,
                 ),
-              ),
-            ),
-          ),
             ],
           ),
         ),

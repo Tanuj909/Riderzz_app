@@ -21,4 +21,8 @@ class BookingRepository {
   Future<BookingModel> cancelBooking(int id, String reason) async {
     return await _remoteDataSource.cancelBooking(id, reason);
   }
+
+  Future<List<BookingModel>> fetchCurrentBookings() async {
+    return await _remoteDataSource.fetchCurrentBookings();
+  }
 }

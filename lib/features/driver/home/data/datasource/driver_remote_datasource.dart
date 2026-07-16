@@ -6,6 +6,7 @@ import 'package:riderzz_app/core/models/driver_profile_model.dart';
 import 'package:riderzz_app/core/models/driver_wallet_model.dart';
 import 'package:riderzz_app/core/models/available_vehicle_model.dart';
 import 'package:riderzz_app/core/models/bank_account_model.dart';
+import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 
 class DriverRemoteDataSource {
   final ApiClient _apiClient;
@@ -87,25 +88,23 @@ class DriverRemoteDataSource {
   }
 
   Future<bool> goOnline() async {
-    final response = await _apiClient.patch(ApiConstants.driverOnline);
-    final Map<String, dynamic> resBody = Map<String, dynamic>.from(
-      response.data,
-    );
-    final Map<String, dynamic> data = Map<String, dynamic>.from(
-      resBody['data'] ?? {},
-    );
-    return data['isOnline'] as bool? ?? false;
+    await _apiClient.patch('${ApiConstants.driverOnline}?online=true');
+    return true;
   }
 
   Future<bool> goOffline() async {
-    final response = await _apiClient.patch(ApiConstants.driverOffline);
-    final Map<String, dynamic> resBody = Map<String, dynamic>.from(
-      response.data,
+    await _apiClient.patch('${ApiConstants.driverOnline}?online=false');
+    return false;
+  }
+
+  Future<void> updateLocation(double latitude, double longitude) async {
+    await _apiClient.post(
+      ApiConstants.driverLocation,
+      data: {
+        'latitude': latitude,
+        'longitude': longitude,
+      },
     );
-    final Map<String, dynamic> data = Map<String, dynamic>.from(
-      resBody['data'] ?? {},
-    );
-    return data['isOnline'] as bool? ?? false;
   }
 
   Future<List<AvailableVehicleModel>> getAvailableVehicles() async {
@@ -221,5 +220,77 @@ class DriverRemoteDataSource {
     } catch (_) {
       return null;
     }
+  }
+
+  Future<List<BookingModel>> fetchDriverBookings({int page = 0, int size = 20}) async {
+    final response = await _apiClient.get('${ApiConstants.driverBookings}?page=$page&size=$size');
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final dynamic rawData = resBody['data'];
+    List<dynamic> list = [];
+    if (rawData is List) {
+      list = rawData;
+    } else if (rawData is Map && rawData['content'] is List) {
+      list = rawData['content'] as List;
+    }
+    return list.map((json) => BookingModel.fromJson(Map<String, dynamic>.from(json))).toList();
+  }
+
+  Future<List<BookingModel>> fetchAllBookings({int page = 0, int size = 20, String sort = 'createdAt,desc'}) async {
+    final response = await _apiClient.get('${ApiConstants.bookingsAll}?page=$page&size=$size&sort=$sort');
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final dynamic rawData = resBody['data'];
+    List<dynamic> list = [];
+    if (rawData is List) {
+      list = rawData;
+    } else if (rawData is Map && rawData['content'] is List) {
+      list = rawData['content'] as List;
+    }
+    return list.map((json) => BookingModel.fromJson(Map<String, dynamic>.from(json))).toList();
+  }
+
+  Future<void> verifyOtp(int bookingId, String otp) async {
+    await _apiClient.post(
+      '${ApiConstants.driverBookings}/$bookingId/verify-otp',
+      data: {'otp': otp},
+    );
+  }
+
+  Future<BookingModel> updateBookingStatus(int bookingId, String status) async {
+    final response = await _apiClient.patch(
+      '${ApiConstants.driverBookings}/$bookingId/status',
+      data: {'status': status},
+    );
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
+    return BookingModel.fromJson(data);
+  }
+
+  Future<BookingModel> acceptBooking(int bookingId) async {
+    final response = await _apiClient.post(
+      '${ApiConstants.driverBookings}/$bookingId/accept',
+    );
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
+    return BookingModel.fromJson(data);
+  }
+
+  Future<void> rejectBooking(int bookingId, String reason) async {
+    await _apiClient.post(
+      '${ApiConstants.driverBookings}/$bookingId/reject',
+      data: {'reason': reason},
+    );
+  }
+
+  Future<List<BookingModel>> fetchPendingBroadcasts() async {
+    final response = await _apiClient.get(ApiConstants.driverPendingBroadcasts);
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final dynamic rawData = resBody['data'];
+    List<dynamic> list = [];
+    if (rawData is List) {
+      list = rawData;
+    } else if (rawData is Map && rawData['content'] is List) {
+      list = rawData['content'] as List;
+    }
+    return list.map((json) => BookingModel.fromJson(Map<String, dynamic>.from(json))).toList();
   }
 }

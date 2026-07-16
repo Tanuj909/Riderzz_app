@@ -10,7 +10,6 @@ import 'package:riderzz_app/features/user/home/pages/choose_vehicle_screen.dart'
 import 'package:riderzz_app/features/user/home/pages/booking_flow_bottom_sheet.dart';
 import 'package:riderzz_app/features/user/home/pages/finding_driver_screen.dart';
 import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
-import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/user/home/widgets/booking_details_bottom_sheet.dart';
 import 'dart:ui';
 import 'dart:math';
@@ -42,6 +41,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<SavedRouteProvider>(context, listen: false).fetchSavedRoutes();
       Provider.of<BookingProvider>(context, listen: false).fetchBookings();
+      Provider.of<BookingProvider>(context, listen: false).fetchCurrentBookings();
     });
   }
 
@@ -64,11 +64,21 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return RefreshIndicator(
+      onRefresh: () async {
+        await Future.wait([
+          Provider.of<SavedRouteProvider>(context, listen: false).fetchSavedRoutes(),
+          Provider.of<BookingProvider>(context, listen: false).fetchBookings(),
+          Provider.of<BookingProvider>(context, listen: false).fetchCurrentBookings(),
+        ]);
+      },
+      color: const Color(0xFFE31C2E),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -333,62 +343,78 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
           ),
 
           // Saved Location Dropdown
-          Container(
-            margin: const EdgeInsets.only(bottom: 22),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F1F4),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.transparent, width: 1.5),
-            ),
-            child: Row(
-              children: [
-                const Padding(
-                  padding: EdgeInsets.only(left: 14),
-                  child: Icon(Icons.location_on_outlined, color: Color(0xFFA2A5AE), size: 16),
-                ),
-                Expanded(
-                  child: DropdownButtonHideUnderline(
-                    child: Consumer<SavedRouteProvider>(
-                      builder: (context, savedRouteProvider, child) {
-                        return DropdownButton<String>(
-                          isExpanded: true,
-                          dropdownColor: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          hint: const Center(child: Text('Saved locations', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF16171C)))),
-                          value: _selectedRoute?['id']?.toString(), // Track selected route
-                          items: savedRouteProvider.savedRoutes.map((route) {
-                            return DropdownMenuItem<String>(
-                              value: route['id']?.toString() ?? route['routeName']?.toString(),
-                              alignment: Alignment.center,
+          Consumer<SavedRouteProvider>(
+            builder: (context, savedRouteProvider, child) {
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 22),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F1F4),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: PopupMenuButton<String>(
+                      position: PopupMenuPosition.under,
+                      color: Colors.white,
+                      elevation: 3,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      offset: const Offset(0, 6),
+                      constraints: BoxConstraints(
+                        minWidth: constraints.maxWidth,
+                        maxWidth: constraints.maxWidth,
+                      ),
+                      onSelected: (val) {
+                        setState(() {
+                          _selectedRoute = savedRouteProvider.savedRoutes.firstWhere(
+                            (r) => (r['id']?.toString() ?? r['routeName']?.toString()) == val
+                          );
+                        });
+                      },
+                      itemBuilder: (context) {
+                        return savedRouteProvider.savedRoutes.map((route) {
+                          return PopupMenuItem<String>(
+                            value: route['id']?.toString() ?? route['routeName']?.toString(),
+                            child: Center(
                               child: Text(
                                 route['routeName'] ?? 'Unknown Route',
                                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF121214)),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                            );
-                          }).toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() {
-                                _selectedRoute = savedRouteProvider.savedRoutes.firstWhere(
-                                  (r) => (r['id']?.toString() ?? r['routeName']?.toString()) == val
-                                );
-                              });
-                            }
-                          },
-                          icon: const Padding(
-                            padding: EdgeInsets.only(right: 8.0),
-                            child: Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFFA2A5AE), size: 24),
-                          ),
-                        );
-                      }
+                            ),
+                          );
+                        }).toList();
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.location_on_outlined, color: Color(0xFFA2A5AE), size: 16),
+                            Expanded(
+                              child: Center(
+                                child: Text(
+                                  _selectedRoute?['routeName']?.toString() ?? 'Saved locations',
+                                  style: TextStyle(
+                                    fontSize: 14, 
+                                    fontWeight: FontWeight.w600, 
+                                    color: _selectedRoute == null ? const Color(0xFF16171C) : const Color(0xFF121214),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                            const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFFA2A5AE), size: 24),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            ),
+                  );
+                },
+              );
+            }
           ),
           
           if (_selectedRoute != null) ...[
@@ -417,7 +443,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
 
           Consumer2<BookingProvider, AdminVehiclesProvider>(
             builder: (context, bookingProvider, vehiclesProvider, child) {
-              if (bookingProvider.isLoading && bookingProvider.bookings.isEmpty) {
+              if (bookingProvider.isLoading && bookingProvider.currentBookings.isEmpty) {
                 return const Center(child: Padding(
                   padding: EdgeInsets.all(20.0),
                   child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E))),
@@ -425,190 +451,260 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
               }
 
               final activeStatuses = ['PENDING', 'ASSIGNED', 'EN_ROUTE', 'ACCEPTED'];
-              BookingModel? activeBooking;
-              
-              try {
-                activeBooking = bookingProvider.bookings.firstWhere(
-                  (b) => activeStatuses.contains(b.status.toUpperCase()),
-                );
-              } catch (e) {
-                activeBooking = null;
-              }
-
-              final recentBookings = bookingProvider.bookings
-                  .where((b) => activeBooking == null || b.id != activeBooking!.id)
-                  .take(2)
-                  .toList();
+              final activeBookings = bookingProvider.currentBookings.where(
+                (b) => activeStatuses.contains(b.status.toUpperCase()),
+              ).toList();
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (activeBooking != null) ...[
+                  if (activeBookings.isNotEmpty) ...[
                     const Text(
-                      'ACTIVE SHIPMENT',
+                      'ACTIVE SHIPMENTS',
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.1, color: Color(0xFFA2A5AE)),
                     ),
                     const SizedBox(height: 12),
-                    GestureDetector(
-                      onTap: () {
-                        // TODO: Navigate to active booking details
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 22),
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFE7E7EB)),
-                          boxShadow: const [BoxShadow(color: Color(0x0D121214), offset: Offset(0, 1), blurRadius: 2)],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 42,
-                                  height: 42,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    gradient: const LinearGradient(colors: [Color(0xFFE31C2E), Color(0xFFAE1220)]),
-                                    boxShadow: const [BoxShadow(color: Color(0x667E22CE), offset: Offset(0, 6), blurRadius: 12, spreadRadius: -4)],
+                    ...activeBookings.map((activeBooking) {
+                      return GestureDetector(
+                        onTap: () {
+                          // TODO: Navigate to active booking details
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 22),
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: const Color(0xFFE7E7EB)),
+                            boxShadow: const [BoxShadow(color: Color(0x0D121214), offset: Offset(0, 1), blurRadius: 2)],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 42,
+                                    height: 42,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      gradient: const LinearGradient(colors: [Color(0xFFE31C2E), Color(0xFFAE1220)]),
+                                      boxShadow: const [BoxShadow(color: Color(0x667E22CE), offset: Offset(0, 6), blurRadius: 12, spreadRadius: -4)],
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Icon(Icons.local_shipping_outlined, color: Colors.white, size: 19),
                                   ),
-                                  alignment: Alignment.center,
-                                  child: const Icon(Icons.local_shipping_outlined, color: Colors.white, size: 19),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              vehiclesProvider.vehicleTypes.where((v) => v.id == activeBooking!.vehicleTypeId).map((v) => v.name).firstWhere((name) => true, orElse: () => 'Vehicle'),
-                                              style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
-                                              overflow: TextOverflow.ellipsis,
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                vehiclesProvider.vehicleTypes.where((v) => v.id == activeBooking.vehicleTypeId).map((v) => v.name).firstWhere((name) => true, orElse: () => 'Vehicle'),
+                                                style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFE7F7EF),
+                                                borderRadius: BorderRadius.circular(999),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFF1C9A5B), shape: BoxShape.circle)),
+                                                  const SizedBox(width: 5),
+                                                  Text(
+                                                    activeBooking.status.toUpperCase(),
+                                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF1C9A5B)),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Booking: ${activeBooking.bookingId}',
+                                          style: const TextStyle(fontSize: 11.5, fontFamily: 'IBM Plex Mono', color: Color(0xFF6C6F79)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton(
+                                      onPressed: () => showBookingDetailsBottomSheet(context, activeBooking),
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 8),
+                                        side: const BorderSide(color: Color(0xFFE7E7EB), width: 1.5),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                                        foregroundColor: const Color(0xFF121214),
+                                        elevation: 0,
+                                      ),
+                                      child: const Text('View details', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        final vName = vehiclesProvider.vehicleTypes.where((v) => v.id == activeBooking.vehicleTypeId).map((v) => v.name).firstWhere((name) => true, orElse: () => 'Vehicle');
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => FindingDriverScreen(
+                                              booking: activeBooking,
+                                              vehicleName: vName,
                                             ),
                                           ),
+                                        );
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 8),
+                                        backgroundColor: const Color(0xFFE31C2E),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                                        elevation: 0,
+                                        shadowColor: const Color(0x8C7E22CE),
+                                      ),
+                                      child: const Text('Track', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.white)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ],
+
+                  if (bookingProvider.bookings.isNotEmpty) ...[
+                    (() {
+                      final recentBookings = bookingProvider.bookings
+                          .where((b) => b.status.toUpperCase() == 'DELIVERED' || b.status.toUpperCase() == 'COMPLETED')
+                          .take(2)
+                          .toList();
+
+                      if (recentBookings.isEmpty) return const SizedBox.shrink();
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 24),
+                          const Text(
+                            'RECENT BOOKINGS',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.1, color: Color(0xFFA2A5AE)),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 18),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: const Color(0xFFE7E7EB)),
+                              boxShadow: const [BoxShadow(color: Color(0x0D121214), offset: Offset(0, 1), blurRadius: 2)],
+                            ),
+                            child: Column(
+                              children: recentBookings.asMap().entries.map((entry) {
+                                final index = entry.key;
+                                final booking = entry.value;
+                                final vehicleName = vehiclesProvider.vehicleTypes.where((v) => v.id == booking.vehicleTypeId).map((v) => v.name).firstWhere((name) => true, orElse: () => 'Vehicle');
+                                
+                                String dateStr = '';
+                                try {
+                                  if (booking.createdAt.isNotEmpty) {
+                                    final dt = DateTime.parse(booking.createdAt).toLocal();
+                                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                    dateStr = '${months[dt.month - 1]} ${dt.day}';
+                                  }
+                                } catch (_) {}
+
+                                return Column(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      child: Row(
+                                        children: [
                                           Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                            width: 42,
+                                            height: 42,
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFFE7F7EF),
-                                              borderRadius: BorderRadius.circular(999),
+                                              color: const Color(0xFFFDEBEC),
+                                              borderRadius: BorderRadius.circular(12),
                                             ),
-                                            child: Row(
+                                            alignment: Alignment.center,
+                                            child: const Icon(Icons.history_rounded, color: Color(0xFFE31C2E), size: 19),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFF1C9A5B), shape: BoxShape.circle)),
-                                                const SizedBox(width: 5),
                                                 Text(
-                                                  activeBooking.status.toUpperCase(),
-                                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF1C9A5B)),
+                                                  '${booking.pickupAddressName.split(',').first} → ${booking.dropAddressName.split(',').first}',
+                                                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
+                                                  overflow: TextOverflow.ellipsis,
                                                 ),
+                                                const SizedBox(height: 2),
+                                                Text('$dateStr · $vehicleName', style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79))),
                                               ],
                                             ),
                                           ),
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            children: [
+                                              Text('₹${booking.totalFare.toStringAsFixed(0)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'IBM Plex Mono', color: Color(0xFF121214))),
+                                              const SizedBox(height: 6),
+                                              ElevatedButton(
+                                                onPressed: () {
+                                                  final route = {
+                                                    'pickupAddress': {
+                                                      'address': booking.pickupAddressName,
+                                                      'latitude': booking.pickupLatitude,
+                                                      'longitude': booking.pickupLongitude,
+                                                    },
+                                                    'dropAddress': {
+                                                      'address': booking.dropAddressName,
+                                                      'latitude': booking.dropLatitude,
+                                                      'longitude': booking.dropLongitude,
+                                                    }
+                                                  };
+                                                  _showNewBookingModal(route);
+                                                },
+                                                style: ElevatedButton.styleFrom(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                  minimumSize: Size.zero,
+                                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                  backgroundColor: const Color(0xFFE31C2E),
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                  elevation: 0,
+                                                ),
+                                                child: const Text('Repeat', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+                                              ),
+                                            ],
+                                          ),
                                         ],
                                       ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        'Booking: ${activeBooking.bookingId}',
-                                        style: const TextStyle(fontSize: 11.5, fontFamily: 'IBM Plex Mono', color: Color(0xFF6C6F79)),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton(
-                                    onPressed: () => showBookingDetailsBottomSheet(context, activeBooking!),
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 8),
-                                      side: const BorderSide(color: Color(0xFFE7E7EB), width: 1.5),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                                      foregroundColor: const Color(0xFF121214),
-                                      elevation: 0,
                                     ),
-                                    child: const Text('View details', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed: () {
-                                      final vName = vehiclesProvider.vehicleTypes.where((v) => v.id == activeBooking!.vehicleTypeId).map((v) => v.name).firstWhere((name) => true, orElse: () => 'Vehicle');
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => FindingDriverScreen(
-                                            booking: activeBooking!,
-                                            vehicleName: vName,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 8),
-                                      backgroundColor: const Color(0xFFE31C2E),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                                      elevation: 0,
-                                      shadowColor: const Color(0x8C7E22CE),
-                                    ),
-                                    child: const Text('Track', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.white)),
-                                  ),
-                                ),
-                              ],
+                                    if (index < recentBookings.length - 1) const Divider(color: Color(0xFFE7E7EB), height: 1, thickness: 1),
+                                  ],
+                                );
+                              }).toList(),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-
-                  if (recentBookings.isNotEmpty) ...[
-                    const Text(
-                      'RECENT BOOKINGS',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.1, color: Color(0xFFA2A5AE)),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.only(left: 18, right: 18),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFE7E7EB)),
-                        boxShadow: const [BoxShadow(color: Color(0x0D121214), offset: Offset(0, 1), blurRadius: 2)],
-                      ),
-                      child: Column(
-                        children: recentBookings.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final booking = entry.value;
-                          final vehicleName = vehiclesProvider.vehicleTypes.where((v) => v.id == booking.vehicleTypeId).map((v) => v.name).firstWhere((name) => true, orElse: () => 'Vehicle');
-                          
-                          String dateStr = '';
-                          try {
-                            if (booking.createdAt.isNotEmpty) {
-                              final dt = DateTime.parse(booking.createdAt).toLocal();
-                              const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                              dateStr = '${months[dt.month - 1]} ${dt.day}';
-                            }
-                          } catch (_) {}
-
-                          return _buildRecentBookingRow(
-                            '${booking.pickupAddressName.split(',').first} → ${booking.dropAddressName.split(',').first}',
-                            '$dateStr · $vehicleName',
-                            '₹${booking.totalFare.toStringAsFixed(0)}',
-                            showDivider: index < recentBookings.length - 1,
-                          );
-                        }).toList(),
-                      ),
-                    ),
+                          ),
+                        ],
+                      );
+                    })(),
                   ],
                 ],
               );
@@ -616,45 +712,10 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
-  Widget _buildRecentBookingRow(String title, String subtitle, String price, {required bool showDivider}) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFDEBEC),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                alignment: Alignment.center,
-                child: const Icon(Icons.history_rounded, color: Color(0xFFE31C2E), size: 19),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF121214))),
-                    const SizedBox(height: 2),
-                    Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79))),
-                  ],
-                ),
-              ),
-              Text(price, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'IBM Plex Mono', color: Color(0xFF121214))),
-            ],
-          ),
-        ),
-        if (showDivider) const Divider(color: Color(0xFFE7E7EB), height: 1, thickness: 1),
-      ],
-    );
-  }
   void _showNewBookingModal([Map<String, dynamic>? route]) {
     showModalBottomSheet(
       context: context,

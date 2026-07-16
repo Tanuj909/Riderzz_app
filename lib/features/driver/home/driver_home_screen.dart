@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
+import 'package:riderzz_app/core/services/location_tracking_service.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_home_page.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_history_page.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_wallet_page.dart';
@@ -24,18 +25,33 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final provider = context.read<DriverHomeProvider>();
+      final trackingService = context.read<LocationTrackingService>();
+
       await provider.fetchDriverProfile();
       if (mounted) {
         final profile = provider.profile;
-        if (profile != null && !profile.isOnline) {
-          _showGoOnlineDialog(context, provider);
+        if (profile != null && profile.isOnline) {
+          // Driver is already online — start tracking immediately
+          trackingService.start();
+        } else if (profile != null && !profile.isOnline) {
+          _showGoOnlineDialog(context, provider, trackingService);
         }
       }
     });
   }
 
+  @override
+  void dispose() {
+    // Stop tracking when the driver leaves this screen
+    context.read<LocationTrackingService>().stop();
+    super.dispose();
+  }
 
-  void _showGoOnlineDialog(BuildContext context, DriverHomeProvider provider) {
+  void _showGoOnlineDialog(
+    BuildContext context,
+    DriverHomeProvider provider,
+    LocationTrackingService trackingService,
+  ) {
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -73,6 +89,8 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
               Navigator.pop(dialogContext);
               final success = await provider.setOnlineStatus(true);
               if (success && context.mounted) {
+                // Driver went online — start location tracking
+                trackingService.start();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('You are now Online! 🟢'),

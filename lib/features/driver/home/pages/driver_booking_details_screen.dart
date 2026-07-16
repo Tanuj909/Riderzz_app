@@ -1,0 +1,1487 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
+import 'package:provider/provider.dart';
+import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_polyline_algorithm/google_polyline_algorithm.dart';
+import 'package:dio/dio.dart';
+import 'dart:ui' as ui;
+import 'package:riderzz_app/core/services/maps_launcher_service.dart';
+
+class DriverBookingDetailsScreen extends StatefulWidget {
+  final BookingModel booking;
+
+  const DriverBookingDetailsScreen({
+    super.key,
+    required this.booking,
+  });
+
+  @override
+  State<DriverBookingDetailsScreen> createState() => _DriverBookingDetailsScreenState();
+}
+
+class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen> {
+  GoogleMapController? _mapController;
+  bool _isSheetExpanded = true;
+  bool _isVerifyingOtp = false;
+
+  final LatLng _defaultDelhi = const LatLng(28.6139, 77.2090);
+
+  List<LatLng> _polylineCoordinates = [];
+  Set<Polyline> _polylines = {};
+  bool _isRouteLoading = false;
+  bool _isRouteDrawn = false;
+
+  BitmapDescriptor? _pickupIcon;
+  BitmapDescriptor? _dropIcon;
+  String? _routeDistanceText;
+  String? _routeDurationText;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMarkerIcons();
+    _fetchRoute();
+  }
+
+  Future<Uint8List> _getBytesFromAsset(String path, int width) async {
+    ByteData data = await rootBundle.load(path);
+    ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(), targetWidth: width);
+    ui.FrameInfo fi = await codec.getNextFrame();
+    return (await fi.image.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
+  }
+
+  Future<void> _loadMarkerIcons() async {
+    try {
+      final Uint8List markerBytes = await _getBytesFromAsset('assets/icons/location.png', 80); // 80 pixels width
+      final icon = BitmapDescriptor.fromBytes(markerBytes);
+      setState(() {
+        _pickupIcon = icon;
+        _dropIcon = icon;
+      });
+    } catch (e) {
+      debugPrint('Error loading custom markers: $e');
+    }
+  }
+
+  Future<void> _fetchRoute() async {
+    final encodedPolyline = widget.booking.routePolyline;
+    final distanceKm = widget.booking.estimatedDistanceKm;
+
+    if (distanceKm != null) {
+      _routeDistanceText = '${distanceKm.toStringAsFixed(1)} km';
+    }
+
+    if (encodedPolyline == null || encodedPolyline.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isRouteLoading = true;
+    });
+
+    try {
+      final decoded = decodePolyline(encodedPolyline);
+      if (decoded.isNotEmpty) {
+        _polylineCoordinates = decoded
+            .map((point) => LatLng(point[0].toDouble(), point[1].toDouble()))
+            .toList();
+
+        setState(() {
+          _polylines.add(
+            Polyline(
+              polylineId: const PolylineId('route'),
+              points: _polylineCoordinates,
+              color: const Color(0xFF8A0000),
+              width: 5,
+              jointType: JointType.round,
+              startCap: Cap.roundCap,
+              endCap: Cap.roundCap,
+            ),
+          );
+
+          final pickupLat = widget.booking.pickupLatitude;
+          final pickupLng = widget.booking.pickupLongitude;
+          final dropLat = widget.booking.dropLatitude;
+          final dropLng = widget.booking.dropLongitude;
+
+          if (pickupLat != null && pickupLng != null) {
+            _polylines.add(
+              Polyline(
+                polylineId: const PolylineId('pickup_conn'),
+                points: [LatLng(pickupLat, pickupLng), _polylineCoordinates.first],
+                color: const Color(0xFF8A0000),
+                width: 4,
+                patterns: <PatternItem>[PatternItem.dash(10), PatternItem.gap(10)],
+              ),
+            );
+          }
+
+          if (dropLat != null && dropLng != null) {
+            _polylines.add(
+              Polyline(
+                polylineId: const PolylineId('drop_conn'),
+                points: [_polylineCoordinates.last, LatLng(dropLat, dropLng)],
+                color: const Color(0xFF8A0000),
+                width: 4,
+                patterns: <PatternItem>[PatternItem.dash(10), PatternItem.gap(10)],
+              ),
+            );
+          }
+
+          _isRouteDrawn = true;
+        });
+
+        if (_mapController != null) {
+          _fitMapBounds();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error decoding route polyline: $e');
+    } finally {
+      setState(() {
+        _isRouteLoading = false;
+      });
+    }
+  }
+
+  void _fitMapBounds() {
+    if (_mapController == null || _polylineCoordinates.isEmpty) return;
+
+    double? minLat, maxLat, minLng, maxLng;
+    for (final point in _polylineCoordinates) {
+      if (minLat == null || point.latitude < minLat) minLat = point.latitude;
+      if (maxLat == null || point.latitude > maxLat) maxLat = point.latitude;
+      if (minLng == null || point.longitude < minLng) minLng = point.longitude;
+      if (maxLng == null || point.longitude > maxLng) maxLng = point.longitude;
+    }
+
+    if (minLat != null && maxLat != null && minLng != null && maxLng != null) {
+      _mapController!.animateCamera(
+        CameraUpdate.newLatLngBounds(
+          LatLngBounds(
+            southwest: LatLng(minLat, minLng),
+            northeast: LatLng(maxLat, maxLng),
+          ),
+          60,
+        ),
+      );
+    }
+  }
+
+  void _onViewRoutePressed() {
+    if (_polylineCoordinates.isNotEmpty) {
+      setState(() {
+        _isRouteDrawn = !_isRouteDrawn;
+        if (_isRouteDrawn) {
+          _polylines.add(
+            Polyline(
+              polylineId: const PolylineId('route'),
+              points: _polylineCoordinates,
+              color: const Color(0xFF8A0000),
+              width: 5,
+              jointType: JointType.round,
+              startCap: Cap.roundCap,
+              endCap: Cap.roundCap,
+            ),
+          );
+
+          final pickupLat = widget.booking.pickupLatitude;
+          final pickupLng = widget.booking.pickupLongitude;
+          final dropLat = widget.booking.dropLatitude;
+          final dropLng = widget.booking.dropLongitude;
+
+          if (pickupLat != null && pickupLng != null) {
+            _polylines.add(
+              Polyline(
+                polylineId: const PolylineId('pickup_conn'),
+                points: [LatLng(pickupLat, pickupLng), _polylineCoordinates.first],
+                color: const Color(0xFF8A0000),
+                width: 4,
+                patterns: <PatternItem>[PatternItem.dash(10), PatternItem.gap(10)],
+              ),
+            );
+          }
+
+          if (dropLat != null && dropLng != null) {
+            _polylines.add(
+              Polyline(
+                polylineId: const PolylineId('drop_conn'),
+                points: [_polylineCoordinates.last, LatLng(dropLat, dropLng)],
+                color: const Color(0xFF8A0000),
+                width: 4,
+                patterns: <PatternItem>[PatternItem.dash(10), PatternItem.gap(10)],
+              ),
+            );
+          }
+
+          _fitMapBounds();
+        } else {
+          _polylines.removeWhere((p) => p.polylineId.value == 'route' || p.polylineId.value == 'pickup_conn' || p.polylineId.value == 'drop_conn');
+        }
+      });
+    } else {
+      _fetchRoute();
+    }
+  }
+
+  Set<Marker> _buildMarkers(BookingModel booking) {
+    final pickupLat = booking.pickupLatitude;
+    final pickupLng = booking.pickupLongitude;
+    final dropLat = booking.dropLatitude;
+    final dropLng = booking.dropLongitude;
+
+    final markers = <Marker>{};
+
+    if (pickupLat != null && pickupLng != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('pickup'),
+          position: LatLng(pickupLat, pickupLng),
+          infoWindow: const InfoWindow(title: 'Pickup Location'),
+          icon: _pickupIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          anchor: const Offset(0.5, 1.0),
+        ),
+      );
+    }
+
+    if (dropLat != null && dropLng != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('drop'),
+          position: LatLng(dropLat, dropLng),
+          infoWindow: const InfoWindow(title: 'Drop Location'),
+          icon: _dropIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          anchor: const Offset(0.5, 1.0),
+        ),
+      );
+    }
+
+    return markers;
+  }
+
+  void _showCallModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFFF6F6F8),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF1F1F4),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.person, size: 40, color: Color(0xFF6C6F79)),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Customer',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF121214),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Calling...',
+                style: GoogleFonts.outfit(
+                  fontSize: 14,
+                  color: const Color(0xFF6C6F79),
+                ),
+              ),
+              const SizedBox(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(sheetContext),
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF1F1F4),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.phone_paused_rounded, color: Color(0xFF121214)),
+                    ),
+                  ),
+                  const SizedBox(width: 24),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(sheetContext),
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE31C2E),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.call_end, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showMessageModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Color(0xFFF6F6F8),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Message Customer',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF121214),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(sheetContext),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    _buildQuickReplyChip("I'm here", sheetContext),
+                    _buildQuickReplyChip("On my way", sheetContext),
+                    _buildQuickReplyChip("Traffic delay", sheetContext),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Type a message...',
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(99),
+                            borderSide: const BorderSide(color: Color(0xFFE1E1E6)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(99),
+                            borderSide: const BorderSide(color: Color(0xFFD90429)),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(sheetContext),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF121214),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildQuickReplyChip(String text, BuildContext ctx) {
+    return ActionChip(
+      label: Text(text),
+      backgroundColor: const Color(0xFFF1F1F4),
+      labelStyle: GoogleFonts.outfit(color: const Color(0xFF121214), fontSize: 13),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
+      onPressed: () {
+        Navigator.pop(ctx);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sent: "$text"')),
+        );
+      },
+    );
+  }
+
+  void _showRejectDialog(BuildContext context, DriverHomeProvider driverProvider, int bookingId) {
+    final controller = TextEditingController(text: 'Too far from current location');
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(
+            'Reject Booking',
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+          ),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              labelText: 'Reason for rejection',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                final success = await driverProvider.rejectBookingForDriver(bookingId, controller.text);
+                if (success && mounted) {
+                  Navigator.pop(context); // Pop details screen since it's rejected
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Booking rejected successfully')),
+                  );
+                } else if (!success && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(driverProvider.bookingsError ?? 'Failed to reject booking'),
+                      backgroundColor: Colors.redAccent,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD90429),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Reject'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _getSliderText(String status) {
+    switch (status.toUpperCase()) {
+      case 'OTP_VERIFIED':
+      case 'ACCEPTED':
+      case 'DRIVER_ASSIGNED':
+        return 'Swipe to Pick Up Goods';
+      case 'GOODS_PICKED_UP':
+        return 'Swipe to Start Transit';
+      case 'IN_TRANSIT':
+        return 'Swipe to Complete Delivery';
+      default:
+        return 'Swipe to Proceed';
+    }
+  }
+
+  String _getNextStatus(String currentStatus) {
+    switch (currentStatus.toUpperCase()) {
+      case 'OTP_VERIFIED':
+      case 'ACCEPTED':
+      case 'DRIVER_ASSIGNED':
+        return 'GOODS_PICKED_UP';
+      case 'GOODS_PICKED_UP':
+        return 'IN_TRANSIT';
+      case 'IN_TRANSIT':
+        return 'DELIVERED';
+      default:
+        return 'DELIVERED';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final driverProvider = Provider.of<DriverHomeProvider>(context);
+    final booking = driverProvider.activeBooking ?? widget.booking;
+
+    final pickupLat = booking.pickupLatitude;
+    final pickupLng = booking.pickupLongitude;
+    final LatLng centerLatLng = (pickupLat != null && pickupLng != null)
+        ? LatLng(pickupLat, pickupLng)
+        : _defaultDelhi;
+
+    final String statusUpper = booking.status.toUpperCase();
+    final bool needsOtpVerification = statusUpper == 'ACCEPTED' || statusUpper == 'DRIVER_ASSIGNED';
+    final bool isDelivered = statusUpper == 'DELIVERED';
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          // Google Map Background
+          Positioned.fill(
+            child: GoogleMap(
+              initialCameraPosition: CameraPosition(
+                target: centerLatLng,
+                zoom: 13.5,
+              ),
+              onMapCreated: (controller) {
+                _mapController = controller;
+                if (_polylineCoordinates.isNotEmpty && _isRouteDrawn) {
+                  _fitMapBounds();
+                }
+              },
+              markers: _buildMarkers(booking),
+              polylines: _polylines,
+              myLocationButtonEnabled: false,
+              zoomControlsEnabled: false,
+              mapToolbarEnabled: false,
+            ),
+          ),
+
+          // Custom Header
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            left: 16,
+            right: 16,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0xFFE1E1E6)),
+                          boxShadow: const [
+                            BoxShadow(color: Color(0x1A000000), blurRadius: 8, offset: Offset(0, 2)),
+                          ],
+                        ),
+                        child: const Icon(Icons.arrow_back_ios_new, size: 16, color: Color(0xFF121214)),
+                      ),
+                    ),
+                    if (_isRouteDrawn && (_routeDistanceText != null || _routeDurationText != null)) ...[
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: const Color(0xFFE1E1E6)),
+                          boxShadow: const [
+                            BoxShadow(color: Color(0x1A000000), blurRadius: 8, offset: Offset(0, 2)),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.navigation_outlined, size: 14, color: Color(0xFFD90429)),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${_routeDistanceText ?? ""} · ${_routeDurationText ?? ""}',
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                color: const Color(0xFF121214),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isSheetExpanded = !_isSheetExpanded;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: const Color(0xFFE1E1E6)),
+                          boxShadow: const [
+                            BoxShadow(color: Color(0x1A000000), blurRadius: 8, offset: Offset(0, 2)),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _isSheetExpanded ? Icons.map_outlined : Icons.info_outline,
+                              size: 14,
+                              color: const Color(0xFF121214),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _isSheetExpanded ? 'Map' : 'Details',
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                                color: const Color(0xFF121214),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: _onViewRoutePressed,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: _isRouteDrawn ? const Color(0xFFE31C2E) : Colors.white,
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: const Color(0xFFE1E1E6)),
+                          boxShadow: const [
+                            BoxShadow(color: Color(0x1A000000), blurRadius: 8, offset: Offset(0, 2)),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.directions,
+                              size: 14,
+                              color: _isRouteDrawn ? Colors.white : const Color(0xFF121214),
+                            ),
+                            const SizedBox(width: 4),
+                            if (_isRouteLoading)
+                              const SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
+                                ),
+                              )
+                            else
+                              Text(
+                                'View Route',
+                                style: GoogleFonts.outfit(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                  color: _isRouteDrawn ? Colors.white : const Color(0xFF121214),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Bottom Sheet Content
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: AnimatedSlide(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+              offset: _isSheetExpanded ? Offset.zero : const Offset(0, 0.9),
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  boxShadow: [
+                    BoxShadow(color: Color(0x26000000), blurRadius: 30, offset: Offset(0, -10)),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Handle Bar
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isSheetExpanded = !_isSheetExpanded;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        color: Colors.transparent,
+                        child: Center(
+                          child: Container(
+                            width: 40,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE1E1E6),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Sheet Body
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Earnings & Distance
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'ESTIMATED EARNING',
+                                    style: GoogleFonts.outfit(
+                                      color: const Color(0xFF6C6F79),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '₹${booking.totalFare.toStringAsFixed(2)}',
+                                    style: GoogleFonts.ibmPlexMono(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 28,
+                                      color: const Color(0xFF121214),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (booking.estimatedDistanceKm != null)
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      'TOTAL DISTANCE',
+                                      style: GoogleFonts.outfit(
+                                        color: const Color(0xFF6C6F79),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${booking.estimatedDistanceKm!.toStringAsFixed(1)} km',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF121214),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Addresses Card
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F1F4),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Column(
+                                  children: [
+                                    const SizedBox(height: 4),
+                                    const Icon(Icons.circle, size: 10, color: Color(0xFF121214)),
+                                    Container(width: 1.5, height: 40, color: const Color(0xFFE1E1E6)),
+                                    const Icon(Icons.location_on, size: 12, color: Color(0xFFD90429)),
+                                  ],
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Pickup',
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 11,
+                                              color: const Color(0xFF6C6F79),
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            booking.pickupAddressName,
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 13.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color(0xFF121214),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Drop',
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 11,
+                                              color: const Color(0xFF6C6F79),
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            booking.dropAddressName,
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 13.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color(0xFF121214),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Shipment Details Card
+                          Text(
+                            'SHIPMENT DETAILS',
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFF6C6F79),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: const Color(0xFFE1E1E6)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Goods Type',
+                                      style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF6C6F79)),
+                                    ),
+                                    Text(
+                                      '${booking.parcelType} (${booking.weightKg} kg)',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF121214),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (booking.goodsDescription.isNotEmpty) ...[
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 12.0),
+                                    child: Divider(height: 1, color: Color(0xFFE1E1E6)),
+                                  ),
+                                  Text(
+                                    'Instructions',
+                                    style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF6C6F79)),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    booking.goodsDescription,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.4,
+                                      color: const Color(0xFF121214),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Dynamic Action Section (OTP or Accept/Reject or Status updates)
+                          if (statusUpper == 'PENDING') ...[
+                            Column(
+                              children: [
+                                SwipeSlider(
+                                  key: ValueKey('accept_${booking.status}_${booking.id}'),
+                                  text: 'Swipe to Accept',
+                                  isLoading: driverProvider.isBookingsLoading,
+                                  onSwipeComplete: () async {
+                                    final success = await driverProvider.acceptBookingForDriver(booking.id);
+                                    if (success && mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Booking accepted!')),
+                                      );
+                                    } else if (!success && mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(driverProvider.bookingsError ?? 'Failed to accept booking'),
+                                          backgroundColor: Colors.redAccent,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ] else ...[
+                            // OTP verification or updates
+                            if (needsOtpVerification) ...[
+                              OtpVerificationView(
+                                isLoading: _isVerifyingOtp,
+                                isSuccess: statusUpper == 'OTP_VERIFIED',
+                                onOtpSubmit: (otp) async {
+                                  setState(() {
+                                    _isVerifyingOtp = true;
+                                  });
+                                  final success = await driverProvider.verifyOtpForBooking(booking.id, otp);
+                                  setState(() {
+                                    _isVerifyingOtp = false;
+                                  });
+                                  if (!success && mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(driverProvider.bookingsError ?? 'OTP verification failed'),
+                                        backgroundColor: Colors.redAccent,
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ] else ...[
+                              // Message and Call Buttons
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      onPressed: _showMessageModal,
+                                      icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                                      label: const Text('Message'),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: const Color(0xFF121214),
+                                        side: const BorderSide(color: Color(0xFFE1E1E6)),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                        textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 14.5),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: ElevatedButton.icon(
+                                      onPressed: _showCallModal,
+                                      icon: const Icon(Icons.phone_android_rounded, size: 18),
+                                      label: const Text('Call Customer'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF121214),
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                        textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 14.5),
+                                        elevation: 0,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              // Swipe Slider (below buttons)
+                              SwipeSlider(
+                                key: ValueKey('status_${booking.status}_${booking.id}'),
+                                text: _getSliderText(booking.status),
+                                isLoading: driverProvider.isBookingsLoading,
+                                onSwipeComplete: () async {
+                                  final nextStatus = _getNextStatus(booking.status);
+                                  final success = await driverProvider.updateStatusForBooking(booking.id, nextStatus);
+                                  if (!success && mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(driverProvider.bookingsError ?? 'Status update failed'),
+                                        backgroundColor: Colors.redAccent,
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ],
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  if (booking.pickupLatitude != null && booking.pickupLongitude != null) {
+                                    MapsLauncherService.launchMaps(
+                                      latitude: booking.pickupLatitude!,
+                                      longitude: booking.pickupLongitude!,
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Pickup location coordinates are missing')),
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.navigation_rounded),
+                                label: const Text('Navigate to Pickup'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF121214),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 15),
+                                  elevation: 0,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton(
+                                onPressed: () => _showRejectDialog(context, driverProvider, booking.id),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFFD90429),
+                                  side: const BorderSide(color: Color(0xFFD90429)),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                ),
+                                child: const Text('Reject Booking', style: TextStyle(fontWeight: FontWeight.w700)),
+                              ),
+                            ),
+                          ],
+                          SizedBox(height: MediaQuery.of(context).padding.bottom + 24),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Completion Modal Overlay
+          if (isDelivered)
+            Positioned.fill(
+              child: Container(
+                color: const Color(0xFFF6F6F8),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF1C9A5B),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(color: Color(0x4D1C9A5B), blurRadius: 32, offset: Offset(0, 12)),
+                        ],
+                      ),
+                      child: const Icon(Icons.check, color: Colors.white, size: 48),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Booking Complete!',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF121214),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'You earned',
+                      style: GoogleFonts.outfit(
+                        fontSize: 16,
+                        color: const Color(0xFF6C6F79),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '₹${booking.totalFare.toStringAsFixed(2)}',
+                      style: GoogleFonts.ibmPlexMono(
+                        fontSize: 56,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF121214),
+                      ),
+                    ),
+                    const SizedBox(height: 48),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // Clear active booking and pop back to home
+                          driverProvider.fetchHomeBookings();
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF121214),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 16),
+                          elevation: 0,
+                        ),
+                        child: const Text('View more Bookings'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class SwipeSlider extends StatefulWidget {
+  final String text;
+  final VoidCallback onSwipeComplete;
+  final bool isLoading;
+
+  const SwipeSlider({
+    super.key,
+    required this.text,
+    required this.onSwipeComplete,
+    this.isLoading = false,
+  });
+
+  @override
+  State<SwipeSlider> createState() => _SwipeSliderState();
+}
+
+class _SwipeSliderState extends State<SwipeSlider> {
+  double _thumbPosition = 0;
+  bool _isCompleted = false;
+
+  @override
+  void didUpdateWidget(covariant SwipeSlider oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text) {
+      setState(() {
+        _thumbPosition = 0;
+        _isCompleted = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double maxDistance = constraints.maxWidth - 56;
+        final double currentPosition = widget.isLoading ? maxDistance : _thumbPosition;
+        
+        return Container(
+          width: double.infinity,
+          height: 56,
+          decoration: BoxDecoration(
+            color: const Color(0xFF121214),
+            borderRadius: BorderRadius.circular(99),
+            boxShadow: const [
+              BoxShadow(color: Color(0x1A000000), blurRadius: 10, offset: Offset(0, 4)),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                child: Container(
+                  width: currentPosition > 0 ? currentPosition + 24 : 0,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1C9A5B),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              Center(
+                child: Text(
+                  widget.text,
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              Positioned(
+                left: currentPosition + 4,
+                top: 4,
+                bottom: 4,
+                child: GestureDetector(
+                  onHorizontalDragUpdate: (details) {
+                    if (_isCompleted || widget.isLoading) return;
+                    setState(() {
+                      _thumbPosition += details.delta.dx;
+                      if (_thumbPosition < 0) _thumbPosition = 0;
+                      if (_thumbPosition > maxDistance) _thumbPosition = maxDistance;
+                    });
+                  },
+                  onHorizontalDragEnd: (details) {
+                    if (_isCompleted || widget.isLoading) return;
+                    if (_thumbPosition >= maxDistance * 0.85) {
+                      setState(() {
+                        _thumbPosition = maxDistance;
+                        _isCompleted = true;
+                      });
+                      widget.onSwipeComplete();
+                    } else {
+                      setState(() {
+                        _thumbPosition = 0;
+                      });
+                    }
+                  },
+                  child: Container(
+                    width: 48,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(color: Color(0x33000000), blurRadius: 4, offset: Offset(0, 2)),
+                      ],
+                    ),
+                    child: widget.isLoading
+                        ? const Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF121214)),
+                              ),
+                            ),
+                          )
+                        : const Icon(Icons.keyboard_arrow_right_rounded, color: Color(0xFF121214), size: 24),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class OtpVerificationView extends StatefulWidget {
+  final Function(String otp) onOtpSubmit;
+  final bool isLoading;
+  final bool isSuccess;
+
+  const OtpVerificationView({
+    super.key,
+    required this.onOtpSubmit,
+    required this.isLoading,
+    required this.isSuccess,
+  });
+
+  @override
+  State<OtpVerificationView> createState() => _OtpVerificationViewState();
+}
+
+class _OtpVerificationViewState extends State<OtpVerificationView> {
+  final List<FocusNode> _focusNodes = List.generate(4, (index) => FocusNode());
+  final List<TextEditingController> _controllers = List.generate(4, (index) => TextEditingController());
+
+  @override
+  void dispose() {
+    for (var node in _focusNodes) {
+      node.dispose();
+    }
+    for (var controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _onKeyChanged(String value, int index) {
+    if (value.isNotEmpty) {
+      if (index < 3) {
+        _focusNodes[index + 1].requestFocus();
+      } else {
+        _focusNodes[index].unfocus();
+        final otp = _controllers.map((c) => c.text).join();
+        if (otp.length == 4) {
+          widget.onOtpSubmit(otp);
+        }
+      }
+    } else {
+      if (index > 0) {
+        _focusNodes[index - 1].requestFocus();
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.isSuccess) {
+      return Container(
+        height: 56,
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              decoration: const BoxDecoration(
+                color: Color(0xFF1C9A5B),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check, color: Colors.white, size: 16),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Verified!',
+              style: GoogleFonts.plusJakartaSans(
+                color: const Color(0xFF1C9A5B),
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (widget.isLoading) {
+      return Container(
+        height: 56,
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD90429)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Verifying...',
+              style: GoogleFonts.outfit(
+                color: const Color(0xFF6C6F79),
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          'Ask customer for 4-digit PIN',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF121214),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(4, (index) {
+            return Container(
+              width: 48,
+              height: 56,
+              margin: const EdgeInsets.symmetric(horizontal: 6),
+              child: TextField(
+                controller: _controllers[index],
+                focusNode: _focusNodes[index],
+                maxLength: 1,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.ibmPlexMono(fontSize: 24, fontWeight: FontWeight.w800, color: const Color(0xFF121214)),
+                decoration: InputDecoration(
+                  counterText: '',
+                  contentPadding: EdgeInsets.zero,
+                  filled: true,
+                  fillColor: const Color(0xFFF1F1F4),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE1E1E6), width: 2),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFD90429), width: 2),
+                  ),
+                ),
+                onChanged: (val) => _onKeyChanged(val, index),
+              ),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+}

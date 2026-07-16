@@ -14,7 +14,6 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   bool _isOtpSent = false;
-  bool _isLoginOtpSent = false;
 
   AuthProvider({
     required AuthRepository authRepository,
@@ -27,13 +26,11 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isOtpSent => _isOtpSent;
-  bool get isLoginOtpSent => _isLoginOtpSent;
 
   void resetState() {
     _isLoading = false;
     _errorMessage = null;
     _isOtpSent = false;
-    _isLoginOtpSent = false;
     _customerProfile = null;
     notifyListeners();
   }
@@ -155,26 +152,6 @@ class AuthProvider extends ChangeNotifier {
     resetState();
   }
 
-  /// Request OTP for login
-  Future<bool> loginRequestOtp(String phone) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      await _authRepository.loginSendOtp(phone);
-      _isLoginOtpSent = true;
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _isLoading = false;
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
-      notifyListeners();
-      return false;
-    }
-  }
-
   /// Verify OTP for login and sign in
   Future<bool> loginVerifyOtp({
     required String phone,
@@ -199,6 +176,89 @@ class AuthProvider extends ChangeNotifier {
       );
 
       _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Login with Password
+  Future<bool> loginWithPassword({
+    required String phone,
+    required String password,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final user = await _authRepository.loginWithPassword(
+        phone: phone,
+        password: password,
+      );
+
+      _currentUser = user;
+      await _storageService.saveAuthData(
+        token: user.token ?? '',
+        refreshToken: user.refreshToken,
+        role: user.role,
+        userId: user.userId,
+      );
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Request OTP for Forgot Password
+  Future<bool> forgotPasswordSendOtp(String phone) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // Reusing the sendOtp logic endpoint
+      await _authRepository.sendOtp(phone);
+      _isOtpSent = true;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Reset Password using OTP
+  Future<bool> forgotPassword({
+    required String phone,
+    required String otp,
+    required String newPassword,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _authRepository.forgotPassword(
+        phone: phone,
+        otp: otp,
+        newPassword: newPassword,
+      );
+      _isLoading = false;
+      _isOtpSent = false;
       notifyListeners();
       return true;
     } catch (e) {

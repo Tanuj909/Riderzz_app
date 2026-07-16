@@ -1,13 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:location/location.dart' as loc;
 
 /// A clean, standalone service for location permissions and GPS access.
 /// This handles all low-level geolocator interactions.
 class LocationService {
-  /// Checks and requests location permission.
-  /// Returns the resulting [LocationPermission] status.
   Future<LocationPermission> requestPermission() async {
-    // Check current permission status
+    // 1. Check current permission status first
     LocationPermission permission = await Geolocator.checkPermission();
 
     if (permission == LocationPermission.denied) {
@@ -16,17 +15,25 @@ class LocationService {
       debugPrint('LocationService: Permission after request → $permission');
     }
 
-    // If permission is active, check if device GPS / location services are on
-    if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        debugPrint('LocationService: Location services are disabled. Prompting to enable.');
-        // Removed auto open location settings to prevent jumping to settings on app start
-      }
-    }
-
     if (permission == LocationPermission.deniedForever) {
       debugPrint('LocationService: Permission permanently denied.');
+      await Geolocator.openAppSettings();
+      return permission;
+    }
+
+    // 2. Check if location services (GPS) are enabled.
+    // If we have permission, ensure the GPS is actually turned on.
+    if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint('LocationService: Location services are disabled. Prompting to enable.');
+        // Use the location package to show the native Google Play Services dialog
+        loc.Location location = loc.Location();
+        bool isTurnedOn = await location.requestService();
+        if (!isTurnedOn) {
+          debugPrint('LocationService: User declined to turn on location services.');
+        }
+      }
     }
 
     return permission;

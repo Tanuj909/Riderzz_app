@@ -45,16 +45,26 @@ class DriverWalletTransactionModel {
   final int id;
   final String type;
   final double amount;
+  final double openingBalance;
   final double closingBalance;
-  final String description;
+  final String referenceNumber;
+  final String remarks;
+  final String? bookingNumber;
+  final String status;
   final String createdAt;
+
+  String get description => remarks;
 
   DriverWalletTransactionModel({
     required this.id,
     required this.type,
     required this.amount,
+    required this.openingBalance,
     required this.closingBalance,
-    required this.description,
+    required this.referenceNumber,
+    required this.remarks,
+    this.bookingNumber,
+    required this.status,
     required this.createdAt,
   });
 
@@ -62,6 +72,11 @@ class DriverWalletTransactionModel {
     double amtValue = 0.0;
     if (json['amount'] != null) {
       amtValue = double.tryParse(json['amount'].toString()) ?? 0.0;
+    }
+
+    double openBalValue = 0.0;
+    if (json['openingBalance'] != null) {
+      openBalValue = double.tryParse(json['openingBalance'].toString()) ?? 0.0;
     }
 
     double closingBalValue = 0.0;
@@ -77,9 +92,12 @@ class DriverWalletTransactionModel {
           json['type'] as String? ??
           'RECHARGE',
       amount: amtValue,
+      openingBalance: openBalValue,
       closingBalance: closingBalValue,
-      description:
-          json['remarks'] as String? ?? json['description'] as String? ?? '',
+      referenceNumber: json['referenceNumber'] as String? ?? '',
+      remarks: json['remarks'] as String? ?? '',
+      bookingNumber: json['bookingNumber'] as String?,
+      status: json['status'] as String? ?? 'SUCCESS',
       createdAt: json['createdAt'] as String? ?? '',
     );
   }

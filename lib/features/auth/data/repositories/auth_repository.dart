@@ -36,6 +36,25 @@ class AuthRepository {
     return await _remoteDataSource.loginVerifyOtp(phone: phone, otp: otp);
   }
 
+  Future<UserModel> loginWithPassword({
+    required String phone,
+    required String password,
+  }) async {
+    return await _remoteDataSource.loginWithPassword(phone: phone, password: password);
+  }
+
+  Future<String> forgotPassword({
+    required String phone,
+    required String otp,
+    required String newPassword,
+  }) async {
+    return await _remoteDataSource.forgotPassword(
+      phone: phone,
+      otp: otp,
+      newPassword: newPassword,
+    );
+  }
+
   Future<UserModel> fetchCurrentUser() async {
     return await _remoteDataSource.fetchCurrentUser();
   }

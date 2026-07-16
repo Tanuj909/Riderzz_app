@@ -16,6 +16,12 @@ class BookingModel {
   final double baseFare;
   final double totalFare;
   final String createdAt;
+  final double? pickupLatitude;
+  final double? pickupLongitude;
+  final double? dropLatitude;
+  final double? dropLongitude;
+  final double? estimatedDistanceKm;
+  final String? routePolyline;
 
   BookingModel({
     required this.id,
@@ -35,6 +41,12 @@ class BookingModel {
     required this.baseFare,
     required this.totalFare,
     required this.createdAt,
+    this.pickupLatitude,
+    this.pickupLongitude,
+    this.dropLatitude,
+    this.dropLongitude,
+    this.estimatedDistanceKm,
+    this.routePolyline,
   });
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
@@ -76,6 +88,12 @@ class BookingModel {
       baseFare: (json['baseFare'] as num? ?? 0.0).toDouble(),
       totalFare: (json['finalFare'] as num? ?? json['estimatedFare'] as num? ?? json['totalFare'] as num? ?? json['fare'] as num? ?? 0.0).toDouble(),
       createdAt: json['createdAt'] as String? ?? '',
+      pickupLatitude: pickupObj != null ? (pickupObj['latitude'] as num?)?.toDouble() : null,
+      pickupLongitude: pickupObj != null ? (pickupObj['longitude'] as num?)?.toDouble() : null,
+      dropLatitude: dropObj != null ? (dropObj['latitude'] as num?)?.toDouble() : null,
+      dropLongitude: dropObj != null ? (dropObj['longitude'] as num?)?.toDouble() : null,
+      estimatedDistanceKm: (json['estimatedDistanceKm'] as num?)?.toDouble(),
+      routePolyline: json['routePolyline'] as String? ?? json['route_polyline'] as String?,
     );
   }
 }

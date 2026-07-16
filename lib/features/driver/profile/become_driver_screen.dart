@@ -94,22 +94,6 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
     }
 
     if (_formKey.currentState!.validate()) {
-      if (_aadharFrontController.text.trim().isEmpty ||
-          _aadharBackController.text.trim().isEmpty ||
-          _panCardController.text.trim().isEmpty ||
-          _dlFrontController.text.trim().isEmpty ||
-          _dlBackController.text.trim().isEmpty ||
-          _rcBookController.text.trim().isEmpty ||
-          _insuranceController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please upload all required documents.'),
-            backgroundColor: Colors.orangeAccent,
-          ),
-        );
-        return;
-      }
-
       final body = {
         "vehicleId": _selectedVehicle!.id,
         "registrationNumber": _plateController.text.trim(),
@@ -257,13 +241,8 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
   }
 
   Future<String> _getUploadPath(XFile? file, String prefix) async {
-    if (file != null) return file.path;
-    final tempDir = await getTemporaryDirectory();
-    final tempFile = File('${tempDir.path}/dummy_${prefix}_doc.png');
-    if (!await tempFile.exists()) {
-      await tempFile.writeAsString('Dummy document content for $prefix');
-    }
-    return tempFile.path;
+    if (file == null) return '';
+    return file.path;
   }
 
   Widget _buildDocumentUploadCard({

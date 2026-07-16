@@ -8,6 +8,8 @@ class ApiConstants {
   static const String sendOtp = '/auth/send-otp';
   static const String register = '/auth/register';
   static const String loginVerifyOtp = '/auth/login/otp';
+  static const String loginWithPassword = '/auth/login/password';
+  static const String forgotPassword = '/auth/forgot-password';
   static const String me = '/auth/me';
   static const String customerProfileMe = '/profile/me';
   static const String customerProfileUpdate = '/profile/customer';
@@ -32,10 +34,14 @@ class ApiConstants {
   static const String walletRechargeInitiate = '/wallet/recharge/initiate';
   static const String walletRechargeVerify = '/wallet/recharge/verify';
   static const String driverOnline = '/driver/online';
-  static const String driverOffline = '/driver/offline';
+  static const String driverLocation = '/driver/location';
   static const String driverApply = '/driver/register';
   static const String availableVehicles = '/driver/vehicles/available';
   static const String driverDocuments = '/driver/documents';
   static const String bankAccounts = '/wallet/bank-accounts';
   static const String primaryBankAccount = '/wallet/bank-accounts/primary';
+  static const String bookingsAll = '/bookings/all';
+  static const String driverBookings = '/driver/bookings';
+  static const String driverPendingBroadcasts = '/driver/bookings/broadcasts/pending';
+  static const String bookingsCurrent = '/bookings/current';
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class DriverWalletPage extends StatefulWidget {
   const DriverWalletPage({super.key});
@@ -400,56 +401,66 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
 
                                     setState(() {
                                       isSubmitting = false;
+                                      if (res != null) {
+                                        debugPrint('--- RAZORPAY SUCCESS ---');
+                                        debugPrint('Razorpay Key ID: ${res.razorpayKeyId}');
+                                        debugPrint('Razorpay Order ID: ${res.razorpayOrderId}');
+                                        debugPrint('Recharge ID: ${res.rechargeId}');
+                                        debugPrint('Amount: ${res.amount}');
+                                        debugPrint('------------------------');
+                                        if (context.mounted) {
+                                          Navigator.pop(
+                                            dialogContext,
+                                          ); // Close the dialog
+                                        }
+
+                                        _currentRechargeId = res.rechargeId;
+                                        _currentOrderId = res.razorpayOrderId;
+
+                                        final profile = provider.profile;
+
+                                        var options = {
+                                          'key': (dotenv.env['RAZORPAY_KEY_ID'] != null && dotenv.env['RAZORPAY_KEY_ID']!.isNotEmpty)
+                                              ? dotenv.env['RAZORPAY_KEY_ID']!
+                                              : res.razorpayKeyId,
+                                          'amount': (res.amount * 100)
+                                              .toInt(), // Razorpay expects amount in paise
+                                          'name': 'Riderzz',
+                                          'description': 'Wallet Recharge',
+                                          'order_id': res.razorpayOrderId,
+                                          'prefill': {
+                                            'contact': profile?.phone ?? '',
+                                            'name': profile?.name ?? '',
+                                          },
+                                          'theme': {'color': '#E31C2E'},
+                                        };
+
+                                        try {
+                                          _razorpay.open(options);
+                                        } catch (e) {
+                                          debugPrint('Error: $e');
+                                        }
+                                      } else {
+                                        debugPrint('--- RAZORPAY ERROR ---');
+                                        debugPrint('Recharge failed with: ${provider.walletError}');
+                                        debugPrint('----------------------');
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                provider.walletError ??
+                                                    'Failed to initiate recharge',
+                                              ),
+                                              backgroundColor: const Color(
+                                                0xFFEF4444,
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      }
                                     });
-
-                                    if (res != null) {
-                                      if (context.mounted) {
-                                        Navigator.pop(
-                                          dialogContext,
-                                        ); // Close the dialog
-                                      }
-
-                                      _currentRechargeId = res.rechargeId;
-                                      _currentOrderId = res.razorpayOrderId;
-
-                                      final profile = provider.profile;
-
-                                      var options = {
-                                        'key': res.razorpayKeyId,
-                                        'amount': (res.amount * 100)
-                                            .toInt(), // Razorpay expects amount in paise
-                                        'name': 'Riderzz',
-                                        'description': 'Wallet Recharge',
-                                        'order_id': res.razorpayOrderId,
-                                        'prefill': {
-                                          'contact': profile?.phone ?? '',
-                                          'name': profile?.name ?? '',
-                                        },
-                                        'theme': {'color': '#E31C2E'},
-                                      };
-
-                                      try {
-                                        _razorpay.open(options);
-                                      } catch (e) {
-                                        debugPrint('Error: e');
-                                      }
-                                    } else {
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              provider.walletError ??
-                                                  'Failed to initiate recharge',
-                                            ),
-                                            backgroundColor: const Color(
-                                              0xFFEF4444,
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    }
                                   },
                             child: isSubmitting
                                 ? const SizedBox(
@@ -624,240 +635,353 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
     final isLowBalance = balance < minBal;
     final transactions = wallet?.transactions ?? [];
 
-    return RefreshIndicator(
-      onRefresh: () => context.read<DriverHomeProvider>().fetchDriverWallet(),
-      color: const Color(0xFFD90429),
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(top: 10, bottom: 24),
-              child: Text(
-                'Wallet',
-                style: TextStyle(
-                  color: Color(0xFF121214),
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
+    return Scaffold(
+      backgroundColor: const Color(0xFFF6F6F8),
+      body: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          onRefresh: () => context.read<DriverHomeProvider>().fetchDriverWallet(),
+          color: const Color(0xFFD90429),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(top: 8.0, bottom: 20.0),
+                  child: Text(
+                    'My Wallet',
+                    style: TextStyle(
+                      color: Color(0xFF121214),
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'Plus Jakarta Sans',
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            
-            // Wallet Balance Card
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFD90429), Color(0xFF9E031E)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
-                  BoxShadow(color: Color(0x33D90429), blurRadius: 12, offset: Offset(0, 4)),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('AVAILABLE BALANCE', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: 1.2)),
-                  const SizedBox(height: 8),
-                  Text('₹${balance.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w800, letterSpacing: -1)),
-                  const SizedBox(height: 20),
-                  Row(
+                
+                // Wallet Balance Card (Matching .wallet-hero styling)
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF121214), Color(0xFF2A2B30)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x66000000),
+                        blurRadius: 24,
+                        offset: Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
+                      const Text(
+                        'Available Balance',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          fontFamily: 'Outfit',
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '₹${balance.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 36,
+                          fontWeight: FontWeight.w400,
+                          fontFamily: 'IBM Plex Mono',
+                          letterSpacing: -1,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFD90429), Color(0xFF8D021F)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                         child: ElevatedButton(
                           onPressed: () => _showRechargeDialog(context, driverProvider),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFFD90429),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            minimumSize: const Size(double.infinity, 48),
                             elevation: 0,
                           ),
-                          child: const Text('+ Add money', style: TextStyle(fontWeight: FontWeight.bold)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {},
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            side: const BorderSide(color: Colors.white30),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: const Text(
+                            '+ Add money',
+                            style: TextStyle(
+                              fontFamily: 'Outfit',
+                              fontWeight: FontWeight.normal,
+                              fontSize: 14.5,
+                            ),
                           ),
-                          child: const Text('Withdraw', style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-
-            // Low Balance Warning
-            if (isLowBalance) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
                 ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF5F5),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFFCA5A5), width: 1),
-                ),
-                child: Row(
-                  children: const [
-                    Icon(
-                      Icons.warning_amber_rounded,
-                      color: Color(0xFFEF4444),
-                      size: 20,
+                const SizedBox(height: 24),
+
+                // Low Balance Warning
+                if (isLowBalance) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Alert: Balance is below the minimum required amount. Please recharge to continue receiving ride bookings.',
-                        style: TextStyle(
-                          color: Color(0xFFB91C1C),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          height: 1.4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF5F5),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFFCA5A5), width: 1),
+                    ),
+                    child: Row(
+                      children: const [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: Color(0xFFEF4444),
+                          size: 20,
                         ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Alert: Balance is below the minimum required amount. Please recharge to continue receiving ride bookings.',
+                            style: TextStyle(
+                              color: Color(0xFFB91C1C),
+                              fontSize: 12,
+                              fontFamily: 'Outfit',
+                              fontWeight: FontWeight.normal,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Transactions Header
+                const Text(
+                  'Transaction history',
+                  style: TextStyle(
+                    color: Color(0xFFA2A5AE),
+                    fontSize: 11,
+                    fontFamily: 'Outfit',
+                    fontWeight: FontWeight.normal,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Transactions List
+                if (transactions.isEmpty)
+                  Container(
+                    height: 120,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE1E1E6)),
+                    ),
+                    child: const Text(
+                      'No transactions found.',
+                      style: TextStyle(
+                        color: Color(0xFF6C6F79),
+                        fontSize: 13,
+                        fontFamily: 'Outfit',
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
+                  )
+                else
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFE1E1E6)),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x0A121214),
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: transactions.length,
+                      separatorBuilder: (context, index) => const Divider(
+                        color: Color(0xFFE1E1E6),
+                        height: 1,
+                        thickness: 0.5,
+                      ),
+                      itemBuilder: (context, index) {
+                        final tx = transactions[index];
 
-            // Transactions Header
-            const Text(
-              'Transaction history',
-              style: TextStyle(
-                color: Color(0xFF6C6F79),
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 14),
+                        final isCredit =
+                            tx.type == 'RECHARGE' ||
+                            tx.type == 'CREDIT' ||
+                            tx.type == 'BOOKING_CREDIT' ||
+                            tx.type == 'BONUS';
+                        
+                        Color iconColor;
+                        Color iconBg;
+                        IconData iconData;
+                        String titleText;
 
-            // Transactions List
-            if (transactions.isEmpty)
-              Container(
-                height: 120,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE1E1E6)),
-                ),
-                child: const Text(
-                  'No transactions found.',
-                  style: TextStyle(color: Color(0xFF6C6F79), fontSize: 13),
-                ),
-              )
-            else
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE1E1E6)),
-                  boxShadow: const [
-                    BoxShadow(color: Color(0x05121214), blurRadius: 8, offset: Offset(0, 2)),
-                  ],
-                ),
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: transactions.length,
-                  separatorBuilder: (context, index) => const Divider(color: Color(0xFFE1E1E6), height: 1),
-                  itemBuilder: (context, index) {
-                    final tx = transactions[index];
+                        if (tx.type == 'RECHARGE') {
+                          iconColor = const Color(0xFF1C9A5B);
+                          iconBg = const Color(0xFFE7F7EF);
+                          iconData = Icons.add_rounded;
+                          titleText = 'Wallet recharge';
+                        } else if (tx.type == 'CREDIT' || tx.type == 'BOOKING_CREDIT') {
+                          iconColor = const Color(0xFF1C9A5B);
+                          iconBg = const Color(0xFFE7F7EF);
+                          iconData = Icons.directions_car_rounded;
+                          titleText = 'Trip Earnings';
+                        } else {
+                          iconColor = const Color(0xFF121214);
+                          iconBg = const Color(0xFFF1F1F4);
+                          iconData = Icons.arrow_outward_rounded;
+                          titleText = tx.type == 'COMMISSION_DEBIT' ? 'Commission Debit' : 'Withdrawal';
+                        }
 
-                    final isCredit =
-                        tx.type == 'RECHARGE' ||
-                        tx.type == 'CREDIT' ||
-                        tx.type == 'BONUS';
-                    
-                    Color iconColor;
-                    Color iconBg;
-                    IconData iconData;
-                    String titleText;
-
-                    if (tx.type == 'RECHARGE') {
-                      iconColor = const Color(0xFF1C9A5B);
-                      iconBg = const Color(0xFFE7F7EF);
-                      iconData = Icons.add_card_rounded;
-                      titleText = 'Wallet recharge';
-                    } else if (tx.type == 'CREDIT') {
-                      iconColor = const Color(0xFF121214);
-                      iconBg = const Color(0xFFF1F1F3);
-                      iconData = Icons.arrow_downward_rounded;
-                      titleText = 'Trip Earnings';
-                    } else {
-                      iconColor = const Color(0xFF121214);
-                      iconBg = const Color(0xFFF1F1F3);
-                      iconData = Icons.arrow_upward_rounded;
-                      titleText = 'Withdrawal';
-                    }
-
-                    return Container(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: iconBg,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(iconData, color: iconColor, size: 24),
+                        return Theme(
+                          data: Theme.of(context).copyWith(
+                            dividerColor: Colors.transparent,
+                            hoverColor: Colors.transparent,
+                            splashColor: Colors.transparent,
+                            highlightColor: Colors.transparent,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                          child: ExpansionTile(
+                            tilePadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                            iconColor: const Color(0xFF6C6F79),
+                            collapsedIconColor: const Color(0xFF6C6F79),
+                            title: Row(
                               children: [
-                                Text(
-                                  titleText,
-                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5, color: Color(0xFF121214)),
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: iconBg,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(iconData, color: iconColor, size: 18),
                                 ),
-                                const SizedBox(height: 2),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        titleText,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.normal,
+                                          fontSize: 14.5,
+                                          fontFamily: 'Outfit',
+                                          color: Color(0xFF121214),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        _formatDateTime(tx.createdAt),
+                                        style: const TextStyle(
+                                          color: Color(0xFF6C6F79),
+                                          fontSize: 12.5,
+                                          fontFamily: 'Outfit',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                                 Text(
-                                  '${_formatDateTime(tx.createdAt)} · ${tx.description}',
-                                  style: const TextStyle(color: Color(0xFF6C6F79), fontSize: 12.5),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  '${isCredit ? "+" : "−"}₹${tx.amount.abs().toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.normal,
+                                    fontSize: 15,
+                                    fontFamily: 'IBM Plex Mono',
+                                    color: isCredit ? const Color(0xFF1C9A5B) : const Color(0xFF121214),
+                                  ),
                                 ),
                               ],
                             ),
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.only(left: 18, right: 18, bottom: 16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Divider(color: Color(0xFFE1E1E6), thickness: 0.5),
+                                    const SizedBox(height: 8),
+                                    _buildDetailRow('Transaction Type', tx.type),
+                                    _buildDetailRow('Status', tx.status),
+                                    _buildDetailRow('Opening Balance', '₹${tx.openingBalance.toStringAsFixed(2)}'),
+                                    _buildDetailRow('Closing Balance', '₹${tx.closingBalance.toStringAsFixed(2)}'),
+                                    _buildDetailRow('Reference No.', tx.referenceNumber),
+                                    if (tx.bookingNumber != null && tx.bookingNumber!.isNotEmpty)
+                                      _buildDetailRow('Booking No.', tx.bookingNumber!),
+                                    if (tx.remarks.isNotEmpty)
+                                      _buildDetailRow('Remarks', tx.remarks),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            '${isCredit ? "+" : "−"}₹${tx.amount.toStringAsFixed(0)}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                              color: isCredit ? const Color(0xFF1C9A5B) : const Color(0xFF121214),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-          ],
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFFA2A5AE),
+              fontSize: 12.5,
+              fontFamily: 'Outfit',
+            ),
+          ),
+          Flexible(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Color(0xFF121214),
+                fontSize: 12.5,
+                fontFamily: 'Outfit',
+              ),
+              textAlign: TextAlign.end,
+            ),
+          ),
+        ],
       ),
     );
   }
