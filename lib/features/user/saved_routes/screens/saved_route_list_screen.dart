@@ -7,7 +7,8 @@ import 'package:riderzz_app/features/user/addresses/address_list_screen.dart';
 import 'package:riderzz_app/features/user/saved_routes/providers/saved_route_provider.dart';
 
 class SavedRouteListScreen extends StatefulWidget {
-  const SavedRouteListScreen({super.key});
+  final bool showBackButton;
+  const SavedRouteListScreen({super.key, this.showBackButton = true});
 
   @override
   State<SavedRouteListScreen> createState() => _SavedRouteListScreenState();
@@ -427,10 +428,13 @@ class _SavedRouteListScreenState extends State<SavedRouteListScreen> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF121214), size: 20),
-        ),
+        leading: widget.showBackButton
+            ? IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF121214), size: 20),
+              )
+            : null,
+        automaticallyImplyLeading: widget.showBackButton,
         title: Text(
           'Saved Routes',
           style: GoogleFonts.poppins(

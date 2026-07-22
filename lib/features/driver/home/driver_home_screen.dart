@@ -171,7 +171,15 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F8),
-      body: _buildTabContent(),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: const [
+          DriverHomePage(),
+          DriverHistoryPage(),
+          DriverWalletPage(),
+          DriverProfilePage(),
+        ],
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.9),
@@ -193,6 +201,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
               setState(() {
                 _currentIndex = index;
               });
+              if (index == 0) {
+                context.read<DriverHomeProvider>().fetchHomeBookings();
+              }
             },
             type: BottomNavigationBarType.fixed,
             backgroundColor: Colors.transparent,
@@ -230,18 +241,4 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
     );
   }
 
-  Widget _buildTabContent() {
-    switch (_currentIndex) {
-      case 0:
-        return const DriverHomePage();
-      case 1:
-        return const DriverHistoryPage();
-      case 2:
-        return const DriverWalletPage();
-      case 3:
-        return const DriverProfilePage();
-      default:
-        return const DriverHomePage();
-    }
-  }
 }

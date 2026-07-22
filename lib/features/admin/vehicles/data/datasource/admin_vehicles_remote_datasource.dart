@@ -44,12 +44,9 @@ class AdminVehiclesRemoteDataSource {
     required String name,
     required String iconUrl,
     required int maxWeightKg,
-    required double baseFare,
-    required double perKmRate,
     required double minimumWalletBalance,
     required bool tollEnabled,
     required bool dynamicPricingEnabled,
-    required bool active,
   }) async {
     final response = await _apiClient.post(
       ApiConstants.vehicleTypes,
@@ -57,12 +54,9 @@ class AdminVehiclesRemoteDataSource {
         'name': name,
         'iconUrl': iconUrl,
         'maxWeightKg': maxWeightKg,
-        'baseFare': baseFare,
-        'perKmRate': perKmRate,
         'minimumWalletBalance': minimumWalletBalance,
         'tollEnabled': tollEnabled,
         'dynamicPricingEnabled': dynamicPricingEnabled,
-        'active': active,
       },
     );
     final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
@@ -75,12 +69,9 @@ class AdminVehiclesRemoteDataSource {
     required String name,
     required String iconUrl,
     required int maxWeightKg,
-    required double baseFare,
-    required double perKmRate,
     required double minimumWalletBalance,
     required bool tollEnabled,
     required bool dynamicPricingEnabled,
-    required bool active,
   }) async {
     final response = await _apiClient.put(
       '${ApiConstants.vehicleTypes}/$id',
@@ -88,12 +79,9 @@ class AdminVehiclesRemoteDataSource {
         'name': name,
         'iconUrl': iconUrl,
         'maxWeightKg': maxWeightKg,
-        'baseFare': baseFare,
-        'perKmRate': perKmRate,
         'minimumWalletBalance': minimumWalletBalance,
         'tollEnabled': tollEnabled,
         'dynamicPricingEnabled': dynamicPricingEnabled,
-        'active': active,
       },
     );
     final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);

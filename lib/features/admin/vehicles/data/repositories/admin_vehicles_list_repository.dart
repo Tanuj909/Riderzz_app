@@ -6,8 +6,8 @@ class AdminVehiclesListRepository {
 
   AdminVehiclesListRepository(this._remoteDataSource);
 
-  Future<List<AdminVehicleModel>> getAllVehicles({int page = 0, int size = 20}) async {
-    return await _remoteDataSource.getAllVehicles(page: page, size: size);
+  Future<List<AdminVehicleModel>> getAllVehicles({String? status, int? vehicleTypeId, int page = 0, int size = 20}) async {
+    return await _remoteDataSource.getAllVehicles(status: status, vehicleTypeId: vehicleTypeId, page: page, size: size);
   }
 
   Future<AdminVehicleModel> getVehicleById(int id) async {

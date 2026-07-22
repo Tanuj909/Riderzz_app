@@ -31,6 +31,8 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
   bool _isDetailsExpanded = false;
   bool _hasStartedAutoPop = false;
   String? _localStatus;
+  bool _wasAlreadyCompleted = false;
+  bool _hasShownStatusDialog = false;
 
   final LatLng _defaultDelhi = const LatLng(28.6139, 77.2090);
 
@@ -47,11 +49,111 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
   @override
   void initState() {
     super.initState();
+    final initialStatus = widget.booking.status.toUpperCase();
+    _wasAlreadyCompleted = (initialStatus == 'DELIVERED' || initialStatus == 'COMPLETED');
     _loadMarkerIcons();
     _fetchRoute();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DriverHomeProvider>().fetchDriverProfile();
+      if (initialStatus == 'CANCELLED' || initialStatus == 'FAILED') {
+        _showStatusModal(initialStatus);
+      }
     });
+  }
+
+  void _checkAndShowStatusDialog(String status) {
+    if (_hasShownStatusDialog) return;
+    if (status == 'CANCELLED' || status == 'FAILED') {
+      _hasShownStatusDialog = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showStatusModal(status);
+      });
+    }
+  }
+
+  void _showStatusModal(String status) {
+    final isCancelled = status == 'CANCELLED';
+    final reason = widget.booking.goodsDescription.isNotEmpty 
+        ? widget.booking.goodsDescription 
+        : 'Customer changed mind';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 28.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isCancelled ? const Color(0xFFFEF2F2) : const Color(0xFFFEF3C7),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isCancelled ? Icons.cancel_outlined : Icons.error_outline_rounded,
+                    color: isCancelled ? const Color(0xFFDC2626) : const Color(0xFFD97706),
+                    size: 40,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  isCancelled ? 'Booking Cancelled' : 'Booking Failed',
+                  style: GoogleFonts.outfit(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF121214),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  isCancelled 
+                      ? 'This booking was cancelled.\nReason: $reason'
+                      : 'Booking was failed!',
+                  style: GoogleFonts.outfit(
+                    fontSize: 14.5,
+                    color: const Color(0xFF4A5568),
+                    fontWeight: FontWeight.w500,
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(dialogContext); // close dialog
+                      Navigator.pop(context); // pop details screen
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isCancelled ? const Color(0xFFCC2D3B) : const Color(0xFF121214),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: Text(
+                      'Close',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<Uint8List> _getBytesFromAsset(String path, int width) async {
@@ -457,48 +559,142 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
     showDialog(
       context: context,
       builder: (ctx) {
-        return AlertDialog(
-          title: Text(
-            'Reject Booking',
-            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-          ),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              labelText: 'Reason for rejection',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.pop(ctx);
-                final success = await driverProvider.rejectBookingForDriver(bookingId, controller.text);
-                if (success && mounted) {
-                  Navigator.pop(context); // Pop details screen since it's rejected
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Booking rejected successfully')),
-                  );
-                } else if (!success && mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(driverProvider.bookingsError ?? 'Failed to reject booking'),
-                      backgroundColor: Colors.redAccent,
+        return Dialog(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFE5E7),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.warning_amber_rounded,
+                        color: Color(0xFFE53E4F),
+                        size: 24,
+                      ),
                     ),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD90429),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Reject'),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Reject Booking',
+                      style: GoogleFonts.outfit(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF121214),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Please provide a reason for rejecting this booking.',
+                  style: GoogleFonts.outfit(
+                    fontSize: 14,
+                    color: const Color(0xFF6C6F79),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  maxLines: 3,
+                  style: GoogleFonts.outfit(
+                    fontSize: 14,
+                    color: const Color(0xFF121214),
+                    fontWeight: FontWeight.w600,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Enter reason here...',
+                    hintStyle: GoogleFonts.outfit(
+                      color: const Color(0xFFA2A5AE),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    contentPadding: const EdgeInsets.all(16),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: Color(0xFFCC2D3B), width: 1.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        foregroundColor: const Color(0xFF6C6F79),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        final success = await driverProvider.rejectBookingForDriver(bookingId, controller.text);
+                        if (success && mounted) {
+                          Navigator.pop(context); // Pop details screen since it's rejected
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Booking rejected successfully')),
+                          );
+                        } else if (!success && mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(driverProvider.bookingsError ?? 'Failed to reject booking'),
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFCC2D3B),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                      ),
+                      child: Text(
+                        'Reject',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );
@@ -541,7 +737,9 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
   @override
   Widget build(BuildContext context) {
     final driverProvider = Provider.of<DriverHomeProvider>(context);
-    final booking = driverProvider.activeBooking ?? widget.booking;
+    final booking = (driverProvider.activeBooking != null && driverProvider.activeBooking!.id == widget.booking.id)
+        ? driverProvider.activeBooking!
+        : widget.booking;
 
     final pickupLat = booking.pickupLatitude;
     final pickupLng = booking.pickupLongitude;
@@ -551,9 +749,13 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
 
     final String statusUpper = (_localStatus ?? booking.status).toUpperCase();
     final bool needsOtpVerification = statusUpper == 'DRIVER_ARRIVED';
-    final bool isDelivered = statusUpper == 'DELIVERED';
+    final bool isDelivered = statusUpper == 'DELIVERED' || statusUpper == 'COMPLETED';
 
-    if (isDelivered && !_hasStartedAutoPop) {
+    if (statusUpper == 'CANCELLED' || statusUpper == 'FAILED') {
+      _checkAndShowStatusDialog(statusUpper);
+    }
+
+    if (isDelivered && !_wasAlreadyCompleted && !_hasStartedAutoPop) {
       _hasStartedAutoPop = true;
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted) {
@@ -1320,70 +1522,143 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      width: 100,
-                      height: 100,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF1C9A5B),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(color: Color(0x4D1C9A5B), blurRadius: 32, offset: Offset(0, 12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE7F7EF),
+                        borderRadius: BorderRadius.circular(100),
+                        border: Border.all(color: const Color(0xFF1C9A5B).withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.check_circle_rounded, color: Color(0xFF1C9A5B), size: 16),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Completed',
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFF1C9A5B),
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
                         ],
                       ),
-                      child: const Icon(Icons.check, color: Colors.white, size: 48),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
                     Text(
-                      'Booking Complete!',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF121214),
+                      'Trip Earnings',
+                      style: GoogleFonts.outfit(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF6C6F79),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'You earned',
-                      style: GoogleFonts.outfit(
-                        fontSize: 16,
-                        color: const Color(0xFF6C6F79),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
                       '₹${booking.totalFare.toStringAsFixed(2)}',
-                      style: GoogleFonts.ibmPlexMono(
-                        fontSize: 56,
-                        fontWeight: FontWeight.w800,
+                      style: GoogleFonts.outfit(
+                        fontSize: 48,
+                        fontWeight: FontWeight.w900,
                         color: const Color(0xFF121214),
+                        letterSpacing: -1,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Going to home page in 3 seconds...',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14,
-                        color: const Color(0xFF6C6F79),
-                        fontWeight: FontWeight.bold,
+                    if (_wasAlreadyCompleted) ...[
+                      const SizedBox(height: 28),
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x05121214),
+                              blurRadius: 10,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.star_rounded, color: Color(0xFFFFB000), size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Customer Rating',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF121214),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                5,
+                                (index) => const Icon(
+                                  Icons.star_rounded,
+                                  color: Color(0xFFFFB000),
+                                  size: 24,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              '"Very fast delivery, polite behavior and well-maintained vehicle. Excellent service!"',
+                              style: GoogleFonts.outfit(
+                                fontSize: 13.5,
+                                color: const Color(0xFF4A5568),
+                                fontStyle: FontStyle.italic,
+                                fontWeight: FontWeight.w500,
+                                height: 1.4,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                    ] else ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        'Going to home page in 3 seconds...',
+                        style: GoogleFonts.outfit(
+                          fontSize: 14,
+                          color: const Color(0xFF6C6F79),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 32),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          // Clear active booking and pop back to home immediately
-                          driverProvider.fetchHomeBookings();
+                          // Clear active booking ONLY if this is a newly/live completed trip
+                          if (!_wasAlreadyCompleted) {
+                            driverProvider.fetchHomeBookings();
+                          }
                           Navigator.pop(context);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF121214),
+                          backgroundColor: const Color(0xFFCC2D3B),
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                           elevation: 0,
                         ),
-                        child: const Text('Go to Home Now'),
+                        child: Text(
+                          _wasAlreadyCompleted ? 'Close' : 'Go to Home Now',
+                          style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 15),
+                        ),
                       ),
                     ),
                   ],

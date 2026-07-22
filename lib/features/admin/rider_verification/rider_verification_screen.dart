@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/core/models/admin_driver_model.dart';
 import 'package:riderzz_app/features/admin/rider_verification/providers/rider_verification_provider.dart';
 
@@ -110,20 +111,20 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                       child: InkWell(
                         onTap: () => provider.setStatusFilter(status),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(24),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             color: isSelected ? _getStatusBgColor(status) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(24),
                             border: isSelected
                                 ? Border.all(color: _getStatusColor(status).withValues(alpha: 0.3))
                                 : null,
                           ),
                           child: Text(
                             status.replaceFirst('_', ' '),
-                            style: TextStyle(
+                            style: GoogleFonts.outfit(
                               color: isSelected ? _getStatusColor(status) : const Color(0xFF6C6F79),
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
@@ -161,13 +162,13 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                                     Text(
                                       provider.errorMessage!,
                                       textAlign: TextAlign.center,
-                                      style: const TextStyle(color: Color(0xFF4A5568), fontSize: 14),
+                                      style: GoogleFonts.outfit(color: Color(0xFF4A5568), fontSize: 14),
                                     ),
                                     const SizedBox(height: 16),
                                     ElevatedButton(
                                       style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE31C2E)),
                                       onPressed: () => provider.fetchDrivers(isRefresh: true),
-                                      child: const Text('Retry', style: TextStyle(color: Colors.white)),
+                                      child: Text('Retry', style: GoogleFonts.outfit(color: Colors.white)),
                                     ),
                                   ],
                                 ),
@@ -192,7 +193,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                                           const SizedBox(height: 16),
                                           Text(
                                             'No Drivers Found (${provider.currentStatusFilter})',
-                                            style: const TextStyle(
+                                            style: GoogleFonts.outfit(
                                               fontSize: 15,
                                               fontWeight: FontWeight.bold,
                                               color: Color(0xFF121214),
@@ -243,7 +244,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFE7E7EB)),
         boxShadow: [
           BoxShadow(
@@ -255,10 +256,10 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         child: InkWell(
           onTap: () => _showDriverDetailsBottomSheet(driver),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -274,7 +275,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                         children: [
                           Text(
                             driver.name,
-                            style: const TextStyle(
+                            style: GoogleFonts.outfit(
                               color: Color(0xFF121214),
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
@@ -283,7 +284,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                           const SizedBox(height: 2),
                           Text(
                             '+91 ${driver.phone}',
-                            style: const TextStyle(
+                            style: GoogleFonts.outfit(
                               color: Color(0xFF6C6F79),
                               fontSize: 12,
                             ),
@@ -299,7 +300,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                       ),
                       child: Text(
                         driver.approvalStatus,
-                        style: TextStyle(
+                        style: GoogleFonts.outfit(
                           color: _getStatusColor(driver.approvalStatus),
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
@@ -334,7 +335,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                             driver.vehicle != null
                                 ? '${driver.vehicle!.make} ${driver.vehicle!.model}'
                                 : 'No vehicle info',
-                            style: const TextStyle(
+                            style: GoogleFonts.outfit(
                               color: Color(0xFF121214),
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
@@ -343,7 +344,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                           const SizedBox(height: 2),
                           Text(
                             'Plate: ${driver.vehicleNumber}',
-                            style: const TextStyle(
+                            style: GoogleFonts.outfit(
                               color: Color(0xFF6C6F79),
                               fontSize: 11,
                             ),
@@ -366,7 +367,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                         const SizedBox(width: 4),
                         Text(
                           driver.rating.toStringAsFixed(1),
-                          style: const TextStyle(
+                          style: GoogleFonts.outfit(
                             color: Color(0xFF121214),
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
@@ -377,7 +378,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                         const SizedBox(width: 4),
                         Text(
                           '${driver.totalTrips} Trips',
-                          style: const TextStyle(
+                          style: GoogleFonts.outfit(
                             color: Color(0xFF121214),
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
@@ -385,11 +386,11 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                         ),
                       ],
                     ),
-                    const Row(
+                    Row(
                       children: [
                         Text(
                           'Verify Documents',
-                          style: TextStyle(
+                          style: GoogleFonts.outfit(
                             color: Color(0xFFE31C2E),
                             fontWeight: FontWeight.bold,
                             fontSize: 11,
@@ -530,11 +531,11 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Color(0xFF6C6F79), fontSize: 12)),
+          Text(label, style: GoogleFonts.outfit(color: Color(0xFF6C6F79), fontSize: 12)),
           Flexible(
             child: Text(
               value,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
               textAlign: TextAlign.end,
             ),
           ),
@@ -612,12 +613,12 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                 children: [
                                   Text(
                                     driver.name,
-                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
+                                    style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     'Phone: +91 ${driver.phone}${driver.email != null ? ' • ${driver.email}' : ''}',
-                                    style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79)),
+                                    style: GoogleFonts.outfit(fontSize: 12, color: Color(0xFF6C6F79)),
                                   ),
                                 ],
                               ),
@@ -635,7 +636,7 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                     ),
                                     child: Text(
                                       driver.vehicleTypeName!,
-                                      style: const TextStyle(
+                                      style: GoogleFonts.outfit(
                                         color: Color(0xFFE31C2E),
                                         fontSize: 11,
                                         fontWeight: FontWeight.bold,
@@ -646,7 +647,7 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                 TextButton.icon(
                                   onPressed: () => _showEditDriverDialog(driver),
                                   icon: const Icon(Icons.edit_rounded, size: 14, color: Color(0xFFE31C2E)),
-                                  label: const Text('Edit Info', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFE31C2E))),
+                                  label: Text('Edit Info', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFE31C2E))),
                                   style: TextButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     minimumSize: Size.zero,
@@ -660,13 +661,13 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                         const SizedBox(height: 16),
 
                         // Personal Information Section
-                        const Text('Personal Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF121214))),
+                        Text('Personal Information', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF121214))),
                         const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF6F6F8),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: const Color(0xFFE7E7EB)),
                           ),
                           child: Column(
@@ -686,13 +687,13 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                         const SizedBox(height: 16),
 
                         // Vehicle Information Section
-                        const Text('Vehicle Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF121214))),
+                        Text('Vehicle Information', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF121214))),
                         const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF6F6F8),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: const Color(0xFFE7E7EB)),
                           ),
                           child: Column(
@@ -719,7 +720,7 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                         // Documents Verification list
                         Text(
                           'Verification Documents (${driver.documents.length})',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF121214)),
+                          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF121214)),
                         ),
                         const SizedBox(height: 8),
                         if (driver.documents.isEmpty)
@@ -727,13 +728,13 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF6F6F8),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(20),
                               border: Border.all(color: const Color(0xFFE7E7EB)),
                             ),
-                            child: const Center(
+                            child: Center(
                               child: Text(
                                 'No documents uploaded yet.',
-                                style: TextStyle(color: Color(0xFF6C6F79), fontSize: 13),
+                                style: GoogleFonts.outfit(color: Color(0xFF6C6F79), fontSize: 13),
                               ),
                             ),
                           )
@@ -744,7 +745,7 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(20),
                                 border: Border.all(color: const Color(0xFFE7E7EB)),
                               ),
                               child: Row(
@@ -761,18 +762,18 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                             children: [
                                               Text(
                                                 doc.docType.replaceAll('_', ' '),
-                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
+                                                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
                                               ),
                                               const SizedBox(height: 2),
                                               Text(
                                                 doc.status,
-                                                style: TextStyle(color: _getDocStatusColor(doc.status), fontSize: 10, fontWeight: FontWeight.bold),
+                                                style: GoogleFonts.outfit(color: _getDocStatusColor(doc.status), fontSize: 10, fontWeight: FontWeight.bold),
                                               ),
                                               if (doc.rejectionReason != null && doc.rejectionReason!.isNotEmpty) ...[
                                                 const SizedBox(height: 2),
                                                 Text(
                                                   'Reason: ${doc.rejectionReason}',
-                                                  style: const TextStyle(color: Colors.redAccent, fontSize: 10),
+                                                  style: GoogleFonts.outfit(color: Colors.redAccent, fontSize: 10),
                                                 ),
                                               ],
                                             ],
@@ -787,10 +788,10 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                       foregroundColor: const Color(0xFFE31C2E),
                                       elevation: 0,
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
                                     ),
                                     icon: const Icon(Icons.remove_red_eye_rounded, size: 14),
-                                    label: const Text('View', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    label: Text('View', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold)),
                                     onPressed: () => _showDocumentViewerDialog(driver, doc),
                                   ),
                                 ],
@@ -805,7 +806,7 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF6F6F8),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(20),
                               border: Border.all(color: const Color(0xFFE7E7EB)),
                             ),
                             child: Row(
@@ -820,12 +821,12 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                       children: [
                                         Text(
                                           docType.replaceAll('_', ' '),
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF6C6F79)),
+                                          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF6C6F79)),
                                         ),
                                         const SizedBox(height: 2),
-                                        const Text(
+                                        Text(
                                           'Not Uploaded',
-                                          style: TextStyle(color: Color(0xFF6C6F79), fontSize: 10, fontWeight: FontWeight.bold),
+                                          style: GoogleFonts.outfit(color: Color(0xFF6C6F79), fontSize: 10, fontWeight: FontWeight.bold),
                                         ),
                                       ],
                                     ),
@@ -837,9 +838,9 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                     color: const Color(0xFFF1F1F4),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'Missing',
-                                    style: TextStyle(color: Color(0xFF6C6F79), fontSize: 10, fontWeight: FontWeight.bold),
+                                    style: GoogleFonts.outfit(color: Color(0xFF6C6F79), fontSize: 10, fontWeight: FontWeight.bold),
                                   ),
                                 ),
                               ],
@@ -866,10 +867,10 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF1F1F4),
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(20),
                                   border: Border.all(color: const Color(0xFFE7E7EB)),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF6C6F79)),
@@ -877,7 +878,7 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                     Expanded(
                                       child: Text(
                                         'Driver is currently suspended. You can activate this driver below.',
-                                        style: TextStyle(
+                                        style: GoogleFonts.outfit(
                                           color: Color(0xFF4A5568),
                                           fontSize: 13,
                                           fontWeight: FontWeight.w500,
@@ -896,11 +897,11 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                         backgroundColor: const Color(0xFF1C9A5B),
                                         foregroundColor: Colors.white,
                                         padding: const EdgeInsets.symmetric(vertical: 14),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                         elevation: 0,
                                       ),
                                       onPressed: () => _updateStatus('ACTIVATED'),
-                                      child: const Text('Activate Driver', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                      child: Text('Activate Driver', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13)),
                                     ),
                                   ),
                                 ],
@@ -919,11 +920,11 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                           backgroundColor: const Color(0xFF1C9A5B),
                                           foregroundColor: Colors.white,
                                           padding: const EdgeInsets.symmetric(vertical: 14),
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                           elevation: 0,
                                         ),
                                         onPressed: () => _updateStatus('APPROVED'),
-                                        child: const Text('Approve Application', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                        child: Text('Approve Application', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13)),
                                       ),
                                     ),
                                   ],
@@ -938,11 +939,11 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                         backgroundColor: Colors.redAccent,
                                         foregroundColor: Colors.white,
                                         padding: const EdgeInsets.symmetric(vertical: 14),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                         elevation: 0,
                                       ),
                                       onPressed: () => _updateStatus('REJECTED'),
-                                      child: const Text('Reject Application', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                      child: Text('Reject Application', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13)),
                                     ),
                                   ),
                                 ],
@@ -957,11 +958,11 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                           backgroundColor: const Color(0xFF6C6F79),
                                           foregroundColor: Colors.white,
                                           padding: const EdgeInsets.symmetric(vertical: 12),
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                           elevation: 0,
                                         ),
                                         onPressed: () => _updateStatus('SUSPENDED'),
-                                        child: const Text('Suspend Driver', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                        child: Text('Suspend Driver', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12)),
                                       ),
                                     ),
                                   ],
@@ -1123,7 +1124,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
       height: 190,
       decoration: BoxDecoration(
         gradient: cardGradient,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.15),
@@ -1171,7 +1172,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                       children: [
                         Text(
                           cardTitle,
-                          style: const TextStyle(
+                          style: GoogleFonts.outfit(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -1181,7 +1182,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                         const SizedBox(height: 2),
                         Text(
                           cardLabel,
-                          style: TextStyle(
+                          style: GoogleFonts.outfit(
                             color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 9,
                             fontWeight: FontWeight.w500,
@@ -1223,7 +1224,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                         children: [
                           Text(
                             widget.driver.name.toUpperCase(),
-                            style: const TextStyle(
+                            style: GoogleFonts.outfit(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
@@ -1233,9 +1234,8 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                           const SizedBox(height: 2),
                           Text(
                             _getFormattedDocNo(docType),
-                            style: TextStyle(
+                            style: GoogleFonts.outfit(
                               color: Colors.white.withValues(alpha: 0.8),
-                              fontFamily: 'Courier',
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
                               letterSpacing: 1.2,
@@ -1267,7 +1267,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                           const SizedBox(width: 4),
                           Text(
                             docStatus,
-                            style: TextStyle(
+                            style: GoogleFonts.outfit(
                               color: _getDocStatusColor(docStatus),
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
@@ -1280,7 +1280,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                       children: [
                         Text(
                           'RIDERZZ VERIFIED',
-                          style: TextStyle(
+                          style: GoogleFonts.outfit(
                             color: Colors.white.withValues(alpha: 0.4),
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
@@ -1376,7 +1376,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
         final rejectionReason = currentDoc.rejectionReason;
 
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           backgroundColor: Colors.white,
           titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
           contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -1386,7 +1386,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
             children: [
               Text(
                 docType.replaceAll('_', ' '),
-                style: const TextStyle(
+                style: GoogleFonts.outfit(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                   color: Color(0xFF121214),
@@ -1410,7 +1410,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                   height: 190,
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(24),
                     border: Border.all(color: const Color(0xFFE7E7EB)),
                   ),
                   child: Column(
@@ -1429,18 +1429,18 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                         ),
                       ),
                       const SizedBox(height: 14),
-                      const Text(
+                      Text(
                         'Feature Coming Soon',
-                        style: TextStyle(
+                        style: GoogleFonts.outfit(
                           color: Color(0xFF1E293B),
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      const Text(
+                      Text(
                         'Document previews are not available in this build.',
-                        style: TextStyle(
+                        style: GoogleFonts.outfit(
                           color: Color(0xFF64748B),
                           fontSize: 11,
                         ),
@@ -1462,13 +1462,13 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           children: [
                             Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 16),
                             SizedBox(width: 6),
                             Text(
                               'Rejection Reason',
-                              style: TextStyle(
+                              style: GoogleFonts.outfit(
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF991B1B),
                                 fontSize: 12,
@@ -1479,7 +1479,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                         const SizedBox(height: 6),
                         Text(
                           rejectionReason,
-                          style: const TextStyle(
+                          style: GoogleFonts.outfit(
                             color: Color(0xFF991B1B),
                             fontSize: 12,
                           ),
@@ -1496,9 +1496,9 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text(
+                        Text(
                           'Reason for Rejection',
-                          style: TextStyle(
+                          style: GoogleFonts.outfit(
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                             color: Color(0xFF121214),
@@ -1508,10 +1508,10 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                         TextFormField(
                           controller: _reasonController,
                           autofocus: true,
-                          style: const TextStyle(fontSize: 13),
+                          style: GoogleFonts.outfit(fontSize: 13),
                           decoration: InputDecoration(
                             hintText: 'e.g., Document image is blurry',
-                            hintStyle: const TextStyle(color: Color(0xFFB0B8C4), fontSize: 13),
+                            hintStyle: GoogleFonts.outfit(color: Color(0xFFB0B8C4), fontSize: 13),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             filled: true,
                             fillColor: const Color(0xFFF6F6F8),
@@ -1573,7 +1573,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                           _reasonController.clear();
                         });
                       },
-                      child: const Text('Back', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                      child: Text('Back', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -1587,7 +1587,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       onPressed: () => _handleVerify('REJECTED'),
-                      child: const Text('Confirm Reject', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                      child: Text('Confirm Reject', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
                   ),
                 ],
@@ -1606,7 +1606,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         onPressed: () => _handleVerify('APPROVED'),
-                        child: const Text('Approve', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        child: Text('Approve', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12)),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -1626,7 +1626,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                             _showRejectInput = true;
                           });
                         },
-                        child: const Text('Reject', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        child: Text('Reject', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12)),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -1640,7 +1640,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Close', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                      child: Text('Close', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
                   ),
                 ],
@@ -1705,7 +1705,7 @@ class _UpdateStatusConfirmationDialogState extends State<UpdateStatusConfirmatio
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         border: border,
         boxShadow: backgroundColor != Colors.transparent
             ? [
@@ -1721,14 +1721,14 @@ class _UpdateStatusConfirmationDialogState extends State<UpdateStatusConfirmatio
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(20),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 14),
             alignment: Alignment.center,
             child: Text(
               text,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: GoogleFonts.outfit(
                 color: textColor,
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
@@ -1759,20 +1759,20 @@ class _UpdateStatusConfirmationDialogState extends State<UpdateStatusConfirmatio
       subtitleWidget = RichText(
         textAlign: TextAlign.center,
         text: TextSpan(
-          style: const TextStyle(
+          style: GoogleFonts.outfit(
             fontSize: 13,
             color: Color(0xFF4A5568),
             height: 1.5,
           ),
           children: [
             const TextSpan(text: 'Are you sure you want to '),
-            const TextSpan(
+            TextSpan(
               text: 'approve ',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1C9A5B)),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Color(0xFF1C9A5B)),
             ),
             TextSpan(
               text: widget.driverName,
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A202C)),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Color(0xFF1A202C)),
             ),
             const TextSpan(text: '\'s application? This will immediately activate their profile as a driver.'),
           ],
@@ -1786,20 +1786,20 @@ class _UpdateStatusConfirmationDialogState extends State<UpdateStatusConfirmatio
       subtitleWidget = RichText(
         textAlign: TextAlign.center,
         text: TextSpan(
-          style: const TextStyle(
+          style: GoogleFonts.outfit(
             fontSize: 13,
             color: Color(0xFF4A5568),
             height: 1.5,
           ),
           children: [
             const TextSpan(text: 'Are you sure you want to '),
-            const TextSpan(
+            TextSpan(
               text: 'activate ',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1C9A5B)),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Color(0xFF1C9A5B)),
             ),
             TextSpan(
               text: widget.driverName,
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A202C)),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Color(0xFF1A202C)),
             ),
             const TextSpan(text: '? This will restore their active status on the platform.'),
           ],
@@ -1813,20 +1813,20 @@ class _UpdateStatusConfirmationDialogState extends State<UpdateStatusConfirmatio
       subtitleWidget = RichText(
         textAlign: TextAlign.center,
         text: TextSpan(
-          style: const TextStyle(
+          style: GoogleFonts.outfit(
             fontSize: 13,
             color: Color(0xFF4A5568),
             height: 1.5,
           ),
           children: [
             const TextSpan(text: 'Are you sure you want to '),
-            const TextSpan(
+            TextSpan(
               text: 'reject ',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
             ),
             TextSpan(
               text: widget.driverName,
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A202C)),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Color(0xFF1A202C)),
             ),
             const TextSpan(text: '\'s application? Please specify a clear reason for the rejection below.'),
           ],
@@ -1840,20 +1840,20 @@ class _UpdateStatusConfirmationDialogState extends State<UpdateStatusConfirmatio
       subtitleWidget = RichText(
         textAlign: TextAlign.center,
         text: TextSpan(
-          style: const TextStyle(
+          style: GoogleFonts.outfit(
             fontSize: 13,
             color: Color(0xFF4A5568),
             height: 1.5,
           ),
           children: [
             const TextSpan(text: 'Are you sure you want to '),
-            const TextSpan(
+            TextSpan(
               text: 'suspend ',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6C6F79)),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Color(0xFF6C6F79)),
             ),
             TextSpan(
               text: widget.driverName,
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A202C)),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Color(0xFF1A202C)),
             ),
             const TextSpan(text: '? They will no longer be able to accept rides on the platform.'),
           ],
@@ -1908,7 +1908,7 @@ class _UpdateStatusConfirmationDialogState extends State<UpdateStatusConfirmatio
                 // Title
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: GoogleFonts.outfit(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF1A202C),
@@ -1926,27 +1926,27 @@ class _UpdateStatusConfirmationDialogState extends State<UpdateStatusConfirmatio
                     controller: _reasonController,
                     autofocus: true,
                     maxLines: 3,
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF1A202C)),
+                    style: GoogleFonts.outfit(fontSize: 13, color: Color(0xFF1A202C)),
                     decoration: InputDecoration(
                       hintText: 'e.g., Document image is too blurry or license is expired.',
-                      hintStyle: const TextStyle(color: Color(0xFFA0AEC0), fontSize: 12),
+                      hintStyle: GoogleFonts.outfit(color: Color(0xFFA0AEC0), fontSize: 12),
                       filled: true,
                       fillColor: const Color(0xFFF8FAFC),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(20),
                         borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(20),
                         borderSide: BorderSide(color: themeColor, width: 1.5),
                       ),
                       errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(20),
                         borderSide: const BorderSide(color: Colors.redAccent, width: 1),
                       ),
                       focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(20),
                         borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
                       ),
                     ),
@@ -2142,7 +2142,7 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       backgroundColor: Colors.white,
       child: ConstrainedBox(
         constraints: BoxConstraints(
@@ -2159,9 +2159,9 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Edit Driver Information',
-                    style: TextStyle(
+                    style: GoogleFonts.outfit(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                       color: Color(0xFF121214),
@@ -2267,7 +2267,7 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
                         side: const BorderSide(color: Color(0xFFE7E7EB)),
                       ),
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel', style: TextStyle(color: Color(0xFF4A5568))),
+                      child: Text('Cancel', style: GoogleFonts.outfit(color: Color(0xFF4A5568))),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -2289,7 +2289,7 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
                                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
-                          : const Text('Save Details', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          : Text('Save Details', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -2311,16 +2311,16 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
         ),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
-          style: const TextStyle(fontSize: 13),
+          style: GoogleFonts.outfit(fontSize: 13),
           decoration: InputDecoration(
             hintText: 'Enter $label',
-            hintStyle: const TextStyle(color: Color(0xFFB0B8C4), fontSize: 13),
+            hintStyle: GoogleFonts.outfit(color: Color(0xFFB0B8C4), fontSize: 13),
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             filled: true,
             fillColor: const Color(0xFFF8FAFC),
@@ -2344,17 +2344,17 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
         ),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,
           readOnly: true,
-          style: const TextStyle(fontSize: 13),
+          style: GoogleFonts.outfit(fontSize: 13),
           onTap: () => _selectDate(controller),
           decoration: InputDecoration(
             hintText: 'Select $label',
-            hintStyle: const TextStyle(color: Color(0xFFB0B8C4), fontSize: 13),
+            hintStyle: GoogleFonts.outfit(color: Color(0xFFB0B8C4), fontSize: 13),
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             filled: true,
             fillColor: const Color(0xFFF8FAFC),
@@ -2385,13 +2385,13 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<T>(
           value: value,
           onChanged: onChanged,
-          style: const TextStyle(fontSize: 13, color: Color(0xFF121214)),
+          style: GoogleFonts.outfit(fontSize: 13, color: Color(0xFF121214)),
           decoration: InputDecoration(
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             filled: true,

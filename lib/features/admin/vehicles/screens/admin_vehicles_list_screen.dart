@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/features/admin/vehicles/data/models/admin_vehicle_model.dart';
 import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_list_provider.dart';
@@ -32,22 +33,22 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
             }
             if (snapshot.hasError || snapshot.data == null) {
               return AlertDialog(
-                title: const Text('Error'),
-                content: const Text('Could not fetch vehicle details.'),
+                title: Text('Error'),
+                content: Text('Could not fetch vehicle details.'),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(dialogContext),
-                    child: const Text('Close'),
+                    child: Text('Close'),
                   ),
                 ],
               );
             }
             final vehicle = snapshot.data!;
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: const Text(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              title: Text(
                 'Vehicle Details',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF121214)),
+                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Color(0xFF121214)),
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -70,10 +71,10 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE31C2E),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
                   ),
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Close'),
+                  child: Text('Close'),
                 ),
               ],
             );
@@ -89,12 +90,12 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
       children: [
         Text(
           '$label: ',
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6C6F79)),
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Color(0xFF6C6F79)),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(color: Color(0xFF121214)),
+            style: GoogleFonts.outfit(color: Color(0xFF121214)),
           ),
         ),
       ],
@@ -149,9 +150,9 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Registered Vehicles',
-                        style: TextStyle(
+                        style: GoogleFonts.outfit(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF121214),
@@ -162,7 +163,7 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
                         provider.vehicles.isEmpty
                             ? 'No vehicles listed'
                             : '${provider.vehicles.length} vehicles registered in system',
-                        style: const TextStyle(
+                        style: GoogleFonts.outfit(
                           fontSize: 12,
                           color: Color(0xFF6C6F79),
                         ),
@@ -182,7 +183,7 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
                             children: [
                               Text(
                                 provider.errorMessage!,
-                                style: const TextStyle(color: Colors.redAccent),
+                                style: GoogleFonts.outfit(color: Colors.redAccent),
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 16),
@@ -192,16 +193,16 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
                                   foregroundColor: Colors.white,
                                 ),
                                 onPressed: () => provider.fetchVehicles(isRefresh: true),
-                                child: const Text('Retry'),
+                                child: Text('Retry'),
                               ),
                             ],
                           ),
                         )
                       : provider.vehicles.isEmpty
-                          ? const Center(
+                          ? Center(
                               child: Text(
                                 'No registered vehicles found.',
-                                style: TextStyle(color: Color(0xFF6C6F79)),
+                                style: GoogleFonts.outfit(color: Color(0xFF6C6F79)),
                               ),
                             )
                           : ListView.builder(
@@ -212,7 +213,7 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
                                 return Card(
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(20),
                                     side: const BorderSide(color: Color(0xFFE7E7EB)),
                                   ),
                                   margin: const EdgeInsets.only(bottom: 12),
@@ -226,7 +227,7 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
                                     ),
                                     title: Text(
                                       vehicle.vehicleTypeName,
-                                      style: const TextStyle(
+                                      style: GoogleFonts.outfit(
                                         fontWeight: FontWeight.bold,
                                         color: Color(0xFF121214),
                                       ),
@@ -237,7 +238,7 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
                                         vehicle.driverName != null && vehicle.driverName!.isNotEmpty
                                             ? 'Driver: ${vehicle.driverName}'
                                             : 'Driver: Not assigned',
-                                        style: const TextStyle(color: Color(0xFF6C6F79), fontSize: 13),
+                                        style: GoogleFonts.outfit(color: Color(0xFF6C6F79), fontSize: 13),
                                       ),
                                     ),
                                     trailing: Container(
@@ -248,7 +249,7 @@ class _AdminVehiclesListScreenState extends State<AdminVehiclesListScreen> {
                                       ),
                                       child: Text(
                                         vehicle.status,
-                                        style: TextStyle(
+                                        style: GoogleFonts.outfit(
                                           color: _getStatusColor(vehicle.status),
                                           fontWeight: FontWeight.bold,
                                           fontSize: 10,

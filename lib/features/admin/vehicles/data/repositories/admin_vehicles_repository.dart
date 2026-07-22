@@ -14,23 +14,17 @@ class AdminVehiclesRepository {
     required String name,
     required String iconUrl,
     required int maxWeightKg,
-    required double baseFare,
-    required double perKmRate,
     required double minimumWalletBalance,
     required bool tollEnabled,
     required bool dynamicPricingEnabled,
-    required bool active,
   }) async {
     return await _remoteDataSource.createVehicleType(
       name: name,
       iconUrl: iconUrl,
       maxWeightKg: maxWeightKg,
-      baseFare: baseFare,
-      perKmRate: perKmRate,
       minimumWalletBalance: minimumWalletBalance,
       tollEnabled: tollEnabled,
       dynamicPricingEnabled: dynamicPricingEnabled,
-      active: active,
     );
   }
 
@@ -39,24 +33,18 @@ class AdminVehiclesRepository {
     required String name,
     required String iconUrl,
     required int maxWeightKg,
-    required double baseFare,
-    required double perKmRate,
     required double minimumWalletBalance,
     required bool tollEnabled,
     required bool dynamicPricingEnabled,
-    required bool active,
   }) async {
     return await _remoteDataSource.updateVehicleType(
       id: id,
       name: name,
       iconUrl: iconUrl,
       maxWeightKg: maxWeightKg,
-      baseFare: baseFare,
-      perKmRate: perKmRate,
       minimumWalletBalance: minimumWalletBalance,
       tollEnabled: tollEnabled,
       dynamicPricingEnabled: dynamicPricingEnabled,
-      active: active,
     );
   }
 

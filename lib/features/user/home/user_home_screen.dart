@@ -7,6 +7,7 @@ import 'package:riderzz_app/features/user/home/pages/user_bookings_page.dart';
 import 'package:riderzz_app/features/user/addresses/address_list_screen.dart';
 import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
 import 'package:riderzz_app/features/user/home/pages/user_account_page.dart';
+import 'package:riderzz_app/features/user/saved_routes/screens/saved_route_list_screen.dart';
 
 class UserHomeScreen extends StatefulWidget {
   const UserHomeScreen({super.key});
@@ -85,10 +86,11 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   ),
                   const UserBookingsPage(),
                   const AddressListScreen(showBackButton: false),
+                  const SavedRouteListScreen(showBackButton: false),
                   UserAccountPage(
                     onNavigateToHistory: () {
                       setState(() {
-                        _currentIndex = 2;
+                        _currentIndex = 1;
                       });
                     },
                   ),
@@ -133,6 +135,11 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             icon: Icon(Icons.location_on_outlined),
             activeIcon: Icon(Icons.location_on_rounded),
             label: 'Address',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.route_outlined),
+            activeIcon: Icon(Icons.route_rounded),
+            label: 'Routes',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline_rounded),

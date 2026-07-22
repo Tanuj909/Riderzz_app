@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/admin/vehicles/screens/admin_vehicles_screen.dart';
 import 'package:riderzz_app/features/admin/vehicles/screens/admin_vehicles_list_screen.dart';
@@ -9,6 +10,7 @@ import 'package:riderzz_app/features/admin/rider_verification/rider_verification
 import 'package:riderzz_app/features/admin/rider_verification/providers/rider_verification_provider.dart';
 import 'package:riderzz_app/features/admin/wallets/screens/admin_wallets_screen.dart';
 import 'package:riderzz_app/features/admin/commission/screens/admin_commission_screen.dart';
+import 'package:riderzz_app/features/admin/commission/screens/admin_pricing_screen.dart';
 
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -78,9 +80,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     children: [
                       Text(
                         adminUser?.name ?? 'Administrator',
-                        style: const TextStyle(
+                        style: GoogleFonts.outfit(
                           color: Colors.white,
-                          fontSize: 17,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -96,12 +98,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Text(
+                          Text(
                             'SYSTEM ACTIVE',
-                            style: TextStyle(
-                              color: Colors.white70,
+                            style: GoogleFonts.outfit(
+                              color: Colors.white.withValues(alpha: 0.7),
                               fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ],
@@ -118,7 +121,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     },
                     offset: const Offset(0, 48),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     itemBuilder: (context) => [
                       // Profile Header
@@ -131,10 +134,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             children: [
                               Text(
                                 adminUser?.name ?? 'Administrator',
-                                style: const TextStyle(
+                                style: GoogleFonts.outfit(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
-                                  color: Color(0xFF121214),
+                                  color: const Color(0xFF121214),
                                 ),
                               ),
                               if (adminUser?.phone != null) ...[
@@ -145,7 +148,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                     const SizedBox(width: 4),
                                     Text(
                                       '+91 ${adminUser!.phone}',
-                                      style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79)),
+                                      style: GoogleFonts.outfit(fontSize: 12, color: Color(0xFF6C6F79)),
                                     ),
                                   ],
                                 ),
@@ -169,12 +172,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Row(
-                            children: const [
-                              Icon(Icons.logout_rounded, size: 16, color: Colors.redAccent),
-                              SizedBox(width: 8),
+                            children: [
+                              const Icon(Icons.logout_rounded, size: 16, color: Colors.redAccent),
+                              const SizedBox(width: 8),
                               Text(
                                 'Logout Portal',
-                                style: TextStyle(fontSize: 13, color: Colors.redAccent, fontWeight: FontWeight.bold),
+                                style: GoogleFonts.outfit(fontSize: 13, color: Colors.redAccent, fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
@@ -191,10 +194,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       alignment: Alignment.center,
                       child: Text(
                         _getInitials(adminUser?.name),
-                        style: const TextStyle(
+                        style: GoogleFonts.outfit(
                           color: Colors.white,
                           fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
@@ -237,7 +240,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         unselectedItemColor: const Color(0xFFB0B8C4),
         selectedFontSize: 11,
         unselectedFontSize: 11,
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
+        selectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+        unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w500),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard_outlined),
@@ -318,9 +322,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             /*
-            const Text(
+            Text(
               'Operational Overview',
-              style: TextStyle(
+              style: GoogleFonts.outfit(
                 color: Color(0xFF121214),
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -366,10 +370,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             const SizedBox(height: 24),
             */
    
-            const Text(
+            Text(
               'Administrative Tasks',
-              style: TextStyle(
-                color: Color(0xFF121214),
+              style: GoogleFonts.outfit(
+                color: const Color(0xFF121214),
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -393,7 +397,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   verificationProvider.isLoading
                       ? 'Loading...'
                       : '$pendingCount Pending',
-                  style: const TextStyle(
+                  style: GoogleFonts.outfit(
                     color: Colors.redAccent,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
@@ -443,6 +447,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 );
               },
             ),
+            _buildActionItem(
+              title: 'Pricing Configurations',
+              subtitle: 'Configure vehicle-specific pricing tiers and rules',
+              icon: Icons.monetization_on_rounded,
+              iconBgColor: const Color(0xFFE8F5E9),
+              iconColor: const Color(0xFF2E7D32),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AdminPricingScreen()),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -462,13 +479,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE7E7EB)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF0F0F4)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -481,10 +498,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  color: Color(0xFF6C6F79),
+                style: GoogleFonts.outfit(
+                  color: const Color(0xFF6C6F79),
                   fontSize: 11,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               Container(
@@ -500,8 +517,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
-              color: Color(0xFF121214),
+            style: GoogleFonts.outfit(
+              color: const Color(0xFF121214),
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -524,40 +541,40 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE7E7EB)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF0F0F4)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: ListTile(
         onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: iconBgColor,
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: iconColor, size: 22),
+          child: Icon(icon, color: iconColor, size: 24),
         ),
         title: Text(
           title,
-          style: const TextStyle(
-            color: Color(0xFF121214),
-            fontSize: 14,
+          style: GoogleFonts.outfit(
+            color: const Color(0xFF121214),
+            fontSize: 15,
             fontWeight: FontWeight.bold,
           ),
         ),
         subtitle: Text(
           subtitle,
-          style: const TextStyle(
-            color: Color(0xFF6C6F79),
-            fontSize: 12,
+          style: GoogleFonts.outfit(
+            color: const Color(0xFF6C6F79),
+            fontSize: 12.5,
           ),
         ),
         trailing: trailing ?? const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFB0B8C4), size: 12),

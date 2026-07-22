@@ -23,6 +23,29 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
               final isLoading = snapshot.connectionState == ConnectionState.waiting;
               final booking = snapshot.data ?? initialBooking;
 
+              final statusUpper = booking.status.toUpperCase();
+              final isCompleted = statusUpper == 'DELIVERED' || statusUpper == 'COMPLETED';
+              final isCancelled = statusUpper == 'CANCELLED';
+              final isPending = statusUpper == 'PENDING';
+
+              Color statusColor = const Color(0xFF2563EB); // Active
+              Color statusBg = const Color(0xFFEFF6FF);
+              String userStatusLabel = 'Active';
+
+              if (isCompleted) {
+                statusColor = const Color(0xFF16A34A);
+                statusBg = const Color(0xFFF0FDF4);
+                userStatusLabel = 'Delivered';
+              } else if (isCancelled) {
+                statusColor = const Color(0xFFDC2626);
+                statusBg = const Color(0xFFFEF2F2);
+                userStatusLabel = 'Cancelled';
+              } else if (isPending) {
+                statusColor = const Color(0xFFD97706);
+                statusBg = const Color(0xFFFEF3C7);
+                userStatusLabel = 'Pending';
+              }
+
               return Container(
                 decoration: const BoxDecoration(
                   color: Colors.white,
@@ -53,33 +76,25 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                             children: [
                               Text(
                                 'Booking Details',
-                                style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16, color: const Color(0xFF121214)),
+                                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: const Color(0xFF121214)),
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'ID: ${booking.bookingId}',
-                                style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF6C6F79)),
+                                booking.bookingId,
+                                style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79)),
                               ),
                             ],
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: booking.status == 'COMPLETED'
-                                  ? const Color(0xFFE7F7EF)
-                                  : booking.status == 'CANCELLED'
-                                      ? const Color(0xFFFDEBEC)
-                                      : const Color(0xFFFDEBEC),
+                              color: statusBg,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              booking.status,
-                              style: GoogleFonts.poppins(
-                                color: booking.status == 'COMPLETED'
-                                    ? const Color(0xFF1C9A5B)
-                                    : booking.status == 'CANCELLED'
-                                        ? Colors.redAccent
-                                        : const Color(0xFFE31C2E),
+                              userStatusLabel,
+                              style: GoogleFonts.outfit(
+                                color: statusColor,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 11,
                                 letterSpacing: 0.5,
@@ -91,7 +106,7 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                       const SizedBox(height: 16),
                       const Divider(height: 1, color: Color(0xFFE7E7EB)),
                       const SizedBox(height: 16),
-                      Text('ROUTE DETAILS', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF6C6F79), letterSpacing: 0.5)),
+                      Text('ROUTE DETAILS', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF6C6F79), letterSpacing: 0.5)),
                       const SizedBox(height: 10),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,13 +123,13 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('PICKUP', style: GoogleFonts.poppins(fontSize: 9, color: const Color(0xFF6C6F79), fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+                                Text('PICKUP', style: GoogleFonts.outfit(fontSize: 9, color: const Color(0xFF6C6F79), fontWeight: FontWeight.w600, letterSpacing: 0.5)),
                                 const SizedBox(height: 2),
-                                Text(booking.pickupAddressName, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF121214))),
+                                Text(booking.pickupAddressName, style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF121214))),
                                 const SizedBox(height: 14),
-                                Text('DROP', style: GoogleFonts.poppins(fontSize: 9, color: const Color(0xFF6C6F79), fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+                                Text('DROP', style: GoogleFonts.outfit(fontSize: 9, color: const Color(0xFF6C6F79), fontWeight: FontWeight.w600, letterSpacing: 0.5)),
                                 const SizedBox(height: 2),
-                                Text(booking.dropAddressName, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF121214))),
+                                Text(booking.dropAddressName, style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF121214))),
                               ],
                             ),
                           ),
@@ -123,7 +138,7 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                       const SizedBox(height: 20),
                       const Divider(height: 1, color: Color(0xFFE7E7EB)),
                       const SizedBox(height: 16),
-                      Text('SHIPMENT & PARCEL INFO', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF6C6F79), letterSpacing: 0.5)),
+                      Text('SHIPMENT & PARCEL INFO', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF6C6F79), letterSpacing: 0.5)),
                       const SizedBox(height: 12),
                       Row(
                         children: [
@@ -131,7 +146,7 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                             child: _buildDetailTile('Parcel Type', booking.parcelType, Icons.inventory_2_outlined),
                           ),
                           Expanded(
-                            child: _buildDetailTile('Weight', '${booking.weightKg.toStringAsFixed(1)} KG', Icons.scale_outlined),
+                            child: _buildDetailTile('Weight', '${booking.weightKg.toStringAsFixed(1)} KG', Icons.scale_outlined, inline: true),
                           ),
                         ],
                       ),
@@ -145,7 +160,7 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                         const SizedBox(height: 20),
                         const Divider(height: 1, color: Color(0xFFE7E7EB)),
                         const SizedBox(height: 16),
-                        Text('DRIVER DETAILS', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF6C6F79), letterSpacing: 0.5)),
+                        Text('DRIVER DETAILS', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF6C6F79), letterSpacing: 0.5)),
                         const SizedBox(height: 12),
                         Row(
                           children: [
@@ -172,7 +187,7 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                       const SizedBox(height: 20),
                       const Divider(height: 1, color: Color(0xFFE7E7EB)),
                       const SizedBox(height: 16),
-                      Text('PAYMENT & FARE BREAKDOWN', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF6C6F79), letterSpacing: 0.5)),
+                      Text('PAYMENT & FARE BREAKDOWN', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF6C6F79), letterSpacing: 0.5)),
                       const SizedBox(height: 12),
                       Row(
                         children: [
@@ -195,10 +210,10 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Total Charged Fare', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13, color: const Color(0xFF121214))),
+                            Text('Total Charged Fare', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13, color: const Color(0xFF121214))),
                             Text(
                               '₹${booking.totalFare.toStringAsFixed(2)}',
-                              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16, color: const Color(0xFFE31C2E)),
+                              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: const Color(0xFFE31C2E)),
                             ),
                           ],
                         ),
@@ -223,7 +238,7 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                                     const SizedBox(width: 8),
                                     Text(
                                       'PICKUP OTP: $generatedOtp',
-                                      style: GoogleFonts.poppins(
+                                      style: GoogleFonts.outfit(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                         color: const Color(0xFF0F766E),
@@ -235,7 +250,7 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                                 const SizedBox(height: 4),
                                 Text(
                                   'Share this OTP with your driver to start the ride.',
-                                  style: GoogleFonts.poppins(
+                                  style: GoogleFonts.outfit(
                                     fontSize: 11,
                                     color: const Color(0xFF0D9488),
                                     fontWeight: FontWeight.w500,
@@ -284,7 +299,7 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                                   : const Icon(Icons.pin_rounded, color: Colors.white, size: 16),
                               label: Text(
                                 'Generate Pickup OTP',
-                                style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                                style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
                               ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFE31C2E),
@@ -314,7 +329,7 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                             elevation: 0,
                           ),
                           onPressed: () => Navigator.pop(sheetCtx),
-                          child: Text('Dismiss', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15)),
+                          child: Text('Dismiss', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15)),
                         ),
                     ],
                   ),
@@ -328,21 +343,28 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
   );
 }
 
-Widget _buildDetailTile(String label, String value, IconData icon) {
+Widget _buildDetailTile(String label, String value, IconData icon, {bool inline = false}) {
   return Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
+    crossAxisAlignment: inline ? CrossAxisAlignment.center : CrossAxisAlignment.start,
     children: [
       Icon(icon, size: 16, color: const Color(0xFF6C6F79)),
       const SizedBox(width: 8),
       Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFF6C6F79))),
-            const SizedBox(height: 2),
-            Text(value, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFF121214))),
-          ],
-        ),
+        child: inline
+            ? Row(
+                children: [
+                  Text('$label: ', style: GoogleFonts.outfit(fontSize: 10, color: const Color(0xFF6C6F79))),
+                  Text(value, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF121214))),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: GoogleFonts.outfit(fontSize: 10, color: const Color(0xFF6C6F79))),
+                  const SizedBox(height: 2),
+                  Text(value, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFF121214))),
+                ],
+              ),
       ),
     ],
   );

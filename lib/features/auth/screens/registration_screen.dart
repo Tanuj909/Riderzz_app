@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 
 class RegistrationScreen extends StatefulWidget {
@@ -137,32 +138,32 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     const SizedBox(height: 24),
 
                     // Title & Subtext
-                    const Text(
+                    Text(
                       'Create Account 👋',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF121214),
+                      style: GoogleFonts.outfit(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF121214),
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       'Enter your phone number to get started.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF4A5568),
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        color: const Color(0xFF6C6F79),
                         height: 1.5,
                       ),
                     ),
                     const SizedBox(height: 22),
 
                     // Phone input field label
-                    const Text(
+                    Text(
                       'Mobile Number',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6C6F79),
-                        fontWeight: FontWeight.w500,
+                      style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        color: const Color(0xFF6C6F79),
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -171,39 +172,43 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     Container(
                       decoration: BoxDecoration(
                         color: const Color(0xFFF6F6F8),
-                        border: Border.all(color: const Color(0xFFE7E7EB)),
-                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                       child: Row(
                         children: [
                           Container(
                             decoration: BoxDecoration(
                               color: const Color(0xFFFDEBEC),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            child: const Text(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            child: Text(
                               '🇮🇳 +91',
-                              style: TextStyle(
-                                color: Color(0xFFE31C2E),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
+                              style: GoogleFonts.outfit(
+                                color: const Color(0xFFE31C2E),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: TextFormField(
                               controller: _phoneController,
                               keyboardType: TextInputType.phone,
-                              style: const TextStyle(
-                                color: Color(0xFF121214),
-                                fontSize: 14,
+                              style: GoogleFonts.outfit(
+                                color: const Color(0xFF121214),
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w500,
                               ),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: 'Enter mobile number',
-                                hintStyle: TextStyle(color: Color(0xFFB0B8C4)),
+                                hintStyle: GoogleFonts.outfit(
+                                  color: const Color(0xFFA0AEC0),
+                                  fontSize: 14.5,
+                                ),
                                 border: InputBorder.none,
                                 isDense: true,
                               ),
@@ -216,7 +221,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           const Icon(
                             Icons.keyboard_arrow_down_rounded,
                             size: 16,
-                            color: Color(0xFFB0B8C4),
+                            color: Color(0xFFA0AEC0),
                           ),
                         ],
                       ),
@@ -231,27 +236,27 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             ),
                           )
                         : SizedBox(
-                            height: 56,
+                            height: 54,
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFE31C2E),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(100),
                                 ),
                               ),
                               onPressed: () => _handleSendOtp(authProvider),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  Icon(Icons.arrow_forward_rounded, size: 18),
-                                  SizedBox(width: 8),
+                                children: [
+                                  const Icon(Icons.arrow_forward_rounded, size: 18),
+                                  const SizedBox(width: 8),
                                   Text(
                                     'Continue',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w500,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ],
@@ -261,31 +266,31 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     const SizedBox(height: 14),
 
                     // Terms text
-                    const Text.rich(
+                    Text.rich(
                       TextSpan(
                         text: 'By continuing you agree to our ',
                         children: [
                           TextSpan(
                             text: 'Terms of Service',
-                            style: TextStyle(
-                              color: Color(0xFFAE1220),
-                              fontWeight: FontWeight.w500,
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFFAE1220),
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          TextSpan(text: ' & '),
+                          const TextSpan(text: ' & '),
                           TextSpan(
                             text: 'Privacy Policy',
-                            style: TextStyle(
-                              color: Color(0xFFAE1220),
-                              fontWeight: FontWeight.w500,
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFFAE1220),
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
                       ),
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF6C6F79),
+                      style: GoogleFonts.outfit(
+                        fontSize: 11.5,
+                        color: const Color(0xFF6C6F79),
                         height: 1.6,
                       ),
                     ),
@@ -310,53 +315,54 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     const SizedBox(height: 24),
 
                     // Heading & Subtext
-                    const Text(
+                    Text(
                       'Complete Profile',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF121214),
+                      style: GoogleFonts.outfit(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF121214),
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       'Enter details and the 6-digit code sent to +91 ${_phoneController.text}',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF4A5568),
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        color: const Color(0xFF6C6F79),
                         height: 1.5,
                       ),
                     ),
                     const SizedBox(height: 24),
 
                     // Full Name Input
-                    const Text(
+                    Text(
                       'Full Name',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6C6F79),
-                        fontWeight: FontWeight.w500,
+                      style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        color: const Color(0xFF6C6F79),
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Container(
                       decoration: BoxDecoration(
                         color: const Color(0xFFF6F6F8),
-                        border: Border.all(color: const Color(0xFFE7E7EB)),
-                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       child: TextFormField(
                         controller: _nameController,
-                        style: const TextStyle(
-                          color: Color(0xFF121214),
-                          fontSize: 14,
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFF121214),
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w500,
                         ),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Enter your full name',
-                          hintStyle: TextStyle(color: Color(0xFFB0B8C4)),
+                          hintStyle: GoogleFonts.outfit(color: const Color(0xFFA0AEC0)),
                           border: InputBorder.none,
                           isDense: true,
                           contentPadding: EdgeInsets.zero,
@@ -366,32 +372,33 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     const SizedBox(height: 16),
 
                     // Password Input
-                    const Text(
+                    Text(
                       'Password',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6C6F79),
-                        fontWeight: FontWeight.w500,
+                      style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        color: const Color(0xFF6C6F79),
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Container(
                       decoration: BoxDecoration(
                         color: const Color(0xFFF6F6F8),
-                        border: Border.all(color: const Color(0xFFE7E7EB)),
-                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       child: TextFormField(
                         controller: _passwordController,
                         obscureText: true,
-                        style: const TextStyle(
-                          color: Color(0xFF121214),
-                          fontSize: 14,
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFF121214),
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w500,
                         ),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Enter password (6+ chars)',
-                          hintStyle: TextStyle(color: Color(0xFFB0B8C4)),
+                          hintStyle: GoogleFonts.outfit(color: const Color(0xFFA0AEC0)),
                           border: InputBorder.none,
                           isDense: true,
                           contentPadding: EdgeInsets.zero,
@@ -401,12 +408,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     const SizedBox(height: 16),
 
                     // Verification Code Label
-                    const Text(
+                    Text(
                       'Verification Code',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6C6F79),
-                        fontWeight: FontWeight.w500,
+                      style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        color: const Color(0xFF6C6F79),
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -435,16 +442,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                     color: isFocused ? const Color(0xFFFDEBEC) : const Color(0xFFF6F6F8),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: isFocused ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
+                                      color: isFocused ? const Color(0xFFE31C2E) : const Color(0xFFE2E8F0),
                                       width: 1.5,
                                     ),
                                   ),
                                   alignment: Alignment.center,
                                   child: Text(
                                     char,
-                                    style: TextStyle(
+                                    style: GoogleFonts.outfit(
                                       fontSize: 20,
-                                      fontWeight: FontWeight.w500,
+                                      fontWeight: FontWeight.w600,
                                       color: isFocused ? const Color(0xFFE31C2E) : const Color(0xFF121214),
                                     ),
                                   ),
@@ -491,27 +498,27 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             ),
                           )
                         : SizedBox(
-                            height: 56,
+                            height: 54,
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFE31C2E),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(100),
                                 ),
                               ),
                               onPressed: () => _handleRegister(authProvider),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  Icon(Icons.check_rounded, size: 18),
-                                  SizedBox(width: 8),
+                                children: [
+                                  const Icon(Icons.check_rounded, size: 18),
+                                  const SizedBox(width: 8),
                                   Text(
                                     'Verify & Register',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w500,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ],
@@ -526,12 +533,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         authProvider.resetState();
                         _otpController.clear();
                       },
-                      child: const Text(
+                      child: Text(
                         'Change Phone Number',
-                        style: TextStyle(
-                          color: Color(0xFF6C6F79),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFF6C6F79),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -543,21 +550,21 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text(
+                        Text(
                           "Already have an account? ",
-                          style: TextStyle(color: Color(0xFF4A5568), fontSize: 13),
+                          style: GoogleFonts.outfit(color: const Color(0xFF4A5568), fontSize: 14),
                         ),
                         GestureDetector(
                           onTap: () {
                             authProvider.resetState();
                             Navigator.pushReplacementNamed(context, '/login');
                           },
-                          child: const Text(
+                          child: Text(
                             "Login",
-                            style: TextStyle(
-                              color: Color(0xFFAE1220),
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFFAE1220),
                               fontWeight: FontWeight.bold,
-                              fontSize: 13,
+                              fontSize: 14,
                             ),
                           ),
                         ),

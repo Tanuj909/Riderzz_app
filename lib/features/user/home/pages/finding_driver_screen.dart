@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -36,6 +38,12 @@ class _FindingDriverScreenState extends State<FindingDriverScreen> with SingleTi
   bool _isRouteLoading = false;
   bool _isSheetExpanded = true;
 
+  Timer? _driverLocationTimer;
+  LatLng? _driverLocation;
+  String? _driverName;
+  String? _vehicleNumber;
+  BitmapDescriptor? _driverIconDescriptor;
+
   @override
   void initState() {
     super.initState();
@@ -44,9 +52,32 @@ class _FindingDriverScreenState extends State<FindingDriverScreen> with SingleTi
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCustomMarkerIcon();
+    });
     _startPolling();
     if (_currentBooking.routePolyline != null && _currentBooking.routePolyline!.isNotEmpty) {
       _fetchRoute();
+    }
+  }
+
+  Future<void> _loadCustomMarkerIcon() async {
+    try {
+      final ByteData data = await rootBundle.load('assets/icons/driver_icon.png');
+      final ui.Codec codec = await ui.instantiateImageCodec(
+        data.buffer.asUint8List(),
+        targetWidth: 60,
+        targetHeight: 60,
+      );
+      final ui.FrameInfo fi = await codec.getNextFrame();
+      final ByteData? byteData = await fi.image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData != null && mounted) {
+        setState(() {
+          _driverIconDescriptor = BitmapDescriptor.bytes(byteData.buffer.asUint8List());
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to load custom driver icon: $e');
     }
   }
 
@@ -64,18 +95,63 @@ class _FindingDriverScreenState extends State<FindingDriverScreen> with SingleTi
           _fetchRoute();
         }
 
+        // Start location tracking if driver is assigned and timer is not running
+        final driverId = freshBooking.driverId ?? freshBooking.driver?.userId;
+        if (driverId != null && _driverLocationTimer == null) {
+          _startDriverLocationTracking(driverId);
+        }
+
         // Stop polling if booking is finalized
         final statusLower = freshBooking.status.toLowerCase();
         if (statusLower == 'cancelled' || statusLower == 'delivered' || statusLower == 'completed') {
           timer.cancel();
+          _driverLocationTimer?.cancel();
         }
       }
     });
+
+    // Check on startup if driver is already assigned
+    final initialDriverId = _currentBooking.driverId ?? _currentBooking.driver?.userId;
+    if (initialDriverId != null) {
+      _startDriverLocationTracking(initialDriverId);
+    }
+  }
+
+  void _startDriverLocationTracking(int driverId) {
+    _driverLocationTimer?.cancel();
+
+    // Fetch immediately on start, then every 5 seconds
+    _fetchAndUpdateDriverLocation(driverId);
+
+    _driverLocationTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+      if (!mounted) return;
+      _fetchAndUpdateDriverLocation(driverId);
+    });
+  }
+
+  Future<void> _fetchAndUpdateDriverLocation(int driverId) async {
+    final bookingProvider = context.read<BookingProvider>();
+    final loc = await bookingProvider.fetchDriverLocation(driverId);
+    if (loc != null && mounted) {
+      setState(() {
+        _driverLocation = LatLng(loc.latitude, loc.longitude);
+        if (loc.driverName != null) _driverName = loc.driverName;
+        if (loc.vehicleNumber != null) _vehicleNumber = loc.vehicleNumber;
+      });
+
+      // Animate camera to follow driver when map is visible
+      if (!_isSheetExpanded && _mapController != null && _driverLocation != null) {
+        _mapController!.animateCamera(
+          CameraUpdate.newLatLng(_driverLocation!),
+        );
+      }
+    }
   }
 
   @override
   void dispose() {
     _statusTimer?.cancel();
+    _driverLocationTimer?.cancel();
     _animationController.dispose();
     super.dispose();
   }
@@ -293,7 +369,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen> with SingleTi
                           : (_currentBooking.pickupLatitude != null && _currentBooking.pickupLongitude != null)
                               ? LatLng(_currentBooking.pickupLatitude!, _currentBooking.pickupLongitude!)
                               : const LatLng(28.6139, 77.2090),
-                      zoom: 13.5,
+                      zoom: 15.5,
                     ),
                     onMapCreated: (controller) {
                       _mapController = controller;
@@ -315,6 +391,16 @@ class _FindingDriverScreenState extends State<FindingDriverScreen> with SingleTi
                           position: LatLng(_currentBooking.dropLatitude!, _currentBooking.dropLongitude!),
                           infoWindow: const InfoWindow(title: 'Drop Location'),
                           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                        ),
+                      if (_driverLocation != null)
+                        Marker(
+                          markerId: const MarkerId('driver_location'),
+                          position: _driverLocation!,
+                          infoWindow: InfoWindow(
+                            title: _driverName ?? 'Driver',
+                            snippet: _vehicleNumber ?? 'Vehicle',
+                          ),
+                          icon: _driverIconDescriptor ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
                         ),
                     },
                     polylines: _polylines,
@@ -402,6 +488,12 @@ class _FindingDriverScreenState extends State<FindingDriverScreen> with SingleTi
                                       setState(() {
                                         _isSheetExpanded = false;
                                       });
+                                      // Animate camera to driver location when viewing map
+                                      if (_driverLocation != null && _mapController != null) {
+                                        _mapController!.animateCamera(
+                                          CameraUpdate.newLatLng(_driverLocation!),
+                                        );
+                                      }
                                     },
                                     icon: const Icon(Icons.map_rounded, size: 16, color: Color(0xFFD90429)),
                                     label: Text(
@@ -848,6 +940,43 @@ class _FindingDriverScreenState extends State<FindingDriverScreen> with SingleTi
                           fontWeight: FontWeight.w400,
                         ),
                       ),
+                      const SizedBox(height: 40),
+                      if (_isCancelling)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(14.0),
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: OutlinedButton(
+                            onPressed: _handleCancelBooking,
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFE31C2E),
+                              side: const BorderSide(color: Color(0xFFE31C2E)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            child: const Text(
+                              'Cancel booking',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 20),
                     ],
                   ),

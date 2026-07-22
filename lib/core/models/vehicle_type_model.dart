@@ -35,8 +35,8 @@ class VehicleTypeModel {
     return VehicleTypeModel(
       id: json['id'] as int,
       name: json['name'] as String,
-      baseFare: (json['baseFare'] as num).toDouble(),
-      perKmRate: (json['perKmRate'] as num).toDouble(),
+      baseFare: ((json['baseFare'] ?? 0.0) as num).toDouble(),
+      perKmRate: ((json['perKmRate'] ?? 0.0) as num).toDouble(),
       maxWeightKg: json['maxWeightKg'] as int,
       commissionPct: ((json['commissionPct'] ?? 0.0) as num).toDouble(),
       minWalletBalance: ((json['minimumWalletBalance'] ?? json['minWalletBalance'] ?? 0.0) as num).toDouble(),

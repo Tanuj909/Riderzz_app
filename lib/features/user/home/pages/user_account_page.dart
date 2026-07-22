@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/user/addresses/address_list_screen.dart';
 import 'package:riderzz_app/features/user/saved_routes/screens/saved_route_list_screen.dart';
@@ -19,6 +20,12 @@ class UserAccountPage extends StatefulWidget {
 }
 
 class _UserAccountPageState extends State<UserAccountPage> {
+  // Dark refined red shade for icons
+  static const Color _iconColor = Color(0xFF8B1A2B);
+  static const Color _iconBgColor = Color(0xFFFDF2F4);
+  static const Color _destructiveColor = Color(0xFFCC2D3B);
+  static const Color _destructiveBgColor = Color(0xFFFDEBEC);
+
   @override
   void initState() {
     super.initState();
@@ -42,25 +49,32 @@ class _UserAccountPageState extends State<UserAccountPage> {
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
-          children: const [
-            Icon(Icons.info_outline_rounded, color: Color(0xFFE31C2E)),
-            SizedBox(width: 8),
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _iconBgColor,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.info_outline_rounded, color: _iconColor, size: 20),
+            ),
+            const SizedBox(width: 12),
             Text(
               'Coming Soon!',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF121214)),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: const Color(0xFF121214), fontSize: 18),
             ),
           ],
         ),
         content: Text(
           '$featureName feature is under development and will be available in the next release. Stay tuned!',
-          style: const TextStyle(color: Color(0xFF4A5568), height: 1.5, fontSize: 14),
+          style: GoogleFonts.outfit(color: const Color(0xFF4A5568), height: 1.5, fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Okay', style: TextStyle(color: Color(0xFFE31C2E), fontWeight: FontWeight.bold)),
+            child: Text('Okay', style: GoogleFonts.outfit(color: _iconColor, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -73,32 +87,40 @@ class _UserAccountPageState extends State<UserAccountPage> {
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
-          children: const [
-            Icon(Icons.logout_rounded, color: Colors.redAccent),
-            SizedBox(width: 8),
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _destructiveBgColor,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.logout_rounded, color: _destructiveColor, size: 20),
+            ),
+            const SizedBox(width: 12),
             Text(
               'Confirm Logout',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF121214)),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: const Color(0xFF121214), fontSize: 18),
             ),
           ],
         ),
-        content: const Text(
+        content: Text(
           'Are you sure you want to log out of your account?',
-          style: TextStyle(color: Color(0xFF4A5568), fontSize: 14),
+          style: GoogleFonts.outfit(color: const Color(0xFF4A5568), fontSize: 14, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF6C6F79), fontWeight: FontWeight.bold)),
+            child: Text('Cancel', style: GoogleFonts.outfit(color: const Color(0xFF6C6F79), fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
+              backgroundColor: _destructiveColor,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
             onPressed: () async {
               Navigator.pop(context); // Close dialog
@@ -107,7 +129,7 @@ class _UserAccountPageState extends State<UserAccountPage> {
                 Navigator.pushReplacementNamed(context, '/login');
               }
             },
-            child: const Text('Logout', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text('Logout', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -120,161 +142,188 @@ class _UserAccountPageState extends State<UserAccountPage> {
     final user = authProvider.currentUser;
     final customerProfile = authProvider.customerProfile;
     final profileImage = customerProfile?.profileImage ?? user?.profileImage;
-    final bio = customerProfile?.bio;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Profile Header Row
-          Padding(
-            padding: const EdgeInsets.only(bottom: 28, top: 10),
+          // ── Profile Header ──
+          Container(
+            padding: const EdgeInsets.all(20),
+            margin: const EdgeInsets.only(bottom: 24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: const Color(0xFFF0F0F4)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFE31C2E), Color(0xFFB01221)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFE31C2E).withOpacity(0.35),
-                            blurRadius: 16,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                        image: (profileImage != null && profileImage.isNotEmpty)
-                            ? DecorationImage(
-                                image: NetworkImage(profileImage),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
+                // Avatar
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFC62E42), Color(0xFFA31E30)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFC62E42).withOpacity(0.3),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
                       ),
-                      alignment: Alignment.center,
-                      child: (profileImage == null || profileImage.isEmpty)
-                          ? Text(
-                              _getInitials(user?.name),
-                              style: const TextStyle(
-                                color: Colors.white,
+                    ],
+                    image: (profileImage != null && profileImage.isNotEmpty)
+                        ? DecorationImage(
+                            image: NetworkImage(profileImage),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  alignment: Alignment.center,
+                  child: (profileImage == null || profileImage.isEmpty)
+                      ? Text(
+                          _getInitials(user?.name),
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              user?.name ?? 'Rahul Kumar',
+                              style: GoogleFonts.outfit(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
+                                color: const Color(0xFF121214),
+                                letterSpacing: -0.3,
                               ),
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              user?.name ?? 'Rahul Kumar',
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF121214),
-                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(6),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.orange.withOpacity(0.25),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
                                 ),
-                                borderRadius: BorderRadius.circular(4),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.orange.withOpacity(0.3),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: const Text(
-                                'PRO',
-                                style: TextStyle(
-                                  color: Color(0xFF664200),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.5,
-                                ),
+                              ],
+                            ),
+                            child: Text(
+                              'PRO',
+                              style: GoogleFonts.outfit(
+                                color: const Color(0xFF664200),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.8,
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            Text(
-                              user?.phone ?? '+91 98765 43210',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF6C6F79),
-                                fontWeight: FontWeight.w500,
-                              ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text(
+                            user?.phone ?? '+91 98765 43210',
+                            style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              color: const Color(0xFF6C6F79),
+                              fontWeight: FontWeight.w500,
                             ),
-                            const SizedBox(width: 6),
-                            Container(width: 4, height: 4, decoration: const BoxDecoration(color: Color(0xFFE7E7EB), shape: BoxShape.circle)),
-                            const SizedBox(width: 6),
-                            const Icon(Icons.verified_user_rounded, size: 13, color: Color(0xFF1C9A5B)),
-                            const SizedBox(width: 3),
-                            const Text(
-                              'Verified',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF1C9A5B),
-                                fontWeight: FontWeight.w600,
-                              ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(width: 4, height: 4, decoration: const BoxDecoration(color: Color(0xFFD5D5DB), shape: BoxShape.circle)),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.verified_rounded, size: 14, color: Color(0xFF1C9A5B)),
+                          const SizedBox(width: 3),
+                          Text(
+                            'Verified',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              color: const Color(0xFF1C9A5B),
+                              fontWeight: FontWeight.w600,
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF1F1F4),
-                    shape: BoxShape.circle,
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  child: IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF121214)),
-                    onPressed: () {
-                      final auth = context.read<AuthProvider>();
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const CustomerProfileScreen()),
-                      ).then((_) {
-                        auth.fetchCustomerProfile();
-                      });
-                    },
+                ),
+                // Edit button
+                GestureDetector(
+                  onTap: () {
+                    final auth = context.read<AuthProvider>();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CustomerProfileScreen()),
+                    ).then((_) {
+                      auth.fetchCustomerProfile();
+                    });
+                  },
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F5F8),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF3A3A42)),
                   ),
                 ),
               ],
             ),
           ),
 
-          // Card 1
+          // ── Section: General ──
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 10),
+            child: Text(
+              'GENERAL',
+              style: GoogleFonts.outfit(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF9EA3AE),
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
           _buildCard(
             children: [
               _buildListItem(
                 icon: Icons.person_outline_rounded,
-                label: 'Edit profile',
+                label: 'Edit Profile',
                 onTap: () {
                   final auth = context.read<AuthProvider>();
                   Navigator.push(
@@ -287,7 +336,7 @@ class _UserAccountPageState extends State<UserAccountPage> {
               ),
               _buildListItem(
                 icon: Icons.home_outlined,
-                label: 'Saved addresses',
+                label: 'Saved Addresses',
                 onTap: () {
                   Navigator.push(
                     context,
@@ -313,9 +362,9 @@ class _UserAccountPageState extends State<UserAccountPage> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
-          // Become Driver Card
+          // ── Become Driver Card ──
           GestureDetector(
             onTap: () {
               Navigator.push(
@@ -324,17 +373,17 @@ class _UserAccountPageState extends State<UserAccountPage> {
               );
             },
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFFE31C2E), Color(0xFFB01221)],
+                  colors: [Color(0xFFC62E42), Color(0xFFA31E30)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFE31C2E).withOpacity(0.5),
+                    color: const Color(0xFFC62E42).withOpacity(0.35),
                     blurRadius: 24,
                     offset: const Offset(0, 8),
                     spreadRadius: -6,
@@ -344,37 +393,37 @@ class _UserAccountPageState extends State<UserAccountPage> {
               child: Row(
                 children: [
                   Container(
-                    width: 36,
-                    height: 36,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.directions_car_filled_outlined, color: Colors.white, size: 19),
+                    child: const Icon(Icons.directions_car_filled_outlined, color: Colors.white, size: 20),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            const Text(
-                              'Become a driver',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                            Text(
+                              'Become a Driver',
+                              style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
                             ),
                             const SizedBox(width: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFDEBEC),
-                                borderRadius: BorderRadius.circular(4),
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(6),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'NEW',
-                                style: TextStyle(
-                                  color: Color(0xFFB01221),
-                                  fontSize: 9.5,
+                                style: GoogleFonts.outfit(
+                                  color: Colors.white,
+                                  fontSize: 9,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0.5,
                                 ),
@@ -382,43 +431,110 @@ class _UserAccountPageState extends State<UserAccountPage> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 1),
+                        const SizedBox(height: 3),
                         Text(
                           'Earn on your own schedule',
-                          style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.75)),
+                          style: GoogleFonts.outfit(fontSize: 12, color: Colors.white70),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 16),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 14),
+                  ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
-          // Card 3
+          // ── Section: Support ──
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 10),
+            child: Text(
+              'SUPPORT',
+              style: GoogleFonts.outfit(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF9EA3AE),
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
           _buildCard(
             children: [
               _buildListItem(
                 icon: Icons.help_outline_rounded,
-                label: 'Help & support',
+                label: 'Help & Support',
                 onTap: () => _showComingSoonDialog(context, 'Help & Support'),
               ),
               _buildListItem(
                 icon: Icons.security_outlined,
-                label: 'Terms & privacy',
-                onTap: () => _showComingSoonDialog(context, 'Terms & Privacy'),
-              ),
-              _buildListItem(
-                icon: Icons.logout_rounded,
-                label: 'Log out',
-                isDestructive: true,
+                label: 'Terms & Privacy',
                 showBorder: false,
-                onTap: () => _showLogoutDialog(context, authProvider),
+                onTap: () => _showComingSoonDialog(context, 'Terms & Privacy'),
               ),
             ],
           ),
+          const SizedBox(height: 24),
+
+          // ── Logout Button (Separate Rounded Section) ──
+          GestureDetector(
+            onTap: () => _showLogoutDialog(context, authProvider),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFE53E4F), Color(0xFFCC2D3B)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: BorderRadius.circular(100),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFE53E4F).withOpacity(0.3),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.logout_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Log Out',
+                    style: GoogleFonts.outfit(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // ── App Version ──
+          Center(
+            child: Text(
+              'Riderzz v1.0.0',
+              style: GoogleFonts.outfit(
+                fontSize: 12,
+                color: const Color(0xFFB0B5BF),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -426,15 +542,15 @@ class _UserAccountPageState extends State<UserAccountPage> {
 
   Widget _buildCard({required List<Widget> children}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE7E7EB)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF0F0F4)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
@@ -452,44 +568,51 @@ class _UserAccountPageState extends State<UserAccountPage> {
     bool isDestructive = false,
     bool showBorder = true,
   }) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          border: showBorder
-              ? const Border(bottom: BorderSide(color: Color(0xFFE7E7EB), width: 1))
-              : null,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: isDestructive ? const Color(0xFFFDEBEC) : const Color(0xFFF1F1F4),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                icon,
-                color: isDestructive ? const Color(0xFFE31C2E) : const Color(0xFFE31C2E),
-                size: 19,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: isDestructive ? const Color(0xFFE31C2E) : const Color(0xFF121214),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: isDestructive ? _destructiveBgColor : _iconBgColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: isDestructive ? _destructiveColor : _iconColor,
+                  size: 20,
                 ),
               ),
-            ),
-            if (!isDestructive)
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFF9EABB8), size: 16),
-          ],
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  label,
+                  style: GoogleFonts.outfit(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: isDestructive ? _destructiveColor : const Color(0xFF1A1A1F),
+                  ),
+                ),
+              ),
+              if (!isDestructive)
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F5F8),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.chevron_right_rounded, color: Color(0xFFB0B5BF), size: 18),
+                ),
+            ],
+          ),
         ),
       ),
     );

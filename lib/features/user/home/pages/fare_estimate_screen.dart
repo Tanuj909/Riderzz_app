@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:riderzz_app/core/models/vehicle_type_model.dart';
-import 'package:riderzz_app/features/user/home/pages/confirm_booking_screen.dart';
+import 'package:riderzz_app/core/models/pricing_tier_model.dart';
 
 class FareEstimateView extends StatefulWidget {
   final Map<String, dynamic> bookingData;
@@ -87,7 +86,11 @@ class _FareEstimateViewState extends State<FareEstimateView> {
     int estTime = 28;
     String? encodedPolyline;
 
-    if (pickupLat != null && pickupLng != null && dropLat != null && dropLng != null) {
+    if (widget.bookingData['estimatedDistanceKm'] != null) {
+      distance = widget.bookingData['estimatedDistanceKm'] as double;
+      estTime = widget.bookingData['estimatedDurationMin'] as int? ?? widget.bookingData['estimatedTimeMin'] as int? ?? 28;
+      encodedPolyline = widget.bookingData['routePolyline'] as String?;
+    } else if (pickupLat != null && pickupLng != null && dropLat != null && dropLng != null) {
       try {
         final googleApiKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
         if (googleApiKey.isNotEmpty) {
@@ -158,8 +161,9 @@ class _FareEstimateViewState extends State<FareEstimateView> {
       }
     }
 
-    final double baseFare = vehicle.baseFare;
-    final double perKmRate = vehicle.perKmRate;
+    final tier = widget.bookingData['applicablePricingTier'] as PricingTierModel?;
+    final double baseFare = tier?.baseFare ?? vehicle.baseFare;
+    final double perKmRate = tier?.perKmRate ?? vehicle.perKmRate;
     final double distanceFare = (distance * perKmRate).roundToDouble();
     final double finalFare = baseFare + distanceFare;
 
@@ -207,7 +211,7 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                               _buildFareRow('Base fare', _stats!.baseFare),
                               const SizedBox(height: 12),
                               _buildFareRow(
-                                'Distance (${_stats!.distance.toStringAsFixed(1)} km × ₹${vehicle.perKmRate}/km)',
+                                'Distance (${_stats!.distance.toStringAsFixed(1)} km × ₹${(widget.bookingData['applicablePricingTier'] as PricingTierModel?)?.perKmRate ?? vehicle.perKmRate}/km)',
                                 _stats!.distanceFare,
                               ),
                               const SizedBox(height: 12),

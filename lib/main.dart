@@ -38,6 +38,9 @@ import 'package:riderzz_app/features/admin/commission/providers/commission_provi
 import 'package:riderzz_app/features/user/home/data/datasource/booking_datasource.dart';
 import 'package:riderzz_app/features/user/home/data/repositories/booking_repository.dart';
 import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
+import 'package:riderzz_app/features/admin/commission/data/datasource/pricing_datasource.dart';
+import 'package:riderzz_app/features/admin/commission/data/repositories/pricing_repository.dart';
+import 'package:riderzz_app/features/admin/commission/providers/pricing_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
@@ -94,6 +97,9 @@ class MyApp extends StatelessWidget {
         ProxyProvider<ApiClient, BookingRemoteDataSource>(
           update: (_, apiClient, previous) => BookingRemoteDataSource(apiClient),
         ),
+        ProxyProvider<ApiClient, PricingRemoteDataSource>(
+          update: (_, apiClient, previous) => PricingRemoteDataSource(apiClient),
+        ),
 
         // 3. Repositories
         ProxyProvider<AuthRemoteDataSource, AuthRepository>(
@@ -122,6 +128,9 @@ class MyApp extends StatelessWidget {
         ),
         ProxyProvider<BookingRemoteDataSource, BookingRepository>(
           update: (_, dataSource, previous) => BookingRepository(dataSource),
+        ),
+        ProxyProvider<PricingRemoteDataSource, PricingRepository>(
+          update: (_, dataSource, previous) => PricingRepository(dataSource),
         ),
         
         // 4. State Management (Providers)
@@ -174,6 +183,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProxyProvider<BookingRepository, BookingProvider>(
           create: (context) => BookingProvider(context.read<BookingRepository>()),
           update: (_, repository, previous) => previous ?? BookingProvider(repository),
+        ),
+        ChangeNotifierProxyProvider<PricingRepository, PricingProvider>(
+          create: (context) => PricingProvider(context.read<PricingRepository>()),
+          update: (_, repository, previous) => previous ?? PricingProvider(repository),
         ),
 
         // LocationProvider for current device location

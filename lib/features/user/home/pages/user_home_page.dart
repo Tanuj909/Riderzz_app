@@ -11,6 +11,8 @@ import 'package:riderzz_app/features/user/home/pages/booking_flow_bottom_sheet.d
 import 'package:riderzz_app/features/user/home/pages/finding_driver_screen.dart';
 import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
 import 'package:riderzz_app/features/user/home/widgets/booking_details_bottom_sheet.dart';
+import 'package:riderzz_app/features/user/profile/screens/customer_profile_screen.dart';
+import 'package:riderzz_app/features/user/saved_routes/screens/saved_route_list_screen.dart';
 import 'dart:ui';
 import 'dart:math';
 
@@ -110,24 +112,93 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                   ),
                 ],
               ),
-              Container(
-                width: 42,
-                height: 42,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFE31C2E), Color(0xFFAE1220)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              PopupMenuButton<String>(
+                color: Colors.white,
+                surfaceTintColor: Colors.white,
+                offset: const Offset(0, 50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                onSelected: (value) async {
+                  if (value == 'profile') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CustomerProfileScreen()),
+                    );
+                  } else if (value == 'logout') {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: Colors.white,
+                        surfaceTintColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        title: const Text('Confirm Logout', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                        content: const Text('Are you sure you want to log out of your account?', style: TextStyle(fontSize: 14)),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFCC2D3B),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                            ),
+                            onPressed: () async {
+                              Navigator.pop(context);
+                              final auth = context.read<AuthProvider>();
+                              await auth.logout();
+                              if (context.mounted) {
+                                Navigator.pushReplacementNamed(context, '/login');
+                              }
+                            },
+                            child: const Text('Logout', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'profile',
+                    child: Row(
+                      children: [
+                        Icon(Icons.person_outline_rounded, color: Color(0xFF121214), size: 20),
+                        SizedBox(width: 12),
+                        Text('My Profile', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w600)),
+                      ],
+                    ),
                   ),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  _getInitials(user?.name),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
+                  const PopupMenuItem(
+                    value: 'logout',
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout_rounded, color: Color(0xFFE31C2E), size: 20),
+                        SizedBox(width: 12),
+                        Text('Log Out', style: TextStyle(color: Color(0xFFE31C2E), fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                ],
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [Color(0xFFE31C2E), Color(0xFFAE1220)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    _getInitials(user?.name),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ),
@@ -366,6 +437,13 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                         maxWidth: constraints.maxWidth,
                       ),
                       onSelected: (val) {
+                        if (val == 'create_route') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const SavedRouteListScreen()),
+                          );
+                          return;
+                        }
                         setState(() {
                           _selectedRoute = savedRouteProvider.savedRoutes.firstWhere(
                             (r) => (r['id']?.toString() ?? r['routeName']?.toString()) == val
@@ -373,9 +451,37 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                         });
                       },
                       itemBuilder: (context) {
+                        if (savedRouteProvider.savedRoutes.isEmpty) {
+                          return [
+                            PopupMenuItem<String>(
+                              value: 'create_route',
+                              height: 38,
+                              padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                              child: Center(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    Icon(Icons.add_rounded, color: Color(0xFFE31C2E), size: 18),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Create Route',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFFE31C2E),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ];
+                        }
                         return savedRouteProvider.savedRoutes.map((route) {
                           return PopupMenuItem<String>(
                             value: route['id']?.toString() ?? route['routeName']?.toString(),
+                            height: 38,
+                            padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                             child: Center(
                               child: Text(
                                 route['routeName'] ?? 'Unknown Route',
@@ -395,7 +501,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                             Expanded(
                               child: Center(
                                 child: Text(
-                                  _selectedRoute?['routeName']?.toString() ?? 'Saved locations',
+                                  _selectedRoute?['routeName']?.toString() ?? 'Saved routes',
                                   style: TextStyle(
                                     fontSize: 14, 
                                     fontWeight: FontWeight.w600, 

@@ -15,7 +15,7 @@ class AdminVehiclesListProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  Future<void> fetchVehicles({bool isRefresh = false}) async {
+  Future<void> fetchVehicles({String? status, int? vehicleTypeId, bool isRefresh = false}) async {
     if (!isRefresh && _vehicles.isNotEmpty) return;
 
     _isLoading = true;
@@ -26,7 +26,7 @@ class AdminVehiclesListProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final list = await _repository.getAllVehicles();
+      final list = await _repository.getAllVehicles(status: status, vehicleTypeId: vehicleTypeId);
       _vehicles = list;
       _isLoading = false;
       notifyListeners();

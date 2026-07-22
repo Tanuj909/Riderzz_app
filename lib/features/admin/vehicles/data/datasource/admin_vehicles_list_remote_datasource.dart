@@ -7,14 +7,20 @@ class AdminVehiclesListRemoteDataSource {
 
   AdminVehiclesListRemoteDataSource(this._apiClient);
 
-  Future<List<AdminVehicleModel>> getAllVehicles({int page = 0, int size = 20}) async {
+  Future<List<AdminVehicleModel>> getAllVehicles({String? status, int? vehicleTypeId, int page = 0, int size = 20}) async {
+    final Map<String, String> query = {
+      'page': page.toString(),
+      'size': size.toString(),
+    };
+    if (status != null) {
+      query['status'] = status;
+    }
+    if (vehicleTypeId != null) {
+      query['vehicleTypeId'] = vehicleTypeId.toString();
+    }
     final response = await _apiClient.get(
       ApiConstants.adminVehicles,
-      queryParameters: {
-        'page': page.toString(),
-        'size': size.toString(),
-        'sort': 'createdAt,desc',
-      },
+      queryParameters: query,
     );
     final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
     final dynamic rawData = resBody['data'];

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/core/models/admin_driver_model.dart';
 import 'package:riderzz_app/features/admin/rider_verification/rider_verification_screen.dart';
@@ -82,10 +83,10 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
+                  children: [
                     Text(
                       'Approved Drivers & Wallets',
-                      style: TextStyle(
+                      style: GoogleFonts.outfit(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF121214),
@@ -98,7 +99,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                   controller: _searchController,
                   decoration: InputDecoration(
                     hintText: 'Search by driver name or phone...',
-                    hintStyle: const TextStyle(color: Color(0xFF90A3BF), fontSize: 13),
+                    hintStyle: GoogleFonts.outfit(color: Color(0xFF90A3BF), fontSize: 13),
                     prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF90A3BF), size: 20),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
@@ -110,11 +111,11 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                     fillColor: const Color(0xFFF6F6F8),
                     contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(20),
                       borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(20),
                       borderSide: const BorderSide(color: Color(0xFFE31C2E)),
                     ),
                   ),
@@ -147,13 +148,13 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                           Text(
                             provider.errorMessage!,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(color: Color(0xFF4A5568), fontSize: 14),
+                            style: GoogleFonts.outfit(color: Color(0xFF4A5568), fontSize: 14),
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE31C2E)),
                             onPressed: () => provider.fetchApprovedDrivers(isRefresh: true),
-                            child: const Text('Retry', style: TextStyle(color: Colors.white)),
+                            child: Text('Retry', style: GoogleFonts.outfit(color: Colors.white)),
                           ),
                         ],
                       ),
@@ -188,7 +189,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                               _searchQuery.isNotEmpty
                                   ? 'No matching drivers found'
                                   : 'No approved drivers found',
-                              style: const TextStyle(
+                              style: GoogleFonts.outfit(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF121214),
@@ -244,7 +245,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFE7E7EB)),
         boxShadow: [
           BoxShadow(
@@ -269,7 +270,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                     children: [
                       Text(
                         driver.name,
-                        style: const TextStyle(
+                        style: GoogleFonts.outfit(
                           color: Color(0xFF121214),
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
@@ -278,7 +279,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                       const SizedBox(height: 2),
                       Text(
                         '+91 ${driver.phone}',
-                        style: const TextStyle(
+                        style: GoogleFonts.outfit(
                           color: Color(0xFF6C6F79),
                           fontSize: 12,
                         ),
@@ -306,7 +307,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                       const SizedBox(width: 4),
                       Text(
                         driver.isOnline ? 'ONLINE' : 'OFFLINE',
-                        style: TextStyle(
+                        style: GoogleFonts.outfit(
                           color: driver.isOnline ? const Color(0xFF1C9A5B) : const Color(0xFF64748B),
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
@@ -330,7 +331,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                 const SizedBox(width: 4),
                 Text(
                   driver.rating.toStringAsFixed(1),
-                  style: const TextStyle(
+                  style: GoogleFonts.outfit(
                     color: Color(0xFF121214),
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
@@ -341,7 +342,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                 const SizedBox(width: 4),
                 Text(
                   '${driver.totalTrips} Trips',
-                  style: const TextStyle(
+                  style: GoogleFonts.outfit(
                     color: Color(0xFF121214),
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
@@ -356,7 +357,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                         ? '${driver.vehicle!.make} (${driver.vehicleNumber})'
                         : 'No vehicle',
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: GoogleFonts.outfit(
                       color: Color(0xFF121214),
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
@@ -379,9 +380,9 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: const Text(
+                    child: Text(
                       'View Details',
-                      style: TextStyle(
+                      style: GoogleFonts.outfit(
                         color: Color(0xFFE31C2E),
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
@@ -399,9 +400,9 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       elevation: 0,
                     ),
-                    child: const Text(
+                    child: Text(
                       'Operations',
-                      style: TextStyle(
+                      style: GoogleFonts.outfit(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
@@ -600,7 +601,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                         _currentView == 'MENU'
                             ? 'Driver Operations'
                             : (_currentView == 'AVAILABILITY' ? 'Availability Control' : 'Manage Wallet'),
-                        style: const TextStyle(
+                        style: GoogleFonts.outfit(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF121214),
@@ -609,7 +610,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                       const SizedBox(height: 2),
                       Text(
                         '${widget.driver.name} • +91 ${widget.driver.phone}',
-                        style: const TextStyle(
+                        style: GoogleFonts.outfit(
                           color: Color(0xFF6C6F79),
                           fontSize: 12,
                         ),
@@ -695,12 +696,12 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF6F6F8),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFE7E7EB)),
       ),
       child: ListTile(
         onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
           padding: const EdgeInsets.all(10),
@@ -712,7 +713,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
         ),
         title: Text(
           title,
-          style: const TextStyle(
+          style: GoogleFonts.outfit(
             color: Color(0xFF121214),
             fontSize: 14,
             fontWeight: FontWeight.bold,
@@ -720,7 +721,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
         ),
         subtitle: Text(
           subtitle,
-          style: const TextStyle(
+          style: GoogleFonts.outfit(
             color: Color(0xFF6C6F79),
             fontSize: 12,
           ),
@@ -739,7 +740,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: const Color(0xFFF6F6F8),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(color: const Color(0xFFE7E7EB)),
           ),
           child: Column(
@@ -760,9 +761,9 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Forced Offline Status',
-                          style: TextStyle(
+                          style: GoogleFonts.outfit(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                             color: Color(0xFF121214),
@@ -771,7 +772,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                         const SizedBox(height: 2),
                         Text(
                           isDriverOnline ? 'Status: ONLINE' : 'Status: OFFLINE',
-                          style: TextStyle(
+                          style: GoogleFonts.outfit(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: isDriverOnline ? const Color(0xFF1C9A5B) : const Color(0xFF64748B),
@@ -790,7 +791,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                 isDriverOnline
                     ? 'Forcing the driver offline will stop them from receiving new ride bookings immediately. You should only use this if there is an issue with the driver or if they are in violation of platform rules.'
                     : 'The driver is currently offline. No action is required.',
-                style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79), height: 1.4),
+                style: GoogleFonts.outfit(fontSize: 12, color: Color(0xFF6C6F79), height: 1.4),
               ),
               const SizedBox(height: 20),
               SizedBox(
@@ -809,7 +810,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                       : const Icon(Icons.power_settings_new_rounded, size: 16),
                   label: Text(
                     isDriverOnline ? 'Force Driver Offline' : 'Driver Already Offline',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.redAccent,
@@ -841,21 +842,21 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: const Color(0xFFFFECEC),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Colors.redAccent.withValues(alpha: 0.15)),
             ),
             child: Column(
               children: [
                 Text(
                   'Error: ${provider.walletErrorMessage}',
-                  style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                  style: GoogleFonts.outfit(color: Colors.redAccent, fontSize: 12),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 TextButton.icon(
                   onPressed: () => provider.fetchDriverWallet(widget.driver.id),
                   icon: const Icon(Icons.refresh_rounded, size: 14, color: Colors.redAccent),
-                  label: const Text('Retry Fetch', style: TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                  label: Text('Retry Fetch', style: GoogleFonts.outfit(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold)),
                 )
               ],
             ),
@@ -864,7 +865,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
 
         final wallet = provider.selectedDriverWallet;
         if (wallet == null) {
-          return const Center(child: Text('No wallet data available.', style: TextStyle(fontSize: 12, color: Color(0xFF6C6F79))));
+          return Center(child: Text('No wallet data available.', style: GoogleFonts.outfit(fontSize: 12, color: Color(0xFF6C6F79))));
         }
 
         return Column(
@@ -880,7 +881,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
                     color: const Color(0xFFE31C2E).withValues(alpha: 0.15),
@@ -894,10 +895,10 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
+                    children: [
                       Text(
                         'CURRENT BALANCE',
-                        style: TextStyle(
+                        style: GoogleFonts.outfit(
                           color: Colors.white70,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -910,7 +911,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                   const SizedBox(height: 6),
                   Text(
                     '₹${wallet.balance.toStringAsFixed(2)}',
-                    style: const TextStyle(
+                    style: GoogleFonts.outfit(
                       color: Colors.white,
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
@@ -923,28 +924,28 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'MIN REQUIRED',
-                            style: TextStyle(color: Colors.white60, fontSize: 8, fontWeight: FontWeight.bold),
+                            style: GoogleFonts.outfit(color: Colors.white60, fontSize: 8, fontWeight: FontWeight.bold),
                           ),
                           Text(
                             '₹${wallet.minBalanceRequired.toStringAsFixed(2)}',
-                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                            style: GoogleFonts.outfit(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          const Text(
+                          Text(
                             'LAST UPDATED',
-                            style: TextStyle(color: Colors.white60, fontSize: 8, fontWeight: FontWeight.bold),
+                            style: GoogleFonts.outfit(color: Colors.white60, fontSize: 8, fontWeight: FontWeight.bold),
                           ),
                           Text(
                             wallet.lastUpdated.isNotEmpty
                                 ? _formatDate(wallet.lastUpdated)
                                 : 'Never',
-                            style: const TextStyle(color: Colors.white70, fontSize: 10),
+                            style: GoogleFonts.outfit(color: Colors.white70, fontSize: 10),
                           ),
                         ],
                       ),
@@ -984,12 +985,12 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                         Expanded(
                           child: InkWell(
                             onTap: () => setState(() => _selectedType = 'RECHARGE'),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(20),
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                               decoration: BoxDecoration(
                                 color: _selectedType == 'RECHARGE' ? const Color(0xFFEBFDF6) : const Color(0xFFF6F6F8),
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                   color: _selectedType == 'RECHARGE' ? const Color(0xFF1C9A5B) : const Color(0xFFE7E7EB),
                                   width: 1.5,
@@ -1006,7 +1007,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                                   const SizedBox(width: 6),
                                   Text(
                                     'RECHARGE',
-                                    style: TextStyle(
+                                    style: GoogleFonts.outfit(
                                       color: _selectedType == 'RECHARGE' ? const Color(0xFF1C9A5B) : const Color(0xFF6C6F79),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 11,
@@ -1022,12 +1023,12 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                         Expanded(
                           child: InkWell(
                             onTap: () => setState(() => _selectedType = 'DEBIT'),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(20),
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                               decoration: BoxDecoration(
                                 color: _selectedType == 'DEBIT' ? const Color(0xFFFFECEC) : const Color(0xFFF6F6F8),
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                   color: _selectedType == 'DEBIT' ? Colors.redAccent : const Color(0xFFE7E7EB),
                                   width: 1.5,
@@ -1044,7 +1045,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                                   const SizedBox(width: 6),
                                   Text(
                                     'DEBIT',
-                                    style: TextStyle(
+                                    style: GoogleFonts.outfit(
                                       color: _selectedType == 'DEBIT' ? Colors.redAccent : const Color(0xFF6C6F79),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 11,
@@ -1064,30 +1065,30 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                     TextFormField(
                       controller: _amountController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      style: const TextStyle(color: Color(0xFF121214), fontSize: 14, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.outfit(color: Color(0xFF121214), fontSize: 14, fontWeight: FontWeight.bold),
                       decoration: InputDecoration(
                         labelText: 'Adjustment Amount (₹)',
-                        labelStyle: const TextStyle(color: Color(0xFF4A5568), fontSize: 12, fontWeight: FontWeight.w500),
+                        labelStyle: GoogleFonts.outfit(color: Color(0xFF4A5568), fontSize: 12, fontWeight: FontWeight.w500),
                         hintText: 'Enter amount (e.g., 500)',
-                        hintStyle: const TextStyle(color: Color(0xFFB0B8C4), fontSize: 13),
+                        hintStyle: GoogleFonts.outfit(color: Color(0xFFB0B8C4), fontSize: 13),
                         prefixIcon: const Icon(Icons.currency_rupee_rounded, size: 16, color: Color(0xFFE31C2E)),
                         filled: true,
                         fillColor: const Color(0xFFF6F6F8),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(20),
                           borderSide: BorderSide.none,
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(20),
                           borderSide: const BorderSide(color: Color(0xFFE7E7EB), width: 1),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(20),
                           borderSide: const BorderSide(color: Color(0xFFE31C2E), width: 1.5),
                         ),
                         errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(20),
                           borderSide: const BorderSide(color: Colors.redAccent, width: 1),
                         ),
                       ),
@@ -1106,30 +1107,30 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                     // Description input field (premium input decoration)
                     TextFormField(
                       controller: _descriptionController,
-                      style: const TextStyle(color: Color(0xFF121214), fontSize: 14),
+                      style: GoogleFonts.outfit(color: Color(0xFF121214), fontSize: 14),
                       decoration: InputDecoration(
                         labelText: 'Reason / Description',
-                        labelStyle: const TextStyle(color: Color(0xFF4A5568), fontSize: 12, fontWeight: FontWeight.w500),
+                        labelStyle: GoogleFonts.outfit(color: Color(0xFF4A5568), fontSize: 12, fontWeight: FontWeight.w500),
                         hintText: 'Describe why balance is being adjusted',
-                        hintStyle: const TextStyle(color: Color(0xFFB0B8C4), fontSize: 13),
+                        hintStyle: GoogleFonts.outfit(color: Color(0xFFB0B8C4), fontSize: 13),
                         prefixIcon: const Icon(Icons.notes_rounded, size: 16, color: Color(0xFFE31C2E)),
                         filled: true,
                         fillColor: const Color(0xFFF6F6F8),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(20),
                           borderSide: BorderSide.none,
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(20),
                           borderSide: const BorderSide(color: Color(0xFFE7E7EB), width: 1),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(20),
                           borderSide: const BorderSide(color: Color(0xFFE31C2E), width: 1.5),
                         ),
                         errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(20),
                           borderSide: const BorderSide(color: Colors.redAccent, width: 1),
                         ),
                       ),
@@ -1166,14 +1167,14 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                           _selectedType == 'RECHARGE'
                               ? 'Apply Recharge Balance'
                               : 'Debit Penalty Balance',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5),
+                          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _selectedType == 'RECHARGE' ? const Color(0xFF1C9A5B) : Colors.redAccent,
                           disabledBackgroundColor: const Color(0xFFE7E7EB),
                           foregroundColor: Colors.white,
                           disabledForegroundColor: const Color(0xFF94A3B8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           elevation: 1,
                           shadowColor: (_selectedType == 'RECHARGE' ? const Color(0xFF1C9A5B) : Colors.redAccent).withValues(alpha: 0.2),
@@ -1196,13 +1197,13 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                 padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF6F6F8),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: const Color(0xFFE7E7EB)),
                 ),
-                child: const Center(
+                child: Center(
                   child: Text(
                     'No transactions recorded yet.',
-                    style: TextStyle(color: Color(0xFF6C6F79), fontSize: 12),
+                    style: GoogleFonts.outfit(color: Color(0xFF6C6F79), fontSize: 12),
                   ),
                 ),
               )
@@ -1223,7 +1224,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: const Color(0xFFE7E7EB)),
                     ),
                     child: Row(
@@ -1260,7 +1261,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                                     ),
                                     child: Text(
                                       tx.type,
-                                      style: TextStyle(
+                                      style: GoogleFonts.outfit(
                                         color: typeColor,
                                         fontSize: 8,
                                         fontWeight: FontWeight.bold,
@@ -1270,7 +1271,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                                   ),
                                   Text(
                                     '${isRecharge ? '+' : '-'} ₹${tx.amount.toStringAsFixed(2)}',
-                                    style: TextStyle(
+                                    style: GoogleFonts.outfit(
                                       color: typeColor,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
@@ -1281,7 +1282,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                               const SizedBox(height: 6),
                               Text(
                                 tx.description,
-                                style: const TextStyle(
+                                style: GoogleFonts.outfit(
                                   color: Color(0xFF121214),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
@@ -1293,14 +1294,14 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
                                 children: [
                                   Text(
                                     _formatDate(tx.createdAt),
-                                    style: const TextStyle(
+                                    style: GoogleFonts.outfit(
                                       color: Color(0xFF94A3B8),
                                       fontSize: 10,
                                     ),
                                   ),
                                   Text(
                                     'Closing: ₹${tx.closingBalance.toStringAsFixed(2)}',
-                                    style: const TextStyle(
+                                    style: GoogleFonts.outfit(
                                       color: Color(0xFF6C6F79),
                                       fontSize: 10,
                                       fontWeight: FontWeight.w500,
@@ -1325,7 +1326,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: GoogleFonts.outfit(
         color: Color(0xFF121214),
         fontSize: 13,
         fontWeight: FontWeight.bold,
@@ -1340,7 +1341,7 @@ class _DriverOperationsBottomSheetState extends State<DriverOperationsBottomShee
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFE7E7EB)),
       ),
       child: Column(

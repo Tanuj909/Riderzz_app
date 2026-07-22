@@ -24,269 +24,432 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
     final isEdit = account != null;
     final formKey = GlobalKey<FormState>();
     final holderNameController = TextEditingController(text: account?.accountHolderName ?? '');
-    final bankNameController = TextEditingController(text: account?.bankName ?? '');
     final accountNumberController = TextEditingController(text: account?.accountNumber ?? '');
     final ifscController = TextEditingController(text: account?.ifscCode ?? '');
     bool isPrimary = account?.primaryAccount ?? false;
     bool isSubmitting = false;
 
-    showDialog(
+    final defaultBanks = [
+      'State Bank of India (SBI)',
+      'Bank of Baroda',
+      'Punjab National Bank',
+      'Canara Bank',
+      'Union Bank of India',
+      'Indian Bank',
+      'Bank of India',
+      'Central Bank of India',
+      'UCO Bank',
+      'Indian Overseas Bank',
+      'Bank of Maharashtra',
+      'Punjab & Sind Bank',
+    ];
+
+    final moreBanks = [
+      'HDFC Bank',
+      'ICICI Bank',
+      'Axis Bank',
+      'Kotak Mahindra Bank',
+      'IndusInd Bank',
+      'IDBI Bank',
+      'IDFC FIRST Bank',
+      'Federal Bank',
+      'Yes Bank',
+      'Bandhan Bank',
+      'RBL Bank',
+      'South Indian Bank',
+      'Karnataka Bank',
+      'City Union Bank',
+    ];
+
+    // Initial value for dropdown
+    String? selectedBank = account?.bankName;
+    if (selectedBank != null && selectedBank.isEmpty) {
+      selectedBank = null;
+    }
+
+    // Determine if we should initially show more banks (if the loaded bank is in the 'moreBanks' list)
+    bool showMore = selectedBank != null && moreBanks.contains(selectedBank);
+
+    showModalBottomSheet(
       context: context,
-      barrierDismissible: false,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setState) {
-            return Dialog(
-              backgroundColor: Colors.white,
-              surfaceTintColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: SingleChildScrollView(
-                  child: Form(
-                    key: formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Dialog Header
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(dialogContext).viewInsets.bottom,
+              ),
+              child: SafeArea(
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                  child: SingleChildScrollView(
+                    child: Form(
+                      key: formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Top indicator bar
+                          Center(
+                            child: Container(
+                              width: 38,
+                              height: 4,
+                              margin: const EdgeInsets.only(bottom: 20),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFDEBEC),
-                                borderRadius: BorderRadius.circular(10),
+                                color: const Color(0xFFE2E8F0),
+                                borderRadius: BorderRadius.circular(2),
                               ),
-                              child: Icon(
-                                isEdit ? Icons.edit_note_rounded : Icons.account_balance_rounded,
-                                color: const Color(0xFFD90429),
-                                size: 22,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                isEdit ? 'Update Bank Account' : 'Add Bank Account',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 17,
-                                  color: Color(0xFF121214),
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext),
-                              icon: const Icon(Icons.close_rounded, color: Color(0xFF6C6F79)),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Account Holder Name Field
-                        TextFormField(
-                          controller: holderNameController,
-                          enabled: !isSubmitting,
-                          style: const TextStyle(color: Color(0xFF121214), fontSize: 14),
-                          decoration: _buildInputDecoration('Account Holder Name', Icons.person_outline_rounded),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Please enter account holder name';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 14),
-
-                        // Bank Name Field
-                        TextFormField(
-                          controller: bankNameController,
-                          enabled: !isSubmitting,
-                          style: const TextStyle(color: Color(0xFF121214), fontSize: 14),
-                          decoration: _buildInputDecoration('Bank Name', Icons.account_balance_outlined),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Please enter bank name';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 14),
-
-                        // Account Number Field
-                        TextFormField(
-                          controller: accountNumberController,
-                          enabled: !isSubmitting,
-                          keyboardType: TextInputType.number,
-                          style: const TextStyle(color: Color(0xFF121214), fontSize: 14),
-                          decoration: _buildInputDecoration('Account Number', Icons.numbers_rounded),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Please enter account number';
-                            }
-                            if (value.length < 9) {
-                              return 'Account number should be at least 9 digits';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 14),
-
-                        // IFSC Code Field
-                        TextFormField(
-                          controller: ifscController,
-                          enabled: !isSubmitting,
-                          textCapitalization: TextCapitalization.characters,
-                          style: const TextStyle(color: Color(0xFF121214), fontSize: 14),
-                          decoration: _buildInputDecoration('IFSC Code', Icons.qr_code_2_rounded),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Please enter IFSC code';
-                            }
-                            if (value.length != 11) {
-                              return 'IFSC code must be exactly 11 characters';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Set Primary Switch
-                        SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: const Text(
-                            'Set as Primary Account',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF4B5563),
                             ),
                           ),
-                          subtitle: const Text(
-                            'Wallet payouts will go to this account.',
-                            style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
-                          ),
-                          activeThumbColor: const Color(0xFFD90429),
-                          value: isPrimary,
-                          onChanged: isSubmitting
-                              ? null
-                              : (bool val) {
-                                  setState(() {
-                                    isPrimary = val;
-                                  });
-                                },
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Dialog Buttons
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  side: const BorderSide(color: Color(0xFFD1D5DB)),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          // Dialog Header
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFDF2F4),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext),
-                                child: const Text(
-                                  'Cancel',
-                                  style: TextStyle(
-                                    color: Color(0xFF4B5563),
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
+                                child: Icon(
+                                  isEdit ? Icons.edit_note_rounded : Icons.account_balance_rounded,
+                                  color: const Color(0xFF8B1A2B),
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Text(
+                                  isEdit ? 'Update Bank Account' : 'Add Bank Account',
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 18,
+                                    color: const Color(0xFF121214),
                                   ),
                                 ),
                               ),
+                              IconButton(
+                                onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext),
+                                icon: const Icon(Icons.close_rounded, color: Color(0xFF6C6F79)),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Account Holder Name Field
+                          TextFormField(
+                            controller: holderNameController,
+                            enabled: !isSubmitting,
+                            style: GoogleFonts.outfit(color: const Color(0xFF121214), fontSize: 15, fontWeight: FontWeight.w600),
+                            decoration: _buildInputDecoration('Account Holder Name'),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Please enter account holder name';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Bank Name Dropdown Field
+                          PopupMenuButton<String>(
+                            tooltip: 'Select Bank',
+                            offset: const Offset(0, 60),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFD90429),
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 8,
+                            color: Colors.white,
+                            constraints: BoxConstraints(
+                              minWidth: MediaQuery.of(context).size.width - 40,
+                              maxWidth: MediaQuery.of(context).size.width - 40,
+                            ),
+                            onSelected: isSubmitting
+                                ? null
+                                : (value) {
+                                    setState(() {
+                                      selectedBank = value;
+                                    });
+                                  },
+                            child: AbsorbPointer(
+                              child: TextFormField(
+                                controller: TextEditingController(text: selectedBank),
+                                decoration: _buildInputDecoration('Bank Name').copyWith(
+                                  suffixIcon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF8B1A2B), size: 28),
                                 ),
-                                onPressed: isSubmitting
-                                    ? null
-                                    : () async {
-                                        if (!formKey.currentState!.validate()) return;
-
-                                        setState(() {
-                                          isSubmitting = true;
-                                        });
-
-                                        final provider = context.read<DriverHomeProvider>();
-                                        final bodyData = {
-                                          'accountHolderName': holderNameController.text.trim(),
-                                          'bankName': bankNameController.text.trim(),
-                                          'accountNumber': accountNumberController.text.trim(),
-                                          'ifscCode': ifscController.text.trim().toUpperCase(),
-                                          'primaryAccount': isPrimary,
-                                        };
-
-                                        bool success;
-                                        if (isEdit) {
-                                          success = await provider.updateBankAccount(account.id, bodyData);
-                                        } else {
-                                          success = await provider.addBankAccount(bodyData);
-                                        }
-
-                                        if (success) {
-                                          if (context.mounted) {
-                                            Navigator.pop(dialogContext);
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  isEdit
-                                                      ? 'Bank account updated successfully! 🎉'
-                                                      : 'Bank account added successfully! 🎉',
-                                                ),
-                                                backgroundColor: const Color(0xFF10B981),
-                                              ),
-                                            );
-                                          }
-                                        } else {
-                                          setState(() {
-                                            isSubmitting = false;
-                                          });
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  provider.bankAccountsError ?? 'An error occurred. Please try again.',
-                                                ),
-                                                backgroundColor: Colors.redAccent,
-                                              ),
-                                            );
-                                          }
-                                        }
-                                      },
-                                child: isSubmitting
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                        ),
-                                      )
-                                    : Text(
-                                        isEdit ? 'Update' : 'Add',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
+                                style: GoogleFonts.outfit(color: const Color(0xFF121214), fontSize: 15, fontWeight: FontWeight.w600),
+                                validator: (value) {
+                                  if (selectedBank == null || selectedBank!.trim().isEmpty) {
+                                    return 'Please select bank name';
+                                  }
+                                  return null;
+                                },
                               ),
                             ),
-                          ],
-                        ),
-                      ],
+                            itemBuilder: (popupContext) {
+                              return [
+                                PopupMenuItem<String>(
+                                  enabled: false,
+                                  child: StatefulBuilder(
+                                    builder: (context, setPopupState) {
+                                      final items = showMore 
+                                          ? [...defaultBanks, ...moreBanks] 
+                                          : [...defaultBanks];
+
+                                      return Container(
+                                        width: MediaQuery.of(context).size.width - 72,
+                                        padding: const EdgeInsets.symmetric(vertical: 8),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                                          children: [
+                                            Container(
+                                              constraints: const BoxConstraints(maxHeight: 250),
+                                              child: SingleChildScrollView(
+                                                child: Column(
+                                                  children: items.map((bank) {
+                                                    final isSelected = selectedBank == bank;
+                                                    return InkWell(
+                                                      onTap: () {
+                                                        Navigator.of(popupContext).pop(bank);
+                                                      },
+                                                      child: Container(
+                                                        width: double.infinity,
+                                                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                                                        decoration: BoxDecoration(
+                                                          color: isSelected ? const Color(0xFFFDF2F4) : Colors.transparent,
+                                                          borderRadius: BorderRadius.circular(8),
+                                                        ),
+                                                        child: Text(
+                                                          bank,
+                                                          style: GoogleFonts.outfit(
+                                                            fontSize: 14,
+                                                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                                            color: isSelected ? const Color(0xFF8B1A2B) : const Color(0xFF121214),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }).toList(),
+                                                ),
+                                              ),
+                                            ),
+                                            const Divider(height: 16, color: Color(0xFFF0F0F4)),
+                                            InkWell(
+                                              onTap: () {
+                                                setPopupState(() {
+                                                  showMore = !showMore;
+                                                });
+                                                setState(() {
+                                                  showMore = showMore;
+                                                });
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                                alignment: Alignment.center,
+                                                child: Text(
+                                                  showMore ? 'Show Less' : 'More+',
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: const Color(0xFF8B1A2B),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ];
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Account Number Field
+                          TextFormField(
+                            controller: accountNumberController,
+                            enabled: !isSubmitting,
+                            keyboardType: TextInputType.number,
+                            style: GoogleFonts.outfit(color: const Color(0xFF121214), fontSize: 15, fontWeight: FontWeight.w600),
+                            decoration: _buildInputDecoration('Account Number'),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Please enter account number';
+                              }
+                              if (value.length < 9) {
+                                return 'Account number should be at least 9 digits';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // IFSC Code Field
+                          TextFormField(
+                            controller: ifscController,
+                            enabled: !isSubmitting,
+                            textCapitalization: TextCapitalization.characters,
+                            style: GoogleFonts.outfit(color: const Color(0xFF121214), fontSize: 15, fontWeight: FontWeight.w600),
+                            decoration: _buildInputDecoration('IFSC Code'),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Please enter IFSC code';
+                              }
+                              if (value.length != 11) {
+                                return 'IFSC code must be exactly 11 characters';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Set Primary Switch
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(
+                              'Set as Primary Account',
+                              style: GoogleFonts.outfit(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1A1A1F),
+                              ),
+                            ),
+                            subtitle: Text(
+                              'Wallet payouts will go to this account.',
+                              style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79)),
+                            ),
+                            activeColor: const Color(0xFFCC2D3B),
+                            activeTrackColor: const Color(0xFFFDEBEC),
+                            value: isPrimary,
+                            onChanged: isSubmitting
+                                ? null
+                                : (bool val) {
+                                    setState(() {
+                                      isPrimary = val;
+                                    });
+                                  },
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Dialog Buttons
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    side: const BorderSide(color: Color(0xFFE5E7EB)),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+                                  ),
+                                  onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext),
+                                  child: Text(
+                                    'Cancel',
+                                    style: GoogleFonts.outfit(
+                                      color: const Color(0xFF6C6F79),
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFCC2D3B),
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+                                  ),
+                                  onPressed: isSubmitting
+                                      ? null
+                                      : () async {
+                                          if (!formKey.currentState!.validate()) return;
+
+                                          setState(() {
+                                            isSubmitting = true;
+                                          });
+
+                                          final provider = context.read<DriverHomeProvider>();
+                                          final bodyData = {
+                                            'accountHolderName': holderNameController.text.trim(),
+                                            'bankName': selectedBank?.trim() ?? '',
+                                            'accountNumber': accountNumberController.text.trim(),
+                                            'ifscCode': ifscController.text.trim().toUpperCase(),
+                                            'primaryAccount': isPrimary,
+                                          };
+
+                                          bool success;
+                                          if (isEdit) {
+                                            success = await provider.updateBankAccount(account.id, bodyData);
+                                          } else {
+                                            success = await provider.addBankAccount(bodyData);
+                                          }
+
+                                          if (success) {
+                                            if (context.mounted) {
+                                              Navigator.pop(dialogContext);
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    isEdit
+                                                        ? 'Bank account updated successfully! 🎉'
+                                                        : 'Bank account added successfully! 🎉',
+                                                    style: GoogleFonts.outfit(),
+                                                  ),
+                                                  backgroundColor: const Color(0xFF1C9A5B),
+                                                ),
+                                              );
+                                            }
+                                          } else {
+                                            setState(() {
+                                              isSubmitting = false;
+                                            });
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    provider.bankAccountsError ?? 'An error occurred. Please try again.',
+                                                    style: GoogleFonts.outfit(),
+                                                  ),
+                                                  backgroundColor: const Color(0xFFCC2D3B),
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        },
+                                  child: isSubmitting
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        )
+                                      : Text(
+                                          isEdit ? 'Update' : 'Add Account',
+                                          style: GoogleFonts.outfit(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -308,33 +471,41 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
           builder: (context, setState) {
             return AlertDialog(
               backgroundColor: Colors.white,
-              surfaceTintColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               title: Row(
-                children: const [
-                  Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
-                  SizedBox(width: 8),
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFDEBEC),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFCC2D3B), size: 20),
+                  ),
+                  const SizedBox(width: 12),
                   Text(
                     'Delete Account',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF121214)),
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: const Color(0xFF121214), fontSize: 18),
                   ),
                 ],
               ),
               content: Text(
                 'Are you sure you want to delete this bank account (${account.bankName} - ${account.accountNumber.length > 4 ? account.accountNumber.substring(account.accountNumber.length - 4) : account.accountNumber})?',
-                style: const TextStyle(color: Color(0xFF4A5568), fontSize: 14, height: 1.5),
+                style: GoogleFonts.outfit(color: const Color(0xFF4A5568), fontSize: 14, height: 1.5),
               ),
               actions: [
                 TextButton(
                   onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext),
-                  child: const Text('Cancel', style: TextStyle(color: Color(0xFF6C6F79))),
+                  child: Text('Cancel', style: GoogleFonts.outfit(color: const Color(0xFF6C6F79), fontWeight: FontWeight.w600)),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
+                    backgroundColor: const Color(0xFFCC2D3B),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   ),
                   onPressed: isSubmitting
                       ? null
@@ -350,9 +521,9 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                             if (context.mounted) {
                               Navigator.pop(dialogContext);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Bank account deleted successfully.'),
-                                  backgroundColor: Color(0xFF10B981),
+                                SnackBar(
+                                  content: Text('Bank account deleted successfully.', style: GoogleFonts.outfit()),
+                                  backgroundColor: const Color(0xFF1C9A5B),
                                 ),
                               );
                             }
@@ -366,26 +537,26 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                                 context: context,
                                 builder: (ctx) => AlertDialog(
                                   backgroundColor: Colors.white,
-                                  surfaceTintColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  surfaceTintColor: Colors.transparent,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                   title: Row(
-                                    children: const [
-                                      Icon(Icons.error_outline_rounded, color: Colors.redAccent),
-                                      SizedBox(width: 8),
+                                    children: [
+                                      const Icon(Icons.error_outline_rounded, color: Color(0xFFCC2D3B)),
+                                      const SizedBox(width: 8),
                                       Text(
                                         'Failed to Delete',
-                                        style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF121214)),
+                                        style: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: const Color(0xFF121214)),
                                       ),
                                     ],
                                   ),
                                   content: Text(
                                     provider.bankAccountsError ?? 'Could not delete bank account.',
-                                    style: const TextStyle(color: Color(0xFF4A5568), fontSize: 14, height: 1.5),
+                                    style: GoogleFonts.outfit(color: const Color(0xFF4A5568), fontSize: 14, height: 1.5),
                                   ),
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(ctx),
-                                      child: const Text('OK', style: TextStyle(color: Color(0xFFD90429), fontWeight: FontWeight.bold)),
+                                      child: Text('OK', style: GoogleFonts.outfit(color: const Color(0xFFCC2D3B), fontWeight: FontWeight.w700)),
                                     ),
                                   ],
                                 ),
@@ -402,7 +573,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Text('Delete'),
+                      : Text('Delete', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
                 ),
               ],
             );
@@ -412,29 +583,28 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
     );
   }
 
-  InputDecoration _buildInputDecoration(String labelText, IconData icon) {
+  InputDecoration _buildInputDecoration(String labelText) {
     return InputDecoration(
       labelText: labelText,
-      labelStyle: const TextStyle(color: Color(0xFF6C6F79), fontSize: 13),
-      prefixIcon: Icon(icon, color: const Color(0xFFE31C2E), size: 18),
+      labelStyle: GoogleFonts.outfit(color: const Color(0xFF6C6F79), fontSize: 14, fontWeight: FontWeight.w500),
       filled: true,
-      fillColor: const Color(0xFFF9FAFB),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      fillColor: const Color(0xFFF8F9FC),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFFF0F0F4)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFD90429), width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFF8B1A2B), width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 1),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFFCC2D3B), width: 1),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFFCC2D3B), width: 1.5),
       ),
     );
   }
@@ -503,7 +673,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                         const SizedBox(height: 16),
                         Text(
                           driverProvider.bankAccountsError!,
-                          style: const TextStyle(color: Color(0xFF4A5568), fontSize: 14),
+                          style: GoogleFonts.outfit(color: const Color(0xFF4A5568), fontSize: 14),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 24),
@@ -517,7 +687,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                           onPressed: () {
                             context.read<DriverHomeProvider>().fetchBankAccounts();
                           },
-                          child: const Text('Retry', style: TextStyle(fontWeight: FontWeight.w500)),
+                          child: Text('Retry', style: GoogleFonts.outfit(fontWeight: FontWeight.w500)),
                         ),
                       ],
                     ),
@@ -543,7 +713,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                         Expanded(
                           child: Text(
                             'Wallet payouts will be sent to your primary bank account automatically.',
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.outfit(
                               color: const Color(0xFFD90429),
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -578,14 +748,14 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        const Text(
+                        Text(
                           'No bank accounts configured yet.',
-                          style: TextStyle(color: Color(0xFF121214), fontWeight: FontWeight.bold, fontSize: 15),
+                          style: GoogleFonts.outfit(color: const Color(0xFF121214), fontWeight: FontWeight.bold, fontSize: 15),
                         ),
                         const SizedBox(height: 6),
-                        const Text(
+                        Text(
                           'Add an account to start receiving your wallet payouts.',
-                          style: TextStyle(color: Color(0xFF6C6F79), fontSize: 12),
+                          style: GoogleFonts.outfit(color: const Color(0xFF6C6F79), fontSize: 12),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -649,18 +819,18 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                                               children: [
                                                 Text(
                                                   account.bankName,
-                                                  style: const TextStyle(
+                                                  style: GoogleFonts.outfit(
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.bold,
-                                                    color: Color(0xFF121214),
+                                                    color: const Color(0xFF121214),
                                                   ),
                                                 ),
                                                 const SizedBox(height: 2),
                                                 Text(
                                                   'IFSC: ${account.ifscCode}',
-                                                  style: const TextStyle(
+                                                  style: GoogleFonts.outfit(
                                                     fontSize: 11,
-                                                    color: Color(0xFF6C6F79),
+                                                    color: const Color(0xFF6C6F79),
                                                     fontWeight: FontWeight.w600,
                                                   ),
                                                 ),
@@ -677,13 +847,13 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                                               ),
                                               child: Row(
                                                 mainAxisSize: MainAxisSize.min,
-                                                children: const [
-                                                  Icon(Icons.check_circle_rounded, size: 10, color: Color(0xFFD90429)),
-                                                  SizedBox(width: 4),
+                                                children: [
+                                                  const Icon(Icons.check_circle_rounded, size: 10, color: Color(0xFFD90429)),
+                                                  const SizedBox(width: 4),
                                                   Text(
                                                     'PRIMARY',
-                                                    style: TextStyle(
-                                                      color: Color(0xFFD90429),
+                                                    style: GoogleFonts.outfit(
+                                                      color: const Color(0xFFD90429),
                                                       fontSize: 8,
                                                       fontWeight: FontWeight.bold,
                                                     ),
@@ -698,10 +868,10 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                                       // Account Number Visual
                                       Text(
                                         _maskAccountNumber(account.accountNumber),
-                                        style: const TextStyle(
+                                        style: GoogleFonts.outfit(
                                           fontSize: 19,
                                           fontWeight: FontWeight.bold,
-                                          color: Color(0xFF121214),
+                                          color: const Color(0xFF121214),
                                           letterSpacing: 1.0,
                                         ),
                                       ),
@@ -718,10 +888,10 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                                           Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              const Text(
+                                              Text(
                                                 'ACCOUNT HOLDER',
-                                                style: TextStyle(
-                                                  color: Color(0xFF9AA5B4),
+                                                style: GoogleFonts.outfit(
+                                                  color: const Color(0xFF9AA5B4),
                                                   fontSize: 8,
                                                   fontWeight: FontWeight.bold,
                                                 ),
@@ -729,8 +899,8 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                                               const SizedBox(height: 2),
                                               Text(
                                                 account.accountHolderName,
-                                                style: const TextStyle(
-                                                  color: Color(0xFF4B5563),
+                                                style: GoogleFonts.outfit(
+                                                  color: const Color(0xFF4B5563),
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.bold,
                                                 ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 
 class AdminLoginScreen extends StatefulWidget {
@@ -115,33 +116,33 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   const SizedBox(height: 28),
 
                   // Heading Text
-                  const Text(
+                  Text(
                     'Administrator Access 🔐',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: GoogleFonts.outfit(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF121214),
+                      color: const Color(0xFF121214),
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
+                  Text(
                     'Authorized administrative personnel only.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF6C6F79),
+                    style: GoogleFonts.outfit(
+                      fontSize: 14,
+                      color: const Color(0xFF6C6F79),
                     ),
                   ),
                   const SizedBox(height: 32),
 
                   // Phone number field label
-                  const Text(
+                  Text(
                     'Admin Mobile Number',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF6C6F79),
-                      fontWeight: FontWeight.w500,
+                    style: GoogleFonts.outfit(
+                      fontSize: 13,
+                      color: const Color(0xFF6C6F79),
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -150,39 +151,43 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   Container(
                     decoration: BoxDecoration(
                       color: const Color(0xFFF6F6F8),
-                      border: Border.all(color: const Color(0xFFE7E7EB)),
-                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     child: Row(
                       children: [
                         Container(
                           decoration: BoxDecoration(
                             color: const Color(0xFFFDEBEC),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          child: const Text(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          child: Text(
                             '🇮🇳 +91',
-                            style: TextStyle(
-                              color: Color(0xFFE31C2E),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFFE31C2E),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: TextFormField(
                             controller: _phoneController,
                             keyboardType: TextInputType.phone,
-                            style: const TextStyle(
-                              color: Color(0xFF121214),
-                              fontSize: 14,
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFF121214),
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w500,
                             ),
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               hintText: 'Enter admin mobile number',
-                              hintStyle: TextStyle(color: Color(0xFFB0B8C4)),
+                              hintStyle: GoogleFonts.outfit(
+                                color: const Color(0xFFA0AEC0),
+                                fontSize: 14.5,
+                              ),
                               border: InputBorder.none,
                               isDense: true,
                             ),
@@ -198,12 +203,12 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   const SizedBox(height: 20),
 
                   // Password field label
-                  const Text(
+                  Text(
                     'Password',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF6C6F79),
-                      fontWeight: FontWeight.w500,
+                    style: GoogleFonts.outfit(
+                      fontSize: 13,
+                      color: const Color(0xFF6C6F79),
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -212,20 +217,21 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   Container(
                     decoration: BoxDecoration(
                       color: const Color(0xFFF6F6F8),
-                      border: Border.all(color: const Color(0xFFE7E7EB)),
-                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     child: TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
-                      style: const TextStyle(
-                        color: Color(0xFF121214),
-                        fontSize: 14,
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFF121214),
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w500,
                       ),
                       decoration: InputDecoration(
                         hintText: 'Enter password',
-                        hintStyle: const TextStyle(color: Color(0xFFB0B8C4)),
+                        hintStyle: GoogleFonts.outfit(color: const Color(0xFFA0AEC0), fontSize: 14.5),
                         border: InputBorder.none,
                         isDense: true,
                         suffixIcon: GestureDetector(
@@ -239,7 +245,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                                 ? Icons.visibility_off_rounded
                                 : Icons.visibility_rounded,
                             size: 20,
-                            color: const Color(0xFFB0B8C4),
+                            color: const Color(0xFFA0AEC0),
                           ),
                         ),
                         suffixIconConstraints: const BoxConstraints(
@@ -259,27 +265,27 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                           ),
                         )
                       : SizedBox(
-                          height: 56,
+                          height: 54,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFE31C2E),
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(100),
                               ),
                             ),
                             onPressed: () => _handleAdminLogin(authProvider),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Icon(Icons.login_rounded, size: 18),
-                                SizedBox(width: 8),
+                              children: [
+                                const Icon(Icons.login_rounded, size: 18),
+                                const SizedBox(width: 8),
                                 Text(
                                   'Secure Login',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ],
@@ -295,12 +301,12 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         authProvider.resetState();
                         Navigator.pop(context);
                       },
-                      child: const Text(
+                      child: Text(
                         "Cancel & Return to User Login",
-                        style: TextStyle(
-                          color: Color(0xFF6C6F79),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFF6C6F79),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),

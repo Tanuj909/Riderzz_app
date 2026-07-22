@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/core/models/vehicle_type_model.dart';
@@ -33,29 +34,29 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
-          children: const [
+          children: [
             Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
             SizedBox(width: 8),
-            Text('Delete Type', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('Delete Type', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
           ],
         ),
         content: Text(
           'Are you sure you want to delete the vehicle type "${vehicleType.name}"? This action cannot be undone.',
-          style: const TextStyle(color: Color(0xFF4A5568), height: 1.4),
+          style: GoogleFonts.outfit(color: Color(0xFF4A5568), height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF6C6F79))),
+            child: Text('Cancel', style: GoogleFonts.outfit(color: Color(0xFF6C6F79))),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
             ),
             onPressed: () async {
               Navigator.pop(dialogCtx);
@@ -73,7 +74,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                 }
               }
             },
-            child: const Text('Delete'),
+            child: Text('Delete'),
           ),
         ],
       ),
@@ -106,13 +107,13 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                     Text(
                       provider.errorMessage!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Color(0xFF4A5568), fontSize: 14),
+                      style: GoogleFonts.outfit(color: Color(0xFF4A5568), fontSize: 14),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE31C2E)),
                       onPressed: () => provider.fetchVehicleTypes(),
-                      child: const Text('Retry', style: TextStyle(color: Colors.white)),
+                      child: Text('Retry', style: GoogleFonts.outfit(color: Colors.white)),
                     ),
                   ],
                 ),
@@ -137,9 +138,9 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'Vehicle Managment',
-                                  style: TextStyle(
+                                  style: GoogleFonts.outfit(
                                     color: Color(0xFF121214),
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -148,7 +149,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                                 const SizedBox(height: 2),
                                 Text(
                                   '${provider.vehicleTypes.length} Active Types',
-                                  style: const TextStyle(
+                                  style: GoogleFonts.outfit(
                                     color: Color(0xFF6C6F79),
                                     fontSize: 12,
                                   ),
@@ -166,7 +167,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               ),
                               icon: const Icon(Icons.add_rounded, size: 16),
-                              label: const Text('Add Type', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              label: Text('Add Type', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold)),
                               onPressed: () => _showFormBottomSheet(),
                             ),
                           ],
@@ -194,15 +195,15 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                               child: const Icon(Icons.airport_shuttle_outlined, size: 48, color: Color(0xFFE31C2E)),
                             ),
                             const SizedBox(height: 16),
-                            const Text(
+                            Text(
                               'No Vehicle Categories',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
+                              style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
+                            Text(
                               'Create categories to configure pricing, commission, and weight capacities for booking dispatches.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 13, color: Color(0xFF6C6F79), height: 1.4),
+                              style: GoogleFonts.outfit(fontSize: 13, color: Color(0xFF6C6F79), height: 1.4),
                             ),
                           ],
                         ),
@@ -253,7 +254,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFE7E7EB)),
         boxShadow: [
           BoxShadow(
@@ -299,7 +300,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                   children: [
                     Text(
                       vehicle.name,
-                      style: const TextStyle(
+                      style: GoogleFonts.outfit(
                         color: Color(0xFF121214),
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
@@ -310,7 +311,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                       'Capacity: ${vehicle.maxWeightKg} kg',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: GoogleFonts.outfit(
                         color: Color(0xFF6C6F79),
                         fontSize: 12,
                       ),
@@ -327,7 +328,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                 ),
                 child: Text(
                   vehicle.isActive ? 'ACTIVE' : 'INACTIVE',
-                  style: TextStyle(
+                  style: GoogleFonts.outfit(
                     color: vehicle.isActive ? const Color(0xFF1C9A5B) : Colors.redAccent,
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
@@ -370,14 +371,14 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
             children: [
               TextButton.icon(
                 icon: const Icon(Icons.edit_rounded, color: Color(0xFFE31C2E), size: 14),
-                label: const Text('Edit', style: TextStyle(color: Color(0xFFE31C2E), fontSize: 11, fontWeight: FontWeight.bold)),
+                label: Text('Edit', style: GoogleFonts.outfit(color: Color(0xFFE31C2E), fontSize: 11, fontWeight: FontWeight.bold)),
                 onPressed: () => _showFormBottomSheet(vehicleType: vehicle),
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   backgroundColor: const Color(0xFFFDEBEC),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
                 ),
               ),
             ],
@@ -393,7 +394,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: GoogleFonts.outfit(
             color: Color(0xFF6C6F79),
             fontSize: 10,
             fontWeight: FontWeight.w500,
@@ -402,7 +403,7 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
         const SizedBox(height: 3),
         Text(
           value,
-          style: const TextStyle(
+          style: GoogleFonts.outfit(
             color: Color(0xFF121214),
             fontSize: 13,
             fontWeight: FontWeight.bold,
@@ -427,8 +428,6 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _iconUrlController = TextEditingController();
-  final _baseFareController = TextEditingController();
-  final _perKmRateController = TextEditingController();
   final _maxWeightController = TextEditingController();
   final _minWalletController = TextEditingController();
 
@@ -444,8 +443,6 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
       final v = widget.vehicleType!;
       _nameController.text = v.name;
       _iconUrlController.text = v.iconUrl ?? '';
-      _baseFareController.text = v.baseFare.toStringAsFixed(1);
-      _perKmRateController.text = v.perKmRate.toStringAsFixed(1);
       _maxWeightController.text = v.maxWeightKg.toString();
       _minWalletController.text = v.minWalletBalance.toStringAsFixed(1);
       _tollEnabled = v.tollEnabled ?? false;
@@ -463,8 +460,6 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
   void dispose() {
     _nameController.dispose();
     _iconUrlController.dispose();
-    _baseFareController.dispose();
-    _perKmRateController.dispose();
     _maxWeightController.dispose();
     _minWalletController.dispose();
     super.dispose();
@@ -483,24 +478,18 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
             name: _nameController.text.trim(),
             iconUrl: _iconUrlController.text.trim(),
             maxWeightKg: int.parse(_maxWeightController.text.trim()),
-            baseFare: double.parse(_baseFareController.text.trim()),
-            perKmRate: double.parse(_perKmRateController.text.trim()),
             minimumWalletBalance: double.parse(_minWalletController.text.trim()),
             tollEnabled: _tollEnabled,
             dynamicPricingEnabled: _dynamicPricingEnabled,
-            active: _active,
           )
         : await provider.updateVehicleType(
             id: widget.vehicleType!.id,
             name: _nameController.text.trim(),
             iconUrl: _iconUrlController.text.trim(),
             maxWeightKg: int.parse(_maxWeightController.text.trim()),
-            baseFare: double.parse(_baseFareController.text.trim()),
-            perKmRate: double.parse(_perKmRateController.text.trim()),
             minimumWalletBalance: double.parse(_minWalletController.text.trim()),
             tollEnabled: _tollEnabled,
             dynamicPricingEnabled: _dynamicPricingEnabled,
-            active: _active,
           );
 
     setState(() {
@@ -556,7 +545,7 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
               const SizedBox(height: 16),
               Text(
                 widget.vehicleType == null ? 'Create Vehicle Type' : 'Edit Vehicle Type',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
+                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
               ),
               const SizedBox(height: 20),
 
@@ -567,30 +556,22 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: _buildNumField(_baseFareController, 'Base Fare (₹)', 'e.g. 20')),
-                  const SizedBox(width: 12),
-                  Expanded(child: _buildNumField(_perKmRateController, 'Rate/Km (₹)', 'e.g. 13')),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
                   Expanded(child: _buildNumField(_maxWeightController, 'Max Weight (kg)', 'e.g. 20', isInteger: true)),
                   const SizedBox(width: 12),
                   Expanded(child: _buildNumField(_minWalletController, 'Min Wallet Balance (₹)', 'e.g. 100')),
                 ],
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Settings & Status',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
+                style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
               ),
               const SizedBox(height: 4),
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
                 activeColor: const Color(0xFFE31C2E),
-                title: const Text('Toll Enabled', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF121214))),
-                subtitle: const Text('Calculate toll fees on this vehicle type', style: TextStyle(fontSize: 11, color: Color(0xFF6C6F79))),
+                title: Text('Toll Enabled', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF121214))),
+                subtitle: Text('Calculate toll fees on this vehicle type', style: GoogleFonts.outfit(fontSize: 11, color: Color(0xFF6C6F79))),
                 value: _tollEnabled,
                 onChanged: (val) {
                   setState(() {
@@ -601,8 +582,8 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
                 activeColor: const Color(0xFFE31C2E),
-                title: const Text('Dynamic Pricing', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF121214))),
-                subtitle: const Text('Adjust fare based on demand / peak hours', style: TextStyle(fontSize: 11, color: Color(0xFF6C6F79))),
+                title: Text('Dynamic Pricing', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF121214))),
+                subtitle: Text('Adjust fare based on demand / peak hours', style: GoogleFonts.outfit(fontSize: 11, color: Color(0xFF6C6F79))),
                 value: _dynamicPricingEnabled,
                 onChanged: (val) {
                   setState(() {
@@ -613,8 +594,8 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
                 activeColor: const Color(0xFFE31C2E),
-                title: const Text('Active Status', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF121214))),
-                subtitle: const Text('Allow new bookings with this vehicle type', style: TextStyle(fontSize: 11, color: Color(0xFF6C6F79))),
+                title: Text('Active Status', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF121214))),
+                subtitle: Text('Allow new bookings with this vehicle type', style: GoogleFonts.outfit(fontSize: 11, color: Color(0xFF6C6F79))),
                 value: _active,
                 onChanged: (val) {
                   setState(() {
@@ -631,11 +612,11 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFFE7E7EB)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       onPressed: _isSaving ? null : () => Navigator.pop(context),
-                      child: const Text('Cancel', style: TextStyle(color: Color(0xFF6C6F79), fontWeight: FontWeight.bold)),
+                      child: Text('Cancel', style: GoogleFonts.outfit(color: Color(0xFF6C6F79), fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -645,7 +626,7 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
                         backgroundColor: const Color(0xFFE31C2E),
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       onPressed: _isSaving ? null : _submitForm,
@@ -658,7 +639,7 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
                                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
-                          : const Text('Save Configuration', style: TextStyle(fontWeight: FontWeight.bold)),
+                          : Text('Save Configuration', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -676,22 +657,22 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79), fontWeight: FontWeight.w500),
+          style: GoogleFonts.outfit(fontSize: 12, color: Color(0xFF6C6F79), fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
             color: const Color(0xFFF6F6F8),
             border: Border.all(color: const Color(0xFFE7E7EB)),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(20),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
           child: TextFormField(
             controller: controller,
-            style: const TextStyle(color: Color(0xFF121214), fontSize: 14),
+            style: GoogleFonts.outfit(color: Color(0xFF121214), fontSize: 14),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: const TextStyle(color: Color(0xFFB0B8C4)),
+              hintStyle: GoogleFonts.outfit(color: Color(0xFFB0B8C4)),
               border: InputBorder.none,
               isDense: true,
             ),
@@ -707,29 +688,29 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
     );
   }
 
-  Widget _buildNumField(TextEditingController controller, String label, String hint, {bool isInteger = false}) {
+  Widget _buildNumField(TextEditingController controller, String label, String hint, {bool isInteger = false, bool isOptional = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79), fontWeight: FontWeight.w500),
+          style: GoogleFonts.outfit(fontSize: 12, color: Color(0xFF6C6F79), fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
             color: const Color(0xFFF6F6F8),
             border: Border.all(color: const Color(0xFFE7E7EB)),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(20),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
           child: TextFormField(
             controller: controller,
             keyboardType: isInteger ? TextInputType.number : const TextInputType.numberWithOptions(decimal: true),
-            style: const TextStyle(color: Color(0xFF121214), fontSize: 14),
+            style: GoogleFonts.outfit(color: Color(0xFF121214), fontSize: 14),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: const TextStyle(color: Color(0xFFB0B8C4)),
+              hintStyle: GoogleFonts.outfit(color: Color(0xFFB0B8C4)),
               border: InputBorder.none,
               isDense: true,
             ),
@@ -738,6 +719,7 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
             ],
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
+                if (isOptional) return null;
                 return 'Required';
               }
               if (isInteger) {

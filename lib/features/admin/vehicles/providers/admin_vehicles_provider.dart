@@ -41,12 +41,9 @@ class AdminVehiclesProvider extends ChangeNotifier {
     required String name,
     required String iconUrl,
     required int maxWeightKg,
-    required double baseFare,
-    required double perKmRate,
     required double minimumWalletBalance,
     required bool tollEnabled,
     required bool dynamicPricingEnabled,
-    required bool active,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -57,12 +54,9 @@ class AdminVehiclesProvider extends ChangeNotifier {
         name: name,
         iconUrl: iconUrl,
         maxWeightKg: maxWeightKg,
-        baseFare: baseFare,
-        perKmRate: perKmRate,
         minimumWalletBalance: minimumWalletBalance,
         tollEnabled: tollEnabled,
         dynamicPricingEnabled: dynamicPricingEnabled,
-        active: active,
       );
       _vehicleTypes.add(newType);
       _isLoading = false;
@@ -81,12 +75,9 @@ class AdminVehiclesProvider extends ChangeNotifier {
     required String name,
     required String iconUrl,
     required int maxWeightKg,
-    required double baseFare,
-    required double perKmRate,
     required double minimumWalletBalance,
     required bool tollEnabled,
     required bool dynamicPricingEnabled,
-    required bool active,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -98,12 +89,9 @@ class AdminVehiclesProvider extends ChangeNotifier {
         name: name,
         iconUrl: iconUrl,
         maxWeightKg: maxWeightKg,
-        baseFare: baseFare,
-        perKmRate: perKmRate,
         minimumWalletBalance: minimumWalletBalance,
         tollEnabled: tollEnabled,
         dynamicPricingEnabled: dynamicPricingEnabled,
-        active: active,
       );
       final index = _vehicleTypes.indexWhere((element) => element.id == id);
       if (index != -1) {

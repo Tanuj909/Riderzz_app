@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/core/models/customer_profile_model.dart';
 
@@ -18,6 +19,13 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
   final _emergencyNameController = TextEditingController();
   final _emergencyPhoneController = TextEditingController();
   String? _selectedGender;
+
+  // Modern Color Palette
+  static const Color _primaryColor = Color(0xFFC62E42);
+  static const Color _accentBg = Color(0xFFFDF2F4);
+  static const Color _inputBorderColor = Color(0xFFE2E8F0);
+  static const Color _textColor = Color(0xFF1E293B);
+  static const Color _subtitleColor = Color(0xFF64748B);
 
   @override
   void initState() {
@@ -70,9 +78,9 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFFE31C2E),
+              primary: _primaryColor,
               onPrimary: Colors.white,
-              onSurface: Color(0xFF121214),
+              onSurface: _textColor,
             ),
           ),
           child: child!,
@@ -99,15 +107,15 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
         if (mounted) {
           if (success) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Profile image updated successfully!'),
-                backgroundColor: Color(0xFF1C9A5B),
+              SnackBar(
+                content: Text('Profile image updated successfully!', style: GoogleFonts.outfit()),
+                backgroundColor: const Color(0xFF1C9A5B),
               ),
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(authProvider.errorMessage ?? 'Failed to upload profile image'),
+                content: Text(authProvider.errorMessage ?? 'Failed to upload profile image', style: GoogleFonts.outfit()),
                 backgroundColor: Colors.redAccent,
               ),
             );
@@ -118,7 +126,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error picking image: $e'),
+            content: Text('Error picking image: $e', style: GoogleFonts.outfit()),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -140,15 +148,15 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     if (mounted) {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile updated successfully!'),
-            backgroundColor: Color(0xFF1C9A5B),
+          SnackBar(
+            content: Text('Profile updated successfully!', style: GoogleFonts.outfit()),
+            backgroundColor: const Color(0xFF1C9A5B),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authProvider.errorMessage ?? 'Failed to update profile'),
+            content: Text(authProvider.errorMessage ?? 'Failed to update profile', style: GoogleFonts.outfit()),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -175,28 +183,37 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     final profileImageUrl = profile?.profileImage ?? user?.profileImage;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F6F8),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('My Profile', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF121214))),
+        title: Text(
+          'My Profile',
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.w700,
+            color: _textColor,
+            fontSize: 20,
+          ),
+        ),
         backgroundColor: Colors.white,
-        elevation: 0.5,
-        iconTheme: const IconThemeData(color: Color(0xFF121214)),
+        elevation: 0,
+        centerTitle: false,
+        iconTheme: const IconThemeData(color: _textColor),
+        shape: const Border(bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1)),
       ),
       body: isLoading && profile == null
-          ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E))))
+          ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(_primaryColor)))
           : RefreshIndicator(
               onRefresh: () async {
                 _loadProfile();
               },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Profile Avatar Card
+                      // Avatar & Bookings Count Row
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
@@ -209,23 +226,27 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                                   child: Stack(
                                     children: [
                                       Container(
-                                        width: 72,
-                                        height: 72,
+                                        width: 76,
+                                        height: 76,
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFFE31C2E),
                                           shape: BoxShape.circle,
+                                          gradient: const LinearGradient(
+                                            colors: [Color(0xFFC62E42), Color(0xFFA31E30)],
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          ),
                                           image: (profileImageUrl != null && profileImageUrl.isNotEmpty)
                                               ? DecorationImage(
                                                   image: NetworkImage(profileImageUrl),
                                                   fit: BoxFit.cover,
                                                 )
                                               : null,
-                                          border: Border.all(color: Colors.white, width: 2),
+                                          border: Border.all(color: Colors.white, width: 3),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: Colors.black.withOpacity(0.08),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 3),
+                                              color: _primaryColor.withOpacity(0.2),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 4),
                                             ),
                                           ],
                                         ),
@@ -233,10 +254,10 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                                         child: (profileImageUrl == null || profileImageUrl.isEmpty)
                                             ? Text(
                                                 _getInitials(user?.name),
-                                                style: const TextStyle(
+                                                style: GoogleFonts.outfit(
                                                   color: Colors.white,
-                                                  fontSize: 22,
-                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 24,
+                                                  fontWeight: FontWeight.w800,
                                                 ),
                                               )
                                             : null,
@@ -245,43 +266,44 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                                         bottom: 0,
                                         right: 0,
                                         child: Container(
-                                          padding: const EdgeInsets.all(4),
+                                          padding: const EdgeInsets.all(5),
                                           decoration: const BoxDecoration(
-                                            color: Color(0xFFE31C2E),
+                                            color: _primaryColor,
                                             shape: BoxShape.circle,
                                           ),
                                           child: const Icon(
                                             Icons.camera_alt_rounded,
                                             color: Colors.white,
-                                            size: 10,
+                                            size: 12,
                                           ),
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                const SizedBox(width: 12),
+                                const SizedBox(width: 16),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
-                                        user?.name ?? 'Customer Name',
-                                        style: const TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF121214),
+                                        user?.name ?? 'User Name',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w700,
+                                          color: _textColor,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        user?.phone ?? 'N/A',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Color(0xFF6C6F79),
+                                        user?.phone ?? 'No Contact Info',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 13,
+                                          color: _subtitleColor,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -292,28 +314,61 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            flex: 2,
-                            child: _buildStatCard(
-                              icon: Icons.local_shipping_rounded,
-                              iconColor: const Color(0xFF1C9A5B),
-                              value: profile != null ? profile.totalBookings.toString() : '0',
-                              label: 'Bookings',
+                          const SizedBox(width: 12),
+                          // Custom modern Bookings block without truck icon
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFFF1F5F9)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.02),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'My Bookings:',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: _subtitleColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  profile != null ? profile.totalBookings.toString() : '0',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: _textColor,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 32),
 
                       // Section Title: Personal Info
-                      const Text(
+                      Text(
                         'Personal Information',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
+                        style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: _textColor,
+                        ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
 
-                      // Gender field
+                      // Gender field (rounded selection box)
                       _buildDropdownField(
                         label: 'Gender',
                         value: _selectedGender,
@@ -324,56 +379,77 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                           });
                         },
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
 
                       // Date of Birth field (Tap to pick)
                       TextFormField(
                         controller: _dobController,
                         readOnly: true,
                         onTap: () => _selectDate(context),
-                        style: const TextStyle(color: Color(0xFF121214), fontSize: 14, fontWeight: FontWeight.w500),
+                        style: GoogleFonts.outfit(
+                          color: _textColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                         decoration: _buildInputDecoration(
                           label: 'Date of Birth',
+                          hint: 'Select your date of birth',
                           suffixIcon: Icons.calendar_today_rounded,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
 
                       // Bio field
                       TextFormField(
                         controller: _bioController,
                         maxLines: 3,
-                        style: const TextStyle(color: Color(0xFF121214), fontSize: 14, fontWeight: FontWeight.w500),
+                        style: GoogleFonts.outfit(
+                          color: _textColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                         decoration: _buildInputDecoration(
                           label: 'Bio',
-                          hint: 'Describe yourself or details about your goods',
+                          hint: 'Enter a short bio or details about your goods',
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 32),
 
                       // Section Title: Emergency Contacts
-                      const Text(
+                      Text(
                         'Emergency Contact',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
+                        style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: _textColor,
+                        ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
 
                       // Emergency Contact Name
                       TextFormField(
                         controller: _emergencyNameController,
-                        style: const TextStyle(color: Color(0xFF121214), fontSize: 14, fontWeight: FontWeight.w500),
+                        style: GoogleFonts.outfit(
+                          color: _textColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                         decoration: _buildInputDecoration(
                           label: 'Contact Person Name',
-                          hint: 'e.g. Tanuj Kashyap',
+                          hint: 'Enter emergency contact name',
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
 
                       // Emergency Contact Phone
                       TextFormField(
                         controller: _emergencyPhoneController,
                         keyboardType: TextInputType.phone,
-                        style: const TextStyle(color: Color(0xFF121214), fontSize: 14, fontWeight: FontWeight.w500),
+                        style: GoogleFonts.outfit(
+                          color: _textColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                         validator: (value) {
                           if (value != null && value.isNotEmpty && value.length < 10) {
                             return 'Please enter a valid 10-digit number';
@@ -382,24 +458,25 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                         },
                         decoration: _buildInputDecoration(
                           label: 'Contact Person Phone',
-                          hint: 'e.g. 9891004821',
+                          hint: 'Enter emergency contact phone number',
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 36),
 
                       // Save Button
                       SizedBox(
                         width: double.infinity,
-                        height: 50,
+                        height: 52,
                         child: ElevatedButton(
                           onPressed: isLoading ? null : () => _saveProfile(authProvider),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE31C2E),
+                            backgroundColor: _primaryColor,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             elevation: 0,
+                            shadowColor: Colors.transparent,
                           ),
                           child: isLoading
                               ? const SizedBox(
@@ -410,53 +487,21 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                                     strokeWidth: 2.5,
                                   ),
                                 )
-                              : const Text(
+                              : Text(
                                   'Save Changes',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 32),
                     ],
                   ),
                 ),
               ),
             ),
-    );
-  }
-
-  Widget _buildStatCard({
-    required IconData icon,
-    required Color iconColor,
-    required String value,
-    required String label,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE7E7EB)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: iconColor, size: 24),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
-              ),
-              Text(
-                label,
-                style: const TextStyle(fontSize: 11, color: Color(0xFF6C6F79)),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
@@ -470,18 +515,24 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
       value: value,
       isExpanded: true,
       dropdownColor: Colors.white,
-      icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF6C6F79)),
-      borderRadius: BorderRadius.circular(12),
-      style: const TextStyle(fontSize: 14, color: Color(0xFF121214), fontWeight: FontWeight.w500),
+      icon: const Icon(Icons.keyboard_arrow_down_rounded, color: _subtitleColor),
+      borderRadius: BorderRadius.circular(16),
+      style: GoogleFonts.outfit(
+        fontSize: 14,
+        color: _textColor,
+        fontWeight: FontWeight.w600,
+      ),
       items: items.map((String item) {
+        // Display nice title-case item labels
+        final formattedItem = item[0] + item.substring(1).toLowerCase();
         return DropdownMenuItem<String>(
           value: item,
           child: Text(
-            item,
-            style: const TextStyle(
+            formattedItem,
+            style: GoogleFonts.outfit(
               fontSize: 14,
-              color: Color(0xFF121214),
-              fontWeight: FontWeight.w500,
+              color: _textColor,
+              fontWeight: FontWeight.w600,
             ),
           ),
         );
@@ -499,27 +550,27 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: const TextStyle(color: Color(0xFF6C6F79), fontSize: 13),
-      hintStyle: const TextStyle(color: Color(0xFFA0AEC0), fontSize: 13),
+      labelStyle: GoogleFonts.outfit(color: _subtitleColor, fontSize: 13, fontWeight: FontWeight.w600),
+      hintStyle: GoogleFonts.outfit(color: const Color(0xFF94A3B8), fontSize: 13, fontWeight: FontWeight.w500),
       floatingLabelBehavior: FloatingLabelBehavior.always,
       filled: true,
       fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      suffixIcon: suffixIcon != null ? Icon(suffixIcon, color: const Color(0xFF6C6F79), size: 20) : null,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      suffixIcon: suffixIcon != null ? Icon(suffixIcon, color: _subtitleColor, size: 20) : null,
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFD2D6DC)),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: _inputBorderColor),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE31C2E), width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: _primaryColor, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: Colors.redAccent),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
       ),
     );

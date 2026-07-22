@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/core/models/commission_config_model.dart';
 import 'package:riderzz_app/core/models/vehicle_type_model.dart';
@@ -35,32 +36,32 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
       builder: (dialogCtx) => AlertDialog(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
           children: [
             Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
             SizedBox(width: 8),
             Text(
               'Delete Config',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF121214)),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Color(0xFF121214)),
             ),
           ],
         ),
         content: Text(
           'Are you sure you want to delete commission config for "${config.vehicleTypeName}" (${config.commissionPercent}%)? This action cannot be undone.',
-          style: const TextStyle(color: Color(0xFF4A5568), height: 1.4),
+          style: GoogleFonts.outfit(color: Color(0xFF4A5568), height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF6C6F79))),
+            child: Text('Cancel', style: GoogleFonts.outfit(color: Color(0xFF6C6F79))),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
             ),
             onPressed: () async {
               Navigator.pop(dialogCtx);
@@ -84,7 +85,7 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
                 }
               }
             },
-            child: const Text('Delete'),
+            child: Text('Delete'),
           ),
         ],
       ),
@@ -99,9 +100,9 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
         elevation: 0,
         backgroundColor: const Color(0xFFE31C2E),
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
+        title: Text(
           'Commission Configurations',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+          style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white, size: 20),
@@ -136,13 +137,13 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
                     Text(
                       provider.errorMessage!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Color(0xFF4A5568), fontSize: 14),
+                      style: GoogleFonts.outfit(color: Color(0xFF4A5568), fontSize: 14),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE31C2E)),
                       onPressed: () => provider.fetchCommissionConfigs(),
-                      child: const Text('Retry', style: TextStyle(color: Colors.white)),
+                      child: Text('Retry', style: GoogleFonts.outfit(color: Colors.white)),
                     ),
                   ],
                 ),
@@ -159,15 +160,15 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
                   children: [
                     const Icon(Icons.percent_rounded, color: Color(0xFFB0B8C4), size: 48),
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       'No configurations found',
-                      style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF121214), fontSize: 15),
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Color(0xFF121214), fontSize: 15),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       'Create custom commission percentages for your vehicle types.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Color(0xFF6C6F79), fontSize: 12),
+                      style: GoogleFonts.outfit(color: Color(0xFF6C6F79), fontSize: 12),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
@@ -176,7 +177,7 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                       icon: const Icon(Icons.add_rounded, color: Colors.white),
-                      label: const Text('Add Configuration', style: TextStyle(color: Colors.white)),
+                      label: Text('Add Configuration', style: GoogleFonts.outfit(color: Colors.white)),
                       onPressed: () => _showFormDialog(),
                     ),
                   ],
@@ -226,7 +227,7 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
                             children: [
                               Text(
                                 config.vehicleTypeName,
-                                style: const TextStyle(
+                                style: GoogleFonts.outfit(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                   color: Color(0xFF121214),
@@ -243,7 +244,7 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
                                     ),
                                     child: Text(
                                       '${config.commissionPercent.toStringAsFixed(1)}% Commission',
-                                      style: const TextStyle(
+                                      style: GoogleFonts.outfit(
                                         color: Color(0xFF1C9A5B),
                                         fontSize: 10,
                                         fontWeight: FontWeight.bold,
@@ -369,7 +370,7 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
     final vehicleTypes = Provider.of<AdminVehiclesProvider>(context).vehicleTypes;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       backgroundColor: Colors.white,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 400),
@@ -386,7 +387,7 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                   children: [
                     Text(
                       widget.config != null ? 'Edit Configuration' : 'Add Configuration',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF121214)),
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF121214)),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close_rounded, color: Color(0xFF6C6F79), size: 20),
@@ -399,22 +400,22 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                 const SizedBox(height: 16),
                 
                 // Vehicle Type Dropdown
-                const Text(
+                Text(
                   'Vehicle Type',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
                 ),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<int>(
                   value: _selectedVehicleTypeId,
                   dropdownColor: Colors.white,
                   icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6C6F79)),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(20),
                   onChanged: (val) {
                     setState(() {
                       _selectedVehicleTypeId = val;
                     });
                   },
-                  style: const TextStyle(fontSize: 13, color: Color(0xFF121214), fontWeight: FontWeight.w500),
+                  style: GoogleFonts.outfit(fontSize: 13, color: Color(0xFF121214), fontWeight: FontWeight.w500),
                   decoration: InputDecoration(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     filled: true,
@@ -433,7 +434,7 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                       value: type.id,
                       child: Text(
                         type.name,
-                        style: const TextStyle(color: Color(0xFF121214), fontSize: 13),
+                        style: GoogleFonts.outfit(color: Color(0xFF121214), fontSize: 13),
                       ),
                     );
                   }).toList(),
@@ -443,18 +444,18 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                 const SizedBox(height: 16),
 
                 // Commission Percent
-                const Text(
+                Text(
                   'Commission Percent (%)',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF121214)),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _percentController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  style: const TextStyle(fontSize: 13, color: Color(0xFF121214), fontWeight: FontWeight.w500),
+                  style: GoogleFonts.outfit(fontSize: 13, color: Color(0xFF121214), fontWeight: FontWeight.w500),
                   decoration: InputDecoration(
                     hintText: 'e.g., 15.5',
-                    hintStyle: const TextStyle(color: Color(0xFFB0B8C4), fontSize: 13),
+                    hintStyle: GoogleFonts.outfit(color: Color(0xFFB0B8C4), fontSize: 13),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     filled: true,
                     fillColor: const Color(0xFFF8FAFC),
@@ -492,7 +493,7 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                           side: const BorderSide(color: Color(0xFFE7E7EB)),
                         ),
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel', style: TextStyle(color: Color(0xFF4A5568))),
+                        child: Text('Cancel', style: GoogleFonts.outfit(color: Color(0xFF4A5568))),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -514,7 +515,7 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                 ),
                               )
-                            : const Text('Save', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            : Text('Save', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],

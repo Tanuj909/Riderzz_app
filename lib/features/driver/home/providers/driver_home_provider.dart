@@ -67,7 +67,10 @@ class DriverHomeProvider extends ChangeNotifier {
   bool get isEarningsLoading => _isEarningsLoading;
   String? get earningsError => _earningsError;
 
-  Future<void> fetchDriverProfile() async {
+  Future<void> fetchDriverProfile({bool force = false}) async {
+    if (!force && _profile != null) {
+      return;
+    }
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -94,7 +97,10 @@ class DriverHomeProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchDriverWallet() async {
+  Future<void> fetchDriverWallet({bool force = false}) async {
+    if (!force && _wallet != null) {
+      return;
+    }
     _isWalletLoading = true;
     _walletError = null;
     _isWalletNotCreated = false;
@@ -122,7 +128,10 @@ class DriverHomeProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchDriverEarnings() async {
+  Future<void> fetchDriverEarnings({bool force = false}) async {
+    if (!force && _earnings != null) {
+      return;
+    }
     _isEarningsLoading = true;
     _earningsError = null;
     notifyListeners();
@@ -180,7 +189,7 @@ class DriverHomeProvider extends ChangeNotifier {
     try {
       await _driverRepository.verifyWalletRecharge(rechargeId, orderId, paymentId, signature);
       // Re-fetch wallet to get updated balance
-      await fetchDriverWallet();
+      await fetchDriverWallet(force: true);
       return true;
     } catch (e) {
       _isWalletLoading = false;
@@ -349,7 +358,7 @@ class DriverHomeProvider extends ChangeNotifier {
       }
 
       // 3. Re-fetch profile to load state immediately
-      await fetchDriverProfile();
+      await fetchDriverProfile(force: true);
 
       _isLoading = false;
       notifyListeners();
@@ -369,7 +378,7 @@ class DriverHomeProvider extends ChangeNotifier {
 
     try {
       await _driverRepository.uploadDriverDocument(docType, filePath);
-      await fetchDriverProfile();
+      await fetchDriverProfile(force: true);
       _isLoading = false;
       notifyListeners();
       return true;

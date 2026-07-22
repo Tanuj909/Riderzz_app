@@ -1,6 +1,8 @@
 import 'package:riderzz_app/core/network/api_client.dart';
 import 'package:riderzz_app/core/network/api_constants.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
+import 'package:riderzz_app/core/models/driver_location_model.dart';
+import 'package:riderzz_app/core/models/pricing_tier_model.dart';
 
 class BookingRemoteDataSource {
   final ApiClient _apiClient;
@@ -67,5 +69,25 @@ class BookingRemoteDataSource {
     final response = await _apiClient.get('${ApiConstants.bookings}/$id/otp');
     final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
     return Map<String, dynamic>.from(resBody['data'] ?? {});
+  }
+
+  Future<DriverLocationModel> fetchDriverLocation(int driverId) async {
+    final response = await _apiClient.get('/driver/location/$driverId');
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
+    return DriverLocationModel.fromJson(data);
+  }
+
+  Future<PricingTierModel> getApplicablePricingTier(int vehicleTypeId, double distanceKm) async {
+    final response = await _apiClient.get(
+      '/admin/pricing-tiers/applicable',
+      queryParameters: {
+        'vehicleTypeId': vehicleTypeId.toString(),
+        'distanceKm': distanceKm.toString(),
+      },
+    );
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
+    return PricingTierModel.fromJson(data);
   }
 }

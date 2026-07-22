@@ -1,5 +1,7 @@
 import 'package:riderzz_app/features/user/home/data/datasource/booking_datasource.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
+import 'package:riderzz_app/core/models/driver_location_model.dart';
+import 'package:riderzz_app/core/models/pricing_tier_model.dart';
 
 class BookingRepository {
   final BookingRemoteDataSource _remoteDataSource;
@@ -28,5 +30,13 @@ class BookingRepository {
 
   Future<Map<String, dynamic>> fetchBookingOtp(int id) async {
     return await _remoteDataSource.fetchBookingOtp(id);
+  }
+
+  Future<DriverLocationModel> fetchDriverLocation(int driverId) async {
+    return await _remoteDataSource.fetchDriverLocation(driverId);
+  }
+
+  Future<PricingTierModel> getApplicablePricingTier(int vehicleTypeId, double distanceKm) async {
+    return await _remoteDataSource.getApplicablePricingTier(vehicleTypeId, distanceKm);
   }
 }

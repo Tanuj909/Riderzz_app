@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 
 class DriverWalletPage extends StatefulWidget {
   const DriverWalletPage({super.key});
@@ -122,7 +124,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
     _rechargeController.text = '500'; // Default quick amount
     bool isSubmitting = false;
     final minBal = provider.wallet?.minBalanceRequired ?? 100.0;
-
+ 
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -133,10 +135,10 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
               backgroundColor: Colors.white,
               surfaceTintColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(24),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(20.0),
+                padding: const EdgeInsets.all(24.0),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -152,18 +154,20 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                           ),
                           child: const Icon(
                             Icons.account_balance_wallet_rounded,
-                            color: Color(0xFF1E3A8A),
+                            color: Color(0xFFCC2D3B),
                             size: 22,
                           ),
                         ),
                         const SizedBox(width: 12),
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             'Recharge Wallet',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 17,
-                              color: Color(0xFF121214),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              color: const Color(0xFF121214),
                             ),
                           ),
                         ),
@@ -181,53 +185,51 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                       ],
                     ),
                     const SizedBox(height: 20),
-
+ 
                     // Limits and Label Row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Enter Amount',
-                          style: TextStyle(
-                            color: Color(0xFF4B5563),
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFF4B5563),
                             fontWeight: FontWeight.w600,
                             fontSize: 13,
                           ),
                         ),
                         Text(
-                          'Limit: ₹${minBal.toStringAsFixed(0)} - ₹2,000',
-                          style: const TextStyle(
-                            color: Color(0xFF9CA3AF),
+                          'Limit: ₹50 - ₹1,000',
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFF9CA3AF),
                             fontSize: 11,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 10),
-
+ 
                     // Amount Text Field
                     TextField(
                       controller: _rechargeController,
                       keyboardType: TextInputType.number,
                       enabled: !isSubmitting,
                       onChanged: (val) {
-                        setState(
-                          () {},
-                        ); // Rebuild to update matching select state of helper cards
+                        setState(() {}); // Rebuild to update matching select state of helper cards
                       },
-                      style: const TextStyle(
+                      style: GoogleFonts.outfit(
                         fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF121214),
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF121214),
                         letterSpacing: 0.5,
                       ),
                       decoration: InputDecoration(
                         prefixText: '₹ ',
-                        prefixStyle: const TextStyle(
+                        prefixStyle: GoogleFonts.outfit(
                           fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF121214),
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF121214),
                         ),
                         filled: true,
                         fillColor: const Color(0xFFF9FAFB),
@@ -236,22 +238,22 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                           vertical: 14,
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                           borderSide: const BorderSide(
                             color: Color(0xFFE5E7EB),
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                           borderSide: const BorderSide(
-                            color: Color(0xFF1E3A8A),
+                            color: Color(0xFFCC2D3B),
                             width: 1.5,
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
-
+ 
                     // Quick select cards
                     Row(
                       children: [100, 500, 1000].map((amount) {
@@ -263,8 +265,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                                 ? null
                                 : () {
                                     setState(() {
-                                      _rechargeController.text = amount
-                                          .toString();
+                                      _rechargeController.text = amount.toString();
                                     });
                                   },
                             child: Container(
@@ -277,7 +278,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: isSelected
-                                      ? const Color(0xFF3B82F6)
+                                      ? const Color(0xFFCC2D3B)
                                       : const Color(0xFFE5E7EB),
                                   width: isSelected ? 1.5 : 1,
                                 ),
@@ -285,13 +286,13 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                               alignment: Alignment.center,
                               child: Text(
                                 '+ ₹$amount',
-                                style: TextStyle(
+                                style: GoogleFonts.outfit(
                                   color: isSelected
-                                      ? const Color(0xFF1E3A8A)
+                                      ? const Color(0xFFCC2D3B)
                                       : const Color(0xFF4B5563),
                                   fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.w500,
+                                      ? FontWeight.w800
+                                      : FontWeight.w600,
                                   fontSize: 13,
                                 ),
                               ),
@@ -301,28 +302,28 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                       }).toList(),
                     ),
                     const SizedBox(height: 24),
-
+ 
                     // Dialog Actions Row
                     Row(
                       children: [
                         Expanded(
                           child: OutlinedButton(
                             style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               side: const BorderSide(color: Color(0xFFD1D5DB)),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(100),
                               ),
                             ),
                             onPressed: isSubmitting
                                 ? null
                                 : () => Navigator.pop(dialogContext),
-                            child: const Text(
+                            child: Text(
                               'Cancel',
-                              style: TextStyle(
-                                color: Color(0xFF4B5563),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                              style: GoogleFonts.outfit(
+                                color: const Color(0xFF4B5563),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14.5,
                               ),
                             ),
                           ),
@@ -331,24 +332,21 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                         Expanded(
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1E3A8A),
+                              backgroundColor: const Color(0xFFCC2D3B),
                               foregroundColor: Colors.white,
                               elevation: 0,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(100),
                               ),
                             ),
                             onPressed: isSubmitting
                                 ? null
                                 : () async {
-                                    final amtStr = _rechargeController.text
-                                        .trim();
+                                    final amtStr = _rechargeController.text.trim();
                                     final amt = double.tryParse(amtStr);
                                     if (amt == null || amt <= 0) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
+                                      ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
                                           content: Text(
                                             'Please enter a valid amount',
@@ -357,48 +355,37 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                                       );
                                       return;
                                     }
-
-                                    final minBal =
-                                        provider.wallet?.minBalanceRequired ??
-                                        100.0;
-                                    if (amt < minBal) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'Recharge amount must be at least ₹${minBal.toStringAsFixed(2)}',
-                                          ),
-                                          backgroundColor: const Color(
-                                            0xFFEF4444,
-                                          ),
-                                        ),
-                                      );
-                                      return;
-                                    }
-
-                                    if (amt > 2000.0) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
+ 
+                                    if (amt < 50.0) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
                                           content: Text(
-                                            'Recharge amount cannot exceed ₹2,000.00',
+                                            'can not add money less than 50',
                                           ),
                                           backgroundColor: Color(0xFFEF4444),
                                         ),
                                       );
                                       return;
                                     }
-
+ 
+                                    if (amt > 1000.0) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'can not add more than 1000',
+                                          ),
+                                          backgroundColor: Color(0xFFEF4444),
+                                        ),
+                                      );
+                                      return;
+                                    }
+ 
                                     setState(() {
                                       isSubmitting = true;
                                     });
-
-                                    final res = await provider.initiateRecharge(
-                                      amt,
-                                    );
-
+ 
+                                    final res = await provider.initiateRecharge(amt);
+ 
                                     setState(() {
                                       isSubmitting = false;
                                       if (res != null) {
@@ -409,22 +396,19 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                                         debugPrint('Amount: ${res.amount}');
                                         debugPrint('------------------------');
                                         if (context.mounted) {
-                                          Navigator.pop(
-                                            dialogContext,
-                                          ); // Close the dialog
+                                          Navigator.pop(dialogContext); // Close the dialog
                                         }
-
+ 
                                         _currentRechargeId = res.rechargeId;
                                         _currentOrderId = res.razorpayOrderId;
-
+ 
                                         final profile = provider.profile;
-
+ 
                                         var options = {
                                           'key': (dotenv.env['RAZORPAY_KEY_ID'] != null && dotenv.env['RAZORPAY_KEY_ID']!.isNotEmpty)
                                               ? dotenv.env['RAZORPAY_KEY_ID']!
                                               : res.razorpayKeyId,
-                                          'amount': (res.amount * 100)
-                                              .toInt(), // Razorpay expects amount in paise
+                                          'amount': (res.amount * 100).toInt(), // Razorpay expects amount in paise
                                           'name': 'Riderzz',
                                           'description': 'Wallet Recharge',
                                           'order_id': res.razorpayOrderId,
@@ -434,7 +418,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                                           },
                                           'theme': {'color': '#E31C2E'},
                                         };
-
+ 
                                         try {
                                           _razorpay.open(options);
                                         } catch (e) {
@@ -445,17 +429,12 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                                         debugPrint('Recharge failed with: ${provider.walletError}');
                                         debugPrint('----------------------');
                                         if (context.mounted) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
+                                          ScaffoldMessenger.of(context).showSnackBar(
                                             SnackBar(
                                               content: Text(
-                                                provider.walletError ??
-                                                    'Failed to initiate recharge',
+                                                provider.walletError ?? 'Failed to initiate recharge',
                                               ),
-                                              backgroundColor: const Color(
-                                                0xFFEF4444,
-                                              ),
+                                              backgroundColor: const Color(0xFFEF4444),
                                             ),
                                           );
                                         }
@@ -473,11 +452,11 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                                       ),
                                     ),
                                   )
-                                : const Text(
+                                : Text(
                                     'Recharge',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
+                                    style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14.5,
                                     ),
                                   ),
                           ),
@@ -532,21 +511,22 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'Welcome to your Wallet!',
-                  style: TextStyle(
-                    color: Color(0xFF121214),
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF121214),
                     fontSize: 22,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'Create your wallet now and claim your exclusive sign-in reward to get started!',
-                  style: TextStyle(
-                    color: Color(0xFF4B5563),
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF4B5563),
                     fontSize: 15,
                     height: 1.4,
+                    fontWeight: FontWeight.w500,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -555,20 +535,20 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE31C2E),
+                      backgroundColor: const Color(0xFFCC2D3B),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(100),
                       ),
                       elevation: 0,
                     ),
                     onPressed: () {
                       context.read<DriverHomeProvider>().createDriverWallet();
                     },
-                    child: const Text(
+                    child: Text(
                       'Get Sign-in Reward!',
-                      style: TextStyle(
+                      style: GoogleFonts.outfit(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -599,28 +579,29 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                 const SizedBox(height: 16),
                 Text(
                   driverProvider.walletError!,
-                  style: const TextStyle(
-                    color: Color(0xFF4A5568),
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF4A5568),
                     fontSize: 14,
+                    fontWeight: FontWeight.w500,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE31C2E),
+                    backgroundColor: const Color(0xFFCC2D3B),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(100),
                     ),
                     elevation: 0,
                   ),
                   onPressed: () {
                     context.read<DriverHomeProvider>().fetchDriverWallet();
                   },
-                  child: const Text(
+                  child: Text(
                     'Retry',
-                    style: TextStyle(fontWeight: FontWeight.w500),
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -640,7 +621,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
-          onRefresh: () => context.read<DriverHomeProvider>().fetchDriverWallet(),
+          onRefresh: () => context.read<DriverHomeProvider>().fetchDriverWallet(force: true),
           color: const Color(0xFFD90429),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -648,15 +629,14 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Padding(
-                  padding: EdgeInsets.only(top: 8.0, bottom: 20.0),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0, bottom: 20.0),
                   child: Text(
                     'My Wallet',
-                    style: TextStyle(
-                      color: Color(0xFF121214),
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF121214),
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      fontFamily: 'Plus Jakarta Sans',
                     ),
                   ),
                 ),
@@ -682,25 +662,23 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Available Balance',
-                        style: TextStyle(
+                        style: GoogleFonts.outfit(
                           color: Colors.white70,
                           fontSize: 13,
-                          fontWeight: FontWeight.w400,
-                          fontFamily: 'Outfit',
+                          fontWeight: FontWeight.w500,
                           letterSpacing: 0.5,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         '₹${balance.toStringAsFixed(2)}',
-                        style: const TextStyle(
+                        style: GoogleFonts.outfit(
                           color: Colors.white,
                           fontSize: 36,
-                          fontWeight: FontWeight.w400,
-                          fontFamily: 'IBM Plex Mono',
-                          letterSpacing: -1,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -711,7 +689,7 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
                           ),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(100),
                         ),
                         child: ElevatedButton(
                           onPressed: () => _showRechargeDialog(context, driverProvider),
@@ -720,16 +698,15 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                             shadowColor: Colors.transparent,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(100),
                             ),
                             minimumSize: const Size(double.infinity, 48),
                             elevation: 0,
                           ),
-                          child: const Text(
+                          child: Text(
                             '+ Add money',
-                            style: TextStyle(
-                              fontFamily: 'Outfit',
-                              fontWeight: FontWeight.normal,
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w700,
                               fontSize: 14.5,
                             ),
                           ),
@@ -753,21 +730,20 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                       border: Border.all(color: const Color(0xFFFCA5A5), width: 1),
                     ),
                     child: Row(
-                      children: const [
-                        Icon(
+                      children: [
+                        const Icon(
                           Icons.warning_amber_rounded,
                           color: Color(0xFFEF4444),
                           size: 20,
                         ),
-                        SizedBox(width: 12),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             'Alert: Balance is below the minimum required amount. Please recharge to continue receiving ride bookings.',
-                            style: TextStyle(
-                              color: Color(0xFFB91C1C),
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFFB91C1C),
                               fontSize: 12,
-                              fontFamily: 'Outfit',
-                              fontWeight: FontWeight.normal,
+                              fontWeight: FontWeight.w500,
                               height: 1.4,
                             ),
                           ),
@@ -779,13 +755,12 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                 ],
 
                 // Transactions Header
-                const Text(
+                Text(
                   'Transaction history',
-                  style: TextStyle(
-                    color: Color(0xFFA2A5AE),
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFFA2A5AE),
                     fontSize: 11,
-                    fontFamily: 'Outfit',
-                    fontWeight: FontWeight.normal,
+                    fontWeight: FontWeight.w800,
                     letterSpacing: 1.2,
                   ),
                 ),
@@ -801,12 +776,12 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: const Color(0xFFE1E1E6)),
                     ),
-                    child: const Text(
+                    child: Text(
                       'No transactions found.',
-                      style: TextStyle(
-                        color: Color(0xFF6C6F79),
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFF6C6F79),
                         fontSize: 13,
-                        fontFamily: 'Outfit',
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   )
@@ -892,20 +867,19 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                                     children: [
                                       Text(
                                         titleText,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.normal,
+                                        style: GoogleFonts.outfit(
+                                          fontWeight: FontWeight.w600,
                                           fontSize: 14.5,
-                                          fontFamily: 'Outfit',
-                                          color: Color(0xFF121214),
+                                          color: const Color(0xFF121214),
                                         ),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
                                         _formatDateTime(tx.createdAt),
-                                        style: const TextStyle(
-                                          color: Color(0xFF6C6F79),
+                                        style: GoogleFonts.outfit(
+                                          color: const Color(0xFF6C6F79),
                                           fontSize: 12.5,
-                                          fontFamily: 'Outfit',
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                     ],
@@ -913,10 +887,9 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                                 ),
                                 Text(
                                   '${isCredit ? "+" : "−"}₹${tx.amount.abs().toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.normal,
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.w800,
                                     fontSize: 15,
-                                    fontFamily: 'IBM Plex Mono',
                                     color: isCredit ? const Color(0xFF1C9A5B) : const Color(0xFF121214),
                                   ),
                                 ),
@@ -964,19 +937,19 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFFA2A5AE),
+            style: GoogleFonts.outfit(
+              color: const Color(0xFFA2A5AE),
               fontSize: 12.5,
-              fontFamily: 'Outfit',
+              fontWeight: FontWeight.w500,
             ),
           ),
           Flexible(
             child: Text(
               value,
-              style: const TextStyle(
-                color: Color(0xFF121214),
+              style: GoogleFonts.outfit(
+                color: const Color(0xFF121214),
                 fontSize: 12.5,
-                fontFamily: 'Outfit',
+                fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.end,
             ),

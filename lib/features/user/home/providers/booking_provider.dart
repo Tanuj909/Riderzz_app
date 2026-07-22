@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/user/home/data/repositories/booking_repository.dart';
+import 'package:riderzz_app/core/models/driver_location_model.dart';
+import 'package:riderzz_app/core/models/pricing_tier_model.dart';
 
 class BookingProvider extends ChangeNotifier {
   final BookingRepository _repository;
@@ -115,6 +117,16 @@ class BookingProvider extends ChangeNotifier {
     }
   }
 
+  Future<DriverLocationModel?> fetchDriverLocation(int driverId) async {
+    try {
+      final loc = await _repository.fetchDriverLocation(driverId);
+      return loc;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      return null;
+    }
+  }
+
   Future<Map<String, dynamic>?> fetchBookingOtp(int id) async {
     _isLoading = true;
     _errorMessage = null;
@@ -130,6 +142,15 @@ class BookingProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<PricingTierModel?> getApplicablePricingTier(int vehicleTypeId, double distanceKm) async {
+    try {
+      return await _repository.getApplicablePricingTier(vehicleTypeId, distanceKm);
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      return null;
     }
   }
 }
