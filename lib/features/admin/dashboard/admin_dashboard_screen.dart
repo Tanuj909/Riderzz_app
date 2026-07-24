@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/admin/vehicles/screens/admin_vehicles_screen.dart';
-import 'package:riderzz_app/features/admin/vehicles/screens/admin_vehicles_list_screen.dart';
-import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_list_provider.dart';
 import 'package:riderzz_app/features/admin/rider_verification/rider_verification_screen.dart';
 import 'package:riderzz_app/features/admin/rider_verification/providers/rider_verification_provider.dart';
 import 'package:riderzz_app/features/admin/wallets/screens/admin_wallets_screen.dart';
-import 'package:riderzz_app/features/admin/commission/screens/admin_commission_screen.dart';
 import 'package:riderzz_app/features/admin/commission/screens/admin_pricing_screen.dart';
+import 'package:riderzz_app/core/models/admin_driver_model.dart';
 
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -28,6 +24,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<RiderVerificationProvider>();
+      provider.fetchOnlineApprovedDriverCount();
       if (provider.currentStatusFilter != 'PENDING') {
         provider.setStatusFilter('PENDING');
       } else {
@@ -36,238 +33,71 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     });
   }
 
-  String _getInitials(String? name) {
-    if (name == null || name.trim().isEmpty) return 'A';
-    final parts = name.trim().split(' ');
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-    return parts[0][0].toUpperCase();
-  }
-
-  void _handleLogout(BuildContext context, AuthProvider authProvider) async {
-    await authProvider.logout();
-    if (context.mounted) {
-      Navigator.pushReplacementNamed(context, '/login');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final adminUser = authProvider.currentUser;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F8),
-      appBar: AppBar(
-        toolbarHeight: 0,
-        elevation: 0,
-        backgroundColor: const Color(0xFFE31C2E),
-        systemOverlayStyle: SystemUiOverlayStyle.light,
-      ),
       body: SafeArea(
-        child: Column(
-          children: [
-            // Admin Reusable Header App Bar Layout (Shared across tabs)
-            Container(
-              color: const Color(0xFFE31C2E),
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        adminUser?.name ?? 'Administrator',
-                        style: GoogleFonts.outfit(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: Colors.greenAccent,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'SYSTEM ACTIVE',
-                            style: GoogleFonts.outfit(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  PopupMenuButton<String>(
-                    color: Colors.white,
-                    surfaceTintColor: Colors.white,
-                    onSelected: (value) {
-                      if (value == 'logout') {
-                        _handleLogout(context, authProvider);
-                      }
-                    },
-                    offset: const Offset(0, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    itemBuilder: (context) => [
-                      // Profile Header
-                      PopupMenuItem(
-                        enabled: false,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                adminUser?.name ?? 'Administrator',
-                                style: GoogleFonts.outfit(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  color: const Color(0xFF121214),
-                                ),
-                              ),
-                              if (adminUser?.phone != null) ...[
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.phone_android_rounded, size: 12, color: Color(0xFF6C6F79)),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '+91 ${adminUser!.phone}',
-                                      style: GoogleFonts.outfit(fontSize: 12, color: Color(0xFF6C6F79)),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                      const PopupMenuItem<String>(
-                        enabled: false,
-                        height: 1,
-                        child: Divider(
-                          height: 1,
-                          color: Color(0xFFE7E7EB),
-                          thickness: 0.5,
-                        ),
-                      ),
-                      // Logout
-                      PopupMenuItem(
-                        value: 'logout',
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.logout_rounded, size: 16, color: Colors.redAccent),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Logout Portal',
-                                style: GoogleFonts.outfit(fontSize: 13, color: Colors.redAccent, fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF1C9A5B),
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        _getInitials(adminUser?.name),
-                        style: GoogleFonts.outfit(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+        child: _buildTabContent(),
+      ),
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            top: BorderSide(color: Color(0xFFE1E1E6), width: 1),
+          ),
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+            if (index == 0) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                final provider = context.read<RiderVerificationProvider>();
+                provider.fetchOnlineApprovedDriverCount();
+                if (provider.currentStatusFilter != 'PENDING') {
+                  provider.setStatusFilter('PENDING');
+                } else {
+                  provider.fetchDrivers(isRefresh: true);
+                }
+              });
+            }
+          },
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          iconSize: 22,
+          selectedItemColor: const Color(0xFFD90429),
+          unselectedItemColor: const Color(0xFFA2A5AE),
+          selectedFontSize: 11,
+          unselectedFontSize: 11,
+          selectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w700),
+          unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.grid_view_outlined),
+              activeIcon: Icon(Icons.grid_view_rounded),
+              label: 'Dashboard',
             ),
-
-            // Active Tab Page Body
-            Expanded(
-              child: _buildTabContent(),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.assignment_outlined),
+              activeIcon: Icon(Icons.assignment_rounded),
+              label: 'Requests',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.local_shipping_outlined),
+              activeIcon: Icon(Icons.local_shipping_rounded),
+              label: 'Vehicles',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.account_balance_wallet_outlined),
+              activeIcon: Icon(Icons.account_balance_wallet_rounded),
+              label: 'Wallets',
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-          if (index == 0) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              final provider = context.read<RiderVerificationProvider>();
-              if (provider.currentStatusFilter != 'PENDING') {
-                provider.setStatusFilter('PENDING');
-              } else {
-                provider.fetchDrivers(isRefresh: true);
-              }
-            });
-          } else if (index == 2) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              context.read<AdminVehiclesListProvider>().fetchVehicles(isRefresh: true);
-            });
-          }
-        },
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFFE31C2E),
-        unselectedItemColor: const Color(0xFFB0B8C4),
-        selectedFontSize: 11,
-        unselectedFontSize: 11,
-        selectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600),
-        unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w500),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            activeIcon: Icon(Icons.dashboard_rounded),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.pending_actions_rounded),
-            label: 'Pending Requests',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.local_shipping_outlined),
-            activeIcon: Icon(Icons.local_shipping_rounded),
-            label: 'Vehicles',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.airport_shuttle_outlined),
-            activeIcon: Icon(Icons.airport_shuttle_rounded),
-            label: 'Vehicle Types',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            activeIcon: Icon(Icons.account_balance_wallet_rounded),
-            label: 'Wallets',
-          ),
-        ],
       ),
     );
   }
@@ -279,10 +109,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       case 1:
         return const RiderVerificationScreen();
       case 2:
-        return const AdminVehiclesListScreen();
-      case 3:
         return const AdminVehiclesScreen();
-      case 4:
+      case 3:
         return const AdminWalletsScreen();
       default:
         return _buildDashboardTab();
@@ -293,172 +121,345 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildDashboardTab() {
     final verificationProvider = Provider.of<RiderVerificationProvider>(context);
 
-    // Automatically self-correct filter and fetch pending count if not set to PENDING
+    // Self-correct filter and fetch pending drivers if not set to PENDING
     if (verificationProvider.currentStatusFilter != 'PENDING' && !verificationProvider.isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         verificationProvider.setStatusFilter('PENDING');
       });
     }
 
-    final int pendingCount = verificationProvider.drivers.length;
-    final String driverSubtitle = verificationProvider.isLoading
-        ? 'Loading pending requests...'
-        : '$pendingCount pending request${pendingCount == 1 ? '' : 's'} awaiting review';
+    final int onlineDriverCount = verificationProvider.totalApprovedOnlineDrivers;
+    final List<AdminDriverModel> pendingDrivers = verificationProvider.drivers;
 
     return RefreshIndicator(
       onRefresh: () async {
         final provider = context.read<RiderVerificationProvider>();
-        if (provider.currentStatusFilter != 'PENDING') {
-          await provider.setStatusFilter('PENDING');
-        } else {
-          await provider.fetchDrivers(isRefresh: true);
-        }
+        await Future.wait([
+          provider.fetchOnlineApprovedDriverCount(),
+          provider.currentStatusFilter != 'PENDING'
+              ? provider.setStatusFilter('PENDING')
+              : provider.fetchDrivers(isRefresh: true),
+        ]);
       },
-      color: const Color(0xFFE31C2E),
+      color: const Color(0xFFD90429),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /*
-            Text(
-              'Operational Overview',
-              style: GoogleFonts.outfit(
-                color: Color(0xFF121214),
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-  
-            // Grid of Stats Cards
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.8,
+            // Top Dashboard Header matching admin_mobile_screen.html
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildStatCard(
-                  title: 'Active Bookings',
-                  value: '42',
-                  icon: Icons.local_shipping_rounded,
-                  color: const Color(0xFFE31C2E),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'RIDERZZ ADMIN',
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFFD90429),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Dashboard',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: const Color(0xFF121214),
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
                 ),
-                _buildStatCard(
-                  title: 'Total Drivers',
-                  value: '18',
-                  icon: Icons.sports_motorsports_rounded,
-                  color: const Color(0xFF1C9A5B),
-                ),
-                _buildStatCard(
-                  title: 'Total Customers',
-                  value: '124',
-                  icon: Icons.people_rounded,
-                  color: const Color(0xFFE28743),
-                ),
-                _buildStatCard(
-                  title: 'Today Revenue',
-                  value: '₹14,250',
-                  icon: Icons.account_balance_wallet_rounded,
-                  color: Colors.pinkAccent,
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFD90429), Color(0xFF8D021F)],
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    'AD',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            */
-   
-            Text(
-              'Administrative Tasks',
-              style: GoogleFonts.outfit(
-                color: const Color(0xFF121214),
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+            const SizedBox(height: 18),
+
+            // ONLY Total Drivers Stat Card (matching admin_mobile_screen.html)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFE1E1E6)),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF121214).withValues(alpha: 0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'TOTAL DRIVERS',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFFA2A5AE),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    verificationProvider.isLoadingApprovedOnlineDrivers
+                        ? '...'
+                        : onlineDriverCount.toString(),
+                    style: GoogleFonts.ibmPlexMono(
+                      color: const Color(0xFF121214),
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.north_east_rounded,
+                        size: 13,
+                        color: Color(0xFF1C9A5B),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Online & Approved',
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFF1C9A5B),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
-   
-            _buildActionItem(
-              title: 'Driver Requests',
-              subtitle: driverSubtitle,
-              icon: Icons.person_add_rounded,
-              iconBgColor: const Color(0xFFFFF0F0),
-              iconColor: Colors.redAccent,
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFECEC),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.redAccent.withValues(alpha: 0.2)),
-                ),
-                child: Text(
-                  verificationProvider.isLoading
-                      ? 'Loading...'
-                      : '$pendingCount Pending',
-                  style: GoogleFonts.outfit(
-                    color: Colors.redAccent,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+            const SizedBox(height: 20),
+
+            // Quick Access Section
+            Text(
+              'QUICK ACCESS',
+              style: GoogleFonts.outfit(
+                color: const Color(0xFFA2A5AE),
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.0,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildQuickAccessCard(
+                    icon: Icons.tune_rounded,
+                    title: 'Vehicle Price\nConfig',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminPricingScreen(),
+                        ),
+                      );
+                    },
                   ),
                 ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildQuickAccessCard(
+                    icon: Icons.local_shipping_outlined,
+                    title: 'Vehicle\nManagement',
+                    onTap: () {
+                      setState(() {
+                        _currentIndex = 2;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildQuickAccessCard(
+                    icon: Icons.account_balance_wallet_outlined,
+                    title: 'Wallet\nOperations',
+                    onTap: () {
+                      setState(() {
+                        _currentIndex = 3;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Pending Driver Requests Section
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'PENDING DRIVER REQUESTS',
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFFA2A5AE),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _currentIndex = 1;
+                    });
+                  },
+                  child: Text(
+                    'View all',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFFD90429),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFE1E1E6)),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF121214).withValues(alpha: 0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
               ),
-              onTap: () {
-                setState(() {
-                  _currentIndex = 1; // Transition to Pending Requests tab
-                });
-              },
-            ),
-            _buildActionItem(
-              title: 'Vehicle Configuration',
-              subtitle: 'Manage vehicle types, rates, and limits',
-              icon: Icons.airport_shuttle_rounded,
-              iconBgColor: const Color(0xFFEBFDF6),
-              iconColor: const Color(0xFF1C9A5B),
-              onTap: () {
-                setState(() {
-                  _currentIndex = 2; // Transition to Vehicles tab
-                });
-              },
-            ),
-            _buildActionItem(
-              title: 'Driver Wallets & Operations',
-              subtitle: 'Manage balances, view transactions, and force offline status',
-              icon: Icons.account_balance_wallet_rounded,
-              iconBgColor: const Color(0xFFEBF3FD),
-              iconColor: const Color(0xFFE31C2E),
-              onTap: () {
-                setState(() {
-                  _currentIndex = 4; // Correct index for Wallets is 4
-                });
-              },
-            ),
-            _buildActionItem(
-              title: 'Commission Configurations',
-              subtitle: 'Configure vehicle-specific commission percentages',
-              icon: Icons.percent_rounded,
-              iconBgColor: const Color(0xFFFFFBEB),
-              iconColor: const Color(0xFFD97706),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AdminCommissionScreen()),
-                );
-              },
-            ),
-            _buildActionItem(
-              title: 'Pricing Configurations',
-              subtitle: 'Configure vehicle-specific pricing tiers and rules',
-              icon: Icons.monetization_on_rounded,
-              iconBgColor: const Color(0xFFE8F5E9),
-              iconColor: const Color(0xFF2E7D32),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AdminPricingScreen()),
-                );
-              },
+              child: verificationProvider.isLoading
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16.0),
+                        child: CircularProgressIndicator(color: Color(0xFFD90429)),
+                      ),
+                    )
+                  : pendingDrivers.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12.0),
+                          child: Text(
+                            'No pending requests awaiting review',
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFF6C6F79),
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        )
+                      : Column(
+                          children: pendingDrivers.take(3).map((AdminDriverModel driver) {
+                            final isLast = pendingDrivers.take(3).last == driver;
+                            final String createdAtStr = driver.createdAt;
+                            final String formattedDate = createdAtStr.length >= 10
+                                ? createdAtStr.substring(0, 10)
+                                : 'Recent';
+                            return Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                border: isLast
+                                    ? null
+                                    : const Border(
+                                        bottom: BorderSide(
+                                          color: Color(0xFFE1E1E6),
+                                          width: 0.8,
+                                        ),
+                                      ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          driver.name,
+                                          style: GoogleFonts.outfit(
+                                            color: const Color(0xFF121214),
+                                            fontSize: 13.5,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '${driver.vehicle?.vehicleTypeName ?? driver.vehicleTypeName ?? 'Driver Application'} · $formattedDate',
+                                          style: GoogleFonts.outfit(
+                                            color: const Color(0xFF6C6F79),
+                                            fontSize: 11.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  OutlinedButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _currentIndex = 1;
+                                      });
+                                    },
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 6),
+                                      side: const BorderSide(color: Color(0xFFE1E1E6)),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(9),
+                                      ),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    child: Text(
+                                      'Review',
+                                      style: GoogleFonts.outfit(
+                                        color: const Color(0xFF121214),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
             ),
           ],
         ),
@@ -466,119 +467,51 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  // TAB 1: PENDING REQUESTS TAB (now handled by RiderVerificationScreen)
-
-  // UTILITY HELPER CARD BUILDERS
-  Widget _buildStatCard({
-    required String title,
-    required String value,
+  Widget _buildQuickAccessCard({
     required IconData icon,
-    required Color color,
+    required String title,
+    required VoidCallback onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF0F0F4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.outfit(
-                  color: const Color(0xFF6C6F79),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: color, size: 14),
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFE1E1E6)),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF121214).withValues(alpha: 0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: GoogleFonts.outfit(
-              color: const Color(0xFF121214),
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 20, color: const Color(0xFFD90429)),
+              const SizedBox(height: 6),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(
+                  color: const Color(0xFF16171C),
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  height: 1.25,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildActionItem({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color iconBgColor,
-    required Color iconColor,
-    Widget? trailing,
-    VoidCallback? onTap,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF0F0F4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: ListTile(
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: iconBgColor,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: iconColor, size: 24),
-        ),
-        title: Text(
-          title,
-          style: GoogleFonts.outfit(
-            color: const Color(0xFF121214),
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: GoogleFonts.outfit(
-            color: const Color(0xFF6C6F79),
-            fontSize: 12.5,
-          ),
-        ),
-        trailing: trailing ?? const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFB0B8C4), size: 12),
-      ),
-    );
-  }
+  // TAB 1: PENDING REQUESTS TAB (now handled by RiderVerificationScreen)
 }

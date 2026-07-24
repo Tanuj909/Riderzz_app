@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -72,51 +73,134 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F8),
-      body: Column(
+      body: Stack(
         children: [
-          // Search & Header Title Section
+          // Underlying Wallets Screen Content
+          Column(
+            children: [
+          // Header & Search Bar matching admin_mobile_screen.html
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Approved Drivers & Wallets',
-                      style: GoogleFonts.outfit(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF121214),
-                      ),
-                    ),
-                  ],
+                Text(
+                  'FINANCE',
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFFD90429),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Wallet Operations',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: const Color(0xFF121214),
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search by driver name or phone...',
-                    hintStyle: GoogleFonts.outfit(color: Color(0xFF90A3BF), fontSize: 13),
-                    prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF90A3BF), size: 20),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear_rounded, color: Color(0xFF90A3BF), size: 18),
-                            onPressed: () => _searchController.clear(),
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: const Color(0xFFF6F6F8),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
+
+                // Wallet Hero Card matching admin_mobile_screen.html
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF121214), Color(0xFF2B2C31)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: const BorderSide(color: Color(0xFFE31C2E)),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF121214).withValues(alpha: 0.15),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Net Platform Revenue',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '₹8,42,650.00',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFD90429),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                          ),
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Bank settlement initiated successfully')),
+                            );
+                          },
+                          child: Text(
+                            'Settle to Bank',
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 14),
+
+                // Search bar input-wrap style
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F1F4),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE1E1E6)),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    style: GoogleFonts.outfit(color: const Color(0xFF121214), fontSize: 13.5),
+                    decoration: InputDecoration(
+                      hintText: 'Search by driver name or phone...',
+                      hintStyle: GoogleFonts.outfit(color: const Color(0xFFA2A5AE), fontSize: 13),
+                      prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFFA2A5AE), size: 20),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear_rounded, color: Color(0xFFA2A5AE), size: 18),
+                              onPressed: () => _searchController.clear(),
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      isDense: true,
                     ),
                   ),
                 ),
@@ -131,7 +215,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                 if (provider.isLoading && provider.approvedDrivers.isEmpty) {
                   return const Center(
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD90429)),
                     ),
                   );
                 }
@@ -148,11 +232,11 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                           Text(
                             provider.errorMessage!,
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.outfit(color: Color(0xFF4A5568), fontSize: 14),
+                            style: GoogleFonts.outfit(color: const Color(0xFF4A5568), fontSize: 14),
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE31C2E)),
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD90429)),
                             onPressed: () => provider.fetchApprovedDrivers(isRefresh: true),
                             child: Text('Retry', style: GoogleFonts.outfit(color: Colors.white)),
                           ),
@@ -179,20 +263,20 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: const BoxDecoration(
-                                color: Color(0xFFFDEBEC),
+                                color: Color(0xFFFFEDF0),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.account_balance_wallet_rounded, size: 44, color: Color(0xFFE31C2E)),
+                              child: const Icon(Icons.account_balance_wallet_rounded, size: 44, color: Color(0xFFD90429)),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               _searchQuery.isNotEmpty
                                   ? 'No matching drivers found'
                                   : 'No approved drivers found',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.plusJakartaSans(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF121214),
+                                color: const Color(0xFF121214),
                               ),
                             ),
                           ],
@@ -204,7 +288,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
 
                 return RefreshIndicator(
                   onRefresh: () => provider.fetchApprovedDrivers(isRefresh: true),
-                  color: const Color(0xFFE31C2E),
+                  color: const Color(0xFFD90429),
                   child: ListView.builder(
                     controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -220,7 +304,7 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
                               height: 24,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2.5,
-                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
+                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD90429)),
                               ),
                             ),
                           ),
@@ -237,183 +321,243 @@ class _AdminWalletsScreenState extends State<AdminWalletsScreen> {
           ),
         ],
       ),
+
+      // Blurred Overlay with "Under Progress" Message
+          Positioned.fill(
+            child: ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                child: Container(
+                  color: const Color(0xFF121214).withValues(alpha: 0.35),
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: Container(
+                    padding: const EdgeInsets.all(28),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.95),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: const Color(0xFFE1E1E6)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFFEDF0),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.construction_rounded,
+                            size: 40,
+                            color: Color(0xFFD90429),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD90429),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            'UNDER PROGRESS',
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Feature Under Development',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF121214),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Wallet operations and driver payout features are currently being built and will be available soon.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            color: const Color(0xFF6C6F79),
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildDriverWalletCard(AdminDriverModel driver) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE7E7EB)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE1E1E6)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: const Color(0xFF121214).withValues(alpha: 0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Driver Profile Header Row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        driver.name,
-                        style: GoogleFonts.outfit(
-                          color: Color(0xFF121214),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row: Driver Name + Online Badge
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      driver.name,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: const Color(0xFF121214),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15.5,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '+91 ${driver.phone}',
-                        style: GoogleFonts.outfit(
-                          color: Color(0xFF6C6F79),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: driver.isOnline ? const Color(0xFFEBFDF6) : const Color(0xFFF1F1F4),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: driver.isOnline ? const Color(0xFF1C9A5B) : const Color(0xFF64748B),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        driver.isOnline ? 'ONLINE' : 'OFFLINE',
-                        style: GoogleFonts.outfit(
-                          color: driver.isOnline ? const Color(0xFF1C9A5B) : const Color(0xFF64748B),
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12.0),
-              child: Divider(height: 1, color: Color(0xFFE7E7EB)),
-            ),
-
-            // Performance/Trips/Rating info row
-            Row(
-              children: [
-                const Icon(Icons.star_rounded, color: Color(0xFFD97706), size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  driver.rating.toStringAsFixed(1),
-                  style: GoogleFonts.outfit(
-                    color: Color(0xFF121214),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                const Icon(Icons.local_shipping_rounded, color: Color(0xFFE31C2E), size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  '${driver.totalTrips} Trips',
-                  style: GoogleFonts.outfit(
-                    color: Color(0xFF121214),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                const Icon(Icons.directions_car_rounded, color: Color(0xFF1C9A5B), size: 16),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    driver.vehicle != null
-                        ? '${driver.vehicle!.make} (${driver.vehicleNumber})'
-                        : 'No vehicle',
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.outfit(
-                      color: Color(0xFF121214),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
                     ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // Button actions row
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _showDriverDetailsBottomSheet(driver),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFFE31C2E), width: 1.2),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    child: Text(
-                      'View Details',
+                    const SizedBox(height: 2),
+                    Text(
+                      '+91 ${driver.phone} · ${driver.rating.toStringAsFixed(1)} ★ · ${driver.totalTrips} Trips',
                       style: GoogleFonts.outfit(
-                        color: Color(0xFFE31C2E),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                        color: const Color(0xFF6C6F79),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _showDriverOperationsBottomSheet(driver),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE31C2E),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      elevation: 0,
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: driver.isOnline ? const Color(0xFFE7F7EF) : const Color(0xFFF1F1F4),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: driver.isOnline ? const Color(0xFF1C9A5B) : const Color(0xFF6C6F79),
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                    child: Text(
-                      'Operations',
+                    const SizedBox(width: 4),
+                    Text(
+                      driver.isOnline ? 'ONLINE' : 'OFFLINE',
                       style: GoogleFonts.outfit(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                        color: driver.isOnline ? const Color(0xFF1C9A5B) : const Color(0xFF6C6F79),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
+            ],
+          ),
+
+          if (driver.vehicle != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F1F4),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFE1E1E6)),
+              ),
+              child: Text(
+                'Vehicle: ${driver.vehicle!.make} ${driver.vehicle!.model} (${driver.vehicleNumber})',
+                style: GoogleFonts.outfit(
+                  color: const Color(0xFF16171C),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
-        ),
+
+          const SizedBox(height: 14),
+
+          // Action buttons row (btn btn-outline btn-sm btn-block style)
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _showDriverDetailsBottomSheet(driver),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    side: const BorderSide(color: Color(0xFFE1E1E6), width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    'View Details',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF121214),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => _showDriverOperationsBottomSheet(driver),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD90429),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    'Operations & Payout',
+                    style: GoogleFonts.outfit(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

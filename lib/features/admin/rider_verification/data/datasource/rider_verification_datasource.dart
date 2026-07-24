@@ -13,6 +13,7 @@ class RiderVerificationRemoteDataSource {
     required int page,
     required int size,
     required String status,
+    bool? online,
   }) async {
     final Map<String, dynamic> queryParams = {
       'page': page,
@@ -22,6 +23,9 @@ class RiderVerificationRemoteDataSource {
     // Only add status filter if it's not 'ALL'
     if (status.isNotEmpty && status != 'ALL') {
       queryParams['status'] = status;
+    }
+    if (online != null) {
+      queryParams['online'] = online;
     }
 
     final response = await _apiClient.get(

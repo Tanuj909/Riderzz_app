@@ -13,6 +13,8 @@ class RiderVerificationProvider extends ChangeNotifier {
   final int _pageSize = 20;
   bool _isLastPage = false;
   String _currentStatusFilter = 'PENDING';
+  int _totalApprovedOnlineDrivers = 0;
+  bool _isLoadingApprovedOnlineDrivers = false;
 
   RiderVerificationProvider(this._repository);
 
@@ -22,6 +24,29 @@ class RiderVerificationProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   String get currentStatusFilter => _currentStatusFilter;
   bool get isLastPage => _isLastPage;
+  int get totalApprovedOnlineDrivers => _totalApprovedOnlineDrivers;
+  bool get isLoadingApprovedOnlineDrivers => _isLoadingApprovedOnlineDrivers;
+
+  /// Fetches the count of drivers with status=APPROVED and online=true.
+  Future<void> fetchOnlineApprovedDriverCount() async {
+    _isLoadingApprovedOnlineDrivers = true;
+    notifyListeners();
+
+    try {
+      final result = await _repository.getDrivers(
+        page: 0,
+        size: 20,
+        status: 'APPROVED',
+        online: true,
+      );
+      _totalApprovedOnlineDrivers = result['totalElements'] as int? ?? 0;
+    } catch (_) {
+      // Keep previous value if request fails
+    } finally {
+      _isLoadingApprovedOnlineDrivers = false;
+      notifyListeners();
+    }
+  }
 
   void resetState() {
     _drivers = [];

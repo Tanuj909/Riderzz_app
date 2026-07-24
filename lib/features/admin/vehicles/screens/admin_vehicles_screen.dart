@@ -123,42 +123,46 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
 
           return RefreshIndicator(
             onRefresh: () => provider.fetchVehicleTypes(),
-            color: const Color(0xFFE31C2E),
+            color: const Color(0xFFD90429),
             child: CustomScrollView(
               slivers: [
                 SliverPadding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 12.0),
                   sliver: SliverToBoxAdapter(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Vehicle Managment',
+                                  'FLEET & CATEGORIES',
                                   style: GoogleFonts.outfit(
-                                    color: Color(0xFF121214),
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFD90429),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1.2,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '${provider.vehicleTypes.length} Active Types',
-                                  style: GoogleFonts.outfit(
-                                    color: Color(0xFF6C6F79),
-                                    fontSize: 12,
+                                  'Vehicle Management',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: const Color(0xFF121214),
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.5,
                                   ),
                                 ),
                               ],
                             ),
                             ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFE31C2E),
+                                backgroundColor: const Color(0xFFD90429),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
@@ -172,7 +176,16 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${provider.vehicleTypes.length} Active Categories',
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFF6C6F79),
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
                       ],
                     ),
                   ),
@@ -189,21 +202,21 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: const BoxDecoration(
-                                color: Color(0xFFFDEBEC),
+                                color: Color(0xFFFFEDF0),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.airport_shuttle_outlined, size: 48, color: Color(0xFFE31C2E)),
+                              child: const Icon(Icons.airport_shuttle_outlined, size: 48, color: Color(0xFFD90429)),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'No Vehicle Categories',
-                              style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
+                              style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF121214)),
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Create categories to configure pricing, commission, and weight capacities for booking dispatches.',
+                              'Create categories to configure weight capacities, wallet requirements, and dispatch settings.',
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.outfit(fontSize: 13, color: Color(0xFF6C6F79), height: 1.4),
+                              style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF6C6F79), height: 1.4),
                             ),
                           ],
                         ),
@@ -244,54 +257,54 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
     } else if (name.contains('cycle') || name.contains('bicycle')) {
       return Icons.pedal_bike_rounded;
     } else {
-      return Icons.airport_shuttle_rounded; // default generic vehicle icon
+      return Icons.airport_shuttle_rounded;
     }
   }
 
   Widget _buildVehicleCard(VehicleTypeModel vehicle) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE7E7EB)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE1E1E6)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: const Color(0xFF121214).withValues(alpha: 0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Top Header Row: Icon, Title & Active Badge
           Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 42,
+                height: 42,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFFDEBEC),
+                  color: Color(0xFFFFEDF0),
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
                 child: (vehicle.iconUrl != null && vehicle.iconUrl!.isNotEmpty)
                     ? ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(21),
                         child: Padding(
                           padding: const EdgeInsets.all(4.0),
                           child: Image.network(
                             vehicle.iconUrl!,
                             fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) =>
-                                Icon(_getVehicleIcon(vehicle.name), color: const Color(0xFFE31C2E), size: 20),
+                                Icon(_getVehicleIcon(vehicle.name), color: const Color(0xFFD90429), size: 20),
                           ),
                         ),
                       )
-                    : Icon(_getVehicleIcon(vehicle.name), color: const Color(0xFFE31C2E), size: 20),
+                    : Icon(_getVehicleIcon(vehicle.name), color: const Color(0xFFD90429), size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -300,20 +313,21 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
                   children: [
                     Text(
                       vehicle.name,
-                      style: GoogleFonts.outfit(
-                        color: Color(0xFF121214),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: const Color(0xFF121214),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15.5,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Capacity: ${vehicle.maxWeightKg} kg',
+                      'Max Capacity: ${vehicle.maxWeightKg} kg',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.outfit(
-                        color: Color(0xFF6C6F79),
-                        fontSize: 12,
+                        color: const Color(0xFF6C6F79),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -321,95 +335,127 @@ class _AdminVehiclesScreenState extends State<AdminVehiclesScreen> {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: vehicle.isActive ? const Color(0xFFEBFDF6) : const Color(0xFFFFF0F0),
-                  borderRadius: BorderRadius.circular(6),
+                  color: vehicle.isActive ? const Color(0xFFE7F7EF) : const Color(0xFFFDEBEC),
+                  borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  vehicle.isActive ? 'ACTIVE' : 'INACTIVE',
+                  vehicle.isActive ? 'Active' : 'Inactive',
                   style: GoogleFonts.outfit(
-                    color: vehicle.isActive ? const Color(0xFF1C9A5B) : Colors.redAccent,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
+                    color: vehicle.isActive ? const Color(0xFF1C9A5B) : const Color(0xFFE31C2E),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
             ],
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12.0),
-            child: Divider(height: 1, color: Color(0xFFE7E7EB)),
-          ),
-          // Parameters Grid
-          Column(
+
+          const SizedBox(height: 12),
+
+          // Details Tags (Min Wallet Balance, Toll, Dynamic Pricing)
+          // NO BASE FARE AND NO RATE/KM SHOWN AS REQUESTED
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
             children: [
-              Row(
-                children: [
-                  Expanded(child: _buildParamItem('Base Fare', '₹${vehicle.baseFare.toStringAsFixed(1)}')),
-                  Expanded(child: _buildParamItem('Rate/Km', '₹${vehicle.perKmRate.toStringAsFixed(1)}')),
-                  Expanded(child: _buildParamItem('Max Weight', '${vehicle.maxWeightKg} kg')),
-                ],
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F1F4),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFE1E1E6)),
+                ),
+                child: Text(
+                  'Min Wallet: ₹${vehicle.minWalletBalance.toStringAsFixed(0)}',
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF16171C),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(child: _buildParamItem('Min Wallet Bal.', '₹${vehicle.minWalletBalance.toStringAsFixed(1)}')),
-                  Expanded(child: _buildParamItem('Toll Fee', (vehicle.tollEnabled ?? false) ? 'Enabled' : 'Disabled')),
-                  Expanded(child: _buildParamItem('Dynamic pricing', (vehicle.dynamicPricingEnabled ?? false) ? 'Active' : 'Inactive')),
-                ],
-              ),
+              if (vehicle.tollEnabled ?? false)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F1F4),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFE1E1E6)),
+                  ),
+                  child: Text(
+                    'Toll Enabled',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF16171C),
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              if (vehicle.dynamicPricingEnabled ?? false)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F1F4),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFE1E1E6)),
+                  ),
+                  child: Text(
+                    'Dynamic Pricing',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF16171C),
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
             ],
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12.0),
-            child: Divider(height: 1, color: Color(0xFFE7E7EB)),
-          ),
-          // Action buttons Row
+
+          const SizedBox(height: 14),
+
+          // Action Buttons Row matching HTML (btn btn-outline btn-sm btn-block)
           Row(
-            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              TextButton.icon(
-                icon: const Icon(Icons.edit_rounded, color: Color(0xFFE31C2E), size: 14),
-                label: Text('Edit', style: GoogleFonts.outfit(color: Color(0xFFE31C2E), fontSize: 11, fontWeight: FontWeight.bold)),
-                onPressed: () => _showFormBottomSheet(vehicleType: vehicle),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  backgroundColor: const Color(0xFFFDEBEC),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _showFormBottomSheet(vehicleType: vehicle),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    side: const BorderSide(color: Color(0xFFE1E1E6), width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    'Edit Category Settings',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF121214),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: () => _confirmDelete(context, vehicle),
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFDEBEC),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFE31C2E).withValues(alpha: 0.2)),
+                  ),
+                  child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFE31C2E), size: 18),
                 ),
               ),
             ],
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildParamItem(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.outfit(
-            color: Color(0xFF6C6F79),
-            fontSize: 10,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          value,
-          style: GoogleFonts.outfit(
-            color: Color(0xFF121214),
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
     );
   }
 }

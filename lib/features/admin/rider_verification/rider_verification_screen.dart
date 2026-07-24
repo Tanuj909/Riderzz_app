@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/core/models/admin_driver_model.dart';
@@ -14,7 +13,11 @@ class RiderVerificationScreen extends StatefulWidget {
 
 class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
   final List<String> _statuses = [
+    'ALL',
     'PENDING',
     'APPROVED',
     'REJECTED',
@@ -33,6 +36,7 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -54,80 +58,143 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'APPROVED':
-        return const Color(0xFF1C9A5B);
-      case 'PENDING':
-        return const Color(0xFFD97706);
-      case 'UNDER_REVIEW':
-        return const Color(0xFFE31C2E);
-      case 'REJECTED':
-        return Colors.redAccent;
-      case 'SUSPENDED':
-        return const Color(0xFF6C6F79);
-      default:
-        return const Color(0xFF121214);
-    }
-  }
-
-  Color _getStatusBgColor(String status) {
-    switch (status) {
-      case 'APPROVED':
-        return const Color(0xFFEBFDF6);
-      case 'PENDING':
-        return const Color(0xFFFFF7E6);
-      case 'UNDER_REVIEW':
-        return const Color(0xFFFDEBEC);
-      case 'REJECTED':
-        return const Color(0xFFFFF0F0);
-      case 'SUSPENDED':
-        return const Color(0xFFF6F6F8);
-      default:
-        return const Color(0xFFF6F6F8);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F8),
       body: Consumer<RiderVerificationProvider>(
         builder: (context, provider, child) {
+          final driversList = provider.drivers.where((driver) {
+            if (_searchQuery.isEmpty) return true;
+            final nameMatch = driver.name.toLowerCase().contains(_searchQuery);
+            final phoneMatch = driver.phone.toLowerCase().contains(_searchQuery);
+            final idMatch = driver.id.toString().contains(_searchQuery) ||
+                driver.userId.toString().contains(_searchQuery);
+            final vehicleMatch = (driver.vehicle != null &&
+                    '${driver.vehicle!.make} ${driver.vehicle!.model} ${driver.vehicleNumber}'
+                        .toLowerCase()
+                        .contains(_searchQuery)) ||
+                (driver.vehicleTypeName != null &&
+                    driver.vehicleTypeName!.toLowerCase().contains(_searchQuery));
+            return nameMatch || phoneMatch || idMatch || vehicleMatch;
+          }).toList();
+
           return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Filter Status Tabs
+              // Screen Header Title Layout matching admin_mobile_screen.html
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'FLEET & ONBOARDING',
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFFD90429),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Drivers Directory',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: const Color(0xFF121214),
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Search Bar matching input-wrap design in HTML
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F1F4),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search_rounded, color: Color(0xFFA2A5AE), size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (val) {
+                            setState(() {
+                              _searchQuery = val.trim().toLowerCase();
+                            });
+                          },
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFF121214),
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Search by name or driver ID...',
+                            hintStyle: GoogleFonts.outfit(
+                              color: const Color(0xFF6C6F79),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                          ),
+                        ),
+                      ),
+                      if (_searchQuery.isNotEmpty)
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _searchController.clear();
+                              _searchQuery = '';
+                            });
+                          },
+                          child: const Icon(Icons.close_rounded, color: Color(0xFF6C6F79), size: 18),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Filter Status Chips Row matching chip-row design in HTML
               Container(
-                height: 48,
-                color: Colors.white,
+                height: 40,
+                margin: const EdgeInsets.symmetric(vertical: 8),
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: _statuses.length,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemBuilder: (context, index) {
                     final status = _statuses[index];
                     final isSelected = provider.currentStatusFilter == status;
                     return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                      padding: const EdgeInsets.only(right: 8),
                       child: InkWell(
                         onTap: () => provider.setStatusFilter(status),
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(999),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: isSelected ? _getStatusBgColor(status) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(24),
-                            border: isSelected
-                                ? Border.all(color: _getStatusColor(status).withValues(alpha: 0.3))
-                                : null,
+                            color: isSelected ? const Color(0xFFD90429) : const Color(0xFFF1F1F4),
+                            borderRadius: BorderRadius.circular(999),
+                            border: isSelected ? null : Border.all(color: const Color(0xFFE1E1E6)),
                           ),
                           child: Text(
-                            status.replaceFirst('_', ' '),
+                            status == 'ALL' ? 'All Drivers' : status.replaceFirst('_', ' '),
                             style: GoogleFonts.outfit(
-                              color: isSelected ? _getStatusColor(status) : const Color(0xFF6C6F79),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
+                              color: isSelected ? Colors.white : const Color(0xFF6C6F79),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -137,17 +204,15 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                 ),
               ),
 
-              const Divider(height: 1, color: Color(0xFFE7E7EB)),
-
               // Driver List Container
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: () => provider.fetchDrivers(isRefresh: true),
-                  color: const Color(0xFFE31C2E),
+                  color: const Color(0xFFD90429),
                   child: provider.isLoading && provider.drivers.isEmpty
                       ? const Center(
                           child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD90429)),
                           ),
                         )
                       : provider.errorMessage != null && provider.drivers.isEmpty
@@ -162,11 +227,11 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                                     Text(
                                       provider.errorMessage!,
                                       textAlign: TextAlign.center,
-                                      style: GoogleFonts.outfit(color: Color(0xFF4A5568), fontSize: 14),
+                                      style: GoogleFonts.outfit(color: const Color(0xFF4A5568), fontSize: 14),
                                     ),
                                     const SizedBox(height: 16),
                                     ElevatedButton(
-                                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE31C2E)),
+                                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD90429)),
                                       onPressed: () => provider.fetchDrivers(isRefresh: true),
                                       child: Text('Retry', style: GoogleFonts.outfit(color: Colors.white)),
                                     ),
@@ -174,10 +239,10 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                                 ),
                               ),
                             )
-                          : provider.drivers.isEmpty
+                          : driversList.isEmpty
                               ? ListView(
                                   children: [
-                                    SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                                    SizedBox(height: MediaQuery.of(context).size.height * 0.15),
                                     Center(
                                       child: Column(
                                         mainAxisAlignment: MainAxisAlignment.center,
@@ -185,18 +250,28 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                                           Container(
                                             padding: const EdgeInsets.all(16),
                                             decoration: const BoxDecoration(
-                                              color: Color(0xFFFDEBEC),
+                                              color: Color(0xFFFFEDF0),
                                               shape: BoxShape.circle,
                                             ),
-                                            child: const Icon(Icons.assignment_ind_rounded, size: 48, color: Color(0xFFE31C2E)),
+                                            child: const Icon(Icons.assignment_ind_rounded, size: 44, color: Color(0xFFD90429)),
                                           ),
                                           const SizedBox(height: 16),
                                           Text(
-                                            'No Drivers Found (${provider.currentStatusFilter})',
-                                            style: GoogleFonts.outfit(
-                                              fontSize: 15,
+                                            'No Drivers Found',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 16,
                                               fontWeight: FontWeight.bold,
-                                              color: Color(0xFF121214),
+                                              color: const Color(0xFF121214),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            _searchQuery.isNotEmpty
+                                                ? 'No matching drivers for "$_searchQuery"'
+                                                : 'No drivers found under ${provider.currentStatusFilter} status',
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 13,
+                                              color: const Color(0xFF6C6F79),
                                             ),
                                           ),
                                         ],
@@ -207,10 +282,10 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                               : ListView.builder(
                                   controller: _scrollController,
                                   physics: const AlwaysScrollableScrollPhysics(),
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  itemCount: provider.drivers.length + (provider.isLoadMore ? 1 : 0),
+                                  padding: const EdgeInsets.only(top: 4, bottom: 20),
+                                  itemCount: driversList.length + (provider.isLoadMore ? 1 : 0),
                                   itemBuilder: (context, index) {
-                                    if (index == provider.drivers.length) {
+                                    if (index == driversList.length) {
                                       return const Padding(
                                         padding: EdgeInsets.symmetric(vertical: 16),
                                         child: Center(
@@ -219,14 +294,14 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
                                             height: 24,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2.5,
-                                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
+                                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD90429)),
                                             ),
                                           ),
                                         ),
                                       );
                                     }
 
-                                    final driver = provider.drivers[index];
+                                    final driver = driversList[index];
                                     return _buildDriverCard(driver);
                                   },
                                 ),
@@ -240,172 +315,120 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
   }
 
   Widget _buildDriverCard(AdminDriverModel driver) {
+    final String status = driver.approvalStatus.toUpperCase();
+
+    Color badgeBg;
+    Color badgeText;
+    if (status == 'APPROVED' || status == 'ACTIVE') {
+      badgeBg = const Color(0xFFE7F7EF);
+      badgeText = const Color(0xFF1C9A5B);
+    } else if (status == 'PENDING') {
+      badgeBg = const Color(0xFFFCF0DC);
+      badgeText = const Color(0xFFB9700A);
+    } else if (status == 'REJECTED') {
+      badgeBg = const Color(0xFFFDEBEC);
+      badgeText = const Color(0xFFE31C2E);
+    } else {
+      badgeBg = const Color(0xFFF1F1F4);
+      badgeText = const Color(0xFF6C6F79);
+    }
+
+    final String driverIdDisplay = 'DRV-${driver.userId}';
+
+    final String vehicleInfo = driver.vehicle != null
+        ? '${driver.vehicle!.make} ${driver.vehicle!.model}'
+        : (driver.vehicleTypeName ?? 'Vehicle Info');
+
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE7E7EB)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE1E1E6)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: const Color(0xFF121214).withValues(alpha: 0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(24),
-        child: InkWell(
-          onTap: () => _showDriverDetailsBottomSheet(driver),
-          borderRadius: BorderRadius.circular(24),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top Header Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            driver.name,
-                            style: GoogleFonts.outfit(
-                              color: Color(0xFF121214),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '+91 ${driver.phone}',
-                            style: GoogleFonts.outfit(
-                              color: Color(0xFF6C6F79),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _getStatusBgColor(driver.approvalStatus),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        driver.approvalStatus,
-                        style: GoogleFonts.outfit(
-                          color: _getStatusColor(driver.approvalStatus),
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top Header Row: Name & Badge
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  driver.name,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: const Color(0xFF121214),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12.0),
-                  child: Divider(height: 1, color: Color(0xFFE7E7EB)),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: badgeBg,
+                  borderRadius: BorderRadius.circular(999),
                 ),
+                child: Text(
+                  driver.approvalStatus,
+                  style: GoogleFonts.outfit(
+                    color: badgeText,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
 
-                // Vehicle Information
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFDEBEC),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.airport_shuttle_rounded, color: Color(0xFFE31C2E), size: 18),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            driver.vehicle != null
-                                ? '${driver.vehicle!.make} ${driver.vehicle!.model}'
-                                : 'No vehicle info',
-                            style: GoogleFonts.outfit(
-                              color: Color(0xFF121214),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Plate: ${driver.vehicleNumber}',
-                            style: GoogleFonts.outfit(
-                              color: Color(0xFF6C6F79),
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+          const SizedBox(height: 6),
 
-                const SizedBox(height: 12),
-
-                // Trips & Rating info
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.star_rounded, color: Color(0xFFD97706), size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          driver.rating.toStringAsFixed(1),
-                          style: GoogleFonts.outfit(
-                            color: Color(0xFF121214),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        const Icon(Icons.local_shipping_rounded, color: Color(0xFFE31C2E), size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${driver.totalTrips} Trips',
-                          style: GoogleFonts.outfit(
-                            color: Color(0xFF121214),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          'Verify Documents',
-                          style: GoogleFonts.outfit(
-                            color: Color(0xFFE31C2E),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFE31C2E), size: 10),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
+          // Details subtitle (ID · Vehicle · Rating ★)
+          Text(
+            '$driverIdDisplay · $vehicleInfo · ${driver.rating.toStringAsFixed(1)} ★',
+            style: GoogleFonts.outfit(
+              color: const Color(0xFF6C6F79),
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
             ),
           ),
-        ),
+
+          const SizedBox(height: 12),
+
+          // Action Button matching HTML (btn btn-outline btn-sm btn-block)
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => _showDriverDetailsBottomSheet(driver),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                side: const BorderSide(color: Color(0xFFE1E1E6), width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: Text(
+                status == 'PENDING'
+                    ? 'Review Application'
+                    : 'Manage Driver Profile',
+                style: GoogleFonts.outfit(
+                  color: const Color(0xFF121214),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

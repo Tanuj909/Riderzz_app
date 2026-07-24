@@ -98,19 +98,19 @@ class _AdminCommissionScreenState extends State<AdminCommissionScreen> {
       backgroundColor: const Color(0xFFF6F6F8),
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFFE31C2E),
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Color(0xFF16171C)),
         title: Text(
           'Commission Configurations',
-          style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+          style: GoogleFonts.outfit(color: const Color(0xFF16171C), fontWeight: FontWeight.bold, fontSize: 16),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_rounded, color: Color(0xFF16171C), size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
+            icon: const Icon(Icons.add_rounded, color: Color(0xFF16171C), size: 24),
             onPressed: () => _showFormDialog(),
           ),
         ],

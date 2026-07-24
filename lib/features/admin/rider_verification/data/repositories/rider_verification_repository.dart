@@ -12,11 +12,13 @@ class RiderVerificationRepository {
     required int page,
     required int size,
     required String status,
+    bool? online,
   }) async {
     return await _remoteDataSource.getDrivers(
       page: page,
       size: size,
       status: status,
+      online: online,
     );
   }
 
