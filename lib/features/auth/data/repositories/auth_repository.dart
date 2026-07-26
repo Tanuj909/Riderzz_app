@@ -25,6 +25,20 @@ class AuthRepository {
     );
   }
 
+  Future<UserModel> registerNoOtp({
+    required String fullName,
+    required String phone,
+    required String email,
+    required String password,
+  }) async {
+    return await _remoteDataSource.registerNoOtp(
+      fullName: fullName,
+      phone: phone,
+      email: email,
+      password: password,
+    );
+  }
+
   Future<String> loginSendOtp(String phone) async {
     return await _remoteDataSource.loginSendOtp(phone);
   }

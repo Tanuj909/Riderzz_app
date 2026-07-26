@@ -99,7 +99,7 @@ class BookingProvider extends ChangeNotifier {
       if (index != -1) {
         _bookings[index] = updatedBooking;
       }
-      
+
       // Refresh current bookings so active shipments list updates immediately
       try {
         _currentBookings = await _repository.fetchCurrentBookings();
@@ -145,12 +145,46 @@ class BookingProvider extends ChangeNotifier {
     }
   }
 
-  Future<PricingTierModel?> getApplicablePricingTier(int vehicleTypeId, double distanceKm) async {
+  Future<PricingTierModel?> getApplicablePricingTier(
+    int vehicleTypeId,
+    double distanceKm,
+  ) async {
     try {
-      return await _repository.getApplicablePricingTier(vehicleTypeId, distanceKm);
+      return await _repository.getApplicablePricingTier(
+        vehicleTypeId,
+        distanceKm,
+      );
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
       return null;
+    }
+  }
+
+  Future<bool> submitRating({
+    required int bookingId,
+    required String ratingType,
+    required int stars,
+    required String review,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final success = await _repository.submitRating(
+        bookingId: bookingId,
+        ratingType: ratingType,
+        stars: stars,
+        review: review,
+      );
+      return success;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 }

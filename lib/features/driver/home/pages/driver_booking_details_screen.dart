@@ -10,20 +10,21 @@ import 'package:google_polyline_algorithm/google_polyline_algorithm.dart';
 import 'package:dio/dio.dart';
 import 'dart:ui' as ui;
 import 'package:riderzz_app/core/services/maps_launcher_service.dart';
+import 'package:riderzz_app/core/network/api_client.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DriverBookingDetailsScreen extends StatefulWidget {
   final BookingModel booking;
 
-  const DriverBookingDetailsScreen({
-    super.key,
-    required this.booking,
-  });
+  const DriverBookingDetailsScreen({super.key, required this.booking});
 
   @override
-  State<DriverBookingDetailsScreen> createState() => _DriverBookingDetailsScreenState();
+  State<DriverBookingDetailsScreen> createState() =>
+      _DriverBookingDetailsScreenState();
 }
 
-class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen> {
+class _DriverBookingDetailsScreenState
+    extends State<DriverBookingDetailsScreen> {
   GoogleMapController? _mapController;
   bool _isSheetExpanded = true;
   bool _isVerifyingOtp = false;
@@ -46,19 +47,51 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
   String? _routeDistanceText;
   String? _routeDurationText;
 
+  late BookingModel _currentBooking;
+
   @override
   void initState() {
     super.initState();
-    final initialStatus = widget.booking.status.toUpperCase();
-    _wasAlreadyCompleted = (initialStatus == 'DELIVERED' || initialStatus == 'COMPLETED');
+    _currentBooking = widget.booking;
+    final initialStatus = _currentBooking.status.toUpperCase();
+    _wasAlreadyCompleted =
+        (initialStatus == 'DELIVERED' || initialStatus == 'COMPLETED');
     _loadMarkerIcons();
     _fetchRoute();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DriverHomeProvider>().fetchDriverProfile();
+      _loadFreshBookingDetails();
       if (initialStatus == 'CANCELLED' || initialStatus == 'FAILED') {
         _showStatusModal(initialStatus);
       }
     });
+  }
+
+  Future<void> _loadFreshBookingDetails({bool force = false}) async {
+    if (!force &&
+        _currentBooking.routePolyline != null &&
+        _currentBooking.routePolyline!.isNotEmpty &&
+        _currentBooking.customer != null) {
+      return;
+    }
+    try {
+      final apiClient = context.read<ApiClient>();
+      final response = await apiClient.get('/bookings/${widget.booking.id}');
+      if (response.data != null && response.data['data'] != null) {
+        final Map<String, dynamic> data = Map<String, dynamic>.from(
+          response.data['data'],
+        );
+        final freshBooking = BookingModel.fromJson(data);
+        if (mounted) {
+          setState(() {
+            _currentBooking = freshBooking;
+          });
+          _fetchRoute();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading fresh booking details: $e');
+    }
   }
 
   void _checkAndShowStatusDialog(String status) {
@@ -73,8 +106,8 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
 
   void _showStatusModal(String status) {
     final isCancelled = status == 'CANCELLED';
-    final reason = widget.booking.goodsDescription.isNotEmpty 
-        ? widget.booking.goodsDescription 
+    final reason = widget.booking.goodsDescription.isNotEmpty
+        ? widget.booking.goodsDescription
         : 'Customer changed mind';
 
     showDialog(
@@ -83,21 +116,32 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
       builder: (dialogContext) {
         return Dialog(
           backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 28.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 28.0,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isCancelled ? const Color(0xFFFEF2F2) : const Color(0xFFFEF3C7),
+                    color: isCancelled
+                        ? const Color(0xFFFEF2F2)
+                        : const Color(0xFFFEF3C7),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    isCancelled ? Icons.cancel_outlined : Icons.error_outline_rounded,
-                    color: isCancelled ? const Color(0xFFDC2626) : const Color(0xFFD97706),
+                    isCancelled
+                        ? Icons.cancel_outlined
+                        : Icons.error_outline_rounded,
+                    color: isCancelled
+                        ? const Color(0xFFDC2626)
+                        : const Color(0xFFD97706),
                     size: 40,
                   ),
                 ),
@@ -113,7 +157,7 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  isCancelled 
+                  isCancelled
                       ? 'This booking was cancelled.\nReason: $reason'
                       : 'Booking was failed!',
                   style: GoogleFonts.outfit(
@@ -133,10 +177,14 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                       Navigator.pop(context); // pop details screen
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isCancelled ? const Color(0xFFCC2D3B) : const Color(0xFF121214),
+                      backgroundColor: isCancelled
+                          ? const Color(0xFFCC2D3B)
+                          : const Color(0xFF121214),
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(100),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     child: Text(
@@ -158,14 +206,22 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
 
   Future<Uint8List> _getBytesFromAsset(String path, int width) async {
     ByteData data = await rootBundle.load(path);
-    ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(), targetWidth: width);
+    ui.Codec codec = await ui.instantiateImageCodec(
+      data.buffer.asUint8List(),
+      targetWidth: width,
+    );
     ui.FrameInfo fi = await codec.getNextFrame();
-    return (await fi.image.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
+    return (await fi.image.toByteData(
+      format: ui.ImageByteFormat.png,
+    ))!.buffer.asUint8List();
   }
 
   Future<void> _loadMarkerIcons() async {
     try {
-      final Uint8List markerBytes = await _getBytesFromAsset('assets/icons/location.png', 80); // 80 pixels width
+      final Uint8List markerBytes = await _getBytesFromAsset(
+        'assets/icons/location.png',
+        80,
+      ); // 80 pixels width
       final icon = BitmapDescriptor.fromBytes(markerBytes);
       setState(() {
         _pickupIcon = icon;
@@ -177,8 +233,11 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
   }
 
   Future<void> _fetchRoute() async {
-    final encodedPolyline = widget.booking.routePolyline;
-    final distanceKm = widget.booking.estimatedDistanceKm;
+    final encodedPolyline =
+        _currentBooking.routePolyline ?? widget.booking.routePolyline;
+    final distanceKm =
+        _currentBooking.estimatedDistanceKm ??
+        widget.booking.estimatedDistanceKm;
 
     if (distanceKm != null) {
       _routeDistanceText = '${distanceKm.toStringAsFixed(1)} km';
@@ -221,10 +280,16 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
             _polylines.add(
               Polyline(
                 polylineId: const PolylineId('pickup_conn'),
-                points: [LatLng(pickupLat, pickupLng), _polylineCoordinates.first],
+                points: [
+                  LatLng(pickupLat, pickupLng),
+                  _polylineCoordinates.first,
+                ],
                 color: const Color(0xFF8A0000),
                 width: 4,
-                patterns: <PatternItem>[PatternItem.dash(10), PatternItem.gap(10)],
+                patterns: <PatternItem>[
+                  PatternItem.dash(10),
+                  PatternItem.gap(10),
+                ],
               ),
             );
           }
@@ -236,7 +301,10 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                 points: [_polylineCoordinates.last, LatLng(dropLat, dropLng)],
                 color: const Color(0xFF8A0000),
                 width: 4,
-                patterns: <PatternItem>[PatternItem.dash(10), PatternItem.gap(10)],
+                patterns: <PatternItem>[
+                  PatternItem.dash(10),
+                  PatternItem.gap(10),
+                ],
               ),
             );
           }
@@ -298,19 +366,29 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
             ),
           );
 
-          final pickupLat = widget.booking.pickupLatitude;
-          final pickupLng = widget.booking.pickupLongitude;
-          final dropLat = widget.booking.dropLatitude;
-          final dropLng = widget.booking.dropLongitude;
+          final pickupLat =
+              _currentBooking.pickupLatitude ?? widget.booking.pickupLatitude;
+          final pickupLng =
+              _currentBooking.pickupLongitude ?? widget.booking.pickupLongitude;
+          final dropLat =
+              _currentBooking.dropLatitude ?? widget.booking.dropLatitude;
+          final dropLng =
+              _currentBooking.dropLongitude ?? widget.booking.dropLongitude;
 
           if (pickupLat != null && pickupLng != null) {
             _polylines.add(
               Polyline(
                 polylineId: const PolylineId('pickup_conn'),
-                points: [LatLng(pickupLat, pickupLng), _polylineCoordinates.first],
+                points: [
+                  LatLng(pickupLat, pickupLng),
+                  _polylineCoordinates.first,
+                ],
                 color: const Color(0xFF8A0000),
                 width: 4,
-                patterns: <PatternItem>[PatternItem.dash(10), PatternItem.gap(10)],
+                patterns: <PatternItem>[
+                  PatternItem.dash(10),
+                  PatternItem.gap(10),
+                ],
               ),
             );
           }
@@ -322,14 +400,22 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                 points: [_polylineCoordinates.last, LatLng(dropLat, dropLng)],
                 color: const Color(0xFF8A0000),
                 width: 4,
-                patterns: <PatternItem>[PatternItem.dash(10), PatternItem.gap(10)],
+                patterns: <PatternItem>[
+                  PatternItem.dash(10),
+                  PatternItem.gap(10),
+                ],
               ),
             );
           }
 
           _fitMapBounds();
         } else {
-          _polylines.removeWhere((p) => p.polylineId.value == 'route' || p.polylineId.value == 'pickup_conn' || p.polylineId.value == 'drop_conn');
+          _polylines.removeWhere(
+            (p) =>
+                p.polylineId.value == 'route' ||
+                p.polylineId.value == 'pickup_conn' ||
+                p.polylineId.value == 'drop_conn',
+          );
         }
       });
     } else {
@@ -351,7 +437,9 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
           markerId: const MarkerId('pickup'),
           position: LatLng(pickupLat, pickupLng),
           infoWindow: const InfoWindow(title: 'Pickup Location'),
-          icon: _pickupIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          icon:
+              _pickupIcon ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
           anchor: const Offset(0.5, 1.0),
         ),
       );
@@ -363,7 +451,9 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
           markerId: const MarkerId('drop'),
           position: LatLng(dropLat, dropLng),
           infoWindow: const InfoWindow(title: 'Drop Location'),
-          icon: _dropIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          icon:
+              _dropIcon ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
           anchor: const Offset(0.5, 1.0),
         ),
       );
@@ -372,197 +462,58 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
     return markers;
   }
 
-  void _showCallModal() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFFF6F6F8),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF1F1F4),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.person, size: 40, color: Color(0xFF6C6F79)),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Customer',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF121214),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Calling...',
-                style: GoogleFonts.outfit(
-                  fontSize: 14,
-                  color: const Color(0xFF6C6F79),
-                ),
-              ),
-              const SizedBox(height: 32),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(sheetContext),
-                    child: Container(
-                      width: 64,
-                      height: 64,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFF1F1F4),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.phone_paused_rounded, color: Color(0xFF121214)),
-                    ),
-                  ),
-                  const SizedBox(width: 24),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(sheetContext),
-                    child: Container(
-                      width: 64,
-                      height: 64,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFE31C2E),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.call_end, color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showMessageModal() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFFF6F6F8),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Message Customer',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF121214),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(sheetContext),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    _buildQuickReplyChip("I'm here", sheetContext),
-                    _buildQuickReplyChip("On my way", sheetContext),
-                    _buildQuickReplyChip("Traffic delay", sheetContext),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: 'Type a message...',
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(99),
-                            borderSide: const BorderSide(color: Color(0xFFE1E1E6)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(99),
-                            borderSide: const BorderSide(color: Color(0xFFD90429)),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    GestureDetector(
-                      onTap: () => Navigator.pop(sheetContext),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF121214),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildQuickReplyChip(String text, BuildContext ctx) {
-    return ActionChip(
-      label: Text(text),
-      backgroundColor: const Color(0xFFF1F1F4),
-      labelStyle: GoogleFonts.outfit(color: const Color(0xFF121214), fontSize: 13),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
-      onPressed: () {
-        Navigator.pop(ctx);
+  Future<void> _makeCall(String phoneNumber) async {
+    final Uri url = Uri(scheme: 'tel', path: phoneNumber);
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sent: "$text"')),
+          const SnackBar(content: Text('Could not launch dialer')),
         );
-      },
-    );
+      }
+    }
   }
 
-  void _showRejectDialog(BuildContext context, DriverHomeProvider driverProvider, int bookingId) {
-    final controller = TextEditingController(text: 'Too far from current location');
+  void _showCallModal() {
+    final driverProvider = Provider.of<DriverHomeProvider>(
+      context,
+      listen: false,
+    );
+    final booking =
+        (driverProvider.activeBooking != null &&
+            driverProvider.activeBooking!.id == widget.booking.id)
+        ? driverProvider.activeBooking!
+        : _currentBooking;
+    final customer = booking.customer;
+    final phone = customer?.phone;
+
+    if (phone != null && phone.isNotEmpty) {
+      _makeCall(phone);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Customer phone number not available')),
+      );
+    }
+  }
+
+  void _showRejectDialog(
+    BuildContext context,
+    DriverHomeProvider driverProvider,
+    int bookingId,
+  ) {
+    final controller = TextEditingController(
+      text: 'Too far from current location',
+    );
     showDialog(
       context: context,
       builder: (ctx) {
         return Dialog(
           backgroundColor: Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: Column(
@@ -632,7 +583,10 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFCC2D3B), width: 1.5),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFCC2D3B),
+                        width: 1.5,
+                      ),
                     ),
                   ),
                 ),
@@ -643,7 +597,10 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
                         foregroundColor: const Color(0xFF6C6F79),
                       ),
                       child: Text(
@@ -658,16 +615,24 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                     ElevatedButton(
                       onPressed: () async {
                         Navigator.pop(ctx);
-                        final success = await driverProvider.rejectBookingForDriver(bookingId, controller.text);
+                        final success = await driverProvider
+                            .rejectBookingForDriver(bookingId, controller.text);
                         if (success && mounted) {
-                          Navigator.pop(context); // Pop details screen since it's rejected
+                          Navigator.pop(
+                            context,
+                          ); // Pop details screen since it's rejected
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Booking rejected successfully')),
+                            const SnackBar(
+                              content: Text('Booking rejected successfully'),
+                            ),
                           );
                         } else if (!success && mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(driverProvider.bookingsError ?? 'Failed to reject booking'),
+                              content: Text(
+                                driverProvider.bookingsError ??
+                                    'Failed to reject booking',
+                              ),
                               backgroundColor: Colors.redAccent,
                             ),
                           );
@@ -677,7 +642,10 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                         backgroundColor: const Color(0xFFCC2D3B),
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(100),
                         ),
@@ -737,9 +705,11 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
   @override
   Widget build(BuildContext context) {
     final driverProvider = Provider.of<DriverHomeProvider>(context);
-    final booking = (driverProvider.activeBooking != null && driverProvider.activeBooking!.id == widget.booking.id)
+    final booking =
+        (driverProvider.activeBooking != null &&
+            driverProvider.activeBooking!.id == widget.booking.id)
         ? driverProvider.activeBooking!
-        : widget.booking;
+        : _currentBooking;
 
     final pickupLat = booking.pickupLatitude;
     final pickupLng = booking.pickupLongitude;
@@ -749,7 +719,8 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
 
     final String statusUpper = (_localStatus ?? booking.status).toUpperCase();
     final bool needsOtpVerification = statusUpper == 'DRIVER_ARRIVED';
-    final bool isDelivered = statusUpper == 'DELIVERED' || statusUpper == 'COMPLETED';
+    final bool isDelivered =
+        statusUpper == 'DELIVERED' || statusUpper == 'COMPLETED';
 
     if (statusUpper == 'CANCELLED' || statusUpper == 'FAILED') {
       _checkAndShowStatusDialog(statusUpper);
@@ -811,28 +782,49 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                           shape: BoxShape.circle,
                           border: Border.all(color: const Color(0xFFE1E1E6)),
                           boxShadow: const [
-                            BoxShadow(color: Color(0x1A000000), blurRadius: 8, offset: Offset(0, 2)),
+                            BoxShadow(
+                              color: Color(0x1A000000),
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
                           ],
                         ),
-                        child: const Icon(Icons.arrow_back_ios_new, size: 16, color: Color(0xFF121214)),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new,
+                          size: 16,
+                          color: Color(0xFF121214),
+                        ),
                       ),
                     ),
-                    if (_isRouteDrawn && (_routeDistanceText != null || _routeDurationText != null)) ...[
+                    if (_isRouteDrawn &&
+                        (_routeDistanceText != null ||
+                            _routeDurationText != null)) ...[
                       const SizedBox(width: 12),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(99),
                           border: Border.all(color: const Color(0xFFE1E1E6)),
                           boxShadow: const [
-                            BoxShadow(color: Color(0x1A000000), blurRadius: 8, offset: Offset(0, 2)),
+                            BoxShadow(
+                              color: Color(0x1A000000),
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
                           ],
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.navigation_outlined, size: 14, color: Color(0xFFD90429)),
+                            const Icon(
+                              Icons.navigation_outlined,
+                              size: 14,
+                              color: Color(0xFFD90429),
+                            ),
                             const SizedBox(width: 6),
                             Text(
                               '${_routeDistanceText ?? ""} · ${_routeDurationText ?? ""}',
@@ -858,20 +850,29 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                         });
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(99),
                           border: Border.all(color: const Color(0xFFE1E1E6)),
                           boxShadow: const [
-                            BoxShadow(color: Color(0x1A000000), blurRadius: 8, offset: Offset(0, 2)),
+                            BoxShadow(
+                              color: Color(0x1A000000),
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
                           ],
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              _isSheetExpanded ? Icons.map_outlined : Icons.info_outline,
+                              _isSheetExpanded
+                                  ? Icons.map_outlined
+                                  : Icons.info_outline,
                               size: 14,
                               color: const Color(0xFF121214),
                             ),
@@ -892,13 +893,22 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                     GestureDetector(
                       onTap: _onViewRoutePressed,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
-                          color: _isRouteDrawn ? const Color(0xFFE31C2E) : Colors.white,
+                          color: _isRouteDrawn
+                              ? const Color(0xFFE31C2E)
+                              : Colors.white,
                           borderRadius: BorderRadius.circular(99),
                           border: Border.all(color: const Color(0xFFE1E1E6)),
                           boxShadow: const [
-                            BoxShadow(color: Color(0x1A000000), blurRadius: 8, offset: Offset(0, 2)),
+                            BoxShadow(
+                              color: Color(0x1A000000),
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
                           ],
                         ),
                         child: Row(
@@ -907,7 +917,9 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                             Icon(
                               Icons.directions,
                               size: 14,
-                              color: _isRouteDrawn ? Colors.white : const Color(0xFF121214),
+                              color: _isRouteDrawn
+                                  ? Colors.white
+                                  : const Color(0xFF121214),
                             ),
                             const SizedBox(width: 4),
                             if (_isRouteLoading)
@@ -916,7 +928,9 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                                 height: 12,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Color(0xFFE31C2E),
+                                  ),
                                 ),
                               )
                             else
@@ -925,7 +939,9 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                                 style: GoogleFonts.outfit(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13,
-                                  color: _isRouteDrawn ? Colors.white : const Color(0xFF121214),
+                                  color: _isRouteDrawn
+                                      ? Colors.white
+                                      : const Color(0xFF121214),
                                 ),
                               ),
                           ],
@@ -950,7 +966,11 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                   color: Colors.white,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                   boxShadow: [
-                    BoxShadow(color: Color(0x26000000), blurRadius: 30, offset: Offset(0, -10)),
+                    BoxShadow(
+                      color: Color(0x26000000),
+                      blurRadius: 30,
+                      offset: Offset(0, -10),
+                    ),
                   ],
                 ),
                 child: SingleChildScrollView(
@@ -958,68 +978,47 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                    // Handle Bar
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isSheetExpanded = !_isSheetExpanded;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        color: Colors.transparent,
-                        child: Center(
-                          child: Container(
-                            width: 40,
-                            height: 5,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE1E1E6),
-                              borderRadius: BorderRadius.circular(10),
+                      // Handle Bar
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _isSheetExpanded = !_isSheetExpanded;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          color: Colors.transparent,
+                          child: Center(
+                            child: Container(
+                              width: 40,
+                              height: 5,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE1E1E6),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
 
-                    // Sheet Body
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Earnings & Distance
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'ESTIMATED EARNING',
-                                    style: GoogleFonts.outfit(
-                                      color: const Color(0xFF6C6F79),
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '₹${booking.totalFare.toStringAsFixed(2)}',
-                                    style: GoogleFonts.ibmPlexMono(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 28,
-                                      color: const Color(0xFF121214),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (booking.estimatedDistanceKm != null)
+                      // Sheet Body
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 0,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Earnings & Distance
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
                                 Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'TOTAL DISTANCE',
+                                      'ESTIMATED EARNING',
                                       style: GoogleFonts.outfit(
                                         color: const Color(0xFF6C6F79),
                                         fontSize: 11,
@@ -1029,488 +1028,749 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '${booking.estimatedDistanceKm!.toStringAsFixed(1)} km',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w700,
+                                      '₹${booking.totalFare.toStringAsFixed(2)}',
+                                      style: GoogleFonts.ibmPlexMono(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 28,
                                         color: const Color(0xFF121214),
                                       ),
                                     ),
                                   ],
                                 ),
-                            ],
-                          ),
-                          const SizedBox(height: 20), // Addresses & Shipment Details
-                          if (statusUpper == 'DRIVER_ARRIVED_DROP' && _selectedPaymentMethod != null) ...[
-                            _buildCollapsibleDetailsSection(booking),
-                            const SizedBox(height: 20),
-                          ] else ...[
-                            _buildAddressCard(booking),
-                            const SizedBox(height: 20),
-                            _buildShipmentDetailsCard(booking),
-                            const SizedBox(height: 24),
-                          ],
-
-                          // Dynamic Action Section (Accept/Reject, OTP or Status updates)
-                          if (statusUpper == 'PENDING') ...[
-                            Column(
-                              children: [
-                                SwipeSlider(
-                                  key: ValueKey('accept_${booking.status}_${booking.id}'),
-                                  text: 'Swipe to Accept',
-                                  isLoading: driverProvider.isBookingsLoading,
-                                  onSwipeComplete: () async {
-                                    final success = await driverProvider.acceptBookingForDriver(booking.id);
-                                    if (success && mounted) {
-                                      setState(() {
-                                        _localStatus = 'DRIVER_ASSIGNED';
-                                      });
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Booking accepted!')),
-                                      );
-                                    } else if (!success && mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(driverProvider.bookingsError ?? 'Failed to accept booking'),
-                                          backgroundColor: Colors.redAccent,
+                                if (booking.estimatedDistanceKm != null)
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        'TOTAL DISTANCE',
+                                        style: GoogleFonts.outfit(
+                                          color: const Color(0xFF6C6F79),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.5,
                                         ),
-                                      );
-                                    }
-                                  },
-                                ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${booking.estimatedDistanceKm!.toStringAsFixed(1)} km',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF121214),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                               ],
                             ),
-                          ] else ...[
-                            if (statusUpper == 'DRIVER_ARRIVED_DROP') ...[
-                              // Arrived at drop payment selection or QR
-                              if (_selectedPaymentMethod == null) ...[
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    Text(
-                                      'COLLECT PAYMENT',
-                                      style: GoogleFonts.outfit(
-                                        color: const Color(0xFF6C6F79),
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 0.5,
-                                      ),
+                            const SizedBox(
+                              height: 20,
+                            ), // Addresses & Shipment Details
+                            if (statusUpper == 'DRIVER_ARRIVED_DROP' &&
+                                _selectedPaymentMethod != null) ...[
+                              _buildCollapsibleDetailsSection(booking),
+                              const SizedBox(height: 20),
+                            ] else ...[
+                              _buildAddressCard(booking),
+                              const SizedBox(height: 20),
+                              _buildShipmentDetailsCard(booking),
+                              const SizedBox(height: 24),
+                            ],
+
+                            // Dynamic Action Section (Accept/Reject, OTP or Status updates)
+                            if (statusUpper == 'PENDING') ...[
+                              Column(
+                                children: [
+                                  SwipeSlider(
+                                    key: ValueKey(
+                                      'accept_${booking.status}_${booking.id}',
                                     ),
-                                    const SizedBox(height: 10),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: InkWell(
-                                            onTap: () {
-                                              setState(() {
-                                                _selectedPaymentMethod = 'CASH';
-                                              });
-                                            },
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white,
-                                                borderRadius: BorderRadius.circular(16),
-                                                border: Border.all(color: const Color(0xFFE1E1E6)),
-                                              ),
-                                              child: Column(
-                                                children: [
-                                                  const Icon(Icons.payments_rounded, color: Color(0xFF1C9A5B), size: 36),
-                                                  const SizedBox(height: 8),
-                                                  Text(
-                                                    'Cash Payment',
-                                                    style: GoogleFonts.plusJakartaSans(
-                                                      fontWeight: FontWeight.bold,
-                                                      fontSize: 13,
-                                                      color: const Color(0xFF121214),
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    'Collect physical cash',
-                                                    style: GoogleFonts.outfit(fontSize: 10, color: const Color(0xFF6C6F79)),
-                                                    textAlign: TextAlign.center,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                          child: InkWell(
-                                            onTap: () {
-                                              setState(() {
-                                                _selectedPaymentMethod = 'QR';
-                                              });
-                                            },
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white,
-                                                borderRadius: BorderRadius.circular(16),
-                                                border: Border.all(color: const Color(0xFFE1E1E6)),
-                                              ),
-                                              child: Column(
-                                                children: [
-                                                  const Icon(Icons.qr_code_2_rounded, color: Color(0xFFD90429), size: 36),
-                                                  const SizedBox(height: 8),
-                                                  Text(
-                                                    'UPI / QR Code',
-                                                    style: GoogleFonts.plusJakartaSans(
-                                                      fontWeight: FontWeight.bold,
-                                                      fontSize: 13,
-                                                      color: const Color(0xFF121214),
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    'Scan to pay driver',
-                                                    style: GoogleFonts.outfit(fontSize: 10, color: const Color(0xFF6C6F79)),
-                                                    textAlign: TextAlign.center,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ] else if (_selectedPaymentMethod == 'CASH') ...[
-                                Column(
-                                  children: [
-                                    SwipeSlider(
-                                      key: ValueKey('complete_cash_${booking.status}_${booking.id}'),
-                                      text: _getSliderText(booking.status),
-                                      isLoading: driverProvider.isBookingsLoading,
-                                      onSwipeComplete: () async {
-                                        final nextStatus = _getNextStatus(booking.status);
-                                        final success = await driverProvider.updateStatusForBooking(booking.id, nextStatus);
-                                        if (success && mounted) {
-                                          setState(() {
-                                            _localStatus = nextStatus;
-                                          });
-                                        } else if (!success && mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text(driverProvider.bookingsError ?? 'Status update failed'),
-                                              backgroundColor: Colors.redAccent,
-                                            ),
-                                          );
-                                        }
-                                      },
-                                    ),
-                                    const SizedBox(height: 8),
-                                    TextButton(
-                                      onPressed: () {
+                                    text: 'Swipe to Accept',
+                                    isLoading: driverProvider.isBookingsLoading,
+                                    onSwipeComplete: () async {
+                                      final success = await driverProvider
+                                          .acceptBookingForDriver(booking.id);
+                                      if (success && mounted) {
                                         setState(() {
-                                          _selectedPaymentMethod = null;
+                                          _localStatus = 'DRIVER_ASSIGNED';
                                         });
-                                      },
-                                      child: Text(
-                                        'Change Payment Method',
-                                        style: GoogleFonts.plusJakartaSans(
-                                          color: const Color(0xFFD90429),
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
+                                        await _loadFreshBookingDetails(
+                                          force: true,
+                                        );
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Booking accepted!'),
+                                          ),
+                                        );
+                                      } else if (!success && mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              driverProvider.bookingsError ??
+                                                  'Failed to accept booking',
+                                            ),
+                                            backgroundColor: Colors.redAccent,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ] else ...[
+                              if (statusUpper == 'DRIVER_ARRIVED_DROP') ...[
+                                // Arrived at drop payment selection or QR
+                                if (_selectedPaymentMethod == null) ...[
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      Text(
+                                        'COLLECT PAYMENT',
+                                        style: GoogleFonts.outfit(
+                                          color: const Color(0xFF6C6F79),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.5,
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ] else if (_selectedPaymentMethod == 'QR') ...[
-                                Builder(
-                                  builder: (context) {
-                                    final upiId = driverProvider.profile?.upiId;
-                                    if (upiId == null || upiId.isEmpty) {
-                                      return Container(
-                                        padding: const EdgeInsets.all(16),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFFFF5F5),
-                                          borderRadius: BorderRadius.circular(16),
-                                          border: Border.all(color: const Color(0xFFFFD1D1)),
-                                        ),
-                                        child: Column(
-                                          children: [
-                                            const Icon(Icons.warning_amber_rounded, color: Color(0xFFD90429), size: 36),
-                                            const SizedBox(height: 12),
-                                            Text(
-                                              'UPI ID is not configured in your profile. Please configure it in your profile settings to collect payments using QR Code.',
-                                              style: GoogleFonts.plusJakartaSans(
-                                                color: const Color(0xFFD90429),
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 13,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                            const SizedBox(height: 16),
-                                            OutlinedButton(
-                                              onPressed: () {
+                                      const SizedBox(height: 10),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: InkWell(
+                                              onTap: () {
                                                 setState(() {
-                                                  _selectedPaymentMethod = 'CASH';
+                                                  _selectedPaymentMethod =
+                                                      'CASH';
                                                 });
                                               },
-                                              style: OutlinedButton.styleFrom(
-                                                foregroundColor: const Color(0xFFD90429),
-                                                side: const BorderSide(color: Color(0xFFD90429)),
-                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 20,
+                                                      horizontal: 12,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                  border: Border.all(
+                                                    color: const Color(
+                                                      0xFFE1E1E6,
+                                                    ),
+                                                  ),
+                                                ),
+                                                child: Column(
+                                                  children: [
+                                                    const Icon(
+                                                      Icons.payments_rounded,
+                                                      color: Color(0xFF1C9A5B),
+                                                      size: 36,
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                      'Cash Payment',
+                                                      style:
+                                                          GoogleFonts.plusJakartaSans(
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            fontSize: 13,
+                                                            color: const Color(
+                                                              0xFF121214,
+                                                            ),
+                                                          ),
+                                                    ),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      'Collect physical cash',
+                                                      style: GoogleFonts.outfit(
+                                                        fontSize: 10,
+                                                        color: const Color(
+                                                          0xFF6C6F79,
+                                                        ),
+                                                      ),
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
-                                              child: const Text('Choose Cash Payment Instead'),
                                             ),
-                                          ],
+                                          ),
+                                          const SizedBox(width: 16),
+                                          Expanded(
+                                            child: InkWell(
+                                              onTap: () {
+                                                setState(() {
+                                                  _selectedPaymentMethod = 'QR';
+                                                });
+                                              },
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 20,
+                                                      horizontal: 12,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                  border: Border.all(
+                                                    color: const Color(
+                                                      0xFFE1E1E6,
+                                                    ),
+                                                  ),
+                                                ),
+                                                child: Column(
+                                                  children: [
+                                                    const Icon(
+                                                      Icons.qr_code_2_rounded,
+                                                      color: Color(0xFFD90429),
+                                                      size: 36,
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                      'UPI / QR Code',
+                                                      style:
+                                                          GoogleFonts.plusJakartaSans(
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            fontSize: 13,
+                                                            color: const Color(
+                                                              0xFF121214,
+                                                            ),
+                                                          ),
+                                                    ),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      'Scan to pay driver',
+                                                      style: GoogleFonts.outfit(
+                                                        fontSize: 10,
+                                                        color: const Color(
+                                                          0xFF6C6F79,
+                                                        ),
+                                                      ),
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ] else if (_selectedPaymentMethod ==
+                                    'CASH') ...[
+                                  Column(
+                                    children: [
+                                      SwipeSlider(
+                                        key: ValueKey(
+                                          'complete_cash_${booking.status}_${booking.id}',
                                         ),
-                                      );
-                                    }
-
-                                    final String payeeName = driverProvider.profile?.name ?? 'Partner';
-                                    final String upiUrl = 'upi://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=${booking.totalFare.toStringAsFixed(2)}&cu=INR&tn=${Uri.encodeComponent("Booking ${booking.bookingId}")}';
-                                    final String qrImageUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${Uri.encodeComponent(upiUrl)}';
-
-                                    return Column(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(20),
+                                        text: _getSliderText(booking.status),
+                                        isLoading:
+                                            driverProvider.isBookingsLoading,
+                                        onSwipeComplete: () async {
+                                          final nextStatus = _getNextStatus(
+                                            booking.status,
+                                          );
+                                          final success = await driverProvider
+                                              .updateStatusForBooking(
+                                                booking.id,
+                                                nextStatus,
+                                              );
+                                          if (success && mounted) {
+                                            setState(() {
+                                              _localStatus = nextStatus;
+                                            });
+                                            await _loadFreshBookingDetails(
+                                              force: true,
+                                            );
+                                          } else if (!success && mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  driverProvider
+                                                          .bookingsError ??
+                                                      'Status update failed',
+                                                ),
+                                                backgroundColor:
+                                                    Colors.redAccent,
+                                              ),
+                                            );
+                                          }
+                                        },
+                                      ),
+                                      const SizedBox(height: 8),
+                                      TextButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            _selectedPaymentMethod = null;
+                                          });
+                                        },
+                                        child: Text(
+                                          'Change Payment Method',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            color: const Color(0xFFD90429),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ] else if (_selectedPaymentMethod == 'QR') ...[
+                                  Builder(
+                                    builder: (context) {
+                                      final upiId =
+                                          driverProvider.profile?.upiId;
+                                      if (upiId == null || upiId.isEmpty) {
+                                        return Container(
+                                          padding: const EdgeInsets.all(16),
                                           decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(20),
-                                            border: Border.all(color: const Color(0xFFE1E1E6)),
+                                            color: const Color(0xFFFFF5F5),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(0xFFFFD1D1),
+                                            ),
                                           ),
                                           child: Column(
                                             children: [
-                                              Text(
-                                                'SCAN QR CODE TO PAY',
-                                                style: GoogleFonts.outfit(
-                                                  color: const Color(0xFF6C6F79),
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w700,
-                                                  letterSpacing: 0.5,
-                                                ),
+                                              const Icon(
+                                                Icons.warning_amber_rounded,
+                                                color: Color(0xFFD90429),
+                                                size: 36,
                                               ),
                                               const SizedBox(height: 12),
-                                              ClipRRect(
-                                                borderRadius: BorderRadius.circular(12),
-                                                child: Image.network(
-                                                  qrImageUrl,
-                                                  width: 160,
-                                                  height: 160,
-                                                  fit: BoxFit.contain,
-                                                  errorBuilder: (context, error, stackTrace) => Container(
-                                                    width: 160,
-                                                    height: 160,
-                                                    color: const Color(0xFFFFF5F5),
-                                                    child: const Icon(Icons.qr_code_rounded, size: 48, color: Color(0xFFD90429)),
+                                              Text(
+                                                'UPI ID is not configured in your profile. Please configure it in your profile settings to collect payments using QR Code.',
+                                                style:
+                                                    GoogleFonts.plusJakartaSans(
+                                                      color: const Color(
+                                                        0xFFD90429,
+                                                      ),
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize: 13,
+                                                    ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                              const SizedBox(height: 16),
+                                              OutlinedButton(
+                                                onPressed: () {
+                                                  setState(() {
+                                                    _selectedPaymentMethod =
+                                                        'CASH';
+                                                  });
+                                                },
+                                                style: OutlinedButton.styleFrom(
+                                                  foregroundColor: const Color(
+                                                    0xFFD90429,
+                                                  ),
+                                                  side: const BorderSide(
+                                                    color: Color(0xFFD90429),
+                                                  ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          10,
+                                                        ),
                                                   ),
                                                 ),
-                                              ),
-                                              const SizedBox(height: 12),
-                                              Text(
-                                                '₹${booking.totalFare.toStringAsFixed(2)}',
-                                                style: GoogleFonts.ibmPlexMono(
-                                                  fontWeight: FontWeight.w800,
-                                                  fontSize: 24,
-                                                  color: const Color(0xFF121214),
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                'UPI: $upiId',
-                                                style: GoogleFonts.plusJakartaSans(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: const Color(0xFF6C6F79),
+                                                child: const Text(
+                                                  'Choose Cash Payment Instead',
                                                 ),
                                               ),
                                             ],
                                           ),
-                                        ),
-                                        const SizedBox(height: 16),
-                                        SwipeSlider(
-                                          key: ValueKey('complete_qr_${booking.status}_${booking.id}'),
-                                          text: _getSliderText(booking.status),
-                                          isLoading: driverProvider.isBookingsLoading,
-                                          onSwipeComplete: () async {
-                                            final nextStatus = _getNextStatus(booking.status);
-                                            final success = await driverProvider.updateStatusForBooking(booking.id, nextStatus);
-                                            if (success && mounted) {
-                                             setState(() {
-                                               _localStatus = nextStatus;
-                                             });
-                                           } else if (!success && mounted) {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(driverProvider.bookingsError ?? 'Status update failed'),
-                                                  backgroundColor: Colors.redAccent,
+                                        );
+                                      }
+
+                                      final String payeeName =
+                                          driverProvider.profile?.name ??
+                                          'Partner';
+                                      final String upiUrl =
+                                          'upi://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=${booking.totalFare.toStringAsFixed(2)}&cu=INR&tn=${Uri.encodeComponent("Booking ${booking.bookingId}")}';
+                                      final String qrImageUrl =
+                                          'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${Uri.encodeComponent(upiUrl)}';
+
+                                      return Column(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(20),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              border: Border.all(
+                                                color: const Color(0xFFE1E1E6),
+                                              ),
+                                            ),
+                                            child: Column(
+                                              children: [
+                                                Text(
+                                                  'SCAN QR CODE TO PAY',
+                                                  style: GoogleFonts.outfit(
+                                                    color: const Color(
+                                                      0xFF6C6F79,
+                                                    ),
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w700,
+                                                    letterSpacing: 0.5,
+                                                  ),
                                                 ),
-                                              );
-                                            }
-                                          },
-                                        ),
-                                        const SizedBox(height: 8),
-                                        TextButton(
-                                          onPressed: () {
-                                            setState(() {
-                                              _selectedPaymentMethod = null;
-                                            });
-                                          },
-                                          child: Text(
-                                            'Change Payment Method',
-                                            style: GoogleFonts.plusJakartaSans(
-                                              color: const Color(0xFFD90429),
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 12,
+                                                const SizedBox(height: 12),
+                                                ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  child: Image.network(
+                                                    qrImageUrl,
+                                                    width: 160,
+                                                    height: 160,
+                                                    fit: BoxFit.contain,
+                                                    errorBuilder:
+                                                        (
+                                                          context,
+                                                          error,
+                                                          stackTrace,
+                                                        ) => Container(
+                                                          width: 160,
+                                                          height: 160,
+                                                          color: const Color(
+                                                            0xFFFFF5F5,
+                                                          ),
+                                                          child: const Icon(
+                                                            Icons
+                                                                .qr_code_rounded,
+                                                            size: 48,
+                                                            color: Color(
+                                                              0xFFD90429,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 12),
+                                                Text(
+                                                  '₹${booking.totalFare.toStringAsFixed(2)}',
+                                                  style:
+                                                      GoogleFonts.ibmPlexMono(
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                        fontSize: 24,
+                                                        color: const Color(
+                                                          0xFF121214,
+                                                        ),
+                                                      ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'UPI: $upiId',
+                                                  style:
+                                                      GoogleFonts.plusJakartaSans(
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: const Color(
+                                                          0xFF6C6F79,
+                                                        ),
+                                                      ),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ),
-                              ],
-                            ] else ...[
-                              // OTP verification or updates
-                              if (needsOtpVerification) ...[
-                                OtpVerificationView(
-                                  isLoading: _isVerifyingOtp,
-                                  isSuccess: statusUpper == 'OTP_VERIFIED',
-                                  onOtpSubmit: (otp) async {
-                                    setState(() {
-                                      _isVerifyingOtp = true;
-                                    });
-                                    final success = await driverProvider.verifyOtpForBooking(booking.id, otp);
-                                    setState(() {
-                                      _isVerifyingOtp = false;
-                                    });
-                                    if (success && mounted) {
-                                      setState(() {
-                                        _localStatus = 'OTP_VERIFIED';
-                                      });
-                                    } else if (!success && mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(driverProvider.bookingsError ?? 'OTP verification failed'),
-                                          backgroundColor: Colors.redAccent,
-                                        ),
+                                          const SizedBox(height: 16),
+                                          SwipeSlider(
+                                            key: ValueKey(
+                                              'complete_qr_${booking.status}_${booking.id}',
+                                            ),
+                                            text: _getSliderText(
+                                              booking.status,
+                                            ),
+                                            isLoading: driverProvider
+                                                .isBookingsLoading,
+                                            onSwipeComplete: () async {
+                                              final nextStatus = _getNextStatus(
+                                                booking.status,
+                                              );
+                                              final success =
+                                                  await driverProvider
+                                                      .updateStatusForBooking(
+                                                        booking.id,
+                                                        nextStatus,
+                                                      );
+                                              if (success && mounted) {
+                                                setState(() {
+                                                  _localStatus = nextStatus;
+                                                });
+                                                await _loadFreshBookingDetails(
+                                                  force: true,
+                                                );
+                                              } else if (!success && mounted) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      driverProvider
+                                                              .bookingsError ??
+                                                          'Status update failed',
+                                                    ),
+                                                    backgroundColor:
+                                                        Colors.redAccent,
+                                                  ),
+                                                );
+                                              }
+                                            },
+                                          ),
+                                          const SizedBox(height: 8),
+                                          TextButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                _selectedPaymentMethod = null;
+                                              });
+                                            },
+                                            child: Text(
+                                              'Change Payment Method',
+                                              style:
+                                                  GoogleFonts.plusJakartaSans(
+                                                    color: const Color(
+                                                      0xFFD90429,
+                                                    ),
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
+                                            ),
+                                          ),
+                                        ],
                                       );
-                                    }
-                                  },
-                                ),
+                                    },
+                                  ),
+                                ],
                               ] else ...[
-                                // Message and Call Buttons
-                                _buildMessageCallButtons(),
-                                const SizedBox(height: 16),
-                                // Swipe Slider (below buttons)
-                                SwipeSlider(
-                                  key: ValueKey('status_${booking.status}_${booking.id}'),
-                                  text: _getSliderText(booking.status),
-                                  isLoading: driverProvider.isBookingsLoading,
-                                  onSwipeComplete: () async {
-                                    final nextStatus = _getNextStatus(booking.status);
-                                    final success = await driverProvider.updateStatusForBooking(booking.id, nextStatus);
-                                    if (success && mounted) {
+                                // OTP verification or updates
+                                if (needsOtpVerification) ...[
+                                  OtpVerificationView(
+                                    isLoading: _isVerifyingOtp,
+                                    isSuccess: statusUpper == 'OTP_VERIFIED',
+                                    onOtpSubmit: (otp) async {
                                       setState(() {
-                                        _localStatus = nextStatus;
+                                        _isVerifyingOtp = true;
                                       });
-                                    } else if (!success && mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(driverProvider.bookingsError ?? 'Status update failed'),
-                                          backgroundColor: Colors.redAccent,
-                                        ),
+                                      final success = await driverProvider
+                                          .verifyOtpForBooking(booking.id, otp);
+                                      setState(() {
+                                        _isVerifyingOtp = false;
+                                      });
+                                      if (success && mounted) {
+                                        setState(() {
+                                          _localStatus = 'OTP_VERIFIED';
+                                        });
+                                      } else if (!success && mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              driverProvider.bookingsError ??
+                                                  'OTP verification failed',
+                                            ),
+                                            backgroundColor: Colors.redAccent,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ] else ...[
+                                  // Message and Call Buttons
+                                  _buildMessageCallButtons(),
+                                  const SizedBox(height: 16),
+                                  // Swipe Slider (below buttons)
+                                  SwipeSlider(
+                                    key: ValueKey(
+                                      'status_${booking.status}_${booking.id}',
+                                    ),
+                                    text: _getSliderText(booking.status),
+                                    isLoading: driverProvider.isBookingsLoading,
+                                    onSwipeComplete: () async {
+                                      final nextStatus = _getNextStatus(
+                                        booking.status,
                                       );
-                                    }
-                                  },
+                                      final success = await driverProvider
+                                          .updateStatusForBooking(
+                                            booking.id,
+                                            nextStatus,
+                                          );
+                                      if (success && mounted) {
+                                        setState(() {
+                                          _localStatus = nextStatus;
+                                        });
+                                        await _loadFreshBookingDetails(
+                                          force: true,
+                                        );
+                                      } else if (!success && mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              driverProvider.bookingsError ??
+                                                  'Status update failed',
+                                            ),
+                                            backgroundColor: Colors.redAccent,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ],
+                              const SizedBox(height: 12),
+                              if (statusUpper == 'DRIVER_ASSIGNED') ...[
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      if (booking.pickupLatitude != null &&
+                                          booking.pickupLongitude != null) {
+                                        MapsLauncherService.launchMaps(
+                                          latitude: booking.pickupLatitude!,
+                                          longitude: booking.pickupLongitude!,
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Pickup location coordinates are missing',
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    icon: const Icon(Icons.navigation_rounded),
+                                    label: const Text('Navigate to Pickup'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF121214),
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      textStyle: GoogleFonts.outfit(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15,
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                  ),
+                                ),
+                              ] else if (statusUpper == 'IN_TRANSIT') ...[
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      if (booking.dropLatitude != null &&
+                                          booking.dropLongitude != null) {
+                                        MapsLauncherService.launchMaps(
+                                          latitude: booking.dropLatitude!,
+                                          longitude: booking.dropLongitude!,
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Drop location coordinates are missing',
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    icon: const Icon(Icons.navigation_rounded),
+                                    label: const Text('Navigate to Drop'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF121214),
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      textStyle: GoogleFonts.outfit(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15,
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              if (statusUpper != 'IN_TRANSIT' &&
+                                  statusUpper != 'DRIVER_ARRIVED_DROP') ...[
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton(
+                                    onPressed: () => _showRejectDialog(
+                                      context,
+                                      driverProvider,
+                                      booking.id,
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: const Color(0xFFD90429),
+                                      side: const BorderSide(
+                                        color: Color(0xFFD90429),
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'Reject Booking',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ],
-                            const SizedBox(height: 12),
-                            if (statusUpper == 'DRIVER_ASSIGNED') ...[
-                              const SizedBox(height: 12),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    if (booking.pickupLatitude != null && booking.pickupLongitude != null) {
-                                      MapsLauncherService.launchMaps(
-                                        latitude: booking.pickupLatitude!,
-                                        longitude: booking.pickupLongitude!,
-                                      );
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Pickup location coordinates are missing')),
-                                      );
-                                    }
-                                  },
-                                  icon: const Icon(Icons.navigation_rounded),
-                                  label: const Text('Navigate to Pickup'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF121214),
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
-                                    textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 15),
-                                    elevation: 0,
-                                  ),
-                                ),
-                              ),
-                            ] else if (statusUpper == 'IN_TRANSIT') ...[
-                              const SizedBox(height: 12),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    if (booking.dropLatitude != null && booking.dropLongitude != null) {
-                                      MapsLauncherService.launchMaps(
-                                        latitude: booking.dropLatitude!,
-                                        longitude: booking.dropLongitude!,
-                                      );
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Drop location coordinates are missing')),
-                                      );
-                                    }
-                                  },
-                                  icon: const Icon(Icons.navigation_rounded),
-                                  label: const Text('Navigate to Drop'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF121214),
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
-                                    textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 15),
-                                    elevation: 0,
-                                  ),
-                                ),
-                              ),
-                            ],
-                            if (statusUpper != 'IN_TRANSIT' && statusUpper != 'DRIVER_ARRIVED_DROP') ...[
-                              const SizedBox(height: 12),
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton(
-                                  onPressed: () => _showRejectDialog(context, driverProvider, booking.id),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: const Color(0xFFD90429),
-                                    side: const BorderSide(color: Color(0xFFD90429)),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
-                                  ),
-                                  child: const Text('Reject Booking', style: TextStyle(fontWeight: FontWeight.w700)),
-                                ),
-                              ),
-                            ],
+                            SizedBox(
+                              height:
+                                  MediaQuery.of(context).padding.bottom + 24,
+                            ),
                           ],
-                          SizedBox(height: MediaQuery.of(context).padding.bottom + 24),
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
 
           // Completion Modal Overlay
           if (isDelivered)
@@ -1522,16 +1782,25 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFE7F7EF),
                         borderRadius: BorderRadius.circular(100),
-                        border: Border.all(color: const Color(0xFF1C9A5B).withValues(alpha: 0.3)),
+                        border: Border.all(
+                          color: const Color(0xFF1C9A5B).withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.check_circle_rounded, color: Color(0xFF1C9A5B), size: 16),
+                          const Icon(
+                            Icons.check_circle_rounded,
+                            color: Color(0xFF1C9A5B),
+                            size: 16,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             'Completed',
@@ -1587,7 +1856,11 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.star_rounded, color: Color(0xFFFFB000), size: 20),
+                                const Icon(
+                                  Icons.star_rounded,
+                                  color: Color(0xFFFFB000),
+                                  size: 20,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   'Customer Rating',
@@ -1651,13 +1924,18 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFCC2D3B),
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(100),
+                          ),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           elevation: 0,
                         ),
                         child: Text(
                           _wasAlreadyCompleted ? 'Close' : 'Go to Home Now',
-                          style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 15),
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
                         ),
                       ),
                     ),
@@ -1747,6 +2025,9 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
   }
 
   Widget _buildShipmentDetailsCard(BookingModel booking) {
+    final statusUpper = (_localStatus ?? booking.status).toUpperCase();
+    final isPending = statusUpper == 'PENDING';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1776,10 +2057,15 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                 children: [
                   Text(
                     'Goods Type',
-                    style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF6C6F79)),
+                    style: GoogleFonts.outfit(
+                      fontSize: 13,
+                      color: const Color(0xFF6C6F79),
+                    ),
                   ),
                   Text(
-                    '${booking.parcelType} (${booking.weightKg} kg)',
+                    isPending
+                        ? booking.parcelType
+                        : '${booking.parcelType} (${booking.weightKg} kg)',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -1788,14 +2074,17 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
                   ),
                 ],
               ),
-              if (booking.goodsDescription.isNotEmpty) ...[
+              if (!isPending && booking.goodsDescription.isNotEmpty) ...[
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12.0),
                   child: Divider(height: 1, color: Color(0xFFE1E1E6)),
                 ),
                 Text(
                   'Instructions',
-                  style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF6C6F79)),
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    color: const Color(0xFF6C6F79),
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -1816,39 +2105,26 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
   }
 
   Widget _buildMessageCallButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: _showMessageModal,
-            icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-            label: const Text('Message'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF121214),
-              side: const BorderSide(color: Color(0xFFE1E1E6)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 14.5),
-            ),
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: _showCallModal,
+        icon: const Icon(Icons.phone_android_rounded, size: 18),
+        label: const Text('Call Customer'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF121214),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: _showCallModal,
-            icon: const Icon(Icons.phone_android_rounded, size: 18),
-            label: const Text('Call Customer'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF121214),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 14.5),
-              elevation: 0,
-            ),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          textStyle: GoogleFonts.outfit(
+            fontWeight: FontWeight.w700,
+            fontSize: 14.5,
           ),
+          elevation: 0,
         ),
-      ],
+      ),
     );
   }
 
@@ -1868,7 +2144,10 @@ class _DriverBookingDetailsScreenState extends State<DriverBookingDetailsScreen>
               _isDetailsExpanded = val;
             });
           },
-          leading: const Icon(Icons.info_outline_rounded, color: Color(0xFFD90429)),
+          leading: const Icon(
+            Icons.info_outline_rounded,
+            color: Color(0xFFD90429),
+          ),
           title: Text(
             'Ride & Shipment Details',
             style: GoogleFonts.plusJakartaSans(
@@ -1934,8 +2213,10 @@ class _SwipeSliderState extends State<SwipeSlider> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final double maxDistance = constraints.maxWidth - 56;
-        final double currentPosition = widget.isLoading ? maxDistance : _thumbPosition;
-        
+        final double currentPosition = widget.isLoading
+            ? maxDistance
+            : _thumbPosition;
+
         return Container(
           width: double.infinity,
           height: 56,
@@ -1943,7 +2224,11 @@ class _SwipeSliderState extends State<SwipeSlider> {
             color: const Color(0xFF121214),
             borderRadius: BorderRadius.circular(99),
             boxShadow: const [
-              BoxShadow(color: Color(0x1A000000), blurRadius: 10, offset: Offset(0, 4)),
+              BoxShadow(
+                color: Color(0x1A000000),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
             ],
           ),
           child: Stack(
@@ -1981,7 +2266,8 @@ class _SwipeSliderState extends State<SwipeSlider> {
                     setState(() {
                       _thumbPosition += details.delta.dx;
                       if (_thumbPosition < 0) _thumbPosition = 0;
-                      if (_thumbPosition > maxDistance) _thumbPosition = maxDistance;
+                      if (_thumbPosition > maxDistance)
+                        _thumbPosition = maxDistance;
                     });
                   },
                   onHorizontalDragEnd: (details) {
@@ -2004,7 +2290,11 @@ class _SwipeSliderState extends State<SwipeSlider> {
                       color: Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
-                        BoxShadow(color: Color(0x33000000), blurRadius: 4, offset: Offset(0, 2)),
+                        BoxShadow(
+                          color: Color(0x33000000),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
                       ],
                     ),
                     child: widget.isLoading
@@ -2014,11 +2304,17 @@ class _SwipeSliderState extends State<SwipeSlider> {
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF121214)),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Color(0xFF121214),
+                                ),
                               ),
                             ),
                           )
-                        : const Icon(Icons.keyboard_arrow_right_rounded, color: Color(0xFF121214), size: 24),
+                        : const Icon(
+                            Icons.keyboard_arrow_right_rounded,
+                            color: Color(0xFF121214),
+                            size: 24,
+                          ),
                   ),
                 ),
               ),
@@ -2048,7 +2344,10 @@ class OtpVerificationView extends StatefulWidget {
 
 class _OtpVerificationViewState extends State<OtpVerificationView> {
   final List<FocusNode> _focusNodes = List.generate(4, (index) => FocusNode());
-  final List<TextEditingController> _controllers = List.generate(4, (index) => TextEditingController());
+  final List<TextEditingController> _controllers = List.generate(
+    4,
+    (index) => TextEditingController(),
+  );
 
   @override
   void dispose() {
@@ -2165,7 +2464,11 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                 maxLength: 1,
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.ibmPlexMono(fontSize: 24, fontWeight: FontWeight.w800, color: const Color(0xFF121214)),
+                style: GoogleFonts.ibmPlexMono(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF121214),
+                ),
                 decoration: InputDecoration(
                   counterText: '',
                   contentPadding: EdgeInsets.zero,
@@ -2173,11 +2476,17 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                   fillColor: const Color(0xFFF1F1F4),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE1E1E6), width: 2),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFE1E1E6),
+                      width: 2,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFD90429), width: 2),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFD90429),
+                      width: 2,
+                    ),
                   ),
                 ),
                 onChanged: (val) => _onKeyChanged(val, index),

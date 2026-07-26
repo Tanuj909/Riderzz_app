@@ -74,5 +74,9 @@
 	<string>This app requires access to your location to set pickup and drop-off points for transport bookings.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app requires access to your location to set pickup and drop-off points for transport bookings.</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+	</array>
 </dict>
 </plist>

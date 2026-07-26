@@ -5,6 +5,7 @@ import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/user/addresses/address_list_screen.dart';
 import 'package:riderzz_app/features/user/saved_routes/screens/saved_route_list_screen.dart';
 import 'package:riderzz_app/features/driver/profile/become_driver_screen.dart';
+import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 import 'package:riderzz_app/features/user/profile/screens/customer_profile_screen.dart';
 
 class UserAccountPage extends StatefulWidget {
@@ -124,6 +125,7 @@ class _UserAccountPageState extends State<UserAccountPage> {
             ),
             onPressed: () async {
               Navigator.pop(context); // Close dialog
+              context.read<DriverHomeProvider>().clearData();
               await authProvider.logout();
               if (context.mounted) {
                 Navigator.pushReplacementNamed(context, '/login');

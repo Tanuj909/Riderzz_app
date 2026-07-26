@@ -14,15 +14,21 @@ class BookingRemoteDataSource {
       ApiConstants.bookings,
       data: requestData,
     );
-    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
-    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(
+      response.data,
+    );
+    final Map<String, dynamic> data = Map<String, dynamic>.from(
+      resBody['data'] ?? {},
+    );
     return BookingModel.fromJson(data);
   }
 
   Future<List<BookingModel>> fetchBookings() async {
     final response = await _apiClient.get(ApiConstants.bookings);
-    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
-    
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(
+      response.data,
+    );
+
     // Check if data is list or paginated object
     final dynamic rawData = resBody['data'];
     List<dynamic> list = [];
@@ -31,14 +37,20 @@ class BookingRemoteDataSource {
     } else if (rawData is Map && rawData['content'] is List) {
       list = rawData['content'] as List;
     }
-    
-    return list.map((json) => BookingModel.fromJson(Map<String, dynamic>.from(json))).toList();
+
+    return list
+        .map((json) => BookingModel.fromJson(Map<String, dynamic>.from(json)))
+        .toList();
   }
 
   Future<BookingModel> getBookingById(int id) async {
     final response = await _apiClient.get('${ApiConstants.bookings}/$id');
-    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
-    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(
+      response.data,
+    );
+    final Map<String, dynamic> data = Map<String, dynamic>.from(
+      resBody['data'] ?? {},
+    );
     return BookingModel.fromJson(data);
   }
 
@@ -47,14 +59,20 @@ class BookingRemoteDataSource {
       '${ApiConstants.bookings}/$id/cancel',
       data: {'reason': reason},
     );
-    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
-    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(
+      response.data,
+    );
+    final Map<String, dynamic> data = Map<String, dynamic>.from(
+      resBody['data'] ?? {},
+    );
     return BookingModel.fromJson(data);
   }
 
   Future<List<BookingModel>> fetchCurrentBookings() async {
     final response = await _apiClient.get(ApiConstants.bookingsCurrent);
-    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(
+      response.data,
+    );
     final dynamic rawData = resBody['data'];
     List<dynamic> list = [];
     if (rawData is List) {
@@ -62,23 +80,34 @@ class BookingRemoteDataSource {
     } else if (rawData is Map && rawData['content'] is List) {
       list = rawData['content'] as List;
     }
-    return list.map((json) => BookingModel.fromJson(Map<String, dynamic>.from(json))).toList();
+    return list
+        .map((json) => BookingModel.fromJson(Map<String, dynamic>.from(json)))
+        .toList();
   }
 
   Future<Map<String, dynamic>> fetchBookingOtp(int id) async {
     final response = await _apiClient.get('${ApiConstants.bookings}/$id/otp');
-    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(
+      response.data,
+    );
     return Map<String, dynamic>.from(resBody['data'] ?? {});
   }
 
   Future<DriverLocationModel> fetchDriverLocation(int driverId) async {
     final response = await _apiClient.get('/driver/location/$driverId');
-    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
-    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(
+      response.data,
+    );
+    final Map<String, dynamic> data = Map<String, dynamic>.from(
+      resBody['data'] ?? {},
+    );
     return DriverLocationModel.fromJson(data);
   }
 
-  Future<PricingTierModel> getApplicablePricingTier(int vehicleTypeId, double distanceKm) async {
+  Future<PricingTierModel> getApplicablePricingTier(
+    int vehicleTypeId,
+    double distanceKm,
+  ) async {
     final response = await _apiClient.get(
       '/admin/pricing-tiers/applicable',
       queryParameters: {
@@ -86,8 +115,30 @@ class BookingRemoteDataSource {
         'distanceKm': distanceKm.toString(),
       },
     );
-    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
-    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(
+      response.data,
+    );
+    final Map<String, dynamic> data = Map<String, dynamic>.from(
+      resBody['data'] ?? {},
+    );
     return PricingTierModel.fromJson(data);
+  }
+
+  Future<bool> submitRating({
+    required int bookingId,
+    required String ratingType,
+    required int stars,
+    required String review,
+  }) async {
+    final response = await _apiClient.post(
+      '/ratings',
+      data: {
+        'bookingId': bookingId,
+        'ratingType': ratingType,
+        'stars': stars,
+        'review': review,
+      },
+    );
+    return response.statusCode == 200 || response.statusCode == 201;
   }
 }

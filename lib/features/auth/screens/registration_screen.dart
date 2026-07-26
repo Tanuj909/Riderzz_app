@@ -14,64 +14,56 @@ class RegistrationScreen extends StatefulWidget {
 class _RegistrationScreenState extends State<RegistrationScreen> {
   final _phoneController = TextEditingController();
   final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _otpController = TextEditingController();
-  final FocusNode _otpFocusNode = FocusNode();
-
-  @override
-  void initState() {
-    super.initState();
-    _otpController.addListener(_onOtpChanged);
-  }
+  bool _isPhoneValidated = false;
 
   @override
   void dispose() {
     _phoneController.dispose();
     _nameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
-    _otpController.dispose();
-    _otpFocusNode.dispose();
     super.dispose();
   }
 
-  void _onOtpChanged() {
-    setState(() {});
-  }
-
-  void _handleSendOtp(AuthProvider authProvider) async {
+  void _validateAndContinuePhone() {
     final phone = _phoneController.text.trim();
-    if (phone.isEmpty || phone.length < 10) {
+
+    // Check if phone number is a valid 10-digit Indian mobile number (starts with 6, 7, 8, or 9)
+    final indianPhoneRegex = RegExp(r'^[6-9]\d{9}$');
+
+    if (phone.isEmpty || !indianPhoneRegex.hasMatch(phone)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid 10-digit phone number')),
+        const SnackBar(
+          content: Text('Please enter a valid 10-digit Indian phone number'),
+        ),
       );
       return;
     }
 
-    final success = await authProvider.requestOtp(phone);
-    if (success) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('OTP Sent successfully!')),
-        );
-      }
-    } else {
-      if (mounted && authProvider.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authProvider.errorMessage!)),
-        );
-      }
-    }
+    setState(() {
+      _isPhoneValidated = true;
+    });
   }
 
   void _handleRegister(AuthProvider authProvider) async {
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim();
+    final email = _emailController.text.trim();
     final password = _passwordController.text;
-    final otp = _otpController.text.trim();
 
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter your full name')),
+      );
+      return;
+    }
+
+    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    if (email.isEmpty || !emailRegex.hasMatch(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid email address')),
       );
       return;
     }
@@ -83,18 +75,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       return;
     }
 
-    if (otp.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter the 6-digit OTP code')),
-      );
-      return;
-    }
-
-    final success = await authProvider.registerUser(
-      name: name,
+    final success = await authProvider.registerUserNoOtp(
+      fullName: name,
       phone: phone,
+      email: email,
       password: password,
-      otp: otp,
     );
 
     if (success) {
@@ -132,8 +117,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (!authProvider.isOtpSent) ...[
-                    // REGISTRATION: PHONE STATE
+                  if (!_isPhoneValidated) ...[
+                    // REGISTRATION STEP 1: PHONE NUMBER INPUT & INDIAN NUMBER CHECK
                     const AnimatedSpeedLogo(),
                     const SizedBox(height: 24),
 
@@ -228,41 +213,35 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Action Button / Loader
-                    authProvider.isLoading
-                        ? const Center(
-                            child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
-                            ),
-                          )
-                        : SizedBox(
-                            height: 54,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFE31C2E),
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(100),
-                                ),
-                              ),
-                              onPressed: () => _handleSendOtp(authProvider),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(Icons.arrow_forward_rounded, size: 18),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Continue',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                    // Continue Button
+                    SizedBox(
+                      height: 54,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE31C2E),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(100),
                           ),
+                        ),
+                        onPressed: _validateAndContinuePhone,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.arrow_forward_rounded, size: 18),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Continue',
+                              style: GoogleFonts.outfit(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 14),
 
                     // Terms text
@@ -295,8 +274,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       ),
                     ),
                   ] else ...[
-                    // REGISTRATION: DETAILS STATE
-                    // SMS Icon container
+                    // REGISTRATION STEP 2: USER DETAILS INPUT (NO OTP)
                     Center(
                       child: Container(
                         width: 56,
@@ -306,13 +284,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Icon(
-                          Icons.message_rounded,
+                          Icons.person_add_alt_1_rounded,
                           size: 28,
                           color: Color(0xFFE31C2E),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
 
                     // Heading & Subtext
                     Text(
@@ -326,7 +304,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Enter details and the 6-digit code sent to +91 ${_phoneController.text}',
+                      'Enter your details to create your account',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.outfit(
                         fontSize: 14,
@@ -334,7 +312,49 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         height: 1.5,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
+
+                    // Phone Summary Banner
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF6F6F8),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.phone_android_rounded, size: 20, color: Color(0xFFE31C2E)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              '🇮🇳 +91 ${_phoneController.text}',
+                              style: GoogleFonts.outfit(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF121214),
+                              ),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _isPhoneValidated = false;
+                              });
+                            },
+                            child: Text(
+                              'Change',
+                              style: GoogleFonts.outfit(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFFE31C2E),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
 
                     // Full Name Input
                     Text(
@@ -362,6 +382,42 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         ),
                         decoration: InputDecoration(
                           hintText: 'Enter your full name',
+                          hintStyle: GoogleFonts.outfit(color: const Color(0xFFA0AEC0)),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Email Address Input
+                    Text(
+                      'Email Address',
+                      style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        color: const Color(0xFF6C6F79),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF6F6F8),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFF121214),
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Enter email address',
                           hintStyle: GoogleFonts.outfit(color: const Color(0xFFA0AEC0)),
                           border: InputBorder.none,
                           isDense: true,
@@ -405,89 +461,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
-
-                    // Verification Code Label
-                    Text(
-                      'Verification Code',
-                      style: GoogleFonts.outfit(
-                        fontSize: 13,
-                        color: const Color(0xFF6C6F79),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-
-                    // OTP Custom 6-digit entry row (Lag-free and responsive)
-                    Center(
-                      child: SizedBox(
-                        width: 300,
-                        height: 56,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(6, (index) {
-                                final text = _otpController.text;
-                                final char = text.length > index ? text[index] : '';
-                                final isFocused = _otpFocusNode.hasFocus &&
-                                    (text.length == index || (text.length == 6 && index == 5));
-
-                                return Container(
-                                  width: 42,
-                                  height: 50,
-                                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                                  decoration: BoxDecoration(
-                                    color: isFocused ? const Color(0xFFFDEBEC) : const Color(0xFFF6F6F8),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: isFocused ? const Color(0xFFE31C2E) : const Color(0xFFE2E8F0),
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    char,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w600,
-                                      color: isFocused ? const Color(0xFFE31C2E) : const Color(0xFF121214),
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ),
-                            Positioned.fill(
-                              child: Opacity(
-                                opacity: 0.01,
-                                child: TextFormField(
-                                  controller: _otpController,
-                                  focusNode: _otpFocusNode,
-                                  keyboardType: TextInputType.number,
-                                  maxLength: 6,
-                                  showCursor: false,
-                                  enableInteractiveSelection: false,
-                                  style: const TextStyle(
-                                    color: Colors.transparent,
-                                    fontSize: 1,
-                                  ),
-                                  buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
-                                  decoration: const InputDecoration(
-                                    border: InputBorder.none,
-                                    counterText: '',
-                                    contentPadding: EdgeInsets.zero,
-                                  ),
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
                     const SizedBox(height: 24),
 
                     // Action Button / Loader
@@ -515,7 +488,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                   const Icon(Icons.check_rounded, size: 18),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Verify & Register',
+                                    'Register',
                                     style: GoogleFonts.outfit(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700,
@@ -530,8 +503,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     // Back / Change Number Button
                     TextButton(
                       onPressed: () {
-                        authProvider.resetState();
-                        _otpController.clear();
+                        setState(() {
+                          _isPhoneValidated = false;
+                        });
                       },
                       child: Text(
                         'Change Phone Number',
@@ -545,7 +519,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   ],
 
                   // Redirect to Login (Only shown in initial state)
-                  if (!authProvider.isOtpSent) ...[
+                  if (!_isPhoneValidated) ...[
                     const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -623,8 +597,7 @@ class _AnimatedSpeedLogoState extends State<AnimatedSpeedLogo> with SingleTicker
         weight: 22.0,
       ),
     ]).animate(_controller);
-    // Start the animation loop after 600ms delay to let screen transition finish.
-    // While waiting, the logo is positioned at Offset(1.5, 0.0) which is off-screen.
+
     Future.delayed(const Duration(milliseconds: 600), () {
       if (mounted) {
         _controller.repeat();

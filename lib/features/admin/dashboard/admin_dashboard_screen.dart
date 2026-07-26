@@ -7,7 +7,7 @@ import 'package:riderzz_app/features/admin/rider_verification/providers/rider_ve
 import 'package:riderzz_app/features/admin/wallets/screens/admin_wallets_screen.dart';
 import 'package:riderzz_app/features/admin/commission/screens/admin_pricing_screen.dart';
 import 'package:riderzz_app/core/models/admin_driver_model.dart';
-
+import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -37,15 +37,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F8),
-      body: SafeArea(
-        child: _buildTabContent(),
-      ),
+      body: SafeArea(child: _buildTabContent()),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
-          border: Border(
-            top: BorderSide(color: Color(0xFFE1E1E6), width: 1),
-          ),
+          border: Border(top: BorderSide(color: Color(0xFFE1E1E6), width: 1)),
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
@@ -119,16 +115,22 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   // TAB 0: DASHBOARD OPERATIONAL OVERVIEW
   Widget _buildDashboardTab() {
-    final verificationProvider = Provider.of<RiderVerificationProvider>(context);
+    final verificationProvider = Provider.of<RiderVerificationProvider>(
+      context,
+    );
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final String adminPhone = authProvider.currentUser?.phone ?? '9891004821';
 
     // Self-correct filter and fetch pending drivers if not set to PENDING
-    if (verificationProvider.currentStatusFilter != 'PENDING' && !verificationProvider.isLoading) {
+    if (verificationProvider.currentStatusFilter != 'PENDING' &&
+        !verificationProvider.isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         verificationProvider.setStatusFilter('PENDING');
       });
     }
 
-    final int onlineDriverCount = verificationProvider.totalApprovedOnlineDrivers;
+    final int onlineDriverCount =
+        verificationProvider.totalApprovedOnlineDrivers;
     final List<AdminDriverModel> pendingDrivers = verificationProvider.drivers;
 
     return RefreshIndicator(
@@ -176,26 +178,93 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     ),
                   ],
                 ),
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFFD90429), Color(0xFF8D021F)],
+                PopupMenuButton<String>(
+                  color: Colors.white,
+                  offset: const Offset(0, 48),
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFFD90429), Color(0xFF8D021F)],
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'AD',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    'AD',
-                    style: GoogleFonts.outfit(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+                  itemBuilder: (BuildContext context) =>
+                      <PopupMenuEntry<String>>[
+                        PopupMenuItem<String>(
+                          enabled: false,
+                          value: 'phone',
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.phone_iphone_rounded,
+                                size: 18,
+                                color: Color(0xFF6C6F79),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                adminPhone,
+                                style: GoogleFonts.outfit(
+                                  color: const Color(0xFF121214),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuDivider(height: 1),
+                        PopupMenuItem<String>(
+                          value: 'logout',
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.logout_rounded,
+                                size: 18,
+                                color: Color(0xFFD90429),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Logout',
+                                style: GoogleFonts.outfit(
+                                  color: const Color(0xFFD90429),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                  onSelected: (String value) async {
+                    if (value == 'logout') {
+                      await authProvider.logout();
+                      if (mounted) {
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          '/login',
+                          (route) => false,
+                        );
+                      }
+                    }
+                  },
                 ),
               ],
             ),
@@ -370,96 +439,105 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ? const Center(
                       child: Padding(
                         padding: EdgeInsets.symmetric(vertical: 16.0),
-                        child: CircularProgressIndicator(color: Color(0xFFD90429)),
+                        child: CircularProgressIndicator(
+                          color: Color(0xFFD90429),
+                        ),
                       ),
                     )
                   : pendingDrivers.isEmpty
-                      ? Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12.0),
-                          child: Text(
-                            'No pending requests awaiting review',
-                            style: GoogleFonts.outfit(
-                              color: const Color(0xFF6C6F79),
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        )
-                      : Column(
-                          children: pendingDrivers.take(3).map((AdminDriverModel driver) {
-                            final isLast = pendingDrivers.take(3).last == driver;
-                            final String createdAtStr = driver.createdAt;
-                            final String formattedDate = createdAtStr.length >= 10
-                                ? createdAtStr.substring(0, 10)
-                                : 'Recent';
-                            return Container(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              decoration: BoxDecoration(
-                                border: isLast
-                                    ? null
-                                    : const Border(
-                                        bottom: BorderSide(
-                                          color: Color(0xFFE1E1E6),
-                                          width: 0.8,
-                                        ),
-                                      ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          driver.name,
-                                          style: GoogleFonts.outfit(
-                                            color: const Color(0xFF121214),
-                                            fontSize: 13.5,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          '${driver.vehicle?.vehicleTypeName ?? driver.vehicleTypeName ?? 'Driver Application'} · $formattedDate',
-                                          style: GoogleFonts.outfit(
-                                            color: const Color(0xFF6C6F79),
-                                            fontSize: 11.5,
-                                          ),
-                                        ),
-                                      ],
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12.0),
+                      child: Text(
+                        'No pending requests awaiting review',
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFF6C6F79),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    )
+                  : Column(
+                      children: pendingDrivers.take(3).map((
+                        AdminDriverModel driver,
+                      ) {
+                        final isLast = pendingDrivers.take(3).last == driver;
+                        final String createdAtStr = driver.createdAt;
+                        final String formattedDate = createdAtStr.length >= 10
+                            ? createdAtStr.substring(0, 10)
+                            : 'Recent';
+                        return Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            border: isLast
+                                ? null
+                                : const Border(
+                                    bottom: BorderSide(
+                                      color: Color(0xFFE1E1E6),
+                                      width: 0.8,
                                     ),
                                   ),
-                                  OutlinedButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        _currentIndex = 1;
-                                      });
-                                    },
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 12, vertical: 6),
-                                      side: const BorderSide(color: Color(0xFFE1E1E6)),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(9),
-                                      ),
-                                      minimumSize: Size.zero,
-                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                    ),
-                                    child: Text(
-                                      'Review',
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      driver.name,
                                       style: GoogleFonts.outfit(
                                         color: const Color(0xFF121214),
-                                        fontSize: 12,
+                                        fontSize: 13.5,
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${driver.vehicle?.vehicleTypeName ?? driver.vehicleTypeName ?? 'Driver Application'} · $formattedDate',
+                                      style: GoogleFonts.outfit(
+                                        color: const Color(0xFF6C6F79),
+                                        fontSize: 11.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            );
-                          }).toList(),
-                        ),
+                              OutlinedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _currentIndex = 1;
+                                  });
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  side: const BorderSide(
+                                    color: Color(0xFFE1E1E6),
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(9),
+                                  ),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(
+                                  'Review',
+                                  style: GoogleFonts.outfit(
+                                    color: const Color(0xFF121214),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
             ),
           ],
         ),

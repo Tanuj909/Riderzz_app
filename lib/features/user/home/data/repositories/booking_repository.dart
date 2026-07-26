@@ -36,7 +36,27 @@ class BookingRepository {
     return await _remoteDataSource.fetchDriverLocation(driverId);
   }
 
-  Future<PricingTierModel> getApplicablePricingTier(int vehicleTypeId, double distanceKm) async {
-    return await _remoteDataSource.getApplicablePricingTier(vehicleTypeId, distanceKm);
+  Future<PricingTierModel> getApplicablePricingTier(
+    int vehicleTypeId,
+    double distanceKm,
+  ) async {
+    return await _remoteDataSource.getApplicablePricingTier(
+      vehicleTypeId,
+      distanceKm,
+    );
+  }
+
+  Future<bool> submitRating({
+    required int bookingId,
+    required String ratingType,
+    required int stars,
+    required String review,
+  }) async {
+    return await _remoteDataSource.submitRating(
+      bookingId: bookingId,
+      ratingType: ratingType,
+      stars: stars,
+      review: review,
+    );
   }
 }

@@ -93,6 +93,44 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Complete registration without OTP
+  Future<bool> registerUserNoOtp({
+    required String fullName,
+    required String phone,
+    required String email,
+    required String password,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final user = await _authRepository.registerNoOtp(
+        fullName: fullName,
+        phone: phone,
+        email: email,
+        password: password,
+      );
+
+      _currentUser = user;
+      await _storageService.saveAuthData(
+        token: user.token ?? '',
+        refreshToken: user.refreshToken,
+        role: user.role,
+        userId: user.userId,
+      );
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Try local storage login auto recovery
   Future<bool> tryAutoLogin() async {
     final token = await _storageService.getToken();

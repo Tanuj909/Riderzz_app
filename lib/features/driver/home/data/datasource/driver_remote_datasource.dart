@@ -286,8 +286,13 @@ class DriverRemoteDataSource {
 
   Future<List<BookingModel>> fetchPendingBroadcasts() async {
     final response = await _apiClient.get(ApiConstants.driverPendingBroadcasts);
-    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
-    final dynamic rawData = resBody['data'];
+    dynamic rawData;
+    if (response.data is List) {
+      rawData = response.data;
+    } else if (response.data is Map) {
+      final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+      rawData = resBody['data'] ?? resBody['content'] ?? resBody;
+    }
     List<dynamic> list = [];
     if (rawData is List) {
       list = rawData;

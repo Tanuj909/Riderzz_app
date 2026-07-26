@@ -58,7 +58,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = Provider.of<DriverHomeProvider>(context, listen: false);
-      provider.fetchDriverProfile();
+      provider.fetchDriverProfile(force: true);
       Provider.of<AdminVehiclesProvider>(context, listen: false).fetchVehicleTypes();
     });
   }

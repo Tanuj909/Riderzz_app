@@ -97,6 +97,7 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
               try {
                 context.read<LocationTrackingService>().stop();
               } catch (_) {}
+              context.read<DriverHomeProvider>().clearData();
               await authProvider.logout();
               if (mounted) {
                 Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);

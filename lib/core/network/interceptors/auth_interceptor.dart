@@ -17,6 +17,7 @@ class AuthInterceptor extends Interceptor {
       ApiConstants.loginVerifyOtp,
       ApiConstants.sendOtp,
       ApiConstants.register,
+      ApiConstants.registerNoOtp,
       ApiConstants.adminLogin,
     ];
 

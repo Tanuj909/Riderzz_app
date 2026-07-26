@@ -67,9 +67,34 @@ class DriverHomeProvider extends ChangeNotifier {
   bool get isEarningsLoading => _isEarningsLoading;
   String? get earningsError => _earningsError;
 
+  void clearData() {
+    _profile = null;
+    _isLoading = false;
+    _errorMessage = null;
+    _wallet = null;
+    _isWalletLoading = false;
+    _walletError = null;
+    _isWalletNotCreated = false;
+    _bankAccounts = [];
+    _primaryBankAccount = null;
+    _isBankAccountsLoading = false;
+    _bankAccountsError = null;
+    _activeBooking = null;
+    _pendingBookings = [];
+    _isBookingsLoading = false;
+    _bookingsError = null;
+    _earnings = null;
+    _isEarningsLoading = false;
+    _earningsError = null;
+    notifyListeners();
+  }
+
   Future<void> fetchDriverProfile({bool force = false}) async {
     if (!force && _profile != null) {
       return;
+    }
+    if (force) {
+      _profile = null;
     }
     _isLoading = true;
     _errorMessage = null;
@@ -518,10 +543,12 @@ class DriverHomeProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchHomeBookings() async {
-    _isBookingsLoading = true;
-    _bookingsError = null;
-    notifyListeners();
+  Future<void> fetchHomeBookings({bool silent = false}) async {
+    if (!silent) {
+      _isBookingsLoading = true;
+      _bookingsError = null;
+      notifyListeners();
+    }
 
     try {
       // 1. Fetch My Driver Bookings first
@@ -548,9 +575,13 @@ class DriverHomeProvider extends ChangeNotifier {
         _pendingBookings = [];
       }
     } catch (e) {
-      _bookingsError = e.toString().replaceFirst('Exception: ', '');
+      if (!silent) {
+        _bookingsError = e.toString().replaceFirst('Exception: ', '');
+      }
     } finally {
-      _isBookingsLoading = false;
+      if (!silent) {
+        _isBookingsLoading = false;
+      }
       notifyListeners();
     }
   }

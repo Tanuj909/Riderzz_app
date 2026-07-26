@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -18,6 +19,52 @@ class DriverHomePage extends StatefulWidget {
 }
 
 class _DriverHomePageState extends State<DriverHomePage> {
+  Timer? _refreshTimer;
+  Timer? _searchTimer;
+  bool _isManualSearching = false;
+  int _searchCountdown = 30;
+
+  void _handleSearchBookings() {
+    if (_isManualSearching) return;
+
+    setState(() {
+      _isManualSearching = true;
+      _searchCountdown = 30;
+    });
+
+    // Trigger immediate API fetch
+    context.read<DriverHomeProvider>().fetchHomeBookings();
+
+    _searchTimer?.cancel();
+    _searchTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      final driverProvider = context.read<DriverHomeProvider>();
+      // If a booking arrives during search, exit searching mode early
+      if (driverProvider.pendingBookings.isNotEmpty) {
+        timer.cancel();
+        setState(() {
+          _isManualSearching = false;
+        });
+        return;
+      }
+
+      if (_searchCountdown > 1) {
+        setState(() {
+          _searchCountdown--;
+        });
+      } else {
+        timer.cancel();
+        setState(() {
+          _isManualSearching = false;
+        });
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -25,6 +72,23 @@ class _DriverHomePageState extends State<DriverHomePage> {
       context.read<DriverHomeProvider>().fetchHomeBookings();
       context.read<DriverHomeProvider>().fetchDriverEarnings();
     });
+
+    // Auto refresh pending bookings every 10 seconds (only for drivers with no active booking)
+    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) {
+        final driverProvider = context.read<DriverHomeProvider>();
+        if (driverProvider.activeBooking == null) {
+          driverProvider.fetchHomeBookings(silent: true);
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    _searchTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -424,6 +488,174 @@ class _DriverHomePageState extends State<DriverHomePage> {
           ),
           const SizedBox(height: 12),
 
+          // ── Bookings in your area! Content Section ──
+          if (driverProvider.activeBooking == null) ...[
+            if (driverProvider.isBookingsLoading || _isManualSearching)
+              Container(
+                width: double.infinity,
+                height: 140,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE1E1E6)),
+                ),
+                child: const Center(
+                  child: RadarPulseAnimation(),
+                ),
+              )
+            else if (driverProvider.pendingBookings.isNotEmpty)
+              SizedBox(
+                height: 88,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: driverProvider.pendingBookings.length,
+                  separatorBuilder: (context, index) => const SizedBox(width: 10),
+                  itemBuilder: (context, index) {
+                    final booking = driverProvider.pendingBookings[index];
+                    final fullCardWidth = MediaQuery.of(context).size.width - 40;
+                    return Container(
+                      width: fullCardWidth,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE1E1E6)),
+                        boxShadow: const [
+                          BoxShadow(color: Color(0x08121214), blurRadius: 10, offset: Offset(0, 4)),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFD90429).withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        'NEW BOOKING',
+                                        style: GoogleFonts.outfit(
+                                          color: const Color(0xFFD90429),
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                    if (booking.expiresInSeconds != null) ...[
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '${booking.expiresInSeconds}s left',
+                                        style: GoogleFonts.outfit(
+                                          color: const Color(0xFFE65100),
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '₹${booking.totalFare.toStringAsFixed(2)}',
+                                  style: GoogleFonts.outfit(
+                                    color: const Color(0xFF121214),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => _showBookingModal(context, booking),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD90429),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                            ),
+                            child: Text(
+                              'View',
+                              style: GoogleFonts.outfit(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              )
+            else
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE1E1E6)),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.explore_off_outlined, size: 40, color: Color(0xFFA2A5AE)),
+                    const SizedBox(height: 10),
+                    Text(
+                      'No bookings in your area',
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFF121214),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'No new bookings arrived in your radius recently.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFF6C6F79),
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: _handleSearchBookings,
+                      icon: const Icon(Icons.radar_rounded, size: 18),
+                      label: Text(
+                        'Search Bookings',
+                        style: GoogleFonts.outfit(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF121214),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+
           if (driverProvider.activeBooking != null) ...[
             // Active Ride Card
             Container(
@@ -558,38 +790,6 @@ class _DriverHomePageState extends State<DriverHomePage> {
                 ],
               ),
             ),
-          ] else ...[
-            // Map Overview Placeholder (Live Location Area)
-            Container(
-              height: 160,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9), // light map background
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE1E1E6)),
-              ),
-              child: Center(
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFF1C9A5B).withValues(alpha: 0.1),
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: 16,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1C9A5B),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
           ],
           const SizedBox(height: 16),
 
@@ -658,188 +858,279 @@ class _DriverHomePageState extends State<DriverHomePage> {
               ),
             ),
           ),
-          const SizedBox(height: 24),
-
-          if (driverProvider.activeBooking == null) ...[
-            if (driverProvider.isBookingsLoading)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24.0),
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD90429)),
-                  ),
-                ),
-              )
-            else if (driverProvider.pendingBookings.isEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE1E1E6)),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.explore_off_outlined, size: 48, color: Color(0xFFA2A5AE)),
-                    const SizedBox(height: 12),
-                    Text(
-                      'No bookings in your area',
-                      style: GoogleFonts.outfit(
-                        color: const Color(0xFF121214),
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'We\'ll notify you when a customer requests a ride nearby.',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.outfit(
-                        color: const Color(0xFF6C6F79),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              ...driverProvider.pendingBookings.map((booking) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE1E1E6)),
-                    boxShadow: const [
-                      BoxShadow(color: Color(0x05121214), blurRadius: 8, offset: Offset(0, 2)),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFD90429).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              'PENDING',
-                              style: GoogleFonts.outfit(
-                                color: const Color(0xFFD90429),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            '₹${booking.totalFare.toStringAsFixed(2)}',
-                            style: GoogleFonts.outfit(
-                              color: const Color(0xFF121214),
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Column(
-                            children: [
-                              const SizedBox(height: 2),
-                              const Icon(Icons.circle_outlined, size: 12, color: Color(0xFF121214)),
-                              Container(
-                                width: 2,
-                                height: 24,
-                                margin: const EdgeInsets.symmetric(vertical: 2),
-                                color: const Color(0xFFE1E1E6),
-                              ),
-                              const Icon(Icons.location_on, size: 14, color: Color(0xFFD90429)),
-                            ],
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  booking.pickupAddressName,
-                                  style: GoogleFonts.outfit(
-                                    color: const Color(0xFF121214),
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w600,
-                                    height: 1.2,
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
-                                Text(
-                                  booking.dropAddressName,
-                                  style: GoogleFonts.outfit(
-                                    color: const Color(0xFF121214),
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w600,
-                                    height: 1.2,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Type: ${booking.parcelType} (${booking.weightKg} kg)',
-                            style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79), fontWeight: FontWeight.w600),
-                          ),
-                          Text(
-                            'Payment: ${booking.paymentMode}',
-                            style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79), fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => DriverBookingDetailsScreen(
-                                  booking: booking,
-                                ),
-                              ),
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFD90429),
-                            side: const BorderSide(color: Color(0xFFD90429)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          child: Text('View Details', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-          ],
         ],
       ),
     ),
   ),
 );
 }
+
+  void _showBookingModal(BuildContext context, BookingModel booking) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE1E1E6),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD90429).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'NEW BOOKING REQUEST',
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFFD90429),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  if (booking.expiresInSeconds != null)
+                    Row(
+                      children: [
+                        const Icon(Icons.timer_outlined, size: 16, color: Color(0xFFE65100)),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Expires: ${booking.expiresInSeconds}s',
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFFE65100),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '₹${booking.totalFare.toStringAsFixed(2)}',
+                style: GoogleFonts.outfit(
+                  color: const Color(0xFF121214),
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Column(
+                    children: [
+                      const SizedBox(height: 4),
+                      const Icon(Icons.circle_outlined, size: 14, color: Color(0xFF1C9A5B)),
+                      Container(
+                        width: 2,
+                        height: 32,
+                        margin: const EdgeInsets.symmetric(vertical: 2),
+                        color: const Color(0xFFE1E1E6),
+                      ),
+                      const Icon(Icons.location_on, size: 16, color: Color(0xFFD90429)),
+                    ],
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'PICKUP',
+                          style: GoogleFonts.outfit(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF6C6F79),
+                          ),
+                        ),
+                        Text(
+                          booking.pickupAddressName,
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFF121214),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'DROP OFF',
+                          style: GoogleFonts.outfit(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF6C6F79),
+                          ),
+                        ),
+                        Text(
+                          booking.dropAddressName,
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFF121214),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              const Divider(),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (booking.estimatedDistanceKm != null)
+                    Text(
+                      'Distance: ${booking.estimatedDistanceKm!.toStringAsFixed(1)} km',
+                      style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        color: const Color(0xFF6C6F79),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  Text(
+                    'Payment: ${booking.paymentMode}',
+                    style: GoogleFonts.outfit(
+                      fontSize: 13,
+                      color: const Color(0xFF6C6F79),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DriverBookingDetailsScreen(
+                          booking: booking,
+                        ),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD90429),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                  ),
+                  child: Text(
+                    'View Details',
+                    style: GoogleFonts.outfit(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class RadarPulseAnimation extends StatefulWidget {
+  const RadarPulseAnimation({super.key});
+
+  @override
+  State<RadarPulseAnimation> createState() => _RadarPulseAnimationState();
+}
+
+class _RadarPulseAnimationState extends State<RadarPulseAnimation> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat();
+
+    _animation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: 100 * _animation.value,
+              height: 100 * _animation.value,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF1C9A5B).withValues(alpha: (1.0 - _animation.value) * 0.4),
+              ),
+            ),
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF1C9A5B).withValues(alpha: 0.15),
+              ),
+            ),
+            Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1C9A5B),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2.5),
+                boxShadow: const [
+                  BoxShadow(color: Color(0x401C9A5B), blurRadius: 6, spreadRadius: 2),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }

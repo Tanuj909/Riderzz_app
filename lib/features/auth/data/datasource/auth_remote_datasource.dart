@@ -41,6 +41,25 @@ class AuthRemoteDataSource {
     return UserModel.fromJson(data, name: name, phone: phone);
   }
 
+  Future<UserModel> registerNoOtp({
+    required String fullName,
+    required String phone,
+    required String email,
+    required String password,
+  }) async {
+    final response = await _apiClient.post(
+      ApiConstants.registerNoOtp,
+      data: {
+        'fullName': fullName,
+        'phone': phone,
+        'email': email,
+        'password': password,
+      },
+    );
+    final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
+    return UserModel.fromJson(data, name: fullName, phone: phone);
+  }
+
   Future<String> loginSendOtp(String phone) async {
     final response = await _apiClient.post(
       ApiConstants.sendOtp,

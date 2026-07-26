@@ -13,6 +13,7 @@ import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
 import 'package:riderzz_app/features/user/home/widgets/booking_details_bottom_sheet.dart';
 import 'package:riderzz_app/features/user/profile/screens/customer_profile_screen.dart';
 import 'package:riderzz_app/features/user/saved_routes/screens/saved_route_list_screen.dart';
+import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 import 'dart:ui';
 import 'dart:math';
 
@@ -145,6 +146,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                             ),
                             onPressed: () async {
                               Navigator.pop(context);
+                              context.read<DriverHomeProvider>().clearData();
                               final auth = context.read<AuthProvider>();
                               await auth.logout();
                               if (context.mounted) {
