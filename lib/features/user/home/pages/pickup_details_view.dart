@@ -5,6 +5,9 @@ import 'package:riderzz_app/core/providers/location_provider.dart';
 import 'package:riderzz_app/features/user/addresses/location_picker_screen.dart';
 import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
 import 'package:riderzz_app/features/user/saved_routes/providers/saved_route_provider.dart';
+import 'package:riderzz_app/screens/search_location_screen.dart';
+import 'package:riderzz_app/models/photon_place.dart';
+
 class PickupDetailsView extends StatefulWidget {
   final Map<String, dynamic>? initialRoute;
   final Map<String, dynamic>? initialData;
@@ -122,6 +125,30 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
         _pickupController.text = locationProvider.currentAddress ?? '';
         _pickupLatitude = locationProvider.currentLatitude;
         _pickupLongitude = locationProvider.currentLongitude;
+      });
+    }
+  }
+
+  Future<void> _openSearchScreen({required bool isPickup}) async {
+    final place = await Navigator.push<PhotonPlace>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SearchLocationScreen(
+          hintText: isPickup ? 'Search pickup location...' : 'Search drop location...',
+        ),
+      ),
+    );
+    if (place != null && mounted) {
+      setState(() {
+        if (isPickup) {
+          _pickupController.text = place.displayName;
+          _pickupLatitude = place.latitude;
+          _pickupLongitude = place.longitude;
+        } else {
+          _dropController.text = place.displayName;
+          _dropLatitude = place.latitude;
+          _dropLongitude = place.longitude;
+        }
       });
     }
   }
@@ -370,11 +397,9 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                       Expanded(
                         child: TextFormField(
                           controller: _pickupController,
+                          readOnly: true,
                           style: const TextStyle(fontSize: 13, color: Color(0xFF121214), fontWeight: FontWeight.w400),
-                          onChanged: (value) {
-                            _pickupLatitude = null;
-                            _pickupLongitude = null;
-                          },
+                          onTap: () => _openSearchScreen(isPickup: true),
                           validator: (value) => (value == null || value.trim().isEmpty) ? 'Fill the details!' : null,
                           decoration: const InputDecoration(
                             hintText: 'Enter pickup location',
@@ -385,6 +410,11 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                             errorStyle: TextStyle(height: 0.8),
                           ),
                         ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => _openSearchScreen(isPickup: true),
+                        child: const Icon(Icons.search_rounded, size: 20, color: Color(0xFFE31C2E)),
                       ),
                       const SizedBox(width: 8),
                       GestureDetector(
@@ -422,11 +452,9 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                       Expanded(
                         child: TextFormField(
                           controller: _dropController,
+                          readOnly: true,
                           style: const TextStyle(fontSize: 13, color: Color(0xFF121214), fontWeight: FontWeight.w400),
-                          onChanged: (value) {
-                            _dropLatitude = null;
-                            _dropLongitude = null;
-                          },
+                          onTap: () => _openSearchScreen(isPickup: false),
                           validator: (value) => (value == null || value.trim().isEmpty) ? 'Fill the details!' : null,
                           decoration: const InputDecoration(
                             hintText: 'Add drop location',
@@ -437,6 +465,11 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                             errorStyle: TextStyle(height: 0.8),
                           ),
                         ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => _openSearchScreen(isPickup: false),
+                        child: const Icon(Icons.search_rounded, size: 20, color: Color(0xFFE31C2E)),
                       ),
                       const SizedBox(width: 8),
                       GestureDetector(

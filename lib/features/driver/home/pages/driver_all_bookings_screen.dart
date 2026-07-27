@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:riderzz_app/features/driver/home/data/repositories/driver_repository.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_booking_details_screen.dart';
+import 'package:riderzz_app/features/driver/home/driver_home_screen.dart';
 
 class DriverAllBookingsScreen extends StatefulWidget {
   const DriverAllBookingsScreen({super.key});
@@ -297,19 +298,26 @@ class _DriverAllBookingsScreenState extends State<DriverAllBookingsScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 12),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: OutlinedButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => DriverBookingDetailsScreen(
-                                            booking: booking,
-                                          ),
-                                        ),
-                                      );
-                                    },
+                                 SizedBox(
+                                   width: double.infinity,
+                                   child: OutlinedButton(
+                                     onPressed: () async {
+                                       final result = await Navigator.push(
+                                         context,
+                                         MaterialPageRoute(
+                                           builder: (context) => DriverBookingDetailsScreen(
+                                             booking: booking,
+                                           ),
+                                         ),
+                                       );
+                                       if (result == 'go_to_wallet' && context.mounted) {
+                                         final homeState = context.findAncestorStateOfType<DriverHomeScreenState>();
+                                         if (homeState != null) {
+                                           homeState.setIndex(2);
+                                           Navigator.pop(context, 'go_to_wallet');
+                                         }
+                                       }
+                                     },
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: const Color(0xFFD90429),
                                       side: const BorderSide(color: Color(0xFFD90429)),

@@ -497,6 +497,74 @@ class _DriverBookingDetailsScreenState
     }
   }
 
+  void _showLowBalanceDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 36.0, bottom: 24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFDEBEC),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.account_balance_wallet_rounded,
+                        color: Color(0xFFE31C2E),
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Wallet Balance is Low',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF121214),
+                      ),
+                      textAlign: TextAlign.center,
+                ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Your current wallet balance is below the minimum required amount to accept bookings. Please recharge to continue.',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: const Color(0xFF6C6F79),
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  icon: const Icon(Icons.close_rounded, color: Color(0xFF6C6F79)),
+                  splashRadius: 20,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _showRejectDialog(
     BuildContext context,
     DriverHomeProvider driverProvider,
@@ -1105,17 +1173,25 @@ class _DriverBookingDetailsScreenState
                                           ),
                                         );
                                       } else if (!success && mounted) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              driverProvider.bookingsError ??
-                                                  'Failed to accept booking',
+                                        final errorMsg = driverProvider.bookingsError ?? '';
+                                        final isLowBalance = errorMsg.toLowerCase().contains('wallet') ||
+                                                             errorMsg.toLowerCase().contains('balance') ||
+                                                             errorMsg.toLowerCase().contains('insufficient');
+                                        if (isLowBalance) {
+                                          _showLowBalanceDialog(context);
+                                        } else {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                driverProvider.bookingsError ??
+                                                    'Failed to accept booking',
+                                              ),
+                                              backgroundColor: Colors.redAccent,
                                             ),
-                                            backgroundColor: Colors.redAccent,
-                                          ),
-                                        );
+                                          );
+                                        }
                                       }
                                     },
                                   ),

@@ -9,6 +9,7 @@ import 'package:riderzz_app/core/services/location_tracking_service.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_booking_details_screen.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_all_bookings_screen.dart';
+import 'package:riderzz_app/features/driver/home/driver_home_screen.dart';
 import 'package:riderzz_app/features/driver/profile/driver_profile_screen.dart';
 
 class DriverHomePage extends StatefulWidget {
@@ -121,9 +122,9 @@ class _DriverHomePageState extends State<DriverHomePage> {
     return SafeArea(
       child: RefreshIndicator(
         onRefresh: () async {
-          await driverProvider.fetchDriverProfile();
+          await driverProvider.fetchDriverProfile(force: true);
           await driverProvider.fetchHomeBookings();
-          await driverProvider.fetchDriverEarnings();
+          await driverProvider.fetchDriverEarnings(force: true);
           await locationProvider.initialize();
         },
         child: SingleChildScrollView(
@@ -462,13 +463,19 @@ class _DriverHomePageState extends State<DriverHomePage> {
                 ],
               ),
               TextButton(
-                onPressed: () {
-                  Navigator.push(
+                onPressed: () async {
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const DriverAllBookingsScreen(),
                     ),
                   );
+                  if (result == 'go_to_wallet' && context.mounted) {
+                    final homeState = context.findAncestorStateOfType<DriverHomeScreenState>();
+                    if (homeState != null) {
+                      homeState.setIndex(2);
+                    }
+                  }
                 },
                 style: TextButton.styleFrom(
                   padding: EdgeInsets.zero,
@@ -767,8 +774,8 @@ class _DriverHomePageState extends State<DriverHomePage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
+                      onPressed: () async {
+                        final result = await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => DriverBookingDetailsScreen(
@@ -776,6 +783,12 @@ class _DriverHomePageState extends State<DriverHomePage> {
                             ),
                           ),
                         );
+                        if (result == 'go_to_wallet' && context.mounted) {
+                          final homeState = context.findAncestorStateOfType<DriverHomeScreenState>();
+                          if (homeState != null) {
+                            homeState.setIndex(2);
+                          }
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFCC2D3B),
@@ -870,7 +883,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
+      builder: (sheetContext) {
         return Container(
           decoration: const BoxDecoration(
             color: Colors.white,
@@ -1026,9 +1039,9 @@ class _DriverHomePageState extends State<DriverHomePage> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.push(
+                  onPressed: () async {
+                    Navigator.pop(sheetContext);
+                    final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => DriverBookingDetailsScreen(
@@ -1036,6 +1049,12 @@ class _DriverHomePageState extends State<DriverHomePage> {
                         ),
                       ),
                     );
+                    if (result == 'go_to_wallet' && context.mounted) {
+                      final homeState = context.findAncestorStateOfType<DriverHomeScreenState>();
+                      if (homeState != null) {
+                        homeState.setIndex(2);
+                      }
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFD90429),

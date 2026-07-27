@@ -93,9 +93,6 @@ class DriverHomeProvider extends ChangeNotifier {
     if (!force && _profile != null) {
       return;
     }
-    if (force) {
-      _profile = null;
-    }
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();

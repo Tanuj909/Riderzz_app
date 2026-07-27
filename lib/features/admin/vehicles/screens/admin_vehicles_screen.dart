@@ -482,12 +482,50 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
   bool _active = true;
   bool _isSaving = false;
 
+  String? _selectedTypeName;
+
+  final Map<String, List<String>> _iconsMap = {
+    'Two-Wheeler': [
+      'https://cdn-icons-png.flaticon.com/128/12660/12660130.png',
+      'https://cdn-icons-png.flaticon.com/128/11528/11528908.png',
+    ],
+    'Three-Wheeler': [
+      'https://cdn-icons-png.flaticon.com/128/7261/7261208.png',
+    ],
+    'Four-Wheeler': [
+      'https://cdn-icons-png.flaticon.com/128/1670/1670915.png',
+    ],
+    'Others': [
+      'https://cdn-icons-png.flaticon.com/128/12660/12660130.png',
+      'https://cdn-icons-png.flaticon.com/128/11528/11528908.png',
+      'https://cdn-icons-png.flaticon.com/128/7261/7261208.png',
+      'https://cdn-icons-png.flaticon.com/128/1670/1670915.png',
+    ],
+  };
+
+  List<String> _getAvailableIcons() {
+    if (_selectedTypeName == null) return [];
+    final list = List<String>.from(_iconsMap[_selectedTypeName!] ?? []);
+    final currentUrl = _iconUrlController.text.trim();
+    if (currentUrl.isNotEmpty && !list.contains(currentUrl)) {
+      list.add(currentUrl);
+    }
+    return list;
+  }
+
   @override
   void initState() {
     super.initState();
     if (widget.vehicleType != null) {
       final v = widget.vehicleType!;
-      _nameController.text = v.name;
+      final name = v.name;
+      if (name == 'Two-Wheeler' || name == 'Three-Wheeler' || name == 'Four-Wheeler') {
+        _selectedTypeName = name;
+        _nameController.text = '';
+      } else {
+        _selectedTypeName = 'Others';
+        _nameController.text = name;
+      }
       _iconUrlController.text = v.iconUrl ?? '';
       _maxWeightController.text = v.maxWeightKg.toString();
       _minWalletController.text = v.minWalletBalance.toStringAsFixed(1);
@@ -495,7 +533,9 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
       _dynamicPricingEnabled = v.dynamicPricingEnabled ?? false;
       _active = v.isActive;
     } else {
-      _iconUrlController.text = 'https://cdn-icons-png.flaticon.com/128/11432/11432322.png';
+      _selectedTypeName = null;
+      _nameController.text = '';
+      _iconUrlController.text = '';
       _tollEnabled = false;
       _dynamicPricingEnabled = false;
       _active = true;
@@ -514,6 +554,12 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
   void _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final String finalName = _selectedTypeName == 'Others'
+        ? _nameController.text.trim()
+        : (_selectedTypeName ?? '');
+
+    if (finalName.isEmpty) return;
+
     setState(() {
       _isSaving = true;
     });
@@ -521,7 +567,7 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
     final provider = context.read<AdminVehiclesProvider>();
     final success = widget.vehicleType == null
         ? await provider.createVehicleType(
-            name: _nameController.text.trim(),
+            name: finalName,
             iconUrl: _iconUrlController.text.trim(),
             maxWeightKg: int.parse(_maxWeightController.text.trim()),
             minimumWalletBalance: double.parse(_minWalletController.text.trim()),
@@ -530,7 +576,7 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
           )
         : await provider.updateVehicleType(
             id: widget.vehicleType!.id,
-            name: _nameController.text.trim(),
+            name: finalName,
             iconUrl: _iconUrlController.text.trim(),
             maxWeightKg: int.parse(_maxWeightController.text.trim()),
             minimumWalletBalance: double.parse(_minWalletController.text.trim()),
@@ -596,9 +642,66 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
               const SizedBox(height: 20),
 
               // Inputs
-              _buildTextField(_nameController, 'Type Name', 'e.g. Bike'),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Type Name',
+                    style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79), fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF6F6F8),
+                      border: Border.all(color: const Color(0xFFE7E7EB)),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedTypeName,
+                      hint: Text(
+                        'Choose Type Name',
+                        style: GoogleFonts.outfit(color: const Color(0xFFB0B8C4), fontSize: 14),
+                      ),
+                      style: GoogleFonts.outfit(color: const Color(0xFF121214), fontSize: 14),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        isDense: true,
+                      ),
+                      dropdownColor: Colors.white,
+                      items: ['Two-Wheeler', 'Three-Wheeler', 'Four-Wheeler', 'Others']
+                          .map((val) => DropdownMenuItem<String>(
+                                value: val,
+                                child: Text(val, style: GoogleFonts.outfit(fontSize: 14)),
+                              ))
+                          .toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _selectedTypeName = val;
+                            final list = _iconsMap[val] ?? [];
+                            if (list.isNotEmpty && !list.contains(_iconUrlController.text)) {
+                              _iconUrlController.text = list.first;
+                            }
+                          });
+                        }
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please select a type name';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 12),
-              _buildTextField(_iconUrlController, 'Icon URL', 'e.g. https://...'),
+              if (_selectedTypeName == 'Others') ...[
+                _buildTextField(_nameController, 'Custom Type Name', 'e.g. E-Rickshaw'),
+                const SizedBox(height: 12),
+              ],
+              _buildIconSelector(),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -694,6 +797,86 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildIconSelector() {
+    if (_selectedTypeName == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Select Icon',
+            style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79), fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            height: 56,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF6F6F8),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE7E7EB)),
+            ),
+            child: Text(
+              'Select a type name to see icons',
+              style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79)),
+            ),
+          ),
+        ],
+      );
+    }
+
+    final availableIcons = _getAvailableIcons();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Select Icon',
+          style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79), fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 56,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: availableIcons.length,
+            itemBuilder: (context, index) {
+              final iconUrl = availableIcons[index];
+              final isSelected = _iconUrlController.text == iconUrl;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _iconUrlController.text = iconUrl;
+                  });
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(right: 12),
+                  padding: const EdgeInsets.all(6),
+                  width: 56,
+                  decoration: BoxDecoration(
+                    color: isSelected ? const Color(0xFFFFF0F0) : const Color(0xFFF6F6F8),
+                    border: Border.all(
+                      color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
+                      width: isSelected ? 2 : 1,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Image.network(
+                    iconUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.broken_image_rounded,
+                      color: Color(0xFF64748B),
+                      size: 20,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

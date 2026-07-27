@@ -971,14 +971,6 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(height: 1),
-                          Text(
-                            '₹${vt.perKmRate.toStringAsFixed(0)}/km',
-                            style: GoogleFonts.poppins(
-                              color: isSelected ? const Color(0xFFE31C2E).withOpacity(0.7) : const Color(0xFFB0B8C4),
-                              fontSize: 8.5,
-                            ),
-                          ),
                         ],
                       ),
                     ),

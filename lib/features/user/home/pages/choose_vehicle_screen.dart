@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_provider.dart';
 import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
 import 'package:riderzz_app/core/models/pricing_tier_model.dart';
+import 'package:riderzz_app/core/models/vehicle_type_model.dart';
 
 class ChooseVehicleView extends StatefulWidget {
   final Map<String, dynamic> bookingData;
@@ -24,7 +25,7 @@ class ChooseVehicleView extends StatefulWidget {
 }
 
 class _ChooseVehicleViewState extends State<ChooseVehicleView> {
-  int _selectedVehicleIndex = 0;
+  int? _selectedVehicleIndex;
   bool _isRouteAndPricingLoading = true;
   double? _distanceKm;
   int? _durationMin;
@@ -169,19 +170,62 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
     }
   }
 
-  int _getEstTime(int index) {
-    switch (index) {
-      case 0:
-        return 5;
-      case 1:
-        return 8;
-      case 2:
-        return 12;
-      case 3:
-        return 20;
-      default:
-        return 5 + index * 4;
+  String _getVehicleEta(String name) {
+    final nameLower = name.toLowerCase();
+    if (nameLower.contains('two') || nameLower.contains('bike') || nameLower.contains('scoot') || nameLower.contains('cycle')) {
+      return '2 min away';
     }
+    if (nameLower.contains('three') || nameLower.contains('auto') || nameLower.contains('tempo')) {
+      return '5 min away';
+    }
+    if (nameLower.contains('four') || nameLower.contains('car') || nameLower.contains('cab') || nameLower.contains('truck') || nameLower.contains('lcv')) {
+      return '10 min away';
+    }
+    return '15 min away';
+  }
+
+  double _parseWeightKg(dynamic weightData) {
+    if (weightData == null) return 0.0;
+    if (weightData is num) return weightData.toDouble();
+    
+    final weightStr = weightData.toString().toLowerCase().trim();
+    if (weightStr.contains('0-5')) return 5.0;
+    if (weightStr.contains('5-10')) return 10.0;
+    if (weightStr.contains('10-50')) return 50.0;
+    if (weightStr.contains('50-200')) return 200.0;
+    if (weightStr.contains('200-500')) return 500.0;
+    if (weightStr.contains('500+')) return 1000.0;
+
+    final directParsed = double.tryParse(weightStr);
+    if (directParsed != null) return directParsed;
+
+    final regExp = RegExp(r'([0-9]+(?:\.[0-9]+)?)');
+    final match = regExp.firstMatch(weightStr);
+    if (match != null) {
+      return double.tryParse(match.group(0) ?? '0.0') ?? 0.0;
+    }
+    return 0.0;
+  }
+
+  int? _getRecommendedVehicleIndex(List<VehicleTypeModel> vehicles) {
+    if (vehicles.isEmpty) return null;
+    final weightStr = widget.bookingData['weightKg'];
+    final weight = _parseWeightKg(weightStr);
+    
+    final sortedVehicles = List<VehicleTypeModel>.from(vehicles)
+      ..sort((a, b) => a.maxWeightKg.compareTo(b.maxWeightKg));
+    
+    VehicleTypeModel? recommended;
+    for (final v in sortedVehicles) {
+      if (v.maxWeightKg >= weight) {
+        recommended = v;
+        break;
+      }
+    }
+    recommended ??= sortedVehicles.last;
+    
+    final idx = vehicles.indexOf(recommended);
+    return idx >= 0 ? idx : null;
   }
 
   @override
@@ -207,8 +251,10 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
           );
         }
 
-        if (_selectedVehicleIndex >= vehicleTypes.length) {
-          _selectedVehicleIndex = 0;
+        final recommendedIndex = _getRecommendedVehicleIndex(vehicleTypes);
+
+        if (_selectedVehicleIndex != null && _selectedVehicleIndex! >= vehicleTypes.length) {
+          _selectedVehicleIndex = null;
         }
 
         return Column(
@@ -220,7 +266,8 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                 itemBuilder: (context, index) {
                   final vehicle = vehicleTypes[index];
                   final isSelected = _selectedVehicleIndex == index;
-                  final estTime = _getEstTime(index);
+                  final isRecommended = recommendedIndex == index;
+                  final etaString = _getVehicleEta(vehicle.name);
                   final tier = _applicablePrices[vehicle.id];
                   final displayBaseFare = tier?.baseFare ?? vehicle.baseFare;
 
@@ -269,13 +316,35 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  vehicle.name,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF121214),
-                                  ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      vehicle.name,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF121214),
+                                      ),
+                                    ),
+                                    if (isRecommended) ...[
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1C9A5B),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: const Text(
+                                          'Recommended',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                                 const SizedBox(height: 2),
                                 Row(
@@ -288,7 +357,7 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                                     const Text('·', style: TextStyle(fontSize: 12, color: Color(0xFF6C6F79))),
                                     const SizedBox(width: 4),
                                     Text(
-                                      '$estTime min away',
+                                      etaString,
                                       style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79)),
                                     ),
                                   ],
@@ -345,23 +414,27 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFE31C2E),
                           foregroundColor: Colors.white,
+                          disabledBackgroundColor: const Color(0xFFF1F1F4),
+                          disabledForegroundColor: const Color(0xFFA2A5AE),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        onPressed: () {
-                          final selectedVehicle = vehicleTypes[_selectedVehicleIndex];
-                          final updatedBookingData = Map<String, dynamic>.from(widget.bookingData);
-                          updatedBookingData['vehicleId'] = selectedVehicle.id;
-                          updatedBookingData['vehicleType'] = selectedVehicle;
-                          updatedBookingData['estimatedDistanceKm'] = _distanceKm;
-                          updatedBookingData['estimatedDurationMin'] = _durationMin;
-                          updatedBookingData['routePolyline'] = _encodedPolyline;
-                          updatedBookingData['applicablePricingTier'] = _applicablePrices[selectedVehicle.id];
+                        onPressed: _selectedVehicleIndex == null
+                            ? null
+                            : () {
+                                final selectedVehicle = vehicleTypes[_selectedVehicleIndex!];
+                                final updatedBookingData = Map<String, dynamic>.from(widget.bookingData);
+                                updatedBookingData['vehicleId'] = selectedVehicle.id;
+                                updatedBookingData['vehicleType'] = selectedVehicle;
+                                updatedBookingData['estimatedDistanceKm'] = _distanceKm;
+                                updatedBookingData['estimatedDurationMin'] = _durationMin;
+                                updatedBookingData['routePolyline'] = _encodedPolyline;
+                                updatedBookingData['applicablePricingTier'] = _applicablePrices[selectedVehicle.id];
 
-                          widget.onNext(updatedBookingData);
-                        },
+                                widget.onNext(updatedBookingData);
+                              },
                         child: const Text(
                           'Continue',
                           style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),

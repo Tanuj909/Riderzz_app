@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/features/driver/home/data/repositories/driver_repository.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_booking_details_screen.dart';
+import 'package:riderzz_app/features/driver/home/driver_home_screen.dart';
 
 class DriverHistoryPage extends StatefulWidget {
   const DriverHistoryPage({super.key});
@@ -378,13 +379,19 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                                       SizedBox(
                                         width: double.infinity,
                                         child: TextButton.icon(
-                                          onPressed: () {
-                                            Navigator.push(
+                                          onPressed: () async {
+                                            final result = await Navigator.push(
                                               context,
                                               MaterialPageRoute(
                                                 builder: (context) => DriverBookingDetailsScreen(booking: booking),
                                               ),
                                             );
+                                            if (result == 'go_to_wallet' && context.mounted) {
+                                              final homeState = context.findAncestorStateOfType<DriverHomeScreenState>();
+                                              if (homeState != null) {
+                                                homeState.setIndex(2);
+                                              }
+                                            }
                                           },
                                           icon: const Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF475569)),
                                           label: Text(
