@@ -229,6 +229,23 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
       return;
     }
 
+    if (pickupText.toLowerCase() == dropText.toLowerCase()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pickup and drop locations cannot be the same'), backgroundColor: Colors.redAccent),
+      );
+      return;
+    }
+
+    if (_pickupLatitude != null &&
+        _dropLatitude != null &&
+        _pickupLatitude == _dropLatitude &&
+        _pickupLongitude == _dropLongitude) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pickup and drop locations cannot be the same'), backgroundColor: Colors.redAccent),
+      );
+      return;
+    }
+
     if (_parcelType == null) {
       _parcelType = 'OTHER';
     }
@@ -277,6 +294,7 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
     if (!mounted) return;
 
     final bookingData = {
+      if (widget.initialData != null) ...widget.initialData!,
       'pickupAddressId': pickupId,
       'dropAddressId': dropId,
       'pickupAddressText': pickupText,

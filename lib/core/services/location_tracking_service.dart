@@ -1,31 +1,39 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:riderzz_app/core/network/api_constants.dart';
+import 'package:riderzz_app/core/services/foreground_location_service.dart';
 import 'package:riderzz_app/features/driver/home/data/repositories/driver_repository.dart';
 
 /// Standalone service that handles driver location tracking.
-/// Owns the GPS stream, 5-second timer, and PUT /driver/location API call.
-/// Does NOT extend ChangeNotifier — no UI rebuilds triggered.
+/// Delegates task management to the Android Foreground Service (ForegroundLocationService).
 class LocationTrackingService {
   final DriverRepository _driverRepository;
-
-  Position? _latestPosition;
-  StreamSubscription<Position>? _positionSubscription;
-  Timer? _locationUpdateTimer;
   bool _isTracking = false;
+  bool _hasPromptedBackground = false;
 
   LocationTrackingService(this._driverRepository);
 
-  Position? get latestPosition => _latestPosition;
   bool get isTracking => _isTracking;
 
-  /// Start GPS stream + 5-second periodic timer.
-  /// Call this once from DriverHomeScreen.initState().
-  /// Idempotent — calling multiple times won't create duplicate streams.
-  Future<void> start() async {
-    if (_isTracking) return;
+  /// Check if the Foreground Service is actively running.
+  Future<bool> isServiceRunning() async {
+    return await FlutterForegroundTask.isRunningService;
+  }
 
-    // 1. Check & Request Location Permission
+  /// Start Foreground Service background tracking.
+  Future<void> start() async {
+    if (_isTracking || await FlutterForegroundTask.isRunningService) {
+      _isTracking = true;
+      debugPrint('LocationTrackingService: Foreground service is already running.');
+      return;
+    }
+
+    // 1. Request Notification Permission (Android 13+)
+    await FlutterForegroundTask.requestNotificationPermission();
+
+    // 2. Check & Request Location Permission
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -33,74 +41,50 @@ class LocationTrackingService {
 
     if (permission == LocationPermission.denied ||
         permission == LocationPermission.deniedForever) {
-      debugPrint('LocationTrackingService: Permission denied.');
+      debugPrint('LocationTrackingService: Location permission denied.');
       return;
     }
 
-    _isTracking = true;
-
-    // 2. Get initial position
-    try {
-      _latestPosition = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
-    } catch (e) {
-      debugPrint('LocationTrackingService: Failed to get initial position: $e');
+    // 3. Request Background Location Permission (Allow all the time) via default system redirect
+    if (permission == LocationPermission.whileInUse && !_hasPromptedBackground) {
+      _hasPromptedBackground = true;
+      permission = await Geolocator.requestPermission();
     }
 
-    // 3. Start GPS Position Stream — just updates _latestPosition, no notify
-    _positionSubscription = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 5,
-      ),
-    ).listen((Position position) {
-      _latestPosition = position;
-    }, onError: (e) {
-      debugPrint('LocationTrackingService: Stream error: $e');
-    });
-
-    // 4. Start 5-second timer — sends location to server
-    _locationUpdateTimer = Timer.periodic(
-      const Duration(seconds: 5),
-      (_) => _sendLocationUpdate(),
+    // 4. Save Api Base URL so background isolate can retrieve it
+    await FlutterForegroundTask.saveData(
+      key: 'api_base_url',
+      value: ApiConstants.baseUrl,
     );
 
-    debugPrint('LocationTrackingService: Started.');
+    // 5. Start Android Foreground Service
+    final success = await ForegroundLocationService.start();
+    if (success) {
+      _isTracking = true;
+      debugPrint('LocationTrackingService: Foreground service started successfully.');
+    } else {
+      debugPrint('LocationTrackingService: Failed to start foreground service.');
+    }
   }
 
-  /// Stop GPS stream + timer.
-  void stop() {
-    _positionSubscription?.cancel();
-    _positionSubscription = null;
-    _locationUpdateTimer?.cancel();
-    _locationUpdateTimer = null;
+  /// Stop Foreground Service.
+  Future<void> stop() async {
+    if (!_isTracking && !await FlutterForegroundTask.isRunningService) {
+      debugPrint('LocationTrackingService: Foreground service is already stopped.');
+      return;
+    }
+    await ForegroundLocationService.stop();
     _isTracking = false;
+    _hasPromptedBackground = false; // Reset session prompt on stop
     debugPrint('LocationTrackingService: Stopped.');
   }
 
-  /// Called by the 5-sec timer. Sends PUT only if we have a position.
-  /// The "is driver online?" check is NOT here — the timer only runs
-  /// while the driver IS online (start/stop is toggled by setOnlineStatus).
-  Future<void> _sendLocationUpdate() async {
-    if (_latestPosition == null) return;
-
-    try {
-      await _driverRepository.updateLocation(
-        _latestPosition!.latitude,
-        _latestPosition!.longitude,
-      );
-      debugPrint(
-        'LocationTrackingService: Sent ${_latestPosition!.latitude}, ${_latestPosition!.longitude}',
-      );
-    } catch (e) {
-      debugPrint('LocationTrackingService: Failed to send: $e');
-    }
+  /// Expose helper to prompt the driver to disable battery optimization.
+  Future<bool> requestIgnoreBatteryOptimization() async {
+    return await FlutterForegroundTask.requestIgnoreBatteryOptimization();
   }
 
-  /// Call this when disposing the service (e.g., app exit).
+  /// Clean up resources on disposal.
   void dispose() {
     stop();
   }

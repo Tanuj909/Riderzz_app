@@ -31,12 +31,28 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
   int? _durationMin;
   String? _encodedPolyline;
   final Map<int, PricingTierModel> _applicablePrices = {};
+  bool _fastDeliverySelected = false;
 
   @override
   void initState() {
     super.initState();
+    _fastDeliverySelected = widget.bookingData['fastDelivery'] == true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchRouteAndPricing();
+      _fetchRouteAndPricing().then((_) {
+        if (mounted) {
+          final vehiclesProvider = Provider.of<AdminVehiclesProvider>(context, listen: false);
+          final vehicleTypes = vehiclesProvider.vehicleTypes;
+          final preSelectedId = widget.bookingData['vehicleId'] as int?;
+          if (preSelectedId != null) {
+            final idx = vehicleTypes.indexWhere((v) => v.id == preSelectedId);
+            if (idx >= 0) {
+              setState(() {
+                _selectedVehicleIndex = idx;
+              });
+            }
+          }
+        }
+      });
     });
   }
 
@@ -271,124 +287,229 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                   final tier = _applicablePrices[vehicle.id];
                   final displayBaseFare = tier?.baseFare ?? vehicle.baseFare;
 
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedVehicleIndex = index;
-                      });
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFFFDEBEC) : Colors.white,
-                        border: Border.all(
-                          color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
-                          width: 1.5,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
+                  final cardWidget = Container(
+                    margin: const EdgeInsets.only(bottom: 10, top: 4),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: isSelected ? const Color(0xFFFDEBEC) : Colors.white,
+                      border: Border.all(
+                        color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
+                        width: 1.5,
                       ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 50,
-                            height: 50,
-                            decoration: const BoxDecoration(
-                              color: Colors.transparent,
-                            ),
-                            alignment: Alignment.center,
-                            child: vehicle.iconUrl != null && vehicle.iconUrl!.isNotEmpty
-                                ? Image.network(
-                                    vehicle.iconUrl!,
-                                    width: 34,
-                                    height: 34,
-                                    errorBuilder: (context, error, stackTrace) => const Icon(
-                                      Icons.local_shipping_rounded,
-                                      size: 28,
-                                      color: Color(0xFFE31C2E),
-                                    ),
-                                  )
-                                : const Icon(Icons.local_shipping_rounded, size: 28, color: Color(0xFFE31C2E)),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: const BoxDecoration(
+                            color: Colors.transparent,
                           ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      vehicle.name,
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF121214),
+                          alignment: Alignment.center,
+                          child: vehicle.iconUrl != null && vehicle.iconUrl!.isNotEmpty
+                              ? Image.network(
+                                  vehicle.iconUrl!,
+                                  width: 34,
+                                  height: 34,
+                                  errorBuilder: (context, error, stackTrace) => const Icon(
+                                    Icons.local_shipping_rounded,
+                                    size: 28,
+                                    color: Color(0xFFE31C2E),
+                                  ),
+                                )
+                              : const Icon(Icons.local_shipping_rounded, size: 28, color: Color(0xFFE31C2E)),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Wrap(
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: 6,
+                                runSpacing: 4,
+                                children: [
+                                  Text(
+                                    vehicle.name,
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF121214),
+                                    ),
+                                  ),
+                                  if (isRecommended)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1C9A5B),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Text(
+                                        'Recommended',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                       ),
                                     ),
-                                    if (isRecommended) ...[
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF1C9A5B),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: const Text(
-                                          'Recommended',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                                const SizedBox(height: 2),
-                                Row(
-                                  children: [
-                                    Text(
-                                      'Up to ${vehicle.maxWeightKg} kg',
-                                      style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79)),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    const Text('·', style: TextStyle(fontSize: 12, color: Color(0xFF6C6F79))),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      etaString,
-                                      style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79)),
-                                    ),
-                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Up to ${vehicle.maxWeightKg} kg',
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79)),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Text('·', style: TextStyle(fontSize: 12, color: Color(0xFF6C6F79))),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    etaString,
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '₹${(isSelected && _fastDeliverySelected && tier?.fastDeliveryEnabled == true ? displayBaseFare + (tier?.fastDeliveryCharge ?? 0.0) : displayBaseFare).toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF121214),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            const Text(
+                              'est.',
+                              style: TextStyle(fontSize: 11, color: Color(0xFF6C6F79)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+
+                  Widget childWidget = cardWidget;
+                  if (tier?.fastDeliveryEnabled == true) {
+                    childWidget = Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        cardWidget,
+                        Positioned(
+                          top: -1,
+                          right: 16,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.orange,
+                              borderRadius: BorderRadius.circular(99),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.08),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1.5),
+                                )
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(Icons.flash_on_rounded, color: Colors.white, size: 10),
+                                SizedBox(width: 2),
+                                Text(
+                                  'Fast Delivery',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8.5,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                '₹${displayBaseFare.toStringAsFixed(0)}',
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF121214),
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              const Text(
-                                'est.',
-                                style: TextStyle(fontSize: 11, color: Color(0xFF6C6F79)),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedVehicleIndex = index;
+                        final tier = _applicablePrices[vehicle.id];
+                        if (tier?.fastDeliveryEnabled != true) {
+                          _fastDeliverySelected = false;
+                        }
+                      });
+                    },
+                    child: childWidget,
                   );
                 },
               ),
+            ),
+            // Fast Delivery Toggle Selector
+            Builder(
+              builder: (context) {
+                if (_selectedVehicleIndex == null) return const SizedBox.shrink();
+                final vehicle = vehicleTypes[_selectedVehicleIndex!];
+                final tier = _applicablePrices[vehicle.id];
+                if (tier?.fastDeliveryEnabled != true) return const SizedBox.shrink();
+
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _fastDeliverySelected ? const Color(0xFFFFF2DC) : const Color(0xFFFFF8EC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: _fastDeliverySelected ? Colors.orange : Colors.orange.withOpacity(0.3),
+                        width: _fastDeliverySelected ? 1.5 : 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Fast Delivery (+ ₹${tier!.fastDeliveryCharge!.toStringAsFixed(0)})',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: Color(0xFF121214),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Switch(
+                          value: _fastDeliverySelected,
+                          activeColor: Colors.white,
+                          activeTrackColor: Colors.orange,
+                          inactiveThumbColor: const Color(0xFFA2A5AE),
+                          inactiveTrackColor: const Color(0xFFF1F1F4),
+                          onChanged: (val) {
+                            setState(() {
+                              _fastDeliverySelected = val;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -425,13 +546,16 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                             ? null
                             : () {
                                 final selectedVehicle = vehicleTypes[_selectedVehicleIndex!];
+                                final tier = _applicablePrices[selectedVehicle.id];
                                 final updatedBookingData = Map<String, dynamic>.from(widget.bookingData);
                                 updatedBookingData['vehicleId'] = selectedVehicle.id;
                                 updatedBookingData['vehicleType'] = selectedVehicle;
                                 updatedBookingData['estimatedDistanceKm'] = _distanceKm;
                                 updatedBookingData['estimatedDurationMin'] = _durationMin;
                                 updatedBookingData['routePolyline'] = _encodedPolyline;
-                                updatedBookingData['applicablePricingTier'] = _applicablePrices[selectedVehicle.id];
+                                updatedBookingData['applicablePricingTier'] = tier;
+                                updatedBookingData['fastDelivery'] = _fastDeliverySelected && tier?.fastDeliveryEnabled == true;
+                                updatedBookingData['fastDeliveryCharge'] = tier?.fastDeliveryEnabled == true ? tier?.fastDeliveryCharge : null;
 
                                 widget.onNext(updatedBookingData);
                               },

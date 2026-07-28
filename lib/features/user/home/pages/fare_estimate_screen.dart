@@ -165,7 +165,14 @@ class _FareEstimateViewState extends State<FareEstimateView> {
     final double baseFare = tier?.baseFare ?? vehicle.baseFare;
     final double perKmRate = tier?.perKmRate ?? vehicle.perKmRate;
     final double distanceFare = (distance * perKmRate).roundToDouble();
-    final double finalFare = baseFare + distanceFare;
+
+    final bool fastDelivery = widget.bookingData['fastDelivery'] == true;
+    final double fastDeliveryCharge = widget.bookingData['fastDeliveryCharge'] as double? ?? 0.0;
+
+    double finalFare = baseFare + distanceFare;
+    if (fastDelivery) {
+      finalFare += fastDeliveryCharge;
+    }
 
     setState(() {
       _stats = _RefundStats(
@@ -198,66 +205,128 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Fare Breakdown Card
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0xFFE7E7EB)),
-                          ),
-                          child: Column(
-                            children: [
-                              _buildFareRow('Base fare', _stats!.baseFare),
-                              const SizedBox(height: 12),
-                              _buildFareRow(
-                                'Distance (${_stats!.distance.toStringAsFixed(1)} km × ₹${(widget.bookingData['applicablePricingTier'] as PricingTierModel?)?.perKmRate ?? vehicle.perKmRate}/km)',
-                                _stats!.distanceFare,
+                        Builder(
+                          builder: (context) {
+                            final cardWidget = Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: const Color(0xFFE7E7EB)),
                               ),
-                              const SizedBox(height: 12),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              child: Column(
                                 children: [
-                                  const Text(
-                                    'Estimated time',
-                                    style: TextStyle(fontSize: 14, color: Color(0xFF6C6F79)),
+                                  _buildFareRow('Base fare', _stats!.baseFare),
+                                  const SizedBox(height: 12),
+                                  _buildFareRow(
+                                    'Distance (${_stats!.distance.toStringAsFixed(1)} km × ₹${(widget.bookingData['applicablePricingTier'] as PricingTierModel?)?.perKmRate ?? vehicle.perKmRate}/km)',
+                                    _stats!.distanceFare,
                                   ),
-                                  Text(
-                                    '${_stats!.time} min',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF121214),
+                                  if (widget.bookingData['fastDelivery'] == true) ...[
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFFF8EC),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: Colors.orange.withOpacity(0.2)),
+                                      ),
+                                      child: _buildFareRow(
+                                        '⚡ Fast Delivery Charge',
+                                        widget.bookingData['fastDeliveryCharge'] as double? ?? 0.0,
+                                        isHighlighted: true,
+                                      ),
                                     ),
+                                  ],
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text(
+                                        'Estimated time',
+                                        style: TextStyle(fontSize: 14, color: Color(0xFF6C6F79)),
+                                      ),
+                                      Text(
+                                        '${_stats!.time} min',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF121214),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Divider(height: 1, thickness: 1, color: Color(0xFFE7E7EB)),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text(
+                                        'Total payable',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF121214),
+                                        ),
+                                      ),
+                                      Text(
+                                        '₹${_stats!.finalFare.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF121214),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 16),
-                              const Divider(height: 1, thickness: 1, color: Color(0xFFE7E7EB)),
-                              const SizedBox(height: 16),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            );
+
+                            if (widget.bookingData['fastDelivery'] == true) {
+                              return Stack(
+                                clipBehavior: Clip.none,
                                 children: [
-                                  const Text(
-                                    'Total payable',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF121214),
-                                    ),
-                                  ),
-                                  Text(
-                                    '₹${_stats!.finalFare.toStringAsFixed(2)}',
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF121214),
+                                  cardWidget,
+                                  Positioned(
+                                    top: -8,
+                                    right: 16,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange,
+                                        borderRadius: BorderRadius.circular(99),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.08),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 1.5),
+                                          )
+                                        ],
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: const [
+                                          Icon(Icons.flash_on_rounded, color: Colors.white, size: 10),
+                                          SizedBox(width: 2),
+                                          Text(
+                                            'Fast Delivery',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 8.5,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ],
-                              ),
-                            ],
-                          ),
+                              );
+                            }
+                            return cardWidget;
+                          },
                         ),
                       ],
                     ),
@@ -316,23 +385,24 @@ class _FareEstimateViewState extends State<FareEstimateView> {
             );
   }
 
-  Widget _buildFareRow(String label, double amount) {
+  Widget _buildFareRow(String label, double amount, {bool isHighlighted = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
-            color: Color(0xFF6C6F79), // dim
+            fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
+            color: isHighlighted ? const Color(0xFFE67E22) : const Color(0xFF6C6F79),
           ),
         ),
         Text(
           '₹${amount.toStringAsFixed(2)}',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF121214), // val
+            fontWeight: isHighlighted ? FontWeight.bold : FontWeight.w500,
+            color: isHighlighted ? const Color(0xFFE67E22) : const Color(0xFF121214),
           ),
         ),
       ],

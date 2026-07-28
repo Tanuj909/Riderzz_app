@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'dart:async';
+import 'package:riderzz_app/core/models/vehicle_type_model.dart';
 import 'package:riderzz_app/core/providers/location_provider.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/user/addresses/location_picker_screen.dart';
@@ -32,6 +35,47 @@ class UserHomePage extends StatefulWidget {
 class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   Map<String, dynamic>? _selectedRoute;
+  final Map<int, bool> _fastDeliveryAvailability = {};
+  bool _isFastDeliveryLoading = false;
+
+  Future<void> _checkFastDeliveryAvailability() async {
+    if (mounted) {
+      setState(() {
+        _isFastDeliveryLoading = true;
+      });
+    }
+    try {
+      final vehiclesProvider = Provider.of<AdminVehiclesProvider>(context, listen: false);
+      final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
+      
+      if (vehiclesProvider.vehicleTypes.isEmpty) {
+        await vehiclesProvider.fetchVehicleTypes();
+      }
+
+      final futures = vehiclesProvider.vehicleTypes.map((vehicle) async {
+        try {
+          final tier = await bookingProvider.getApplicablePricingTier(vehicle.id, 5.0);
+          if (tier != null) {
+            _fastDeliveryAvailability[vehicle.id] = tier.fastDeliveryEnabled;
+          } else {
+            _fastDeliveryAvailability[vehicle.id] = false;
+          }
+        } catch (e) {
+          _fastDeliveryAvailability[vehicle.id] = false;
+        }
+      }).toList();
+
+      await Future.wait(futures);
+    } catch (e) {
+      debugPrint('Error checking fast delivery availability: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isFastDeliveryLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -45,6 +89,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
       Provider.of<SavedRouteProvider>(context, listen: false).fetchSavedRoutes();
       Provider.of<BookingProvider>(context, listen: false).fetchBookings();
       Provider.of<BookingProvider>(context, listen: false).fetchCurrentBookings();
+      _checkFastDeliveryAvailability();
     });
   }
 
@@ -415,6 +460,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
             ),
           ),
 
+          /*
           // Saved Location Dropdown
           Consumer<SavedRouteProvider>(
             builder: (context, savedRouteProvider, child) {
@@ -528,7 +574,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
           if (_selectedRoute != null) ...[
             const SizedBox(height: 12),
             GestureDetector(
-              onTap: () => _showNewBookingModal(_selectedRoute),
+              onTap: () => _showNewBookingModal(route: _selectedRoute),
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -548,6 +594,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
           ] else ...[
             const SizedBox(height: 22),
           ],
+          */
 
           Consumer2<BookingProvider, AdminVehiclesProvider>(
             builder: (context, bookingProvider, vehiclesProvider, child) {
@@ -573,149 +620,168 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                     ),
                     const SizedBox(height: 12),
                     ...activeBookings.map((activeBooking) {
-                      return GestureDetector(
-                        onTap: () {
-                          showBookingDetailsBottomSheet(context, activeBooking);
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 22),
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0xFFE7E7EB)),
-                            boxShadow: const [BoxShadow(color: Color(0x0D121214), offset: Offset(0, 1), blurRadius: 2)],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 42,
-                                    height: 42,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      gradient: const LinearGradient(colors: [Color(0xFFE31C2E), Color(0xFFAE1220)]),
-                                      boxShadow: const [BoxShadow(color: Color(0x667E22CE), offset: Offset(0, 6), blurRadius: 12, spreadRadius: -4)],
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: const Icon(Icons.local_shipping_outlined, color: Colors.white, size: 19),
+                      final cardWidget = Container(
+                        margin: const EdgeInsets.only(bottom: 22, top: 4),
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFE7E7EB)),
+                          boxShadow: const [BoxShadow(color: Color(0x0D121214), offset: Offset(0, 1), blurRadius: 2)],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  activeBooking.bookingId,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'IBM Plex Mono',
+                                    color: Color(0xFF1E293B),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                vehiclesProvider.vehicleTypes.where((v) => v.id == activeBooking.vehicleTypeId).map((v) => v.name).firstWhere((name) => true, orElse: () => 'Vehicle'),
-                                                style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFE7F7EF),
-                                                borderRadius: BorderRadius.circular(999),
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFF1C9A5B), shape: BoxShape.circle)),
-                                                  const SizedBox(width: 5),
-                                                  Text(
-                                                    activeBooking.status.toUpperCase(),
-                                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF1C9A5B)),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          'Booking: ${activeBooking.bookingId}',
-                                          style: const TextStyle(fontSize: 11.5, fontFamily: 'IBM Plex Mono', color: Color(0xFF6C6F79)),
-                                        ),
-                                      ],
-                                    ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE7F7EF),
+                                    borderRadius: BorderRadius.circular(999),
                                   ),
-                                ],
-                              ),
-                              if (activeBooking.driver != null) ...[
-                                const SizedBox(height: 14),
-                                const Divider(height: 1, color: Color(0xFFE7E7EB)),
-                                const SizedBox(height: 10),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.person_rounded, size: 15, color: Color(0xFF6C6F79)),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        'Driver: ${activeBooking.driver!.fullName} (${activeBooking.driver!.phone})',
-                                        style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF121214)),
-                                        overflow: TextOverflow.ellipsis,
+                                  child: Row(
+                                    children: [
+                                      Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFF1C9A5B), shape: BoxShape.circle)),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        activeBooking.status.toUpperCase(),
+                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF1C9A5B)),
                                       ),
-                                    ),
-                                    const Icon(Icons.star_rounded, color: Colors.amber, size: 14),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      activeBooking.driver!.rating.toStringAsFixed(1),
-                                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ],
-                              const SizedBox(height: 16),
+                            ),
+                            if (activeBooking.driver != null) ...[
+                              const SizedBox(height: 14),
+                              const Divider(height: 1, color: Color(0xFFE7E7EB)),
+                              const SizedBox(height: 10),
                               Row(
                                 children: [
+                                  const Icon(Icons.person_rounded, size: 15, color: Color(0xFF6C6F79)),
+                                  const SizedBox(width: 6),
                                   Expanded(
-                                    child: OutlinedButton(
-                                      onPressed: () => showBookingDetailsBottomSheet(context, activeBooking),
-                                      style: OutlinedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(vertical: 8),
-                                        side: const BorderSide(color: Color(0xFFE7E7EB), width: 1.5),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                                        foregroundColor: const Color(0xFF121214),
-                                        elevation: 0,
-                                      ),
-                                      child: const Text('View details', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                                    child: Text(
+                                      'Driver: ${activeBooking.driver!.fullName} (${activeBooking.driver!.phone})',
+                                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF121214)),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        final vName = vehiclesProvider.vehicleTypes.where((v) => v.id == activeBooking.vehicleTypeId).map((v) => v.name).firstWhere((name) => true, orElse: () => 'Vehicle');
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => FindingDriverScreen(
-                                              booking: activeBooking,
-                                              vehicleName: vName,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(vertical: 8),
-                                        backgroundColor: const Color(0xFFE31C2E),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                                        elevation: 0,
-                                        shadowColor: const Color(0x8C7E22CE),
-                                      ),
-                                      child: const Text('Track', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.white)),
-                                    ),
+                                  const Icon(Icons.star_rounded, color: Colors.amber, size: 14),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    activeBooking.driver!.rating.toStringAsFixed(1),
+                                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
                                   ),
                                 ],
                               ),
                             ],
-                          ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () => showBookingDetailsBottomSheet(context, activeBooking),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                      side: const BorderSide(color: Color(0xFFE7E7EB), width: 1.5),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                                      foregroundColor: const Color(0xFF121214),
+                                      elevation: 0,
+                                    ),
+                                    child: const Text('View details', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      final vName = vehiclesProvider.vehicleTypes.where((v) => v.id == activeBooking.vehicleTypeId).map((v) => v.name).firstWhere((name) => true, orElse: () => 'Vehicle');
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => FindingDriverScreen(
+                                            booking: activeBooking,
+                                            vehicleName: vName,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                      backgroundColor: const Color(0xFFE31C2E),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                                      elevation: 0,
+                                      shadowColor: const Color(0x8C7E22CE),
+                                    ),
+                                    child: const Text('Track', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.white)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
+                      );
+
+                      Widget childWidget = cardWidget;
+                      if (activeBooking.fastDelivery) {
+                        childWidget = Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            cardWidget,
+                            Positioned(
+                              top: -8,
+                              right: 16,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange,
+                                  borderRadius: BorderRadius.circular(99),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.08),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 1.5),
+                                    )
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    Icon(Icons.flash_on_rounded, color: Colors.white, size: 10),
+                                    SizedBox(width: 2),
+                                    Text(
+                                      'Fast Delivery',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 8.5,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+
+                      return GestureDetector(
+                        onTap: () {
+                          showBookingDetailsBottomSheet(context, activeBooking);
+                        },
+                        child: childWidget,
                       );
                     }).toList(),
                   ],
@@ -811,7 +877,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                                       'longitude': booking.dropLongitude,
                                                     }
                                                   };
-                                                  _showNewBookingModal(route);
+                                                  _showNewBookingModal(route: route);
                                                 },
                                                 style: ElevatedButton.styleFrom(
                                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -838,6 +904,151 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                       );
                     })(),
                   ],
+                  
+                  // Vehicle Cards
+                  const SizedBox(height: 22),
+                  Text(
+                    'AVAILABLE VEHICLES',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.1,
+                      color: const Color(0xFFA2A5AE),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (vehiclesProvider.isLoading && vehiclesProvider.vehicleTypes.isEmpty)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
+                        ),
+                      ),
+                    )
+                  else if (vehiclesProvider.vehicleTypes.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F1F4),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'No vehicles available at the moment',
+                          style: TextStyle(color: Color(0xFF6C6F79), fontSize: 13),
+                        ),
+                      ),
+                    )
+                  else
+                    Builder(
+                      builder: (context) {
+                        final sortedVehicles = List<VehicleTypeModel>.from(vehiclesProvider.vehicleTypes)
+                          ..sort((a, b) {
+                            final aFast = _fastDeliveryAvailability[a.id] == true;
+                            final bFast = _fastDeliveryAvailability[b.id] == true;
+                            if (aFast && !bFast) return -1;
+                            if (!aFast && bFast) return 1;
+                            return 0;
+                          });
+
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 1.25,
+                          ),
+                          itemCount: sortedVehicles.length,
+                          itemBuilder: (context, idx) {
+                            final vehicle = sortedVehicles[idx];
+                            final isFastAvailable = _fastDeliveryAvailability[vehicle.id] == true;
+                            
+                            return GestureDetector(
+                              onTap: () {
+                                if (isFastAvailable) {
+                                  _showDeliveryOptionDialog(vehicle);
+                                } else {
+                                  _showNewBookingModal(
+                                    preSelectedVehicleTypeId: vehicle.id,
+                                    preSelectedFastDelivery: false,
+                                  );
+                                }
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: const Color(0xFFE7E7EB)),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Color(0x08121214),
+                                      offset: Offset(0, 2),
+                                      blurRadius: 4,
+                                    )
+                                  ],
+                                ),
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    Positioned.fill(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          children: [
+                                            const Spacer(),
+                                            Container(
+                                              width: 44,
+                                              height: 44,
+                                              alignment: Alignment.center,
+                                              child: vehicle.iconUrl != null && vehicle.iconUrl!.isNotEmpty
+                                                  ? Image.network(
+                                                      vehicle.iconUrl!,
+                                                      width: 40,
+                                                      height: 40,
+                                                      errorBuilder: (context, error, stackTrace) => const Icon(
+                                                        Icons.local_shipping_rounded,
+                                                        size: 36,
+                                                        color: Color(0xFFE31C2E),
+                                                      ),
+                                                    )
+                                                  : const Icon(Icons.local_shipping_rounded, size: 36, color: Color(0xFFE31C2E)),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              vehicle.name,
+                                              style: GoogleFonts.outfit(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.bold,
+                                                color: const Color(0xFF121214),
+                                              ),
+                                              textAlign: TextAlign.center,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const Spacer(),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      if (isFastAvailable)
+                                        const Positioned(
+                                          top: -8,
+                                          right: 16,
+                                          child: _FastDeliveryTickerBadge(),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        }
+                      ),
                 ],
               );
             },
@@ -848,7 +1059,217 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
   );
   }
 
-  void _showNewBookingModal([Map<String, dynamic>? route]) {
+  void _showDeliveryOptionDialog(VehicleTypeModel vehicle) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (BuildContext sheetCtx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE7E7EB),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Choose Delivery Speed',
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF121214),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Select delivery type for your ${vehicle.name}',
+                style: GoogleFonts.outfit(
+                  fontSize: 13,
+                  color: const Color(0xFF6C6F79),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              
+              // Normal Delivery Option Card
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  _showNewBookingModal(
+                    preSelectedVehicleTypeId: vehicle.id,
+                    preSelectedFastDelivery: false,
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE7E7EB)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEFF6FF),
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: vehicle.iconUrl != null && vehicle.iconUrl!.isNotEmpty
+                            ? Image.network(
+                                vehicle.iconUrl!,
+                                width: 26,
+                                height: 26,
+                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.local_shipping_outlined, color: Colors.blue, size: 22),
+                              )
+                            : const Icon(Icons.local_shipping_outlined, color: Colors.blue, size: 22),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Normal Delivery',
+                              style: GoogleFonts.outfit(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF121214),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Standard delivery at regular rates',
+                              style: GoogleFonts.outfit(
+                                fontSize: 11.5,
+                                color: const Color(0xFF6C6F79),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right_rounded, color: Color(0xFFA2A5AE)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Fast Delivery Option Card
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  _showNewBookingModal(
+                    preSelectedVehicleTypeId: vehicle.id,
+                    preSelectedFastDelivery: true,
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF8EC),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.orange.withOpacity(0.4), width: 1.5),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFFF2DC),
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: vehicle.iconUrl != null && vehicle.iconUrl!.isNotEmpty
+                            ? Image.network(
+                                vehicle.iconUrl!,
+                                width: 26,
+                                height: 26,
+                                color: Colors.orange.shade700,
+                                colorBlendMode: BlendMode.srcIn,
+                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 22),
+                              )
+                            : const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 22),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: [
+                                Text(
+                                  '⚡ Fast Delivery',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFD35400),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    'RECOMMENDED',
+                                    style: GoogleFonts.outfit(
+                                      color: Colors.white,
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Priority dispatch & faster route delivery',
+                              style: GoogleFonts.outfit(
+                                fontSize: 11.5,
+                                color: const Color(0xFFE67E22),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right_rounded, color: Colors.orange),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showNewBookingModal({
+    Map<String, dynamic>? route,
+    int? preSelectedVehicleTypeId,
+    bool? preSelectedFastDelivery,
+  }) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -856,6 +1277,8 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
       builder: (_) => BookingFlowBottomSheet(
         onBookingConfirmed: widget.onBookingConfirmed,
         initialRoute: route,
+        preSelectedVehicleTypeId: preSelectedVehicleTypeId,
+        preSelectedFastDelivery: preSelectedFastDelivery,
       ),
     );
   }
@@ -924,5 +1347,74 @@ class _RoutePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _RoutePainter oldDelegate) {
     return oldDelegate.animationValue != animationValue || oldDelegate.drawProgress != drawProgress;
+  }
+}
+
+class _FastDeliveryTickerBadge extends StatefulWidget {
+  const _FastDeliveryTickerBadge({super.key});
+
+  @override
+  State<_FastDeliveryTickerBadge> createState() => _FastDeliveryTickerBadgeState();
+}
+
+class _FastDeliveryTickerBadgeState extends State<_FastDeliveryTickerBadge> {
+  Timer? _timer;
+  bool _showAvailable = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (mounted) {
+        setState(() {
+          _showAvailable = !_showAvailable;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 8),
+          const SizedBox(width: 2),
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 300),
+            crossFadeState: _showAvailable ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+            firstChild: Text(
+              'FAST Available',
+              style: GoogleFonts.outfit(
+                color: Colors.orange.shade700,
+                fontSize: 8,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            secondChild: Text(
+              'FAST Delivery',
+              style: GoogleFonts.outfit(
+                color: Colors.orange.shade700,
+                fontSize: 8,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

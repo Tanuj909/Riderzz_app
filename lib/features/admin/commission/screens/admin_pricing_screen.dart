@@ -497,6 +497,23 @@ class _VehiclePricingTabState extends State<_VehiclePricingTab> {
                                         _buildInfoCol('Commission', '₹${tier.commission.toStringAsFixed(0)}'),
                                       ],
                                     ),
+                                    if (tier.fastDeliveryEnabled) ...[
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.flash_on_rounded, size: 14, color: Colors.orange),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Fast Delivery Enabled (₹${tier.fastDeliveryCharge?.toStringAsFixed(0) ?? '0'})',
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: const Color(0xFF6C6F79),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                     const SizedBox(height: 10),
                                     // Compact Action Row
                                     Row(
@@ -852,8 +869,10 @@ class _PricingTierFormDialogState extends State<PricingTierFormDialog> {
   final _baseFareController = TextEditingController();
   final _perKmRateController = TextEditingController();
   final _commissionController = TextEditingController();
+  final _fastDeliveryChargeController = TextEditingController();
   int? _selectedVehicleTypeId;
   bool _isSaving = false;
+  bool _fastDeliveryEnabled = false;
 
   @override
   void initState() {
@@ -866,6 +885,8 @@ class _PricingTierFormDialogState extends State<PricingTierFormDialog> {
       _baseFareController.text = t.baseFare.toString();
       _perKmRateController.text = t.perKmRate.toString();
       _commissionController.text = t.commission.toString();
+      _fastDeliveryEnabled = t.fastDeliveryEnabled;
+      _fastDeliveryChargeController.text = t.fastDeliveryCharge?.toString() ?? '';
     } else {
       _selectedVehicleTypeId = widget.defaultVehicleTypeId;
     }
@@ -878,6 +899,7 @@ class _PricingTierFormDialogState extends State<PricingTierFormDialog> {
     _baseFareController.dispose();
     _perKmRateController.dispose();
     _commissionController.dispose();
+    _fastDeliveryChargeController.dispose();
     super.dispose();
   }
 
@@ -896,6 +918,9 @@ class _PricingTierFormDialogState extends State<PricingTierFormDialog> {
     final double baseFare = double.parse(_baseFareController.text.trim());
     final double perKm = double.parse(_perKmRateController.text.trim());
     final double comm = double.parse(_commissionController.text.trim());
+    final double? fastCharge = _fastDeliveryEnabled && _fastDeliveryChargeController.text.trim().isNotEmpty
+        ? double.parse(_fastDeliveryChargeController.text.trim())
+        : null;
 
     final success = widget.tier == null
         ? await provider.createPricingTier(
@@ -905,6 +930,8 @@ class _PricingTierFormDialogState extends State<PricingTierFormDialog> {
             baseFare: baseFare,
             perKmRate: perKm,
             commission: comm,
+            fastDeliveryEnabled: _fastDeliveryEnabled,
+            fastDeliveryCharge: fastCharge,
           )
         : await provider.updatePricingTier(
             tierId: widget.tier!.id,
@@ -914,6 +941,8 @@ class _PricingTierFormDialogState extends State<PricingTierFormDialog> {
             baseFare: baseFare,
             perKmRate: perKm,
             commission: comm,
+            fastDeliveryEnabled: _fastDeliveryEnabled,
+            fastDeliveryCharge: fastCharge,
           );
 
     setState(() {
@@ -947,75 +976,107 @@ class _PricingTierFormDialogState extends State<PricingTierFormDialog> {
     final vehicleTypes = Provider.of<AdminVehiclesProvider>(context).vehicleTypes;
 
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       backgroundColor: Colors.white,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(
         widget.tier == null ? 'Add Pricing Tier' : 'Edit Pricing Tier',
-        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 17, color: const Color(0xFF121214)),
+        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF121214)),
       ),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildInputLabel('Vehicle Category'),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F1F4),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: const Color(0xFFE1E1E6)),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<int>(
-                    value: _selectedVehicleTypeId,
-                    isExpanded: true,
-                    borderRadius: BorderRadius.circular(20),
-                    dropdownColor: Colors.white,
-                    items: vehicleTypes.map((type) {
-                      return DropdownMenuItem<int>(
-                        value: type.id,
-                        child: Text(type.name, style: GoogleFonts.outfit(fontSize: 13.5)),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      setState(() {
-                        _selectedVehicleTypeId = val;
-                      });
-                    },
+      content: SizedBox(
+        width: MediaQuery.of(context).size.width,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildInputLabel('Vehicle Category'),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F1F4),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: const Color(0xFFE1E1E6)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int>(
+                      value: _selectedVehicleTypeId,
+                      isExpanded: true,
+                      borderRadius: BorderRadius.circular(20),
+                      dropdownColor: Colors.white,
+                      items: vehicleTypes.map((type) {
+                        return DropdownMenuItem<int>(
+                          value: type.id,
+                          child: Text(type.name, style: GoogleFonts.outfit(fontSize: 13.5)),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        setState(() {
+                          _selectedVehicleTypeId = val;
+                        });
+                      },
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildFormField(_fromDistanceController, 'From Dist (km)', 'e.g. 0'),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildFormField(_fromDistanceController, 'From Dist (km)', 'e.g. 0'),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildFormField(_toDistanceController, 'To Dist (Opt)', 'e.g. 5', isOptional: true),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _buildFormField(_baseFareController, 'Base Fare (₹)', 'e.g. 40'),
+                const SizedBox(height: 14),
+                _buildFormField(_perKmRateController, 'Per Km Rate (₹)', 'e.g. 12'),
+                const SizedBox(height: 14),
+                _buildFormField(_commissionController, 'Commission Amount (₹)', 'e.g. 15'),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8F9FA),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE1E1E6)),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _buildFormField(_toDistanceController, 'To Dist (Opt)', 'e.g. 5', isOptional: true),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Fast Delivery Enabled',
+                            style: GoogleFonts.outfit(fontSize: 13.5, color: const Color(0xFF121214), fontWeight: FontWeight.bold),
+                          ),
+                          Switch(
+                            value: _fastDeliveryEnabled,
+                            activeColor: const Color(0xFFD90429),
+                            onChanged: (val) {
+                              setState(() {
+                                _fastDeliveryEnabled = val;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      if (_fastDeliveryEnabled) ...[
+                        const Divider(color: Color(0xFFE1E1E6), height: 12),
+                        const SizedBox(height: 4),
+                        _buildFormField(_fastDeliveryChargeController, 'Fast Delivery Charge (₹)', 'e.g. 30'),
+                        const SizedBox(height: 6),
+                      ],
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildFormField(_baseFareController, 'Base Fare (₹)', 'e.g. 40'),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _buildFormField(_perKmRateController, 'Per Km (₹)', 'e.g. 12'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _buildFormField(_commissionController, 'Commission Amount (₹)', 'e.g. 15'),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

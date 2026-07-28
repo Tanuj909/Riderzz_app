@@ -5,7 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_bank_accounts_page.dart';
-import 'package:riderzz_app/features/driver/home/pages/driver_all_bookings_screen.dart';
 import 'package:riderzz_app/core/services/location_tracking_service.dart';
 import 'package:riderzz_app/features/driver/profile/driver_profile_screen.dart';
 import 'package:riderzz_app/core/models/driver_profile_model.dart';
@@ -420,27 +419,15 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                       });
                     },
                   ),
-                  _buildListItem(
+                   _buildListItem(
                     icon: Icons.account_balance_rounded,
                     label: 'Bank Accounts',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const DriverBankAccountsPage(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildListItem(
-                    icon: Icons.assignment_outlined,
-                    label: 'All Bookings',
                     showBorder: false,
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const DriverAllBookingsScreen(),
+                          builder: (_) => const DriverBankAccountsPage(),
                         ),
                       );
                     },

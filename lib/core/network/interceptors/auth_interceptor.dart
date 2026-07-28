@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:riderzz_app/app/routes/app_routes.dart';
 import 'package:riderzz_app/core/storage/secure_storage_service.dart';
 import 'package:riderzz_app/core/network/api_constants.dart';
@@ -28,6 +29,12 @@ class AuthInterceptor extends Interceptor {
       if (token != null && token.isNotEmpty) {
         if (JwtHelper.isTokenExpired(token)) {
           debugPrint('AuthInterceptor: Token is expired on request to ${options.path}. Auto-logging out.');
+          
+          // Stop foreground location service on logout
+          try {
+            await FlutterForegroundTask.stopService();
+          } catch (_) {}
+
           await _storageService.clearAuthData();
           
           AppRoutes.navigatorKey.currentState?.pushNamedAndRemoveUntil(

@@ -33,6 +33,8 @@ class PricingRemoteDataSource {
     required double baseFare,
     required double perKmRate,
     required double commission,
+    bool fastDeliveryEnabled = false,
+    double? fastDeliveryCharge,
   }) async {
     final Map<String, dynamic> body = {
       'vehicleTypeId': vehicleTypeId,
@@ -40,9 +42,13 @@ class PricingRemoteDataSource {
       'baseFare': baseFare,
       'perKmRate': perKmRate,
       'commission': commission,
+      'fastDeliveryEnabled': fastDeliveryEnabled,
     };
     if (toDistance != null) {
       body['toDistance'] = toDistance;
+    }
+    if (fastDeliveryCharge != null) {
+      body['fastDeliveryCharge'] = fastDeliveryCharge;
     }
 
     final response = await _apiClient.post(
@@ -62,6 +68,8 @@ class PricingRemoteDataSource {
     required double baseFare,
     required double perKmRate,
     required double commission,
+    bool fastDeliveryEnabled = false,
+    double? fastDeliveryCharge,
   }) async {
     final Map<String, dynamic> body = {
       'vehicleTypeId': vehicleTypeId,
@@ -69,9 +77,13 @@ class PricingRemoteDataSource {
       'baseFare': baseFare,
       'perKmRate': perKmRate,
       'commission': commission,
+      'fastDeliveryEnabled': fastDeliveryEnabled,
     };
     if (toDistance != null) {
       body['toDistance'] = toDistance;
+    }
+    if (fastDeliveryCharge != null) {
+      body['fastDeliveryCharge'] = fastDeliveryCharge;
     }
 
     final response = await _apiClient.put(

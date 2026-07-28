@@ -548,22 +548,24 @@ class DriverHomeProvider extends ChangeNotifier {
     }
 
     try {
-      // 1. Fetch My Driver Bookings first
-      final driverBookings = await _driverRepository.getDriverBookings(page: 0, size: 20);
-      
-      BookingModel? active;
-      if (driverBookings.isNotEmpty) {
-        final latest = driverBookings.first;
-        final statusUpper = latest.status.toUpperCase();
-        if (statusUpper != 'DELIVERED' && 
-            statusUpper != 'COMPLETED' && 
-            statusUpper != 'CANCELLED' && 
-            statusUpper != 'PENDING') {
-          active = latest;
+      // 1. Fetch My Driver Bookings (only on non-silent load/refresh)
+      if (!silent) {
+        final driverBookings = await _driverRepository.getDriverBookings(page: 0, size: 20);
+        
+        BookingModel? active;
+        if (driverBookings.isNotEmpty) {
+          final latest = driverBookings.first;
+          final statusUpper = latest.status.toUpperCase();
+          if (statusUpper != 'DELIVERED' && 
+              statusUpper != 'COMPLETED' && 
+              statusUpper != 'CANCELLED' && 
+              statusUpper != 'PENDING') {
+            active = latest;
+          }
         }
-      }
 
-      _activeBooking = active;
+        _activeBooking = active;
+      }
 
       // 2. If no active booking, fetch pending broadcasts
       if (_activeBooking == null) {

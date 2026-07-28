@@ -39,6 +39,8 @@ class PricingProvider extends ChangeNotifier {
     required double baseFare,
     required double perKmRate,
     required double commission,
+    bool fastDeliveryEnabled = false,
+    double? fastDeliveryCharge,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -52,6 +54,8 @@ class PricingProvider extends ChangeNotifier {
         baseFare: baseFare,
         perKmRate: perKmRate,
         commission: commission,
+        fastDeliveryEnabled: fastDeliveryEnabled,
+        fastDeliveryCharge: fastDeliveryCharge,
       );
       _tiers.add(newTier);
       notifyListeners();
@@ -73,6 +77,8 @@ class PricingProvider extends ChangeNotifier {
     required double baseFare,
     required double perKmRate,
     required double commission,
+    bool fastDeliveryEnabled = false,
+    double? fastDeliveryCharge,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -87,6 +93,8 @@ class PricingProvider extends ChangeNotifier {
         baseFare: baseFare,
         perKmRate: perKmRate,
         commission: commission,
+        fastDeliveryEnabled: fastDeliveryEnabled,
+        fastDeliveryCharge: fastDeliveryCharge,
       );
       final index = _tiers.indexWhere((t) => t.id == tierId);
       if (index != -1) {

@@ -18,6 +18,8 @@ class PricingRepository {
     required double baseFare,
     required double perKmRate,
     required double commission,
+    bool fastDeliveryEnabled = false,
+    double? fastDeliveryCharge,
   }) async {
     return await _remoteDataSource.createPricingTier(
       vehicleTypeId: vehicleTypeId,
@@ -26,6 +28,8 @@ class PricingRepository {
       baseFare: baseFare,
       perKmRate: perKmRate,
       commission: commission,
+      fastDeliveryEnabled: fastDeliveryEnabled,
+      fastDeliveryCharge: fastDeliveryCharge,
     );
   }
 
@@ -37,6 +41,8 @@ class PricingRepository {
     required double baseFare,
     required double perKmRate,
     required double commission,
+    bool fastDeliveryEnabled = false,
+    double? fastDeliveryCharge,
   }) async {
     return await _remoteDataSource.updatePricingTier(
       tierId: tierId,
@@ -46,6 +52,8 @@ class PricingRepository {
       baseFare: baseFare,
       perKmRate: perKmRate,
       commission: commission,
+      fastDeliveryEnabled: fastDeliveryEnabled,
+      fastDeliveryCharge: fastDeliveryCharge,
     );
   }
 

@@ -80,6 +80,8 @@ class BookingModel {
   final DriverInfo? driver;
   final CustomerInfo? customer;
   final int? expiresInSeconds;
+  final bool fastDelivery;
+  final double? fastDeliveryCharge;
 
   BookingModel({
     required this.id,
@@ -108,6 +110,8 @@ class BookingModel {
     this.driver,
     this.customer,
     this.expiresInSeconds,
+    this.fastDelivery = false,
+    this.fastDeliveryCharge,
   });
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
@@ -231,6 +235,10 @@ class BookingModel {
       driver: driverObj != null ? DriverInfo.fromJson(driverObj) : null,
       customer: custObj != null ? CustomerInfo.fromJson(custObj) : null,
       expiresInSeconds: (json['expiresInSeconds'] as num?)?.toInt(),
+      fastDelivery: json['fastDelivery'] as bool? ?? false,
+      fastDeliveryCharge: json['fastDeliveryCharge'] != null
+          ? (json['fastDeliveryCharge'] as num).toDouble()
+          : null,
     );
   }
 }

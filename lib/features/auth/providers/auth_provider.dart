@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:riderzz_app/core/models/user_model.dart';
 import 'package:riderzz_app/core/models/customer_profile_model.dart';
 import 'package:riderzz_app/core/storage/secure_storage_service.dart';
@@ -185,6 +186,11 @@ class AuthProvider extends ChangeNotifier {
 
   /// Sign out
   Future<void> logout() async {
+    // Stop foreground location service on logout
+    try {
+      await FlutterForegroundTask.stopService();
+    } catch (_) {}
+
     await _storageService.clearAuthData();
     _currentUser = null;
     resetState();

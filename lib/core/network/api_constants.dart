@@ -1,8 +1,11 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConstants {
+  static String? _customBaseUrl;
+  static set customBaseUrl(String url) => _customBaseUrl = url;
+
   static String get baseUrl =>
-      dotenv.env['API_BASE_URL'] ?? 'http://10.24.69.2:4000/api';
+      _customBaseUrl ?? dotenv.env['API_BASE_URL'] ?? 'http://10.24.69.2:4000/api';
 
   // Auth Endpoints
   static const String sendOtp = '/auth/send-otp';

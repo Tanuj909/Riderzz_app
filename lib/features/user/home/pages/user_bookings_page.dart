@@ -307,8 +307,8 @@ class _UserBookingsPageState extends State<UserBookingsPage> {
                         booking.status.toUpperCase() != 'DELIVERED' &&
                         booking.status.toUpperCase() != 'COMPLETED';
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 16),
+                    final cardWidget = Container(
+                      margin: const EdgeInsets.only(bottom: 16, top: 4),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
@@ -501,6 +501,50 @@ class _UserBookingsPageState extends State<UserBookingsPage> {
                         ],
                       ),
                     );
+
+                    if (booking.fastDelivery) {
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          cardWidget,
+                          Positioned(
+                            top: -8,
+                            right: 16,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                              decoration: BoxDecoration(
+                                color: Colors.orange,
+                                borderRadius: BorderRadius.circular(99),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.08),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1.5),
+                                  )
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Icon(Icons.flash_on_rounded, color: Colors.white, size: 10),
+                                  SizedBox(width: 2),
+                                  Text(
+                                    'Fast Delivery',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+
+                    return cardWidget;
                   },
                 ),
               );

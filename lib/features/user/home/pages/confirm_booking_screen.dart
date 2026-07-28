@@ -56,6 +56,7 @@ class _ConfirmBookingViewState extends State<ConfirmBookingView> {
       'promoCode': null,
       'estimatedDistanceKm': widget.bookingData['estimatedDistanceKm'] as double? ?? 0.0,
       'routePolyline': widget.bookingData['routePolyline'] as String?,
+      'fastDelivery': widget.bookingData['fastDelivery'] == true,
     };
 
     final bookingProvider = context.read<BookingProvider>();
@@ -94,160 +95,207 @@ class _ConfirmBookingViewState extends State<ConfirmBookingView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Ticket Layout
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFE7E7EB)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Booking summary',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF6C6F79),
-                                letterSpacing: 1.0,
-                                textBaseline: TextBaseline.alphabetic,
-                              ),
-                            ),
-                            Text(
-                              vehicle.name,
-                              style: const TextStyle(
-                                fontSize: 11.5,
-                                fontFamily: 'monospace',
-                                color: Color(0xFF6C6F79),
-                              ),
-                            ),
-                          ],
+                  Builder(
+                    builder: (context) {
+                      final ticketWidget = Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFE7E7EB)),
                         ),
-                        const SizedBox(height: 16),
-                        // Pickup Stop
-                        Row(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Booking summary',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF6C6F79),
+                                    letterSpacing: 1.0,
+                                    textBaseline: TextBaseline.alphabetic,
+                                  ),
+                                ),
+                                Text(
+                                  vehicle.name,
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    fontFamily: 'monospace',
+                                    color: Color(0xFF6C6F79),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            // Pickup Stop
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  margin: const EdgeInsets.only(top: 4, right: 10),
+                                  child: Icon(
+                                    Icons.circle_outlined,
+                                    size: 16,
+                                    color: const Color(0xFFE31C2E), // --red
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        pickupText,
+                                        style: const TextStyle(
+                                          fontSize: 13.5,
+                                          color: Color(0xFF121214),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Pickup · Goods Type: $goodsType',
+                                        style: const TextStyle(
+                                          fontSize: 11.5,
+                                          color: Color(0xFF6C6F79),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            // Dashed connecting line
                             Container(
-                              margin: const EdgeInsets.only(top: 4, right: 10),
-                              child: Icon(
-                                Icons.circle_outlined,
-                                size: 16,
-                                color: const Color(0xFFE31C2E), // --red
+                              height: 16,
+                              margin: const EdgeInsets.only(left: 7),
+                              decoration: const BoxDecoration(
+                                border: Border(
+                                  left: BorderSide(
+                                    color: Color(0xFFE7E7EB),
+                                    width: 2,
+                                    style: BorderStyle.solid, // Flutter dashed border requires custom painter, solid is fallback
+                                  ),
+                                ),
                               ),
                             ),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    pickupText,
-                                    style: const TextStyle(
-                                      fontSize: 13.5,
-                                      color: Color(0xFF121214),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                            // Drop Stop
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  margin: const EdgeInsets.only(top: 4, right: 10),
+                                  child: const Icon(
+                                    Icons.arrow_downward_rounded,
+                                    size: 16,
+                                    color: Color(0xFF121214),
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Pickup · Goods Type: $goodsType',
-                                    style: const TextStyle(
-                                      fontSize: 11.5,
-                                      color: Color(0xFF6C6F79),
-                                    ),
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        dropText,
+                                        style: const TextStyle(
+                                          fontSize: 13.5,
+                                          color: Color(0xFF121214),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Drop · Est. Time: $estimatedTime min',
+                                        style: const TextStyle(
+                                          fontSize: 11.5,
+                                          color: Color(0xFF6C6F79),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            const Divider(height: 1, thickness: 1, color: Color(0xFFE7E7EB)), // Dashed equivalent
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  'Total payable',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    color: Color(0xFF6C6F79),
+                                  ),
+                                ),
+                                Text(
+                                  '₹${finalFare.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'monospace',
+                                    color: Color(0xFF121214),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                        // Dashed connecting line
-                        Container(
-                          height: 16,
-                          margin: const EdgeInsets.only(left: 7),
-                          decoration: const BoxDecoration(
-                            border: Border(
-                              left: BorderSide(
-                                color: Color(0xFFE7E7EB),
-                                width: 2,
-                                style: BorderStyle.solid, // Flutter dashed border requires custom painter, solid is fallback
-                              ),
-                            ),
-                          ),
-                        ),
-                        // Drop Stop
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      );
+
+                      if (widget.bookingData['fastDelivery'] == true) {
+                        return Stack(
+                          clipBehavior: Clip.none,
                           children: [
-                            Container(
-                              margin: const EdgeInsets.only(top: 4, right: 10),
-                              child: const Icon(
-                                Icons.arrow_downward_rounded,
-                                size: 16,
-                                color: Color(0xFF121214),
-                              ),
-                            ),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    dropText,
-                                    style: const TextStyle(
-                                      fontSize: 13.5,
-                                      color: Color(0xFF121214),
-                                      fontWeight: FontWeight.w600,
+                            ticketWidget,
+                            Positioned(
+                              top: -8,
+                              right: 16,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange,
+                                  borderRadius: BorderRadius.circular(99),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.08),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 1.5),
+                                    )
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    Icon(Icons.flash_on_rounded, color: Colors.white, size: 10),
+                                    SizedBox(width: 2),
+                                    Text(
+                                      'Fast Delivery',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 8.5,
+                                        fontWeight: FontWeight.w800,
+                                      ),
                                     ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Drop · Est. Time: $estimatedTime min',
-                                    style: const TextStyle(
-                                      fontSize: 11.5,
-                                      color: Color(0xFF6C6F79),
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 12),
-                        const Divider(height: 1, thickness: 1, color: Color(0xFFE7E7EB)), // Dashed equivalent
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            const Text(
-                              'Total payable',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                color: Color(0xFF6C6F79),
-                              ),
-                            ),
-                            Text(
-                              '₹${finalFare.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'monospace',
-                                color: Color(0xFF121214),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                        );
+                      }
+                      return ticketWidget;
+                    },
                   ),
                   const SizedBox(height: 20),
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:riderzz_app/core/services/foreground_location_service.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/app/routes/app_routes.dart';
 
@@ -45,6 +47,12 @@ import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize communication port for background service Isolate
+  FlutterForegroundTask.initCommunicationPort();
+  
+  // Initialize foreground service options
+  ForegroundLocationService.init();
   
   // Load .env configuration
   try {

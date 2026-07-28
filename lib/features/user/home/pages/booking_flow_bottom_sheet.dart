@@ -10,11 +10,15 @@ import 'package:riderzz_app/features/user/home/pages/pickup_details_view.dart';
 class BookingFlowBottomSheet extends StatefulWidget {
   final Map<String, dynamic>? initialRoute;
   final VoidCallback onBookingConfirmed;
+  final int? preSelectedVehicleTypeId;
+  final bool? preSelectedFastDelivery;
 
   const BookingFlowBottomSheet({
     super.key,
     this.initialRoute,
     required this.onBookingConfirmed,
+    this.preSelectedVehicleTypeId,
+    this.preSelectedFastDelivery,
   });
 
   @override
@@ -24,6 +28,15 @@ class BookingFlowBottomSheet extends StatefulWidget {
 class _BookingFlowBottomSheetState extends State<BookingFlowBottomSheet> {
   int _currentStep = 0;
   Map<String, dynamic> _bookingData = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _bookingData = {
+      if (widget.preSelectedVehicleTypeId != null) 'vehicleId': widget.preSelectedVehicleTypeId,
+      if (widget.preSelectedFastDelivery != null) 'fastDelivery': widget.preSelectedFastDelivery,
+    };
+  }
 
   final List<String> _tabs = [
     'Choose a vehicle',

@@ -7,6 +7,8 @@ class PricingTierModel {
   final double baseFare;
   final double perKmRate;
   final double commission;
+  final bool fastDeliveryEnabled;
+  final double? fastDeliveryCharge;
 
   PricingTierModel({
     required this.id,
@@ -17,6 +19,8 @@ class PricingTierModel {
     required this.baseFare,
     required this.perKmRate,
     required this.commission,
+    this.fastDeliveryEnabled = false,
+    this.fastDeliveryCharge,
   });
 
   factory PricingTierModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +33,8 @@ class PricingTierModel {
       baseFare: (json['baseFare'] as num).toDouble(),
       perKmRate: (json['perKmRate'] as num).toDouble(),
       commission: (json['commission'] as num).toDouble(),
+      fastDeliveryEnabled: json['fastDeliveryEnabled'] as bool? ?? false,
+      fastDeliveryCharge: json['fastDeliveryCharge'] != null ? (json['fastDeliveryCharge'] as num).toDouble() : null,
     );
   }
 
@@ -42,6 +48,8 @@ class PricingTierModel {
       'baseFare': baseFare,
       'perKmRate': perKmRate,
       'commission': commission,
+      'fastDeliveryEnabled': fastDeliveryEnabled,
+      'fastDeliveryCharge': fastDeliveryCharge,
     };
   }
 }
