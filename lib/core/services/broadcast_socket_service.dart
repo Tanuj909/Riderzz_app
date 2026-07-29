@@ -14,9 +14,11 @@ class BroadcastResponse {
   BroadcastResponse({required this.booking, this.expiresInSeconds});
 
   factory BroadcastResponse.fromJson(Map<String, dynamic> json) {
-    // If the json wraps the booking inside a 'booking' object, parse it; otherwise parse the json itself as the booking details.
-    final bookingJson = json['booking'] != null
+    final data = json['data'];
+    final bookingJson = json['booking'] is Map<String, dynamic>
         ? json['booking'] as Map<String, dynamic>
+        : data is List && data.isNotEmpty && data.first is Map
+        ? Map<String, dynamic>.from(data.first as Map)
         : json;
     return BroadcastResponse(
       booking: BookingModel.fromJson(bookingJson),

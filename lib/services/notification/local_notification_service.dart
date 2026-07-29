@@ -85,7 +85,7 @@ class LocalNotificationService {
       final fare = booking.totalFare > 0
           ? '₹${booking.totalFare.toStringAsFixed(2)}'
           : 'Not available';
-      final body = 'Pickup: $pickup\nDrop: $drop\nEstimated Fare: $fare';
+      final body = 'Estimated Fare: $fare\nPickup: $pickup\nDrop: $drop';
 
       debugPrint('========== LOCAL NOTIFICATION ==========');
       debugPrint('Showing booking notification');
