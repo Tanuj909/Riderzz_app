@@ -3,6 +3,8 @@ import 'package:riderzz_app/features/user/home/pages/user_home_page.dart';
 import 'package:riderzz_app/features/user/home/pages/choose_vehicle_screen.dart';
 import 'package:riderzz_app/features/user/home/pages/fare_estimate_screen.dart';
 import 'package:riderzz_app/features/user/home/pages/confirm_booking_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
 import 'package:riderzz_app/features/user/home/pages/finding_driver_screen.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/user/home/pages/pickup_details_view.dart';
@@ -65,7 +67,12 @@ class _BookingFlowBottomSheetState extends State<BookingFlowBottomSheet> {
           vehicleName: _bookingData['vehicleType']?.name ?? '',
         ),
       ),
-    );
+    ).then((_) {
+      if (context.mounted) {
+        Provider.of<BookingProvider>(context, listen: false).fetchBookings();
+        Provider.of<BookingProvider>(context, listen: false).fetchCurrentBookings();
+      }
+    });
   }
 
   Widget _buildStepHeader() {

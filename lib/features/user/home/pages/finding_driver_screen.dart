@@ -7,6 +7,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_polyline_algorithm/google_polyline_algorithm.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
 
@@ -46,6 +48,13 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
   String? _vehicleNumber;
   BitmapDescriptor? _driverIconDescriptor;
 
+  double? _driverToPickupDistanceKm;
+  int? _driverToPickupDurationMin;
+  String? _driverToPickupPolyline;
+  bool _isDriverRouteLoading = false;
+  LatLng? _lastRouteFetchedDriverLocation;
+  bool _hasInitialZoomedInOnDriver = false;
+
   @override
   void initState() {
     super.initState();
@@ -58,9 +67,17 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
       _loadCustomMarkerIcon();
     });
     _startPolling();
-    if (_currentBooking.routePolyline != null &&
-        _currentBooking.routePolyline!.isNotEmpty) {
-      _fetchRoute();
+    final statusUpper = _currentBooking.status.toUpperCase();
+    final isPreTransit = statusUpper == 'DRIVER_ASSIGNED' ||
+        statusUpper == 'ACCEPTED' ||
+        statusUpper == 'EN_ROUTE' ||
+        statusUpper == 'DRIVER_ARRIVED';
+
+    if (!isPreTransit) {
+      if (_currentBooking.routePolyline != null &&
+          _currentBooking.routePolyline!.isNotEmpty) {
+        _fetchRoute();
+      }
     }
   }
 
@@ -360,20 +377,37 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
   }
 
   void _startPolling() {
-    _statusTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+    _statusTimer = Timer.periodic(const Duration(seconds: 8), (timer) async {
       if (!mounted) return;
       final bookingProvider = context.read<BookingProvider>();
       final freshBooking = await bookingProvider.fetchBookingById(
         _currentBooking.id,
       );
       if (freshBooking != null && mounted) {
+        final oldStatus = _currentBooking.status.toUpperCase();
+        final newStatus = freshBooking.status.toUpperCase();
+        final isOldPreTransit = oldStatus == 'DRIVER_ASSIGNED' ||
+            oldStatus == 'ACCEPTED' ||
+            oldStatus == 'EN_ROUTE' ||
+            oldStatus == 'DRIVER_ARRIVED';
+        final isNewPreTransit = newStatus == 'DRIVER_ASSIGNED' ||
+            newStatus == 'ACCEPTED' ||
+            newStatus == 'EN_ROUTE' ||
+            newStatus == 'DRIVER_ARRIVED';
+
+        if (isOldPreTransit && !isNewPreTransit) {
+          _hasInitialZoomedInOnDriver = false;
+        }
+
         setState(() {
           _currentBooking = freshBooking;
         });
-
-        if (freshBooking.routePolyline != null &&
-            _polylineCoordinates.isEmpty) {
-          _fetchRoute();
+        if (!isNewPreTransit) {
+          if (freshBooking.routePolyline != null &&
+              (_polylineCoordinates.isEmpty ||
+                  _polylines.any((p) => p.polylineId.value == 'driver_to_pickup_route'))) {
+            _fetchRoute();
+          }
         }
 
         // Start location tracking if driver is assigned and timer is not running
@@ -404,10 +438,10 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
   void _startDriverLocationTracking(int driverId) {
     _driverLocationTimer?.cancel();
 
-    // Fetch immediately on start, then every 5 seconds
+    // Fetch immediately on start, then every 8 seconds
     _fetchAndUpdateDriverLocation(driverId);
 
-    _driverLocationTimer = Timer.periodic(const Duration(seconds: 5), (
+    _driverLocationTimer = Timer.periodic(const Duration(seconds: 8), (
       timer,
     ) async {
       if (!mounted) return;
@@ -415,7 +449,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
     });
   }
 
-  Future<void> _fetchAndUpdateDriverLocation(int driverId) async {
+    Future<void> _fetchAndUpdateDriverLocation(int driverId) async {
     final bookingProvider = context.read<BookingProvider>();
     final loc = await bookingProvider.fetchDriverLocation(driverId);
     if (loc != null && mounted) {
@@ -425,8 +459,31 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
         if (loc.vehicleNumber != null) _vehicleNumber = loc.vehicleNumber;
       });
 
-      // Animate camera to follow driver when map is visible
-      if (!_isSheetExpanded &&
+      final statusUpper = _currentBooking.status.toUpperCase();
+      final isPreTransit = statusUpper == 'DRIVER_ASSIGNED' ||
+          statusUpper == 'ACCEPTED' ||
+          statusUpper == 'EN_ROUTE' ||
+          statusUpper == 'DRIVER_ARRIVED';
+
+      if (isPreTransit) {
+        bool shouldFetch = false;
+        if (_lastRouteFetchedDriverLocation == null || _polylineCoordinates.isEmpty) {
+          shouldFetch = true;
+        } else {
+          final double latDiff = (_driverLocation!.latitude - _lastRouteFetchedDriverLocation!.latitude).abs();
+          final double lngDiff = (_driverLocation!.longitude - _lastRouteFetchedDriverLocation!.longitude).abs();
+          if (latDiff > 0.0009 || lngDiff > 0.0009) {
+            shouldFetch = true;
+          }
+        }
+
+        if (shouldFetch) {
+          _fetchDriverToPickupRoute();
+        }
+      }
+
+      // Follow driver location once initial overview and zoom is done
+      if (_hasInitialZoomedInOnDriver &&
           _mapController != null &&
           _driverLocation != null) {
         _mapController!.animateCamera(CameraUpdate.newLatLng(_driverLocation!));
@@ -519,6 +576,135 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
     }
   }
 
+  Future<void> _fetchDriverToPickupRoute() async {
+    if (_driverLocation == null ||
+        _currentBooking.pickupLatitude == null ||
+        _currentBooking.pickupLongitude == null) {
+      return;
+    }
+
+    final googleApiKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
+    if (googleApiKey.isEmpty) return;
+
+    setState(() {
+      _isDriverRouteLoading = true;
+    });
+
+    try {
+      final dio = Dio();
+      final response = await dio.post(
+        'https://routes.googleapis.com/directions/v2:computeRoutes',
+        data: {
+          "origin": {
+            "location": {
+              "latLng": {
+                "latitude": _driverLocation!.latitude,
+                "longitude": _driverLocation!.longitude,
+              }
+            }
+          },
+          "destination": {
+            "location": {
+              "latLng": {
+                "latitude": _currentBooking.pickupLatitude!,
+                "longitude": _currentBooking.pickupLongitude!,
+              }
+            }
+          },
+          "travelMode": "DRIVE",
+          "routingPreference": "TRAFFIC_AWARE"
+        },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': googleApiKey,
+            'X-Goog-FieldMask': 'routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        final routes = response.data['routes'] as List?;
+        if (routes != null && routes.isNotEmpty) {
+          final route = routes.first;
+          final distanceMeters = route['distanceMeters'] as int?;
+          final durationStr = route['duration'] as String?;
+          final polylineStr = route['polyline']?['encodedPolyline'] as String?;
+
+          double distanceKm = 0.0;
+          if (distanceMeters != null) {
+            distanceKm = (distanceMeters / 1000.0 * 100.0).round() / 100.0;
+          }
+
+          int durationMin = 0;
+          if (durationStr != null) {
+            final numericOnly = durationStr.replaceAll('s', '');
+            final seconds = int.tryParse(numericOnly) ?? 0;
+            durationMin = (seconds / 60.0).round();
+          }
+
+          if (mounted && polylineStr != null) {
+            final decoded = decodePolyline(polylineStr);
+            if (decoded.isNotEmpty) {
+              setState(() {
+                _lastRouteFetchedDriverLocation = _driverLocation;
+                _driverToPickupDistanceKm = distanceKm;
+                _driverToPickupDurationMin = durationMin;
+                _driverToPickupPolyline = polylineStr;
+
+                _polylineCoordinates = decoded
+                    .map((point) => LatLng(point[0].toDouble(), point[1].toDouble()))
+                    .toList();
+
+                _polylines.clear();
+                _polylines.add(
+                  Polyline(
+                    polylineId: const PolylineId('driver_to_pickup_route'),
+                    points: _polylineCoordinates,
+                    color: Colors.blue,
+                    width: 5,
+                    jointType: JointType.round,
+                    startCap: Cap.roundCap,
+                    endCap: Cap.roundCap,
+                  ),
+                );
+
+                _polylines.add(
+                  Polyline(
+                    polylineId: const PolylineId('pickup_conn'),
+                    points: [
+                      _polylineCoordinates.last,
+                      LatLng(_currentBooking.pickupLatitude!, _currentBooking.pickupLongitude!),
+                    ],
+                    color: Colors.blueAccent,
+                    width: 4,
+                    patterns: <PatternItem>[
+                      PatternItem.dash(10),
+                      PatternItem.gap(10),
+                    ],
+                  ),
+                );
+              });
+
+              if (_mapController != null) {
+                _fitMapBounds();
+                _triggerInitialZoomOnDriver();
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching driver-to-pickup route: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDriverRouteLoading = false;
+        });
+      }
+    }
+  }
+
   Future<void> _fetchRoute() async {
     final encodedPolyline = _currentBooking.routePolyline;
     if (encodedPolyline == null || encodedPolyline.isEmpty) {
@@ -532,11 +718,12 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
     try {
       final decoded = decodePolyline(encodedPolyline);
       if (decoded.isNotEmpty) {
-        _polylineCoordinates = decoded
-            .map((point) => LatLng(point[0].toDouble(), point[1].toDouble()))
-            .toList();
-
         setState(() {
+          _polylines.clear();
+          _polylineCoordinates = decoded
+              .map((point) => LatLng(point[0].toDouble(), point[1].toDouble()))
+              .toList();
+
           _polylines.add(
             Polyline(
               polylineId: const PolylineId('route'),
@@ -590,6 +777,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
 
         if (_mapController != null) {
           _fitMapBounds();
+          _triggerInitialZoomOnDriver();
         }
       }
     } catch (e) {
@@ -602,6 +790,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
   }
 
   void _fitMapBounds() {
+    if (_hasInitialZoomedInOnDriver) return;
     if (_mapController == null || _polylineCoordinates.isEmpty) return;
 
     double? minLat, maxLat, minLng, maxLng;
@@ -620,6 +809,48 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
             northeast: LatLng(maxLat, maxLng),
           ),
           60,
+        ),
+      );
+    }
+  }
+
+  void _triggerInitialZoomOnDriver() {
+    if (_hasInitialZoomedInOnDriver) return;
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted && _mapController != null) {
+        if (_driverLocation != null) {
+          _mapController!.animateCamera(
+            CameraUpdate.newCameraPosition(
+              CameraPosition(
+                target: _driverLocation!,
+                zoom: 17.5,
+              ),
+            ),
+          );
+          setState(() {
+            _hasInitialZoomedInOnDriver = true;
+          });
+        } else {
+          // If driver location isn't fetched yet, try again in 1 second
+          Future.delayed(const Duration(seconds: 1), () {
+            _triggerInitialZoomOnDriver();
+          });
+        }
+      }
+    });
+  }
+
+  void _collapseSheetAndZoomOnDriver() {
+    setState(() {
+      _isSheetExpanded = false;
+    });
+    if (_driverLocation != null && _mapController != null) {
+      _mapController!.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: _driverLocation!,
+            zoom: 17.5,
+          ),
         ),
       );
     }
@@ -781,10 +1012,15 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                 ),
 
                 // Bottom Details Sheet Content
-                if (_isSheetExpanded)
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Container(
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: AnimatedSlide(
+                    offset: _isSheetExpanded ? Offset.zero : const Offset(0, 1.2),
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    child: IgnorePointer(
+                      ignoring: !_isSheetExpanded,
+                      child: Container(
                       constraints: BoxConstraints(
                         maxHeight: MediaQuery.of(context).size.height * 0.65,
                       ),
@@ -805,29 +1041,54 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(24),
                         ),
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Center Drag Handle bar
-                              Center(
-                                child: Container(
-                                  width: 40,
-                                  height: 5,
-                                  margin: const EdgeInsets.only(bottom: 16),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE1E1E6),
-                                    borderRadius: BorderRadius.circular(10),
+                        child: NotificationListener<ScrollNotification>(
+                          onNotification: (ScrollNotification notification) {
+                            if (notification is ScrollUpdateNotification) {
+                              if (notification.metrics.pixels <= 0 &&
+                                  notification.scrollDelta != null &&
+                                  notification.scrollDelta! < -5) {
+                                _collapseSheetAndZoomOnDriver();
+                              }
+                            } else if (notification is OverscrollNotification) {
+                              if (notification.overscroll < -5) {
+                                _collapseSheetAndZoomOnDriver();
+                              }
+                            }
+                            return false;
+                          },
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Center Drag Handle bar
+                                GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onVerticalDragUpdate: (details) {
+                                    if (details.delta.dy > 5) {
+                                      _collapseSheetAndZoomOnDriver();
+                                    }
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    alignment: Alignment.center,
+                                    child: Container(
+                                      width: 40,
+                                      height: 5,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFE1E1E6),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-
-                              // Track Delivery Heading & View Map option
+  
+                                // Track Delivery Heading & View Map option
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
@@ -843,18 +1104,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                                   ),
                                   TextButton.icon(
                                     onPressed: () {
-                                      setState(() {
-                                        _isSheetExpanded = false;
-                                      });
-                                      // Animate camera to driver location when viewing map
-                                      if (_driverLocation != null &&
-                                          _mapController != null) {
-                                        _mapController!.animateCamera(
-                                          CameraUpdate.newLatLng(
-                                            _driverLocation!,
-                                          ),
-                                        );
-                                      }
+                                      _collapseSheetAndZoomOnDriver();
                                     },
                                     icon: const Icon(
                                       Icons.map_rounded,
@@ -873,6 +1123,59 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                                 ],
                               ),
                               const SizedBox(height: 16),
+
+                              // If driver is en route, show ETA banner
+                              Builder(
+                                builder: (context) {
+                                  final statusUpper = _currentBooking.status.toUpperCase();
+                                  final isPreTransit = statusUpper == 'DRIVER_ASSIGNED' ||
+                                      statusUpper == 'ACCEPTED' ||
+                                      statusUpper == 'EN_ROUTE' ||
+                                      statusUpper == 'DRIVER_ARRIVED';
+                                  if (isPreTransit && _driverToPickupDurationMin != null) {
+                                    return Container(
+                                      margin: const EdgeInsets.only(bottom: 16),
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFEBF5FF),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(color: const Color(0xFFC0E0FF)),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.directions_bike_rounded, color: Colors.blue, size: 24),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Driver arriving in ${_driverToPickupDurationMin} min',
+                                                  style: GoogleFonts.outfit(
+                                                    fontWeight: FontWeight.w800,
+                                                    fontSize: 15,
+                                                    color: const Color(0xFF004085),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  'Distance to pickup: ${_driverToPickupDistanceKm?.toStringAsFixed(1)} km',
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: const Color(0xFF004085),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }
+                                  return const SizedBox.shrink();
+                                },
+                              ),
 
                               // Shipment Shutter Driver Card
                               if (_currentBooking.driver != null) ...[
@@ -1105,13 +1408,8 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                                 child: Column(
                                   children: [
                                     _buildDetailRow(
-                                      'Booking ref',
+                                      'Booking ID',
                                       _currentBooking.bookingId,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _buildDetailRow(
-                                      'Vehicle',
-                                      widget.vehicleName,
                                     ),
                                     if (_currentBooking.estimatedDistanceKm !=
                                         null) ...[
@@ -1126,6 +1424,32 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                                       'Est. Fare',
                                       '₹${_currentBooking.totalFare.toStringAsFixed(2)}',
                                       isMono: true,
+                                    ),
+                                    Builder(
+                                      builder: (context) {
+                                        final statusUpper = _currentBooking.status.toUpperCase();
+                                        final isPreTransit = statusUpper == 'DRIVER_ASSIGNED' ||
+                                            statusUpper == 'ACCEPTED' ||
+                                            statusUpper == 'EN_ROUTE' ||
+                                            statusUpper == 'DRIVER_ARRIVED';
+                                        if (isPreTransit && _driverToPickupDurationMin != null) {
+                                          return Column(
+                                            children: [
+                                              const SizedBox(height: 12),
+                                              _buildDetailRow(
+                                                'Driver ETA',
+                                                '${_driverToPickupDurationMin} mins',
+                                              ),
+                                              const SizedBox(height: 12),
+                                              _buildDetailRow(
+                                                'Distance to Pickup',
+                                                '${_driverToPickupDistanceKm?.toStringAsFixed(1)} km',
+                                              ),
+                                            ],
+                                          );
+                                        }
+                                        return const SizedBox.shrink();
+                                      },
                                     ),
                                   ],
                                 ),
@@ -1226,10 +1550,13 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                             ],
                           ),
                         ),
+                        ),
                       ),
                     ),
-                  )
-                else
+                  ),
+                ),
+              ),
+                if (!_isSheetExpanded)
                   Align(
                     alignment: Alignment.bottomCenter,
                     child: Padding(
@@ -1483,7 +1810,6 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
     if (statusIndex < 0) statusIndex = 0;
 
     final double progressPercent = (statusIndex / (_orderedStatuses.length - 1)).clamp(0.0, 1.0);
-    final int progressInt = (progressPercent * 100).toInt();
 
     switch (statusUpper) {
       case 'DRIVER_ASSIGNED':
@@ -1530,14 +1856,6 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                   fontSize: 14.5,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF121214),
-                ),
-              ),
-              Text(
-                '$progressInt%',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFFD90429),
                 ),
               ),
             ],

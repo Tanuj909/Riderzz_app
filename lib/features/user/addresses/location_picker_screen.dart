@@ -4,7 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:riderzz_app/screens/search_location_screen.dart';
-import 'package:riderzz_app/models/photon_place.dart';
+import 'package:riderzz_app/models/google_place.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/core/providers/location_provider.dart';
 import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
@@ -232,21 +232,21 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(24),
                       onTap: () async {
-                        final place = await Navigator.push<PhotonPlace>(
+                        final place = await Navigator.push<GooglePlace>(
                           context,
                           MaterialPageRoute(
                             builder: (_) => const SearchLocationScreen(),
                           ),
                         );
-                        if (place != null && mounted) {
+                        if (place != null && mounted && place.latitude != null && place.longitude != null) {
                           setState(() {
                             _searchController.text = place.displayName;
-                            _latitude = place.latitude;
-                            _longitude = place.longitude;
+                            _latitude = place.latitude!;
+                            _longitude = place.longitude!;
                           });
                           _mapController?.animateCamera(
                             CameraUpdate.newLatLngZoom(
-                              LatLng(place.latitude, place.longitude),
+                              LatLng(place.latitude!, place.longitude!),
                               16.0,
                             ),
                           );

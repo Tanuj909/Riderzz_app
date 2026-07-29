@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/core/models/vehicle_type_model.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
@@ -21,7 +22,7 @@ class ConfirmBookingView extends StatefulWidget {
 }
 
 class _ConfirmBookingViewState extends State<ConfirmBookingView> {
-  String _selectedPaymentMethod = 'CASH'; // 'CASH' or 'WALLET'
+  String _selectedPaymentMethod = 'CASH'; // 'CASH' or 'ONLINE'
   bool _isBookingInProgress = false;
 
   void _handleConfirmBooking(BuildContext context) async {
@@ -313,9 +314,9 @@ class _ConfirmBookingViewState extends State<ConfirmBookingView> {
                     ),
                   ),
                   _buildPaymentMethodOption(
-                    value: 'WALLET',
-                    title: 'Online Payment (Wallet, UPI)',
-                    icon: Icons.account_balance_wallet_outlined,
+                    value: 'ONLINE',
+                    title: 'ONLINE Payment',
+                    icon: Icons.payment_rounded,
                   ),
                   _buildPaymentMethodOption(
                     value: 'CASH',
@@ -430,12 +431,30 @@ class _ConfirmBookingViewState extends State<ConfirmBookingView> {
             const SizedBox(width: 14),
             Icon(icon, color: const Color(0xFF121214), size: 20),
             const SizedBox(width: 10),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF121214),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF121214),
+                    ),
+                  ),
+                  if (value == 'ONLINE') ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      '(Pay Driver Using UPI)',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        color: const Color(0xFF6C6F79),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ],

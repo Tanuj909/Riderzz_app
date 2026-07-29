@@ -216,29 +216,6 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                               ),
                               child: Column(
                                 children: [
-                                  _buildFareRow('Base fare', _stats!.baseFare),
-                                  const SizedBox(height: 12),
-                                  _buildFareRow(
-                                    'Distance (${_stats!.distance.toStringAsFixed(1)} km × ₹${(widget.bookingData['applicablePricingTier'] as PricingTierModel?)?.perKmRate ?? vehicle.perKmRate}/km)',
-                                    _stats!.distanceFare,
-                                  ),
-                                  if (widget.bookingData['fastDelivery'] == true) ...[
-                                    const SizedBox(height: 12),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFFF8EC),
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(color: Colors.orange.withOpacity(0.2)),
-                                      ),
-                                      child: _buildFareRow(
-                                        '⚡ Fast Delivery Charge',
-                                        widget.bookingData['fastDeliveryCharge'] as double? ?? 0.0,
-                                        isHighlighted: true,
-                                      ),
-                                    ),
-                                  ],
-                                  const SizedBox(height: 12),
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
@@ -256,6 +233,22 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                                       ),
                                     ],
                                   ),
+                                  if (widget.bookingData['fastDelivery'] == true) ...[
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFFF8EC),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: Colors.orange.withOpacity(0.2)),
+                                      ),
+                                      child: _buildFareRow(
+                                        '⚡ Fast Delivery Charge',
+                                        widget.bookingData['fastDeliveryCharge'] as double? ?? 0.0,
+                                        isHighlighted: true,
+                                      ),
+                                    ),
+                                  ],
                                   const SizedBox(height: 16),
                                   const Divider(height: 1, thickness: 1, color: Color(0xFFE7E7EB)),
                                   const SizedBox(height: 16),

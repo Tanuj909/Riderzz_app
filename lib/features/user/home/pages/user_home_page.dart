@@ -39,6 +39,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
   Map<String, dynamic>? _selectedRoute;
   final Map<int, bool> _fastDeliveryAvailability = {};
   bool _isFastDeliveryLoading = false;
+  bool _isRecentBookingsExpanded = true;
 
   String _formatBookingDate(String isoString) {
     try {
@@ -992,124 +993,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                     }).toList(),
                   ],
 
-                  if (bookingProvider.bookings.isNotEmpty) ...[
-                    (() {
-                      final recentBookings = bookingProvider.bookings
-                          .where((b) => b.status.toUpperCase() == 'DELIVERED' || b.status.toUpperCase() == 'COMPLETED')
-                          .take(2)
-                          .toList();
-
-                      if (recentBookings.isEmpty) return const SizedBox.shrink();
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 24),
-                          const Text(
-                            'RECENT BOOKINGS',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.1, color: Color(0xFFA2A5AE)),
-                          ),
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 18),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: const Color(0xFFE7E7EB)),
-                              boxShadow: const [BoxShadow(color: Color(0x0D121214), offset: Offset(0, 1), blurRadius: 2)],
-                            ),
-                            child: Column(
-                              children: recentBookings.asMap().entries.map((entry) {
-                                final index = entry.key;
-                                final booking = entry.value;
-                                final vehicleName = vehiclesProvider.vehicleTypes.where((v) => v.id == booking.vehicleTypeId).map((v) => v.name).firstWhere((name) => true, orElse: () => 'Vehicle');
-                                
-                                String dateStr = '';
-                                try {
-                                  if (booking.createdAt.isNotEmpty) {
-                                    final dt = DateTime.parse(booking.createdAt).toLocal();
-                                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                                    dateStr = '${months[dt.month - 1]} ${dt.day}';
-                                  }
-                                } catch (_) {}
-
-                                return Column(
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 14),
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            width: 42,
-                                            height: 42,
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFFDEBEC),
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            alignment: Alignment.center,
-                                            child: const Icon(Icons.history_rounded, color: Color(0xFFE31C2E), size: 19),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  '${booking.pickupAddressName.split(',').first} → ${booking.dropAddressName.split(',').first}',
-                                                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                                const SizedBox(height: 2),
-                                                Text('$dateStr · $vehicleName', style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79))),
-                                              ],
-                                            ),
-                                          ),
-                                          Column(
-                                            crossAxisAlignment: CrossAxisAlignment.end,
-                                            children: [
-                                              Text('₹${booking.totalFare.toStringAsFixed(0)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'IBM Plex Mono', color: Color(0xFF121214))),
-                                              const SizedBox(height: 6),
-                                              ElevatedButton(
-                                                onPressed: () {
-                                                  final route = {
-                                                    'pickupAddress': {
-                                                      'address': booking.pickupAddressName,
-                                                      'latitude': booking.pickupLatitude,
-                                                      'longitude': booking.pickupLongitude,
-                                                    },
-                                                    'dropAddress': {
-                                                      'address': booking.dropAddressName,
-                                                      'latitude': booking.dropLatitude,
-                                                      'longitude': booking.dropLongitude,
-                                                    }
-                                                  };
-                                                  _showNewBookingModal(route: route);
-                                                },
-                                                style: ElevatedButton.styleFrom(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                                  minimumSize: Size.zero,
-                                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                                  backgroundColor: const Color(0xFFE31C2E),
-                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                                  elevation: 0,
-                                                ),
-                                                child: const Text('Repeat', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    if (index < recentBookings.length - 1) const Divider(color: Color(0xFFE7E7EB), height: 1, thickness: 1),
-                                  ],
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ],
-                      );
-                    })(),
-                  ],
+                  // Recent Bookings was moved below AVAILABLE VEHICLES
                   
                   // Vehicle Cards
                   const SizedBox(height: 22),
@@ -1304,6 +1188,8 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                 );
                               },
                             ),
+                            // Recent Bookings Section (moved below AVAILABLE VEHICLES)
+                            _buildRecentBookingsDropdown(bookingProvider, vehiclesProvider),
                             // What's New News Section
                             const SizedBox(height: 28),
                             Text(
@@ -1782,6 +1668,215 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
         preSelectedVehicleTypeId: preSelectedVehicleTypeId,
         preSelectedFastDelivery: preSelectedFastDelivery,
       ),
+    );
+  }
+
+  Widget _buildRecentBookingsDropdown(
+    BookingProvider bookingProvider,
+    AdminVehiclesProvider vehiclesProvider,
+  ) {
+    if (bookingProvider.bookings.isEmpty) return const SizedBox.shrink();
+
+    final recentBookings = bookingProvider.bookings
+        .where((b) =>
+            b.status.toUpperCase() == 'DELIVERED' ||
+            b.status.toUpperCase() == 'COMPLETED')
+        .take(2)
+        .toList();
+
+    if (recentBookings.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 24),
+        InkWell(
+          onTap: () {
+            setState(() {
+              _isRecentBookingsExpanded = !_isRecentBookingsExpanded;
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Text(
+                  'RECENT BOOKINGS',
+                  style: GoogleFonts.outfit(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                    color: const Color(0xFFA2A5AE),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Container(
+                    height: 1,
+                    color: const Color(0xFFE7E7EB),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  _isRecentBookingsExpanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  color: const Color(0xFFA2A5AE),
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        AnimatedCrossFade(
+          firstChild: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFE7E7EB)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x0D121214),
+                  offset: Offset(0, 1),
+                  blurRadius: 2,
+                )
+              ],
+            ),
+            child: Column(
+              children: recentBookings.asMap().entries.map((entry) {
+                final index = entry.key;
+                final booking = entry.value;
+                final vehicleName = vehiclesProvider.vehicleTypes
+                    .where((v) => v.id == booking.vehicleTypeId)
+                    .map((v) => v.name)
+                    .firstWhere((name) => true, orElse: () => 'Vehicle');
+
+                String dateStr = '';
+                try {
+                  if (booking.createdAt.isNotEmpty) {
+                    final dt = DateTime.parse(booking.createdAt).toLocal();
+                    const months = [
+                      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                    ];
+                    dateStr = '${months[dt.month - 1]} ${dt.day}';
+                  }
+                } catch (_) {}
+
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFDEBEC),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            alignment: Alignment.center,
+                            child: const Icon(
+                              Icons.history_rounded,
+                              color: Color(0xFFE31C2E),
+                              size: 19,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${booking.pickupAddressName.split(',').first} → ${booking.dropAddressName.split(',').first}',
+                                  style: const TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF121214),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '$dateStr · $vehicleName',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF6C6F79),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                '₹${booking.totalFare.toStringAsFixed(0)}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'IBM Plex Mono',
+                                  color: Color(0xFF121214),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              ElevatedButton(
+                                onPressed: () {
+                                  final route = {
+                                    'pickupAddress': {
+                                      'address': booking.pickupAddressName,
+                                      'latitude': booking.pickupLatitude,
+                                      'longitude': booking.pickupLongitude,
+                                    },
+                                    'dropAddress': {
+                                      'address': booking.dropAddressName,
+                                      'latitude': booking.dropLatitude,
+                                      'longitude': booking.dropLongitude,
+                                    }
+                                  };
+                                  _showNewBookingModal(route: route);
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  backgroundColor: const Color(0xFFE31C2E),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8)),
+                                  elevation: 0,
+                                ),
+                                child: const Text(
+                                  'Repeat',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (index < recentBookings.length - 1)
+                      const Divider(
+                          color: Color(0xFFE7E7EB), height: 1, thickness: 1),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+          secondChild: const SizedBox.shrink(),
+          crossFadeState: _isRecentBookingsExpanded
+              ? CrossFadeState.showFirst
+              : CrossFadeState.showSecond,
+          duration: const Duration(milliseconds: 300),
+        ),
+      ],
     );
   }
 }

@@ -285,7 +285,12 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                   final isRecommended = recommendedIndex == index;
                   final etaString = _getVehicleEta(vehicle.name);
                   final tier = _applicablePrices[vehicle.id];
-                  final displayBaseFare = tier?.baseFare ?? vehicle.baseFare;
+                  final double baseFare = tier?.baseFare ?? vehicle.baseFare;
+                  final double perKmRate = tier?.perKmRate ?? vehicle.perKmRate;
+                  final double distance = _distanceKm ?? 0.0;
+                  final double distanceFare = (distance * perKmRate).roundToDouble();
+                  final double fastDeliveryCharge = tier?.fastDeliveryEnabled == true ? (tier?.fastDeliveryCharge ?? 0.0) : 0.0;
+                  final double totalFare = baseFare + distanceFare + (isSelected && _fastDeliverySelected && tier?.fastDeliveryEnabled == true ? fastDeliveryCharge : 0.0);
 
                   final cardWidget = Container(
                     margin: const EdgeInsets.only(bottom: 10, top: 4),
@@ -380,7 +385,7 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              '₹${(isSelected && _fastDeliverySelected && tier?.fastDeliveryEnabled == true ? displayBaseFare + (tier?.fastDeliveryCharge ?? 0.0) : displayBaseFare).toStringAsFixed(0)}',
+                              '₹${totalFare.toStringAsFixed(0)}',
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,

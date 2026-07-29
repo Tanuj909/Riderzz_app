@@ -19,7 +19,6 @@ class DriverHomePage extends StatefulWidget {
 }
 
 class _DriverHomePageState extends State<DriverHomePage> {
-  Timer? _refreshTimer;
   Timer? _searchTimer;
   bool _isManualSearching = false;
   int _searchCountdown = 30;
@@ -73,20 +72,10 @@ class _DriverHomePageState extends State<DriverHomePage> {
       context.read<DriverHomeProvider>().fetchDriverEarnings();
     });
 
-    // Auto refresh pending bookings every 10 seconds (only for drivers with no active booking)
-    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (mounted) {
-        final driverProvider = context.read<DriverHomeProvider>();
-        if (driverProvider.activeBooking == null) {
-          driverProvider.fetchHomeBookings(silent: true);
-        }
-      }
-    });
   }
 
   @override
   void dispose() {
-    _refreshTimer?.cancel();
     _searchTimer?.cancel();
     super.dispose();
   }

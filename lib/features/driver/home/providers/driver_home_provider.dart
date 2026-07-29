@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:riderzz_app/core/services/broadcast_socket_service.dart';
 import 'package:riderzz_app/core/models/driver_profile_model.dart';
 import 'package:riderzz_app/core/models/driver_wallet_model.dart';
 import 'package:riderzz_app/core/models/available_vehicle_model.dart';
@@ -38,7 +40,39 @@ class DriverHomeProvider extends ChangeNotifier {
   bool _isEarningsLoading = false;
   String? _earningsError;
 
-  DriverHomeProvider(this._driverRepository);
+  final BroadcastSocketService _socketService;
+  StreamSubscription<BroadcastResponse>? _broadcastSubscription;
+
+  DriverHomeProvider(this._driverRepository, this._socketService) {
+    _subscribeToBroadcasts();
+  }
+
+  void _subscribeToBroadcasts() {
+    _broadcastSubscription?.cancel();
+    _broadcastSubscription = _socketService.broadcasts.listen((response) {
+      _handleIncomingBroadcast(response);
+    });
+  }
+
+  void _handleIncomingBroadcast(BroadcastResponse response) {
+    debugPrint("New booking received via WebSocket");
+    debugPrint("Booking ID: ${response.booking.id}");
+
+    final exists = _pendingBookings.any((b) => b.id == response.booking.id);
+    if (!exists) {
+      _pendingBookings = [response.booking, ..._pendingBookings];
+      debugPrint("Pending bookings count: ${_pendingBookings.length}");
+      notifyListeners();
+    } else {
+      debugPrint("Duplicate booking ignored.");
+    }
+  }
+
+  @override
+  void dispose() {
+    _broadcastSubscription?.cancel();
+    super.dispose();
+  }
 
   DriverProfileModel? get profile => _profile;
   bool get isLoading => _isLoading;
@@ -68,6 +102,7 @@ class DriverHomeProvider extends ChangeNotifier {
   String? get earningsError => _earningsError;
 
   void clearData() {
+    _socketService.disconnect();
     _profile = null;
     _isLoading = false;
     _errorMessage = null;
@@ -541,6 +576,8 @@ class DriverHomeProvider extends ChangeNotifier {
   }
 
   Future<void> fetchHomeBookings({bool silent = false}) async {
+    debugPrint("DriverHomeProvider starting WebSocket...");
+    _socketService.connect();
     if (!silent) {
       _isBookingsLoading = true;
       _bookingsError = null;

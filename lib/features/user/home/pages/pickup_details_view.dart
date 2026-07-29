@@ -6,7 +6,7 @@ import 'package:riderzz_app/features/user/addresses/location_picker_screen.dart'
 import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
 import 'package:riderzz_app/features/user/saved_routes/providers/saved_route_provider.dart';
 import 'package:riderzz_app/screens/search_location_screen.dart';
-import 'package:riderzz_app/models/photon_place.dart';
+import 'package:riderzz_app/models/google_place.dart';
 
 class PickupDetailsView extends StatefulWidget {
   final Map<String, dynamic>? initialRoute;
@@ -130,7 +130,7 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
   }
 
   Future<void> _openSearchScreen({required bool isPickup}) async {
-    final place = await Navigator.push<PhotonPlace>(
+    final place = await Navigator.push<GooglePlace>(
       context,
       MaterialPageRoute(
         builder: (_) => SearchLocationScreen(

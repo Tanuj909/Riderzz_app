@@ -9,6 +9,7 @@ import 'package:riderzz_app/core/network/api_client.dart';
 import 'package:riderzz_app/core/providers/location_provider.dart';
 import 'package:riderzz_app/core/services/location_service.dart';
 import 'package:riderzz_app/core/storage/secure_storage_service.dart';
+import 'package:riderzz_app/core/services/broadcast_socket_service.dart';
 
 import 'package:riderzz_app/features/auth/data/datasource/auth_remote_datasource.dart';
 import 'package:riderzz_app/features/auth/data/repositories/auth_repository.dart';
@@ -34,6 +35,7 @@ import 'package:riderzz_app/features/driver/home/data/datasource/driver_remote_d
 import 'package:riderzz_app/features/driver/home/data/repositories/driver_repository.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 import 'package:riderzz_app/core/services/location_tracking_service.dart';
+import 'package:riderzz_app/services/notification/local_notification_service.dart';
 import 'package:riderzz_app/features/admin/commission/data/datasource/commission_datasource.dart';
 import 'package:riderzz_app/features/admin/commission/data/repositories/commission_repository.dart';
 import 'package:riderzz_app/features/admin/commission/providers/commission_provider.dart';
@@ -47,13 +49,15 @@ import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize communication port for background service Isolate
   FlutterForegroundTask.initCommunicationPort();
-  
+
   // Initialize foreground service options
   ForegroundLocationService.init();
-  
+
+  await LocalNotificationService.initialize();
+
   // Load .env configuration
   try {
     await dotenv.load(fileName: ".env");
@@ -74,59 +78,83 @@ class MyApp extends StatelessWidget {
         // 1. Core Services & Network
         Provider<SecureStorageService>(create: (_) => SecureStorageService()),
         ProxyProvider<SecureStorageService, ApiClient>(
-          update: (context, storage, previous) => ApiClient(storageService: storage),
+          update: (context, storage, previous) =>
+              ApiClient(storageService: storage),
         ),
-        
+        ProxyProvider<SecureStorageService, BroadcastSocketService>(
+          update: (_, storage, previous) =>
+              previous ?? BroadcastSocketService(storage),
+        ),
+
         // 2. Data Sources
         ProxyProvider<ApiClient, AuthRemoteDataSource>(
           update: (_, apiClient, previous) => AuthRemoteDataSource(apiClient),
         ),
         ProxyProvider<ApiClient, AddressRemoteDataSource>(
-          update: (_, apiClient, previous) => AddressRemoteDataSource(apiClient),
+          update: (_, apiClient, previous) =>
+              AddressRemoteDataSource(apiClient),
         ),
         ProxyProvider<ApiClient, SavedRouteRemoteDataSource>(
-          update: (_, apiClient, previous) => SavedRouteRemoteDataSource(apiClient),
+          update: (_, apiClient, previous) =>
+              SavedRouteRemoteDataSource(apiClient),
         ),
         ProxyProvider<ApiClient, AdminVehiclesRemoteDataSource>(
-          update: (_, apiClient, previous) => AdminVehiclesRemoteDataSource(apiClient),
+          update: (_, apiClient, previous) =>
+              AdminVehiclesRemoteDataSource(apiClient),
         ),
         ProxyProvider<ApiClient, AdminVehiclesListRemoteDataSource>(
-          update: (_, apiClient, previous) => AdminVehiclesListRemoteDataSource(apiClient),
+          update: (_, apiClient, previous) =>
+              AdminVehiclesListRemoteDataSource(apiClient),
         ),
         ProxyProvider<ApiClient, RiderVerificationRemoteDataSource>(
-          update: (_, apiClient, previous) => RiderVerificationRemoteDataSource(apiClient),
+          update: (_, apiClient, previous) =>
+              RiderVerificationRemoteDataSource(apiClient),
         ),
         ProxyProvider<ApiClient, DriverRemoteDataSource>(
           update: (_, apiClient, previous) => DriverRemoteDataSource(apiClient),
         ),
         ProxyProvider<ApiClient, CommissionRemoteDataSource>(
-          update: (_, apiClient, previous) => CommissionRemoteDataSource(apiClient),
+          update: (_, apiClient, previous) =>
+              CommissionRemoteDataSource(apiClient),
         ),
         ProxyProvider<ApiClient, BookingRemoteDataSource>(
-          update: (_, apiClient, previous) => BookingRemoteDataSource(apiClient),
+          update: (_, apiClient, previous) =>
+              BookingRemoteDataSource(apiClient),
         ),
         ProxyProvider<ApiClient, PricingRemoteDataSource>(
-          update: (_, apiClient, previous) => PricingRemoteDataSource(apiClient),
+          update: (_, apiClient, previous) =>
+              PricingRemoteDataSource(apiClient),
         ),
 
         // 3. Repositories
         ProxyProvider<AuthRemoteDataSource, AuthRepository>(
-          update: (_, authDataSource, previous) => AuthRepository(authDataSource),
+          update: (_, authDataSource, previous) =>
+              AuthRepository(authDataSource),
         ),
         ProxyProvider<AddressRemoteDataSource, AddressRepository>(
-          update: (_, addressDataSource, previous) => AddressRepository(addressDataSource),
+          update: (_, addressDataSource, previous) =>
+              AddressRepository(addressDataSource),
         ),
         ProxyProvider<SavedRouteRemoteDataSource, SavedRouteRepository>(
           update: (_, dataSource, previous) => SavedRouteRepository(dataSource),
         ),
         ProxyProvider<AdminVehiclesRemoteDataSource, AdminVehiclesRepository>(
-          update: (_, vehiclesDataSource, previous) => AdminVehiclesRepository(vehiclesDataSource),
+          update: (_, vehiclesDataSource, previous) =>
+              AdminVehiclesRepository(vehiclesDataSource),
         ),
-        ProxyProvider<AdminVehiclesListRemoteDataSource, AdminVehiclesListRepository>(
-          update: (_, listDataSource, previous) => AdminVehiclesListRepository(listDataSource),
+        ProxyProvider<
+          AdminVehiclesListRemoteDataSource,
+          AdminVehiclesListRepository
+        >(
+          update: (_, listDataSource, previous) =>
+              AdminVehiclesListRepository(listDataSource),
         ),
-        ProxyProvider<RiderVerificationRemoteDataSource, RiderVerificationRepository>(
-          update: (_, dataSource, previous) => RiderVerificationRepository(dataSource),
+        ProxyProvider<
+          RiderVerificationRemoteDataSource,
+          RiderVerificationRepository
+        >(
+          update: (_, dataSource, previous) =>
+              RiderVerificationRepository(dataSource),
         ),
         ProxyProvider<DriverRemoteDataSource, DriverRepository>(
           update: (_, dataSource, previous) => DriverRepository(dataSource),
@@ -140,61 +168,110 @@ class MyApp extends StatelessWidget {
         ProxyProvider<PricingRemoteDataSource, PricingRepository>(
           update: (_, dataSource, previous) => PricingRepository(dataSource),
         ),
-        
+
         // 4. State Management (Providers)
-        ChangeNotifierProxyProvider2<AuthRepository, SecureStorageService, AuthProvider>(
+        ChangeNotifierProxyProvider2<
+          AuthRepository,
+          SecureStorageService,
+          AuthProvider
+        >(
           create: (context) => AuthProvider(
             authRepository: context.read<AuthRepository>(),
             storageService: context.read<SecureStorageService>(),
           ),
           update: (_, authRepo, storageService, previous) =>
-              previous ?? AuthProvider(authRepository: authRepo, storageService: storageService),
+              previous ??
+              AuthProvider(
+                authRepository: authRepo,
+                storageService: storageService,
+              ),
         ),
 
         ChangeNotifierProxyProvider<AddressRepository, AddressProvider>(
-          create: (context) => AddressProvider(context.read<AddressRepository>()),
-          update: (_, addressRepo, previous) => previous ?? AddressProvider(addressRepo),
+          create: (context) =>
+              AddressProvider(context.read<AddressRepository>()),
+          update: (_, addressRepo, previous) =>
+              previous ?? AddressProvider(addressRepo),
         ),
         ChangeNotifierProxyProvider<SavedRouteRepository, SavedRouteProvider>(
-          create: (context) => SavedRouteProvider(context.read<SavedRouteRepository>()),
+          create: (context) =>
+              SavedRouteProvider(context.read<SavedRouteRepository>()),
           update: (_, repo, previous) => previous ?? SavedRouteProvider(repo),
         ),
-        ChangeNotifierProxyProvider<AdminVehiclesRepository, AdminVehiclesProvider>(
-          create: (context) => AdminVehiclesProvider(context.read<AdminVehiclesRepository>()),
-          update: (_, repository, previous) => previous ?? AdminVehiclesProvider(repository),
+        ChangeNotifierProxyProvider<
+          AdminVehiclesRepository,
+          AdminVehiclesProvider
+        >(
+          create: (context) =>
+              AdminVehiclesProvider(context.read<AdminVehiclesRepository>()),
+          update: (_, repository, previous) =>
+              previous ?? AdminVehiclesProvider(repository),
         ),
-        ChangeNotifierProxyProvider<AdminVehiclesListRepository, AdminVehiclesListProvider>(
-          create: (context) => AdminVehiclesListProvider(context.read<AdminVehiclesListRepository>()),
-          update: (_, repository, previous) => previous ?? AdminVehiclesListProvider(repository),
+        ChangeNotifierProxyProvider<
+          AdminVehiclesListRepository,
+          AdminVehiclesListProvider
+        >(
+          create: (context) => AdminVehiclesListProvider(
+            context.read<AdminVehiclesListRepository>(),
+          ),
+          update: (_, repository, previous) =>
+              previous ?? AdminVehiclesListProvider(repository),
         ),
-        ChangeNotifierProxyProvider<RiderVerificationRepository, RiderVerificationProvider>(
-          create: (context) => RiderVerificationProvider(context.read<RiderVerificationRepository>()),
-          update: (_, repository, previous) => previous ?? RiderVerificationProvider(repository),
+        ChangeNotifierProxyProvider<
+          RiderVerificationRepository,
+          RiderVerificationProvider
+        >(
+          create: (context) => RiderVerificationProvider(
+            context.read<RiderVerificationRepository>(),
+          ),
+          update: (_, repository, previous) =>
+              previous ?? RiderVerificationProvider(repository),
         ),
-        ChangeNotifierProxyProvider<RiderVerificationRepository, AdminWalletsProvider>(
-          create: (context) => AdminWalletsProvider(context.read<RiderVerificationRepository>()),
-          update: (_, repository, previous) => previous ?? AdminWalletsProvider(repository),
+        ChangeNotifierProxyProvider<
+          RiderVerificationRepository,
+          AdminWalletsProvider
+        >(
+          create: (context) =>
+              AdminWalletsProvider(context.read<RiderVerificationRepository>()),
+          update: (_, repository, previous) =>
+              previous ?? AdminWalletsProvider(repository),
         ),
-        ChangeNotifierProxyProvider<DriverRepository, DriverHomeProvider>(
-          create: (context) => DriverHomeProvider(context.read<DriverRepository>()),
-          update: (_, repository, previous) => previous ?? DriverHomeProvider(repository),
+        ChangeNotifierProxyProvider2<
+          DriverRepository,
+          BroadcastSocketService,
+          DriverHomeProvider
+        >(
+          create: (context) => DriverHomeProvider(
+            context.read<DriverRepository>(),
+            context.read<BroadcastSocketService>(),
+          ),
+          update: (_, repository, socketService, previous) =>
+              previous ?? DriverHomeProvider(repository, socketService),
         ),
         ProxyProvider<DriverRepository, LocationTrackingService>(
-          create: (context) => LocationTrackingService(context.read<DriverRepository>()),
-          update: (_, repository, previous) => previous ?? LocationTrackingService(repository),
+          create: (context) =>
+              LocationTrackingService(context.read<DriverRepository>()),
+          update: (_, repository, previous) =>
+              previous ?? LocationTrackingService(repository),
           dispose: (_, service) => service.dispose(),
         ),
         ChangeNotifierProxyProvider<CommissionRepository, CommissionProvider>(
-          create: (context) => CommissionProvider(context.read<CommissionRepository>()),
-          update: (_, repository, previous) => previous ?? CommissionProvider(repository),
+          create: (context) =>
+              CommissionProvider(context.read<CommissionRepository>()),
+          update: (_, repository, previous) =>
+              previous ?? CommissionProvider(repository),
         ),
         ChangeNotifierProxyProvider<BookingRepository, BookingProvider>(
-          create: (context) => BookingProvider(context.read<BookingRepository>()),
-          update: (_, repository, previous) => previous ?? BookingProvider(repository),
+          create: (context) =>
+              BookingProvider(context.read<BookingRepository>()),
+          update: (_, repository, previous) =>
+              previous ?? BookingProvider(repository),
         ),
         ChangeNotifierProxyProvider<PricingRepository, PricingProvider>(
-          create: (context) => PricingProvider(context.read<PricingRepository>()),
-          update: (_, repository, previous) => previous ?? PricingProvider(repository),
+          create: (context) =>
+              PricingProvider(context.read<PricingRepository>()),
+          update: (_, repository, previous) =>
+              previous ?? PricingProvider(repository),
         ),
 
         // LocationProvider for current device location

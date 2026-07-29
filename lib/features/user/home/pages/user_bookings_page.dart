@@ -477,7 +477,12 @@ class _UserBookingsPageState extends State<UserBookingsPage> {
                                             vehicleName: vehicleName,
                                           ),
                                         ),
-                                      );
+                                      ).then((_) {
+                                        if (context.mounted) {
+                                          Provider.of<BookingProvider>(context, listen: false).fetchBookings();
+                                          Provider.of<BookingProvider>(context, listen: false).fetchCurrentBookings();
+                                        }
+                                      });
                                     },
                                     icon: const Icon(Icons.my_location_rounded, size: 14, color: Colors.white),
                                     label: Text(
