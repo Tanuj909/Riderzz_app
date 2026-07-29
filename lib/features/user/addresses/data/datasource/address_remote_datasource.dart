@@ -55,6 +55,8 @@ class AddressRemoteDataSource {
             'country': map['country'],
             'postalCode': map['postalCode'],
             'defaultAddress': map['defaultAddress'] ?? false,
+            'contactPersonName': map['contactPersonName'],
+            'contactPersonPhone': map['contactPersonPhone'],
           };
         }).toList();
       },

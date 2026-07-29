@@ -17,6 +17,8 @@ import 'package:riderzz_app/features/user/home/widgets/booking_details_bottom_sh
 import 'package:riderzz_app/features/user/profile/screens/customer_profile_screen.dart';
 import 'package:riderzz_app/features/user/saved_routes/screens/saved_route_list_screen.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
+import 'package:riderzz_app/features/driver/profile/become_driver_screen.dart';
+import 'package:riderzz_app/features/driver/profile/widgets/driver_terms_popup.dart';
 import 'dart:ui';
 import 'dart:math';
 
@@ -37,6 +39,19 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
   Map<String, dynamic>? _selectedRoute;
   final Map<int, bool> _fastDeliveryAvailability = {};
   bool _isFastDeliveryLoading = false;
+
+  String _formatBookingDate(String isoString) {
+    try {
+      final dt = DateTime.parse(isoString);
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final period = dt.hour >= 12 ? 'PM' : 'AM';
+      final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+      final minute = dt.minute.toString().padLeft(2, '0');
+      return '${dt.day} ${months[dt.month - 1]} ${dt.year}, $hour:$minute $period';
+    } catch (_) {
+      return isoString;
+    }
+  }
 
   Future<void> _checkFastDeliveryAvailability() async {
     if (mounted) {
@@ -622,70 +637,246 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                     ...activeBookings.map((activeBooking) {
                       final cardWidget = Container(
                         margin: const EdgeInsets.only(bottom: 22, top: 4),
-                        padding: const EdgeInsets.all(18),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFE7E7EB)),
-                          boxShadow: const [BoxShadow(color: Color(0x0D121214), offset: Offset(0, 1), blurRadius: 2)],
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x08121214),
+                              offset: Offset(0, 8),
+                              blurRadius: 24,
+                            )
+                          ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  activeBooking.bookingId,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'IBM Plex Mono',
-                                    color: Color(0xFF1E293B),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        activeBooking.bookingId,
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFF1E293B),
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      if (activeBooking.createdAt.isNotEmpty) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Placed: ${_formatBookingDate(activeBooking.createdAt)}',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                            color: const Color(0xFF94A3B8),
+                                            letterSpacing: -0.2,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ),
+                                const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFE7F7EF),
-                                    borderRadius: BorderRadius.circular(999),
+                                    color: const Color(0xFF1C9A5B).withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Row(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFF1C9A5B), shape: BoxShape.circle)),
-                                      const SizedBox(width: 5),
+                                      Container(
+                                        width: 6,
+                                        height: 6,
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFF1C9A5B),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
                                       Text(
                                         activeBooking.status.toUpperCase(),
-                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF1C9A5B)),
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                          color: const Color(0xFF1C9A5B),
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
                               ],
                             ),
-                            if (activeBooking.driver != null) ...[
-                              const SizedBox(height: 14),
-                              const Divider(height: 1, color: Color(0xFFE7E7EB)),
-                              const SizedBox(height: 10),
-                              Row(
+                            const SizedBox(height: 14),
+                            const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                            const SizedBox(height: 14),
+                            // Pickup & Drop locations with labeled headers
+                            IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  const Icon(Icons.person_rounded, size: 15, color: Color(0xFF6C6F79)),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      'Driver: ${activeBooking.driver!.fullName} (${activeBooking.driver!.phone})',
-                                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF121214)),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                                  Column(
+                                    children: [
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        width: 6,
+                                        height: 6,
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFF1C9A5B),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Container(
+                                          width: 1,
+                                          margin: const EdgeInsets.symmetric(vertical: 2),
+                                          color: const Color(0xFFE2E8F0),
+                                        ),
+                                      ),
+                                      const Icon(Icons.location_on, size: 12, color: Color(0xFFD90429)),
+                                      const SizedBox(height: 2),
+                                    ],
                                   ),
-                                  const Icon(Icons.star_rounded, color: Colors.amber, size: 14),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    activeBooking.driver!.rating.toStringAsFixed(1),
-                                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF121214)),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Pickup',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 10,
+                                            color: const Color(0xFF94A3B8),
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 1),
+                                        Text(
+                                          activeBooking.pickupAddressName,
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: const Color(0xFF334155),
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Drop',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 10,
+                                            color: const Color(0xFF94A3B8),
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 16, top: 1),
+                              child: Text(
+                                activeBooking.dropAddressName,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF334155),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (activeBooking.driver != null) ...[
+                              const SizedBox(height: 14),
+                              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  const Icon(Icons.person_rounded, size: 16, color: Color(0xFF64748B)),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          activeBooking.driver!.fullName,
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xFF1E293B),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            '(${activeBooking.driver!.phone})',
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 11.5,
+                                              color: const Color(0xFF64748B),
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(Icons.star_rounded, color: Colors.amber, size: 15),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    activeBooking.driver!.rating.toStringAsFixed(1),
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF1E293B),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (activeBooking.vehicleNumber != null && activeBooking.vehicleNumber!.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF8FAFC),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.directions_car_outlined, size: 14, color: Color(0xFF475569)),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Vehicle: ${activeBooking.vehicleNumber}',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF475569),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ],
                             const SizedBox(height: 16),
                             Row(
@@ -694,20 +885,29 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                   child: OutlinedButton(
                                     onPressed: () => showBookingDetailsBottomSheet(context, activeBooking),
                                     style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 8),
-                                      side: const BorderSide(color: Color(0xFFE7E7EB), width: 1.5),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                                      foregroundColor: const Color(0xFF121214),
+                                      padding: const EdgeInsets.symmetric(vertical: 10),
+                                      side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+                                      foregroundColor: const Color(0xFF1E293B),
                                       elevation: 0,
                                     ),
-                                    child: const Text('View details', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                                    child: Text(
+                                      'View Details',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: ElevatedButton(
                                     onPressed: () {
-                                      final vName = vehiclesProvider.vehicleTypes.where((v) => v.id == activeBooking.vehicleTypeId).map((v) => v.name).firstWhere((name) => true, orElse: () => 'Vehicle');
+                                      final vName = vehiclesProvider.vehicleTypes
+                                          .where((v) => v.id == activeBooking.vehicleTypeId)
+                                          .map((v) => v.name)
+                                          .firstWhere((name) => true, orElse: () => 'Vehicle');
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
@@ -719,13 +919,19 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                       );
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 8),
-                                      backgroundColor: const Color(0xFFE31C2E),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                                      padding: const EdgeInsets.symmetric(vertical: 10),
+                                      backgroundColor: const Color(0xFFC62E42),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
                                       elevation: 0,
-                                      shadowColor: const Color(0x8C7E22CE),
                                     ),
-                                    child: const Text('Track', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.white)),
+                                    child: Text(
+                                      'Track',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -952,103 +1158,399 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                             return 0;
                           });
 
-                        return GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            childAspectRatio: 1.25,
-                          ),
-                          itemCount: sortedVehicles.length,
-                          itemBuilder: (context, idx) {
-                            final vehicle = sortedVehicles[idx];
-                            final isFastAvailable = _fastDeliveryAvailability[vehicle.id] == true;
-                            
-                            return GestureDetector(
-                              onTap: () {
-                                if (isFastAvailable) {
-                                  _showDeliveryOptionDialog(vehicle);
-                                } else {
-                                  _showNewBookingModal(
-                                    preSelectedVehicleTypeId: vehicle.id,
-                                    preSelectedFastDelivery: false,
-                                  );
-                                }
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: const Color(0xFFE7E7EB)),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Color(0x08121214),
-                                      offset: Offset(0, 2),
-                                      blurRadius: 4,
-                                    )
-                                  ],
-                                ),
-                                child: Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    Positioned.fill(
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          crossAxisAlignment: CrossAxisAlignment.center,
-                                          children: [
-                                            const Spacer(),
-                                            Container(
-                                              width: 44,
-                                              height: 44,
-                                              alignment: Alignment.center,
-                                              child: vehicle.iconUrl != null && vehicle.iconUrl!.isNotEmpty
-                                                  ? Image.network(
-                                                      vehicle.iconUrl!,
-                                                      width: 40,
-                                                      height: 40,
-                                                      errorBuilder: (context, error, stackTrace) => const Icon(
-                                                        Icons.local_shipping_rounded,
-                                                        size: 36,
-                                                        color: Color(0xFFE31C2E),
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                childAspectRatio: 1.25,
+                              ),
+                              itemCount: sortedVehicles.length,
+                              itemBuilder: (context, idx) {
+                                final vehicle = sortedVehicles[idx];
+                                final isFastAvailable = _fastDeliveryAvailability[vehicle.id] == true;
+                                
+                                return GestureDetector(
+                                  onTap: () {
+                                    if (isFastAvailable) {
+                                      _showDeliveryOptionDialog(vehicle);
+                                    } else {
+                                      _showNewBookingModal(
+                                        preSelectedVehicleTypeId: vehicle.id,
+                                        preSelectedFastDelivery: false,
+                                      );
+                                    }
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(color: const Color(0xFFE7E7EB)),
+                                      boxShadow: const [
+                                        BoxShadow(
+                                          color: Color(0x08121214),
+                                          offset: Offset(0, 2),
+                                          blurRadius: 4,
+                                        )
+                                      ],
+                                    ),
+                                    child: Stack(
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        Positioned.fill(
+                                          child: isFastAvailable
+                                              ? ShiningContainer(
+                                                  isSelected: false,
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.transparent,
+                                                      borderRadius: BorderRadius.circular(20),
+                                                    ),
+                                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                                    child: Column(
+                                                      mainAxisAlignment: MainAxisAlignment.center,
+                                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                                      children: [
+                                                        const Spacer(),
+                                                        Container(
+                                                          width: 44,
+                                                          height: 44,
+                                                          alignment: Alignment.center,
+                                                          child: vehicle.iconUrl != null && vehicle.iconUrl!.isNotEmpty
+                                                              ? Image.network(
+                                                                  vehicle.iconUrl!,
+                                                                  width: 40,
+                                                                  height: 40,
+                                                                  errorBuilder: (context, error, stackTrace) => const Icon(
+                                                                    Icons.local_shipping_rounded,
+                                                                    size: 36,
+                                                                    color: Color(0xFFE31C2E),
+                                                                  ),
+                                                                )
+                                                              : const Icon(Icons.local_shipping_rounded, size: 36, color: Color(0xFFE31C2E)),
+                                                        ),
+                                                        const SizedBox(height: 8),
+                                                        Text(
+                                                          vehicle.name,
+                                                          style: GoogleFonts.outfit(
+                                                            fontSize: 13,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: const Color(0xFF121214),
+                                                          ),
+                                                          textAlign: TextAlign.center,
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                        ),
+                                                        const Spacer(),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                )
+                                              : Padding(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                                  child: Column(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                                    children: [
+                                                      const Spacer(),
+                                                      Container(
+                                                        width: 44,
+                                                        height: 44,
+                                                        alignment: Alignment.center,
+                                                        child: vehicle.iconUrl != null && vehicle.iconUrl!.isNotEmpty
+                                                            ? Image.network(
+                                                                vehicle.iconUrl!,
+                                                                width: 40,
+                                                                height: 40,
+                                                                errorBuilder: (context, error, stackTrace) => const Icon(
+                                                                  Icons.local_shipping_rounded,
+                                                                  size: 36,
+                                                                  color: Color(0xFFE31C2E),
+                                                                ),
+                                                              )
+                                                            : const Icon(Icons.local_shipping_rounded, size: 36, color: Color(0xFFE31C2E)),
                                                       ),
-                                                    )
-                                                  : const Icon(Icons.local_shipping_rounded, size: 36, color: Color(0xFFE31C2E)),
+                                                      const SizedBox(height: 8),
+                                                      Text(
+                                                        vehicle.name,
+                                                        style: GoogleFonts.outfit(
+                                                          fontSize: 13,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: const Color(0xFF121214),
+                                                        ),
+                                                        textAlign: TextAlign.center,
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                      const Spacer(),
+                                                    ],
+                                                  ),
+                                                ),
+                                        ),
+                                        if (isFastAvailable)
+                                          const Positioned(
+                                            top: -8,
+                                            right: 16,
+                                            child: _FastDeliveryTickerBadge(),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            // What's New News Section
+                            const SizedBox(height: 28),
+                            Text(
+                              "WHAT'S NEW",
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.1,
+                                color: const Color(0xFFA2A5AE),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              height: 110,
+                              child: ListView(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                children: [
+                                  // Card 1: Fast Delivery Promotion
+                                  GestureDetector(
+                                    onTap: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => Dialog(
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                                          backgroundColor: Colors.white,
+                                          surfaceTintColor: Colors.white,
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(24.0),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Container(
+                                                      padding: const EdgeInsets.all(8),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.orange.shade50,
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      child: const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 22),
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    Expanded(
+                                                      child: Text(
+                                                        'Fast Delivery Mode',
+                                                        style: GoogleFonts.outfit(
+                                                          fontSize: 18,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: const Color(0xFF1E293B),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 16),
+                                                Text(
+                                                  'Experience ultra-fast deliveries with our new Fast Delivery option! When enabled, your bookings are prioritized by nearby drivers for lightning-quick pickups.',
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 14,
+                                                    color: const Color(0xFF475569),
+                                                    height: 1.5,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 24),
+                                                ElevatedButton(
+                                                  onPressed: () => Navigator.pop(context),
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: const Color(0xFFE31C2E),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                                    elevation: 0,
+                                                  ),
+                                                  child: Text(
+                                                    'Got it',
+                                                    style: GoogleFonts.outfit(
+                                                      color: Colors.white,
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              vehicle.name,
-                                              style: GoogleFonts.outfit(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.bold,
-                                                color: const Color(0xFF121214),
-                                              ),
-                                              textAlign: TextAlign.center,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              ),
-                                              const Spacer(),
-                                            ],
                                           ),
                                         ),
-                                      ),
-                                      if (isFastAvailable)
-                                        const Positioned(
-                                          top: -8,
-                                          right: 16,
-                                          child: _FastDeliveryTickerBadge(),
+                                      );
+                                    },
+                                    child: Container(
+                                      width: MediaQuery.of(context).size.width * 0.8,
+                                      margin: const EdgeInsets.only(right: 14),
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [Color(0xFFFFF7ED), Color(0xFFFFF2E2)],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
                                         ),
-                                    ],
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(color: Colors.orange.withOpacity(0.3), width: 1.2),
+                                        boxShadow: const [
+                                          BoxShadow(
+                                            color: Color(0x04D97706),
+                                            offset: Offset(0, 4),
+                                            blurRadius: 12,
+                                          )
+                                        ],
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Text(
+                                                  'Introducing Fast Delivery',
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: const Color(0xFF7C2D12),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'Get your parcels priority-matched and delivered at lightning speed.',
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 10.5,
+                                                    color: const Color(0xFF9A3412),
+                                                    height: 1.3,
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Container(
+                                            padding: const EdgeInsets.all(10),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              shape: BoxShape.circle,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.orange.withOpacity(0.1),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 2),
+                                                )
+                                              ],
+                                            ),
+                                            child: const Icon(Icons.bolt_rounded, color: Colors.orange, size: 24),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              );
-                            },
-                          );
-                        }
-                      ),
+                                  
+                                  // Card 2: Become a Partner Promotion
+                                  GestureDetector(
+                                    onTap: () {
+                                      showDriverTermsAndConditionsPopup(context, () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => const BecomeDriverScreen()),
+                                        );
+                                      });
+                                    },
+                                    child: Container(
+                                      width: MediaQuery.of(context).size.width * 0.8,
+                                      margin: const EdgeInsets.only(right: 14),
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [Color(0xFFFDF2F4), Color(0xFFFCE7EB)],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(color: const Color(0xFFC62E42).withOpacity(0.2), width: 1.2),
+                                        boxShadow: const [
+                                          BoxShadow(
+                                            color: Color(0x04C62E42),
+                                            offset: Offset(0, 4),
+                                            blurRadius: 12,
+                                          )
+                                        ],
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Text(
+                                                  'Become a Partner',
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: const Color(0xFF881337),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'Register as a driver and start earning on your own schedule.',
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 10.5,
+                                                    color: const Color(0xFF9F1239),
+                                                    height: 1.3,
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Container(
+                                            padding: const EdgeInsets.all(10),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              shape: BoxShape.circle,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: const Color(0xFFC62E42).withOpacity(0.1),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 2),
+                                                )
+                                              ],
+                                            ),
+                                            child: const Icon(Icons.stars_rounded, color: Color(0xFFC62E42), size: 24),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+                    ),
                 ],
               );
             },
@@ -1382,17 +1884,24 @@ class _FastDeliveryTickerBadgeState extends State<_FastDeliveryTickerBadge> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
       decoration: BoxDecoration(
         color: Colors.orange.shade50,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.orange.withOpacity(0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 8),
-          const SizedBox(width: 2),
+          const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 12),
+          const SizedBox(width: 3),
           AnimatedCrossFade(
             duration: const Duration(milliseconds: 300),
             crossFadeState: _showAvailable ? CrossFadeState.showFirst : CrossFadeState.showSecond,
@@ -1400,7 +1909,7 @@ class _FastDeliveryTickerBadgeState extends State<_FastDeliveryTickerBadge> {
               'FAST Available',
               style: GoogleFonts.outfit(
                 color: Colors.orange.shade700,
-                fontSize: 8,
+                fontSize: 10.5,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -1408,7 +1917,7 @@ class _FastDeliveryTickerBadgeState extends State<_FastDeliveryTickerBadge> {
               'FAST Delivery',
               style: GoogleFonts.outfit(
                 color: Colors.orange.shade700,
-                fontSize: 8,
+                fontSize: 10.5,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -1416,5 +1925,79 @@ class _FastDeliveryTickerBadgeState extends State<_FastDeliveryTickerBadge> {
         ],
       ),
     );
+  }
+}
+
+class ShiningContainer extends StatefulWidget {
+  final Widget child;
+  final bool isSelected;
+
+  const ShiningContainer({
+    super.key,
+    required this.child,
+    required this.isSelected,
+  });
+
+  @override
+  State<ShiningContainer> createState() => _ShiningContainerState();
+}
+
+class _ShiningContainerState extends State<ShiningContainer> with SingleTickerProviderStateMixin {
+  late AnimationController _shimmerController;
+
+  @override
+  void initState() {
+    super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _shimmerController,
+      builder: (context, child) {
+        return ShaderMask(
+          blendMode: BlendMode.srcATop,
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: const [
+                Colors.transparent,
+                Colors.transparent,
+                Colors.white10,
+                Colors.white54,
+                Colors.white10,
+                Colors.transparent,
+                Colors.transparent,
+              ],
+              stops: const [0.0, 0.35, 0.45, 0.5, 0.55, 0.65, 1.0],
+              transform: _SlidingGradientTransform(slidePercent: _shimmerController.value),
+            ).createShader(bounds);
+          },
+          child: widget.child,
+        );
+      },
+    );
+  }
+}
+
+class _SlidingGradientTransform extends GradientTransform {
+  final double slidePercent;
+
+  const _SlidingGradientTransform({required this.slidePercent});
+
+  @override
+  Matrix4? transform(Rect bounds, {TextDirection? textDirection}) {
+    return Matrix4.translationValues(bounds.width * (slidePercent * 2 - 1), 0, 0);
   }
 }

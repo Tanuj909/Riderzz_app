@@ -500,6 +500,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     final stateController = TextEditingController(text: state);
     final countryController = TextEditingController(text: country);
     final postalCodeController = TextEditingController(text: postalCode);
+    final contactPersonNameController = TextEditingController();
+    final contactPersonPhoneController = TextEditingController();
 
     String selectedType = 'OTHER';
     bool isDefault = false;
@@ -520,7 +522,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             final double keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
             final double maxHeight = keyboardHeight > 0
                 ? (MediaQuery.of(context).size.height - keyboardHeight - 50)
-                : (MediaQuery.of(context).size.height * 0.75);
+                : (MediaQuery.of(context).size.height * 0.85);
 
             return Padding(
               padding: EdgeInsets.fromLTRB(
@@ -667,6 +669,33 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Contact Person details placed outside dropdown
+                        _buildInputField(
+                          label: 'Contact Person Name (Optional)',
+                          hint: 'Name of the contact person',
+                          controller: contactPersonNameController,
+                          prefixIcon: Icons.person_outline_rounded,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildInputField(
+                          label: 'Contact Person Phone (Optional)',
+                          hint: '10-digit mobile number',
+                          controller: contactPersonPhoneController,
+                          prefixIcon: Icons.phone_android_outlined,
+                          keyboardType: TextInputType.phone,
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return null;
+                            }
+                            final regExp = RegExp(r'^(?:\+91|91)?[6-9]\d{9}$');
+                            if (!regExp.hasMatch(val.trim())) {
+                              return 'Enter a valid 10-digit Indian phone number';
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 12),
 
@@ -830,6 +859,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                       'latitude': _latitude,
                                       'longitude': _longitude,
                                       'defaultAddress': isDefault,
+                                      'contactPersonName': contactPersonNameController.text.trim(),
+                                      'contactPersonPhone': contactPersonPhoneController.text.trim(),
                                     };
 
                                     final provider = Provider.of<AddressProvider>(context, listen: false);

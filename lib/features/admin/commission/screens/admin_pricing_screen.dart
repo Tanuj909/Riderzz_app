@@ -492,9 +492,9 @@ class _VehiclePricingTabState extends State<_VehiclePricingTab> {
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        _buildInfoCol('Base Fare', '₹${tier.baseFare.toStringAsFixed(0)}'),
-                                        _buildInfoCol('Rate/Km', '₹${tier.perKmRate.toStringAsFixed(0)}'),
-                                        _buildInfoCol('Commission', '₹${tier.commission.toStringAsFixed(0)}'),
+                                        _buildInfoCol('Base Fare', '₹${tier.baseFare.toStringAsFixed(2)}'),
+                                        _buildInfoCol('Rate/Km', '₹${tier.perKmRate.toStringAsFixed(2)}'),
+                                        _buildInfoCol('Commission', '₹${tier.commission.toStringAsFixed(2)}'),
                                       ],
                                     ),
                                     if (tier.fastDeliveryEnabled) ...[
@@ -504,7 +504,7 @@ class _VehiclePricingTabState extends State<_VehiclePricingTab> {
                                           const Icon(Icons.flash_on_rounded, size: 14, color: Colors.orange),
                                           const SizedBox(width: 4),
                                           Text(
-                                            'Fast Delivery Enabled (₹${tier.fastDeliveryCharge?.toStringAsFixed(0) ?? '0'})',
+                                            'Fast Delivery Enabled (₹${tier.fastDeliveryCharge?.toStringAsFixed(2) ?? '0.00'})',
                                             style: GoogleFonts.outfit(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w600,
@@ -870,6 +870,7 @@ class _PricingTierFormDialogState extends State<PricingTierFormDialog> {
   final _perKmRateController = TextEditingController();
   final _commissionController = TextEditingController();
   final _fastDeliveryChargeController = TextEditingController();
+  final _scrollController = ScrollController();
   int? _selectedVehicleTypeId;
   bool _isSaving = false;
   bool _fastDeliveryEnabled = false;
@@ -882,11 +883,13 @@ class _PricingTierFormDialogState extends State<PricingTierFormDialog> {
       _selectedVehicleTypeId = t.vehicleTypeId;
       _fromDistanceController.text = t.fromDistance.toString();
       _toDistanceController.text = t.toDistance?.toString() ?? '';
-      _baseFareController.text = t.baseFare.toString();
-      _perKmRateController.text = t.perKmRate.toString();
-      _commissionController.text = t.commission.toString();
+      _baseFareController.text = t.baseFare.toStringAsFixed(2);
+      _perKmRateController.text = t.perKmRate.toStringAsFixed(2);
+      _commissionController.text = t.commission.toStringAsFixed(2);
       _fastDeliveryEnabled = t.fastDeliveryEnabled;
-      _fastDeliveryChargeController.text = t.fastDeliveryCharge?.toString() ?? '';
+      _fastDeliveryChargeController.text = t.fastDeliveryCharge != null
+          ? t.fastDeliveryCharge!.toStringAsFixed(2)
+          : '';
     } else {
       _selectedVehicleTypeId = widget.defaultVehicleTypeId;
     }
@@ -900,6 +903,7 @@ class _PricingTierFormDialogState extends State<PricingTierFormDialog> {
     _perKmRateController.dispose();
     _commissionController.dispose();
     _fastDeliveryChargeController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -987,6 +991,7 @@ class _PricingTierFormDialogState extends State<PricingTierFormDialog> {
       content: SizedBox(
         width: MediaQuery.of(context).size.width,
         child: SingleChildScrollView(
+          controller: _scrollController,
           child: Form(
             key: _formKey,
             child: Column(
@@ -1062,6 +1067,17 @@ class _PricingTierFormDialogState extends State<PricingTierFormDialog> {
                               setState(() {
                                 _fastDeliveryEnabled = val;
                               });
+                              if (val) {
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  if (_scrollController.hasClients) {
+                                    _scrollController.animateTo(
+                                      _scrollController.position.maxScrollExtent,
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeOut,
+                                    );
+                                  }
+                                });
+                              }
                             },
                           ),
                         ],

@@ -4,6 +4,7 @@ import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:riderzz_app/features/driver/home/pages/driver_reward_congrats_page.dart';
 
 
 class DriverWalletPage extends StatefulWidget {
@@ -543,8 +544,17 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                       ),
                       elevation: 0,
                     ),
-                    onPressed: () {
-                      context.read<DriverHomeProvider>().createDriverWallet();
+                    onPressed: () async {
+                      final provider = context.read<DriverHomeProvider>();
+                      await provider.createDriverWallet();
+                      if (provider.wallet != null && provider.walletError == null && mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const DriverRewardCongratsPage(),
+                          ),
+                        );
+                      }
                     },
                     child: Text(
                       'Get Sign-in Reward!',

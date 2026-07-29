@@ -5,6 +5,7 @@ import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/user/addresses/address_list_screen.dart';
 import 'package:riderzz_app/features/user/saved_routes/screens/saved_route_list_screen.dart';
 import 'package:riderzz_app/features/driver/profile/become_driver_screen.dart';
+import 'package:riderzz_app/features/driver/profile/widgets/driver_terms_popup.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 import 'package:riderzz_app/features/user/profile/screens/customer_profile_screen.dart';
 
@@ -349,18 +350,13 @@ class _UserAccountPageState extends State<UserAccountPage> {
               _buildListItem(
                 icon: Icons.directions_outlined,
                 label: 'Saved Routes',
+                showBorder: false,
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const SavedRouteListScreen()),
                   );
                 },
-              ),
-              _buildListItem(
-                icon: Icons.receipt_long_outlined,
-                label: 'Transaction History',
-                showBorder: false,
-                onTap: () => _showComingSoonDialog(context, 'Transaction History'),
               ),
             ],
           ),
@@ -369,10 +365,12 @@ class _UserAccountPageState extends State<UserAccountPage> {
           // ── Become Driver Card ──
           GestureDetector(
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const BecomeDriverScreen()),
-              );
+              showDriverTermsAndConditionsPopup(context, () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const BecomeDriverScreen()),
+                );
+              });
             },
             child: Container(
               padding: const EdgeInsets.all(18),
@@ -480,7 +478,12 @@ class _UserAccountPageState extends State<UserAccountPage> {
                 icon: Icons.security_outlined,
                 label: 'Terms & Privacy',
                 showBorder: false,
-                onTap: () => _showComingSoonDialog(context, 'Terms & Privacy'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const TermsAndConditionsScreen()),
+                  );
+                },
               ),
             ],
           ),
@@ -616,6 +619,111 @@ class _UserAccountPageState extends State<UserAccountPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class TermsAndConditionsScreen extends StatelessWidget {
+  const TermsAndConditionsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded, color: Color(0xFF1E293B)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Terms & Conditions',
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF1E293B),
+            fontSize: 18,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Riderzz App Terms of Service',
+              style: GoogleFonts.outfit(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF1E293B),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Last updated: July 29, 2026',
+              style: GoogleFonts.outfit(
+                fontSize: 12,
+                color: const Color(0xFF94A3B8),
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildSection(
+              '1. Acceptance of Terms',
+              'By downloading, installing, or using the Riderzz application, you agree to comply with and be bound by these Terms and Conditions. If you do not agree, please do not use the application.',
+            ),
+            _buildSection(
+              '2. User Accounts',
+              'You must maintain accurate, complete, and up-to-date information in your Riderzz account. Failure to do so may result in your inability to access and use the services or termination of your account.',
+            ),
+            _buildSection(
+              '3. Services Offered',
+              'Riderzz provides a platform linking customers seeking transportation of goods/parcels with independent drivers. Riderzz is a facilitator and does not directly operate shipping logistics or employ drivers.',
+            ),
+            _buildSection(
+              '4. Payment Terms',
+              'Fares are calculated dynamically based on distance, demand, and options such as Fast Delivery. You agree to pay all fares, including additional priority charges, in accordance with the payment terms specified in the app.',
+            ),
+            _buildSection(
+              '5. Prohibited Items',
+              'Users shall not ship illegal, hazardous, flammable, explosive, toxic, or dangerous materials. Riderzz and independent partners reserve the right to reject packages that violate public safety regulations.',
+            ),
+            _buildSection(
+              '6. Limitation of Liability',
+              'Riderzz is not liable for direct, indirect, incidental, or consequential damages resulting from the acts, errors, or omissions of independent drivers or partners.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSection(String title, String body) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.outfit(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1E293B),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            body,
+            style: GoogleFonts.outfit(
+              fontSize: 13,
+              color: const Color(0xFF475569),
+              height: 1.5,
+            ),
+          ),
+        ],
       ),
     );
   }

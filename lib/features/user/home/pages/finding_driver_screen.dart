@@ -954,7 +954,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
-                                              '${_currentBooking.driver!.licenseNumber ?? 'N/A'} · ${widget.vehicleName} ★${_currentBooking.driver!.rating.toStringAsFixed(1)}',
+                                              '${_vehicleNumber ?? _currentBooking.vehicleNumber ?? widget.vehicleName} · ★${_currentBooking.driver!.rating.toStringAsFixed(1)}',
                                               style: const TextStyle(
                                                 fontSize: 12,
                                                 color: Color(0xFF6C6F79),
@@ -1461,38 +1461,51 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
     );
   }
 
+  // Ordered status list for continuous progress calculation
+  static const List<String> _orderedStatuses = [
+    'PENDING',
+    'DRIVER_ASSIGNED',
+    'EN_ROUTE',
+    'DRIVER_ARRIVED',
+    'IN_TRANSIT',
+    'DELIVERED',
+  ];
+
   Widget _buildProgressSection(String status) {
     final statusUpper = status.toUpperCase();
-    double progressPercent;
     String statusTitle;
     String statusDesc;
+
+    // Map status to a continuous 0-100% scale
+    int statusIndex = _orderedStatuses.indexOf(statusUpper);
+    if (statusUpper == 'ACCEPTED') statusIndex = _orderedStatuses.indexOf('DRIVER_ASSIGNED');
+    if (statusUpper == 'COMPLETED') statusIndex = _orderedStatuses.indexOf('DELIVERED');
+    if (statusIndex < 0) statusIndex = 0;
+
+    final double progressPercent = (statusIndex / (_orderedStatuses.length - 1)).clamp(0.0, 1.0);
+    final int progressInt = (progressPercent * 100).toInt();
 
     switch (statusUpper) {
       case 'DRIVER_ASSIGNED':
       case 'ACCEPTED':
       case 'EN_ROUTE':
-        progressPercent = 0.25;
         statusTitle = 'Driver Assigned';
         statusDesc = 'Driver is en route to pickup location';
         break;
       case 'DRIVER_ARRIVED':
-        progressPercent = 0.50;
         statusTitle = 'Driver Arrived';
         statusDesc = 'Driver has arrived at pickup location';
         break;
       case 'IN_TRANSIT':
-        progressPercent = 0.75;
         statusTitle = 'In Transit';
         statusDesc = 'Your parcel is on the way to drop location';
         break;
       case 'DELIVERED':
       case 'COMPLETED':
-        progressPercent = 1.0;
         statusTitle = 'Delivered';
         statusDesc = 'Parcel has been successfully delivered';
         break;
       default:
-        progressPercent = 0.10;
         statusTitle = status;
         statusDesc = 'Processing your order';
     }
@@ -1520,7 +1533,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                 ),
               ),
               Text(
-                '${(progressPercent * 100).toInt()}%',
+                '$progressInt%',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -1569,74 +1582,87 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F1F4),
+        color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
-            children: [
-              const SizedBox(height: 4),
-              const Icon(Icons.circle, size: 10, color: Color(0xFF121214)),
-              Container(width: 1.5, height: 40, color: const Color(0xFFE1E1E6)),
-              const Icon(Icons.location_on, size: 12, color: Color(0xFFD90429)),
-            ],
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Column(
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pickup',
-                      style: GoogleFonts.outfit(
-                        fontSize: 11,
-                        color: const Color(0xFF6C6F79),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      booking.pickupAddressName,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF121214),
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 4),
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF1C9A5B),
+                    shape: BoxShape.circle,
+                  ),
                 ),
-                const SizedBox(height: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Drop',
-                      style: GoogleFonts.outfit(
-                        fontSize: 11,
-                        color: const Color(0xFF6C6F79),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      booking.dropAddressName,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF121214),
-                      ),
-                    ),
-                  ],
+                Expanded(
+                  child: Container(
+                    width: 1,
+                    margin: const EdgeInsets.symmetric(vertical: 2),
+                    color: const Color(0xFFE2E8F0),
+                  ),
                 ),
+                const Icon(Icons.location_on, size: 12, color: Color(0xFFD90429)),
+                const SizedBox(height: 2),
               ],
             ),
-          ),
-        ],
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Pickup',
+                    style: GoogleFonts.outfit(
+                      fontSize: 10,
+                      color: const Color(0xFF94A3B8),
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    booking.pickupAddressName,
+                    style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF334155),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Drop',
+                    style: GoogleFonts.outfit(
+                      fontSize: 10,
+                      color: const Color(0xFF94A3B8),
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    booking.dropAddressName,
+                    style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF334155),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

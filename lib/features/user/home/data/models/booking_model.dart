@@ -82,6 +82,11 @@ class BookingModel {
   final int? expiresInSeconds;
   final bool fastDelivery;
   final double? fastDeliveryCharge;
+  final String? pickupContactName;
+  final String? pickupContactPhone;
+  final String? dropContactName;
+  final String? dropContactPhone;
+  final String? vehicleNumber;
 
   BookingModel({
     required this.id,
@@ -112,6 +117,11 @@ class BookingModel {
     this.expiresInSeconds,
     this.fastDelivery = false,
     this.fastDeliveryCharge,
+    this.pickupContactName,
+    this.pickupContactPhone,
+    this.dropContactName,
+    this.dropContactPhone,
+    this.vehicleNumber,
   });
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
@@ -231,7 +241,9 @@ class BookingModel {
           (json['estimatedDistanceKm'] as num? ?? json['distanceKm'] as num?)
               ?.toDouble(),
       routePolyline:
-          json['routePolyline'] as String? ?? json['route_polyline'] as String?,
+          json['routePolyline'] as String? ??
+          json['route_polyline'] as String? ??
+          json['route'] as String?,
       driver: driverObj != null ? DriverInfo.fromJson(driverObj) : null,
       customer: custObj != null ? CustomerInfo.fromJson(custObj) : null,
       expiresInSeconds: (json['expiresInSeconds'] as num?)?.toInt(),
@@ -239,6 +251,11 @@ class BookingModel {
       fastDeliveryCharge: json['fastDeliveryCharge'] != null
           ? (json['fastDeliveryCharge'] as num).toDouble()
           : null,
+      pickupContactName: pickupObj?['contactPersonName'] as String?,
+      pickupContactPhone: pickupObj?['contactPersonPhone'] as String?,
+      dropContactName: dropObj?['contactPersonName'] as String?,
+      dropContactPhone: dropObj?['contactPersonPhone'] as String?,
+      vehicleNumber: json['vehicleNumber'] as String?,
     );
   }
 }

@@ -48,6 +48,8 @@ class _DriverBookingDetailsScreenState
   String? _routeDurationText;
 
   late BookingModel _currentBooking;
+  bool _isShipmentDetailsExpanded = false;
+  bool _isContactDetailsExpanded = false;
 
   @override
   void initState() {
@@ -204,28 +206,76 @@ class _DriverBookingDetailsScreenState
     );
   }
 
-  Future<Uint8List> _getBytesFromAsset(String path, int width) async {
-    ByteData data = await rootBundle.load(path);
-    ui.Codec codec = await ui.instantiateImageCodec(
-      data.buffer.asUint8List(),
-      targetWidth: width,
+  Future<BitmapDescriptor> _createLabeledMarkerBitmap(String title, Color color) async {
+    // 1. Load the original icon asset as ui.Image
+    final ByteData assetData = await rootBundle.load('assets/icons/location.png');
+    final ui.Codec codec = await ui.instantiateImageCodec(
+      assetData.buffer.asUint8List(),
+      targetWidth: 90, // scaled up for proportionality
     );
-    ui.FrameInfo fi = await codec.getNextFrame();
-    return (await fi.image.toByteData(
-      format: ui.ImageByteFormat.png,
-    ))!.buffer.asUint8List();
+    final ui.FrameInfo fi = await codec.getNextFrame();
+    final ui.Image iconImage = fi.image;
+
+    final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
+    final Canvas canvas = Canvas(pictureRecorder);
+    
+    final double canvasWidth = 220.0;
+    final double labelHeight = 56.0;
+    final double spacing = 8.0;
+    final double iconHeight = iconImage.height.toDouble();
+    final double iconWidth = iconImage.width.toDouble();
+    final double canvasHeight = labelHeight + spacing + iconHeight;
+    
+    // 2. Draw background rounded rectangle capsule at the top
+    final Paint paint = Paint()..color = color;
+    final RRect rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, canvasWidth, labelHeight),
+      const Radius.circular(10),
+    );
+    canvas.drawRRect(rrect, paint);
+    
+    // 3. Draw a small pointer triangle below the label
+    final Path path = Path();
+    path.moveTo(canvasWidth / 2 - 12, labelHeight);
+    path.lineTo(canvasWidth / 2 + 12, labelHeight);
+    path.lineTo(canvasWidth / 2, labelHeight + spacing);
+    path.close();
+    canvas.drawPath(path, paint);
+    
+    // 4. Draw label text inside the capsule with w800 bold style and size 24
+    final TextPainter painter = TextPainter(textDirection: TextDirection.ltr);
+    painter.text = TextSpan(
+      text: title,
+      style: GoogleFonts.outfit(
+        fontSize: 24.0,
+        fontWeight: FontWeight.w800,
+        color: Colors.white,
+      ),
+    );
+    painter.layout();
+    painter.paint(
+      canvas,
+      Offset((canvasWidth - painter.width) / 2, (labelHeight - painter.height) / 2),
+    );
+    
+    // 5. Draw the location icon asset below the pointer triangle
+    final double iconX = (canvasWidth - iconWidth) / 2;
+    final double iconY = labelHeight + spacing;
+    canvas.drawImage(iconImage, Offset(iconX, iconY), Paint());
+    
+    // 6. Generate BitmapDescriptor
+    final img = await pictureRecorder.endRecording().toImage(canvasWidth.toInt(), canvasHeight.toInt());
+    final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+    return BitmapDescriptor.fromBytes(byteData!.buffer.asUint8List());
   }
 
   Future<void> _loadMarkerIcons() async {
     try {
-      final Uint8List markerBytes = await _getBytesFromAsset(
-        'assets/icons/location.png',
-        80,
-      ); // 80 pixels width
-      final icon = BitmapDescriptor.fromBytes(markerBytes);
+      final pickupDescriptor = await _createLabeledMarkerBitmap('Pickup', const Color(0xFF1C9A5B));
+      final dropDescriptor = await _createLabeledMarkerBitmap('Drop', const Color(0xFFD90429));
       setState(() {
-        _pickupIcon = icon;
-        _dropIcon = icon;
+        _pickupIcon = pickupDescriptor;
+        _dropIcon = dropDescriptor;
       });
     } catch (e) {
       debugPrint('Error loading custom markers: $e');
@@ -424,10 +474,20 @@ class _DriverBookingDetailsScreenState
   }
 
   Set<Marker> _buildMarkers(BookingModel booking) {
-    final pickupLat = booking.pickupLatitude;
-    final pickupLng = booking.pickupLongitude;
-    final dropLat = booking.dropLatitude;
-    final dropLng = booking.dropLongitude;
+    double? pickupLat = booking.pickupLatitude;
+    double? pickupLng = booking.pickupLongitude;
+    double? dropLat = booking.dropLatitude;
+    double? dropLng = booking.dropLongitude;
+
+    // Fallback to route polyline bounds if lat/lng are null or 0.0
+    if ((pickupLat == null || pickupLng == null || dropLat == null || dropLng == null ||
+         pickupLat == 0.0 || pickupLng == 0.0 || dropLat == 0.0 || dropLng == 0.0) &&
+        _polylineCoordinates.isNotEmpty) {
+      pickupLat = _polylineCoordinates.first.latitude;
+      pickupLng = _polylineCoordinates.first.longitude;
+      dropLat = _polylineCoordinates.last.latitude;
+      dropLng = _polylineCoordinates.last.longitude;
+    }
 
     final markers = <Marker>{};
 
@@ -779,9 +839,14 @@ class _DriverBookingDetailsScreenState
         ? driverProvider.activeBooking!
         : _currentBooking;
 
-    final pickupLat = booking.pickupLatitude;
-    final pickupLng = booking.pickupLongitude;
-    final LatLng centerLatLng = (pickupLat != null && pickupLng != null)
+    double? pickupLat = booking.pickupLatitude;
+    double? pickupLng = booking.pickupLongitude;
+    if ((pickupLat == null || pickupLng == null || pickupLat == 0.0 || pickupLng == 0.0) &&
+        _polylineCoordinates.isNotEmpty) {
+      pickupLat = _polylineCoordinates.first.latitude;
+      pickupLng = _polylineCoordinates.first.longitude;
+    }
+    final LatLng centerLatLng = (pickupLat != null && pickupLng != null && pickupLat != 0.0 && pickupLng != 0.0)
         ? LatLng(pickupLat, pickupLng)
         : _defaultDelhi;
 
@@ -1099,7 +1164,7 @@ class _DriverBookingDetailsScreenState
                                       '₹${booking.totalFare.toStringAsFixed(2)}',
                                       style: GoogleFonts.ibmPlexMono(
                                         fontWeight: FontWeight.w800,
-                                        fontSize: 28,
+                                        fontSize: 22,
                                         color: const Color(0xFF121214),
                                       ),
                                     ),
@@ -1122,7 +1187,7 @@ class _DriverBookingDetailsScreenState
                                       Text(
                                         '${booking.estimatedDistanceKm!.toStringAsFixed(1)} km',
                                         style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 18,
+                                          fontSize: 14,
                                           fontWeight: FontWeight.w700,
                                           color: const Color(0xFF121214),
                                         ),
@@ -1744,14 +1809,14 @@ class _DriverBookingDetailsScreenState
                                       backgroundColor: const Color(0xFF121214),
                                       foregroundColor: Colors.white,
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(14),
+                                        borderRadius: BorderRadius.circular(100),
                                       ),
                                       padding: const EdgeInsets.symmetric(
-                                        vertical: 16,
+                                        vertical: 12,
                                       ),
                                       textStyle: GoogleFonts.outfit(
                                         fontWeight: FontWeight.w700,
-                                        fontSize: 15,
+                                        fontSize: 14,
                                       ),
                                       elevation: 0,
                                     ),
@@ -1787,14 +1852,14 @@ class _DriverBookingDetailsScreenState
                                       backgroundColor: const Color(0xFF121214),
                                       foregroundColor: Colors.white,
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(14),
+                                        borderRadius: BorderRadius.circular(100),
                                       ),
                                       padding: const EdgeInsets.symmetric(
-                                        vertical: 16,
+                                        vertical: 12,
                                       ),
                                       textStyle: GoogleFonts.outfit(
                                         fontWeight: FontWeight.w700,
-                                        fontSize: 15,
+                                        fontSize: 14,
                                       ),
                                       elevation: 0,
                                     ),
@@ -1818,16 +1883,17 @@ class _DriverBookingDetailsScreenState
                                         color: Color(0xFFD90429),
                                       ),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(14),
+                                        borderRadius: BorderRadius.circular(100),
                                       ),
                                       padding: const EdgeInsets.symmetric(
-                                        vertical: 16,
+                                        vertical: 12,
                                       ),
                                     ),
                                     child: const Text(
                                       'Reject Booking',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
+                                        fontSize: 14,
                                       ),
                                     ),
                                   ),
@@ -2026,73 +2092,79 @@ class _DriverBookingDetailsScreenState
 
   Widget _buildAddressCard(BookingModel booking) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: const Color(0xFFF1F1F4),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            children: [
-              const SizedBox(height: 4),
-              const Icon(Icons.circle, size: 10, color: Color(0xFF121214)),
-              Container(width: 1.5, height: 40, color: const Color(0xFFE1E1E6)),
-              const Icon(Icons.location_on, size: 12, color: Color(0xFFD90429)),
-            ],
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Pickup',
-                      style: GoogleFonts.outfit(
-                        fontSize: 11,
-                        color: const Color(0xFF6C6F79),
-                        fontWeight: FontWeight.w600,
+                    const SizedBox(height: 4),
+                    const Icon(Icons.circle, size: 8, color: Color(0xFF121214)),
+                    Expanded(
+                      child: Container(
+                        width: 1.5,
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        color: const Color(0xFFE1E1E6),
                       ),
                     ),
+                    const Icon(Icons.location_on, size: 12, color: Color(0xFFD90429)),
                     const SizedBox(height: 2),
-                    Text(
-                      booking.pickupAddressName,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF121214),
-                      ),
-                    ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Drop',
-                      style: GoogleFonts.outfit(
-                        fontSize: 11,
-                        color: const Color(0xFF6C6F79),
-                        fontWeight: FontWeight.w600,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Pickup',
+                        style: GoogleFonts.outfit(
+                          fontSize: 10.5,
+                          color: const Color(0xFF6C6F79),
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      booking.dropAddressName,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF121214),
+                      const SizedBox(height: 1),
+                      Text(
+                        booking.pickupAddressName,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF121214),
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Text(
+                        'Drop',
+                        style: GoogleFonts.outfit(
+                          fontSize: 10.5,
+                          color: const Color(0xFF6C6F79),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 24, top: 1),
+            child: Text(
+              booking.dropAddressName,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF121214),
+              ),
             ),
           ),
         ],
@@ -2104,101 +2176,290 @@ class _DriverBookingDetailsScreenState
     final statusUpper = (_localStatus ?? booking.status).toUpperCase();
     final isPending = statusUpper == 'PENDING';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'SHIPMENT DETAILS',
-          style: GoogleFonts.outfit(
-            color: const Color(0xFF6C6F79),
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: const Color(0xFFE1E1E6)),
+        boxShadow: const [
+          BoxShadow(color: Color(0x05121214), blurRadius: 8, offset: Offset(0, 2)),
+        ],
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+          dense: true,
+          visualDensity: const VisualDensity(horizontal: 0, vertical: -4),
+          initiallyExpanded: _isShipmentDetailsExpanded,
+          onExpansionChanged: (val) {
+            setState(() {
+              _isShipmentDetailsExpanded = val;
+            });
+          },
+          leading: const Icon(
+            Icons.local_shipping_outlined,
+            color: Color(0xFFD90429),
+            size: 18,
           ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE1E1E6)),
+          title: Text(
+            'Shipment Details',
+            style: GoogleFonts.plusJakartaSans(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: const Color(0xFF121214),
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Divider(height: 1, color: Color(0xFFE1E1E6)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Goods Type',
-                    style: GoogleFonts.outfit(
-                      fontSize: 13,
-                      color: const Color(0xFF6C6F79),
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Goods Type',
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          color: const Color(0xFF6C6F79),
+                        ),
+                      ),
+                      Text(
+                        isPending
+                            ? booking.parcelType
+                            : '${booking.parcelType} (${booking.weightKg} kg)',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF121214),
+                        ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    isPending
-                        ? booking.parcelType
-                        : '${booking.parcelType} (${booking.weightKg} kg)',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF121214),
+                  if (booking.goodsDescription.isNotEmpty) ...[
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: Divider(height: 1, color: Color(0xFFE1E1E6)),
                     ),
-                  ),
+                    Text(
+                      'Instructions / Description',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        color: const Color(0xFF6C6F79),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      booking.goodsDescription,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        height: 1.3,
+                        color: const Color(0xFF121214),
+                      ),
+                    ),
+                  ],
                 ],
               ),
-              if (!isPending && booking.goodsDescription.isNotEmpty) ...[
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12.0),
-                  child: Divider(height: 1, color: Color(0xFFE1E1E6)),
-                ),
-                Text(
-                  'Instructions',
-                  style: GoogleFonts.outfit(
-                    fontSize: 13,
-                    color: const Color(0xFF6C6F79),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  booking.goodsDescription,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    height: 1.4,
-                    color: const Color(0xFF121214),
-                  ),
-                ),
-              ],
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildMessageCallButtons() {
-    return SizedBox(
+    final driverProvider = Provider.of<DriverHomeProvider>(context, listen: false);
+    final booking =
+        (driverProvider.activeBooking != null &&
+            driverProvider.activeBooking!.id == widget.booking.id)
+        ? driverProvider.activeBooking!
+        : _currentBooking;
+
+    final customerName = booking.customer?.fullName ?? 'Customer';
+    final customerPhone = booking.customer?.phone;
+
+    final pickupContactName = (booking.pickupContactName != null && booking.pickupContactName!.isNotEmpty)
+        ? booking.pickupContactName!
+        : '$customerName (Pickup)';
+    final pickupContactPhone = (booking.pickupContactPhone != null && booking.pickupContactPhone!.isNotEmpty)
+        ? booking.pickupContactPhone!
+        : (customerPhone ?? '');
+
+    final dropContactName = (booking.dropContactName != null && booking.dropContactName!.isNotEmpty)
+        ? booking.dropContactName!
+        : '$customerName (Drop)';
+    final dropContactPhone = (booking.dropContactPhone != null && booking.dropContactPhone!.isNotEmpty)
+        ? booking.dropContactPhone!
+        : (customerPhone ?? '');
+
+    return Container(
       width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: _showCallModal,
-        icon: const Icon(Icons.phone_android_rounded, size: 18),
-        label: const Text('Call Customer'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF121214),
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: const Color(0xFFE1E1E6)),
+        boxShadow: const [
+          BoxShadow(color: Color(0x05121214), blurRadius: 8, offset: Offset(0, 2)),
+        ],
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+          dense: true,
+          visualDensity: const VisualDensity(horizontal: 0, vertical: -4),
+          initiallyExpanded: _isContactDetailsExpanded,
+          onExpansionChanged: (val) {
+            setState(() {
+              _isContactDetailsExpanded = val;
+            });
+          },
+          leading: const Icon(
+            Icons.contact_phone_outlined,
+            color: Color(0xFF1C9A5B),
+            size: 18,
           ),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          textStyle: GoogleFonts.outfit(
-            fontWeight: FontWeight.w700,
-            fontSize: 14.5,
+          title: Text(
+            'Contact Details',
+            style: GoogleFonts.plusJakartaSans(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: const Color(0xFF121214),
+            ),
           ),
-          elevation: 0,
+          children: [
+            const Divider(height: 1, color: Color(0xFFE1E1E6)),
+            // Pickup Contact row
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 5.0),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1C9A5B).withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.circle,
+                      size: 10,
+                      color: Color(0xFF1C9A5B),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Call Pickup Contact',
+                          style: GoogleFonts.outfit(
+                            fontSize: 10.5,
+                            color: const Color(0xFF6C6F79),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          pickupContactName,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF121214),
+                          ),
+                        ),
+                        if (pickupContactPhone.isNotEmpty) ...[
+                          const SizedBox(height: 1),
+                          Text(
+                            pickupContactPhone,
+                            style: GoogleFonts.outfit(
+                              fontSize: 11,
+                              color: const Color(0xFF8C8F99),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  if (pickupContactPhone.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.phone, color: Color(0xFF1C9A5B), size: 20),
+                      onPressed: () => _makeCall(pickupContactPhone),
+                    )
+                  else
+                    const Icon(Icons.phone_disabled, color: Colors.grey, size: 18),
+                ],
+              ),
+            ),
+            const Divider(height: 1, color: Color(0xFFF1F1F5)),
+            // Drop Contact row
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 5.0),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD90429).withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.location_on,
+                      size: 12,
+                      color: Color(0xFFD90429),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Call Drop Contact',
+                          style: GoogleFonts.outfit(
+                            fontSize: 10.5,
+                            color: const Color(0xFF6C6F79),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          dropContactName,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF121214),
+                          ),
+                        ),
+                        if (dropContactPhone.isNotEmpty) ...[
+                          const SizedBox(height: 1),
+                          Text(
+                            dropContactPhone,
+                            style: GoogleFonts.outfit(
+                              fontSize: 11,
+                              color: const Color(0xFF8C8F99),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  if (dropContactPhone.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.phone, color: Color(0xFFD90429), size: 20),
+                      onPressed: () => _makeCall(dropContactPhone),
+                    )
+                  else
+                    const Icon(Icons.phone_disabled, color: Colors.grey, size: 18),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

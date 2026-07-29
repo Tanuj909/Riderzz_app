@@ -403,18 +403,21 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                     childWidget = Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        cardWidget,
+                        ShiningContainer(
+                          isSelected: isSelected,
+                          child: cardWidget,
+                        ),
                         Positioned(
-                          top: -1,
+                          top: -6,
                           right: 16,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
                             decoration: BoxDecoration(
                               color: Colors.orange,
                               borderRadius: BorderRadius.circular(99),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
+                                  color: Colors.black.withValues(alpha: 0.08),
                                   blurRadius: 4,
                                   offset: const Offset(0, 1.5),
                                 )
@@ -423,13 +426,13 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: const [
-                                Icon(Icons.flash_on_rounded, color: Colors.white, size: 10),
-                                SizedBox(width: 2),
+                                Icon(Icons.flash_on_rounded, color: Colors.white, size: 12),
+                                SizedBox(width: 3),
                                 Text(
                                   'Fast Delivery',
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 8.5,
+                                    fontSize: 10.5,
                                     fontWeight: FontWeight.w800,
                                   ),
                                 ),
@@ -573,5 +576,79 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
         );
       },
     );
+  }
+}
+
+class ShiningContainer extends StatefulWidget {
+  final Widget child;
+  final bool isSelected;
+
+  const ShiningContainer({
+    super.key,
+    required this.child,
+    required this.isSelected,
+  });
+
+  @override
+  State<ShiningContainer> createState() => _ShiningContainerState();
+}
+
+class _ShiningContainerState extends State<ShiningContainer> with SingleTickerProviderStateMixin {
+  late AnimationController _shimmerController;
+
+  @override
+  void initState() {
+    super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _shimmerController,
+      builder: (context, child) {
+        return ShaderMask(
+          blendMode: BlendMode.srcATop,
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: const [
+                Colors.transparent,
+                Colors.transparent,
+                Colors.white10,
+                Colors.white54,
+                Colors.white10,
+                Colors.transparent,
+                Colors.transparent,
+              ],
+              stops: const [0.0, 0.35, 0.45, 0.5, 0.55, 0.65, 1.0],
+              transform: _SlidingGradientTransform(slidePercent: _shimmerController.value),
+            ).createShader(bounds);
+          },
+          child: widget.child,
+        );
+      },
+    );
+  }
+}
+
+class _SlidingGradientTransform extends GradientTransform {
+  final double slidePercent;
+
+  const _SlidingGradientTransform({required this.slidePercent});
+
+  @override
+  Matrix4? transform(Rect bounds, {TextDirection? textDirection}) {
+    return Matrix4.translationValues(bounds.width * (slidePercent * 2 - 1), 0, 0);
   }
 }

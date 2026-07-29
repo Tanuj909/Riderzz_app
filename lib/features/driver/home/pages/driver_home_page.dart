@@ -476,115 +476,190 @@ class _DriverHomePageState extends State<DriverHomePage> {
                 ),
               )
             else if (driverProvider.pendingBookings.isNotEmpty)
-              SizedBox(
-                height: 88,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: driverProvider.pendingBookings.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 10),
-                  itemBuilder: (context, index) {
-                    final booking = driverProvider.pendingBookings[index];
-                    final fullCardWidth = MediaQuery.of(context).size.width - 40;
-                    return Container(
-                      width: fullCardWidth,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE1E1E6)),
-                        boxShadow: const [
-                          BoxShadow(color: Color(0x08121214), blurRadius: 10, offset: Offset(0, 4)),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Row(
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: driverProvider.pendingBookings.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final booking = driverProvider.pendingBookings[index];
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFE1E1E6)),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x0A121214), blurRadius: 12, offset: Offset(0, 4)),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 1. Header row
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFD90429).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'NEW REQUEST',
+                                style: GoogleFonts.outfit(
+                                  color: const Color(0xFFD90429),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                            if (booking.fastDelivery) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFF9800).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFD90429).withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        'NEW BOOKING',
-                                        style: GoogleFonts.outfit(
-                                          color: const Color(0xFFD90429),
-                                          fontSize: 9.5,
-                                          fontWeight: FontWeight.w800,
-                                        ),
+                                    const Icon(
+                                      Icons.flash_on_rounded,
+                                      size: 11,
+                                      color: Color(0xFFE65100),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      'Fast Delivery',
+                                      style: GoogleFonts.outfit(
+                                        color: const Color(0xFFE65100),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w800,
                                       ),
                                     ),
-                                    if (booking.expiresInSeconds != null) ...[
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        '${booking.expiresInSeconds}s left',
-                                        style: GoogleFonts.outfit(
-                                          color: const Color(0xFFE65100),
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ],
                                   ],
                                 ),
-                                const SizedBox(height: 4),
+                              ),
+                            ],
+                            const Spacer(),
+                            if (booking.expiresInSeconds != null) ...[
+                              const Icon(
+                                  Icons.timer_outlined,
+                                size: 13,
+                                color: Color(0xFFE65100),
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                '${booking.expiresInSeconds}s left',
+                                style: GoogleFonts.outfit(
+                                  color: const Color(0xFFE65100),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Divider(height: 1, color: Color(0xFFE1E1E6)),
+                        const SizedBox(height: 12),
+ 
+                        // 2. Price, distance and details action button
+                        Row(
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Text(
-                                  '₹${booking.totalFare.toStringAsFixed(2)}',
+                                  'DISTANCE',
+                                  style: GoogleFonts.outfit(
+                                    color: const Color(0xFFA2A5AE),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  booking.estimatedDistanceKm != null
+                                      ? '${booking.estimatedDistanceKm!.toStringAsFixed(1)} km'
+                                      : 'N/A',
                                   style: GoogleFonts.outfit(
                                     color: const Color(0xFF121214),
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () async {
-                              final result = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => DriverBookingDetailsScreen(
-                                    booking: booking,
+                            const SizedBox(width: 24),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'EST. FARE',
+                                  style: GoogleFonts.outfit(
+                                    color: const Color(0xFFA2A5AE),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
-                              );
-                              if (result == 'go_to_wallet' && context.mounted) {
-                                final homeState = context.findAncestorStateOfType<DriverHomeScreenState>();
-                                if (homeState != null) {
-                                  homeState.setIndex(2);
+                                const SizedBox(height: 2),
+                                Text(
+                                  '₹${booking.totalFare.toStringAsFixed(2)}',
+                                  style: GoogleFonts.outfit(
+                                    color: const Color(0xFF1C9A5B),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Spacer(),
+                            ElevatedButton(
+                              onPressed: () async {
+                                final result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => DriverBookingDetailsScreen(
+                                      booking: booking,
+                                    ),
+                                  ),
+                                );
+                                if (result == 'go_to_wallet' && context.mounted) {
+                                  final homeState = context.findAncestorStateOfType<DriverHomeScreenState>();
+                                  if (homeState != null) {
+                                    homeState.setIndex(2);
+                                  }
                                 }
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFD90429),
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(100),
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFD90429),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(100),
+                                ),
+                              ),
+                              child: Text(
+                                'View Details',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                            child: Text(
-                              'View',
-                              style: GoogleFonts.outfit(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
               )
             else
               Container(
@@ -646,7 +721,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
           if (driverProvider.activeBooking != null) ...[
             // Active Ride Card
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
@@ -695,7 +770,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 10),
                   Text(
                     'BOOKING ID: ${driverProvider.activeBooking!.bookingId}',
                     style: GoogleFonts.outfit(
@@ -705,52 +780,56 @@ class _DriverHomePageState extends State<DriverHomePage> {
                       letterSpacing: 0.8,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Row(
+                  const SizedBox(height: 12),
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Column(
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 5),
-                          const Icon(Icons.circle, size: 8, color: Color(0xFF121214)),
-                          Container(
-                            width: 1.5,
-                            height: 30,
-                            color: const Color(0xFFE1E1E6),
+                          const Padding(
+                            padding: EdgeInsets.only(top: 2.0),
+                            child: Icon(Icons.circle, size: 8, color: Color(0xFF121214)),
                           ),
-                          const Icon(Icons.location_on, size: 14, color: Color(0xFFD90429)),
-                        ],
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
                               driverProvider.activeBooking!.pickupAddressName,
                               style: GoogleFonts.outfit(
                                 color: const Color(0xFF121214),
-                                fontSize: 13.5,
+                                fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 height: 1.2,
                               ),
                             ),
-                            const SizedBox(height: 24),
-                            Text(
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(top: 2.0),
+                            child: Icon(Icons.location_on, size: 12, color: Color(0xFFD90429)),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
                               driverProvider.activeBooking!.dropAddressName,
                               style: GoogleFonts.outfit(
                                 color: const Color(0xFF121214),
-                                fontSize: 13.5,
+                                fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 height: 1.2,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 14),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -774,10 +853,16 @@ class _DriverHomePageState extends State<DriverHomePage> {
                         backgroundColor: const Color(0xFFCC2D3B),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         elevation: 0,
                       ),
-                      child: Text('View Active Ride Details', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+                      child: Text(
+                        'View Active Ride Details',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
                   ),
                 ],

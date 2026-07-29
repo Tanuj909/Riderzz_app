@@ -138,32 +138,52 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                       const SizedBox(height: 16),
                       Text('ROUTE DETAILS', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF6C6F79), letterSpacing: 0.5)),
                       const SizedBox(height: 10),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Column(
-                            children: [
-                              Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFF1C9A5B), shape: BoxShape.circle)),
-                              Container(width: 1.5, height: 44, color: const Color(0xFFE7E7EB)),
-                              Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFFB9700A), shape: BoxShape.circle)),
-                            ],
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Column(
                               children: [
-                                Text('PICKUP', style: GoogleFonts.outfit(fontSize: 9, color: const Color(0xFF6C6F79), fontWeight: FontWeight.w600, letterSpacing: 0.5)),
-                                const SizedBox(height: 2),
-                                Text(booking.pickupAddressName, style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF121214))),
-                                const SizedBox(height: 14),
-                                Text('DROP', style: GoogleFonts.outfit(fontSize: 9, color: const Color(0xFF6C6F79), fontWeight: FontWeight.w600, letterSpacing: 0.5)),
-                                const SizedBox(height: 2),
-                                Text(booking.dropAddressName, style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF121214))),
+                                const SizedBox(height: 4),
+                                Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFF1C9A5B), shape: BoxShape.circle)),
+                                Expanded(
+                                  child: Container(width: 1.5, color: const Color(0xFFE7E7EB)),
+                                ),
+                                Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFFB9700A), shape: BoxShape.circle)),
+                                const SizedBox(height: 4),
                               ],
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('PICKUP', style: GoogleFonts.outfit(fontSize: 9, color: const Color(0xFF6C6F79), fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+                                  const SizedBox(height: 2),
+                                  Text(booking.pickupAddressName, style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF121214))),
+                                  if (booking.pickupContactName != null && booking.pickupContactName!.isNotEmpty) ...[
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      'Contact: ${booking.pickupContactName} (${booking.pickupContactPhone ?? 'N/A'})',
+                                      style: GoogleFonts.outfit(fontSize: 11, color: const Color(0xFFE31C2E), fontWeight: FontWeight.w600),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 14),
+                                  Text('DROP', style: GoogleFonts.outfit(fontSize: 9, color: const Color(0xFF6C6F79), fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+                                  const SizedBox(height: 2),
+                                  Text(booking.dropAddressName, style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF121214))),
+                                  if (booking.dropContactName != null && booking.dropContactName!.isNotEmpty) ...[
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      'Contact: ${booking.dropContactName} (${booking.dropContactPhone ?? 'N/A'})',
+                                      style: GoogleFonts.outfit(fontSize: 11, color: const Color(0xFFE31C2E), fontWeight: FontWeight.w600),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 20),
                       const Divider(height: 1, color: Color(0xFFE7E7EB)),
@@ -206,7 +226,7 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                         Row(
                           children: [
                             Expanded(
-                              child: _buildDetailTile('License Number', booking.driver!.licenseNumber ?? 'N/A', Icons.badge_outlined),
+                              child: _buildDetailTile('Vehicle Number', booking.vehicleNumber ?? 'N/A', Icons.directions_car_outlined),
                             ),
                             Expanded(
                               child: _buildDetailTile('Rating', '${booking.driver!.rating.toStringAsFixed(1)} ★', Icons.star_outline_rounded),
