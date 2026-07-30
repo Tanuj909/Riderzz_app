@@ -49,4 +49,7 @@ class ApiConstants {
   static const String driverPendingBroadcasts = '/driver/bookings/broadcasts/pending';
   static const String bookingsCurrent = '/bookings/current';
   static const String driverEarnings = '/driver/earnings';
+
+  // Support Endpoints
+  static const String supportTickets = '/support/tickets';
 }

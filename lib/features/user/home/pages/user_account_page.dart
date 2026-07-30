@@ -8,6 +8,7 @@ import 'package:riderzz_app/features/driver/profile/become_driver_screen.dart';
 import 'package:riderzz_app/features/driver/profile/widgets/driver_terms_popup.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 import 'package:riderzz_app/features/user/profile/screens/customer_profile_screen.dart';
+import 'package:riderzz_app/features/support/screens/support_tickets_screen.dart';
 
 class UserAccountPage extends StatefulWidget {
   final VoidCallback onNavigateToHistory;
@@ -472,7 +473,12 @@ class _UserAccountPageState extends State<UserAccountPage> {
               _buildListItem(
                 icon: Icons.help_outline_rounded,
                 label: 'Help & Support',
-                onTap: () => _showComingSoonDialog(context, 'Help & Support'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SupportTicketsScreen()),
+                  );
+                },
               ),
               _buildListItem(
                 icon: Icons.security_outlined,

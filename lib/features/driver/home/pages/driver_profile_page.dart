@@ -8,6 +8,7 @@ import 'package:riderzz_app/features/driver/home/pages/driver_bank_accounts_page
 import 'package:riderzz_app/core/services/location_tracking_service.dart';
 import 'package:riderzz_app/features/driver/profile/driver_profile_screen.dart';
 import 'package:riderzz_app/core/models/driver_profile_model.dart';
+import 'package:riderzz_app/features/support/screens/support_tickets_screen.dart';
 
 class DriverProfilePage extends StatefulWidget {
   const DriverProfilePage({super.key});
@@ -422,12 +423,25 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                    _buildListItem(
                     icon: Icons.account_balance_rounded,
                     label: 'Bank Accounts',
-                    showBorder: false,
+                    showBorder: true,
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const DriverBankAccountsPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildListItem(
+                    icon: Icons.help_outline_rounded,
+                    label: 'Help & Support',
+                    showBorder: false,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SupportTicketsScreen(),
                         ),
                       );
                     },

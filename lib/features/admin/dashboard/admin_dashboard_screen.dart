@@ -9,6 +9,7 @@ import 'package:riderzz_app/features/admin/commission/screens/admin_pricing_scre
 import 'package:riderzz_app/core/models/admin_driver_model.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/admin/bookings/all_bookings_screen.dart';
+import 'package:riderzz_app/features/support/screens/support_tickets_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -405,7 +406,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Expanded(child: SizedBox()),
+                Expanded(
+                  child: _buildQuickAccessCard(
+                    icon: Icons.support_agent_rounded,
+                    title: 'Support\nTickets',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SupportTicketsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
                 const SizedBox(width: 8),
                 const Expanded(child: SizedBox()),
               ],

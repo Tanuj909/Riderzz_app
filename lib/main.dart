@@ -47,6 +47,10 @@ import 'package:riderzz_app/features/admin/commission/data/repositories/pricing_
 import 'package:riderzz_app/features/admin/commission/providers/pricing_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:riderzz_app/features/support/data/datasource/support_remote_datasource.dart';
+import 'package:riderzz_app/features/support/data/repositories/support_repository.dart';
+import 'package:riderzz_app/features/support/providers/support_provider.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -125,6 +129,10 @@ class MyApp extends StatelessWidget {
           update: (_, apiClient, previous) =>
               PricingRemoteDataSource(apiClient),
         ),
+        ProxyProvider<ApiClient, SupportRemoteDataSource>(
+          update: (_, apiClient, previous) =>
+              SupportRemoteDataSource(apiClient),
+        ),
 
         // 3. Repositories
         ProxyProvider<AuthRemoteDataSource, AuthRepository>(
@@ -167,6 +175,9 @@ class MyApp extends StatelessWidget {
         ),
         ProxyProvider<PricingRemoteDataSource, PricingRepository>(
           update: (_, dataSource, previous) => PricingRepository(dataSource),
+        ),
+        ProxyProvider<SupportRemoteDataSource, SupportRepository>(
+          update: (_, dataSource, previous) => SupportRepository(dataSource),
         ),
 
         // 4. State Management (Providers)
@@ -277,6 +288,12 @@ class MyApp extends StatelessWidget {
         // LocationProvider for current device location
         ChangeNotifierProvider<LocationProvider>(
           create: (_) => LocationProvider(LocationService()),
+        ),
+        ChangeNotifierProxyProvider<SupportRepository, SupportProvider>(
+          create: (context) =>
+              SupportProvider(context.read<SupportRepository>()),
+          update: (_, repository, previous) =>
+              previous ?? SupportProvider(repository),
         ),
       ],
       child: MaterialApp(
