@@ -19,6 +19,7 @@ class DriverHomeScreen extends StatefulWidget {
 
 class DriverHomeScreenState extends State<DriverHomeScreen> {
   int _currentIndex = 0;
+  DriverHomeProvider? _driverHomeProvider;
 
   void setIndex(int index) {
     setState(() {
@@ -26,11 +27,23 @@ class DriverHomeScreenState extends State<DriverHomeScreen> {
     });
   }
 
+  void _onDriverHomeProviderChanged() {
+    if (!mounted) return;
+    final provider = _driverHomeProvider;
+    if (provider != null) {
+      final trackingService = context.read<LocationTrackingService>();
+      trackingService.updateHasActiveBooking(provider.activeBooking != null);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final provider = context.read<DriverHomeProvider>();
+      _driverHomeProvider = context.read<DriverHomeProvider>();
+      _driverHomeProvider?.addListener(_onDriverHomeProviderChanged);
+
+      final provider = _driverHomeProvider!;
       final trackingService = context.read<LocationTrackingService>();
 
       await provider.fetchDriverProfile();
@@ -38,7 +51,7 @@ class DriverHomeScreenState extends State<DriverHomeScreen> {
         final profile = provider.profile;
         if (profile != null && profile.isOnline) {
           // Driver is already online — start tracking immediately
-          trackingService.start();
+          trackingService.start(hasActiveBooking: provider.activeBooking != null);
         } else if (profile != null && !profile.isOnline) {
           _showGoOnlineDialog(context, provider, trackingService);
         }
@@ -48,6 +61,7 @@ class DriverHomeScreenState extends State<DriverHomeScreen> {
 
   @override
   void dispose() {
+    _driverHomeProvider?.removeListener(_onDriverHomeProviderChanged);
     // Stop tracking when the driver leaves this screen
     context.read<LocationTrackingService>().stop();
     super.dispose();
@@ -96,7 +110,7 @@ class DriverHomeScreenState extends State<DriverHomeScreen> {
               final success = await provider.setOnlineStatus(true);
               if (success && context.mounted) {
                 // Driver went online — start location tracking
-                trackingService.start();
+                trackingService.start(hasActiveBooking: provider.activeBooking != null);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('You are now Online! 🟢'),

@@ -5,6 +5,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
+import 'package:riderzz_app/core/providers/location_provider.dart';
+import 'package:riderzz_app/core/utils/curved_route_generator.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_polyline_algorithm/google_polyline_algorithm.dart';
 import 'package:dio/dio.dart';
@@ -15,8 +17,13 @@ import 'package:url_launcher/url_launcher.dart';
 
 class DriverBookingDetailsScreen extends StatefulWidget {
   final BookingModel booking;
+  final bool startExpanded;
 
-  const DriverBookingDetailsScreen({super.key, required this.booking});
+  const DriverBookingDetailsScreen({
+    super.key,
+    required this.booking,
+    this.startExpanded = true,
+  });
 
   @override
   State<DriverBookingDetailsScreen> createState() =>
@@ -26,7 +33,7 @@ class DriverBookingDetailsScreen extends StatefulWidget {
 class _DriverBookingDetailsScreenState
     extends State<DriverBookingDetailsScreen> {
   GoogleMapController? _mapController;
-  bool _isSheetExpanded = true;
+  late bool _isSheetExpanded;
   bool _isVerifyingOtp = false;
   String? _selectedPaymentMethod;
   bool _isDetailsExpanded = false;
@@ -44,6 +51,8 @@ class _DriverBookingDetailsScreenState
 
   BitmapDescriptor? _pickupIcon;
   BitmapDescriptor? _dropIcon;
+  BitmapDescriptor? _driverIcon;
+  bool _hasInitialBoundsFit = false;
   String? _routeDistanceText;
   String? _routeDurationText;
 
@@ -54,6 +63,7 @@ class _DriverBookingDetailsScreenState
   @override
   void initState() {
     super.initState();
+    _isSheetExpanded = widget.startExpanded;
     _currentBooking = widget.booking;
     final initialStatus = _currentBooking.status.toUpperCase();
     _wasAlreadyCompleted =
@@ -269,13 +279,26 @@ class _DriverBookingDetailsScreenState
     return BitmapDescriptor.fromBytes(byteData!.buffer.asUint8List());
   }
 
+  Future<BitmapDescriptor> _loadScaledAssetIcon(String path, int targetWidth) async {
+    final ByteData assetData = await rootBundle.load(path);
+    final ui.Codec codec = await ui.instantiateImageCodec(
+      assetData.buffer.asUint8List(),
+      targetWidth: targetWidth,
+    );
+    final ui.FrameInfo fi = await codec.getNextFrame();
+    final byteData = await fi.image.toByteData(format: ui.ImageByteFormat.png);
+    return BitmapDescriptor.fromBytes(byteData!.buffer.asUint8List());
+  }
+
   Future<void> _loadMarkerIcons() async {
     try {
       final pickupDescriptor = await _createLabeledMarkerBitmap('Pickup', const Color(0xFF1C9A5B));
       final dropDescriptor = await _createLabeledMarkerBitmap('Drop', const Color(0xFFD90429));
+      final driverDescriptor = await _loadScaledAssetIcon('assets/icons/driver_icon.png', 100);
       setState(() {
         _pickupIcon = pickupDescriptor;
         _dropIcon = dropDescriptor;
+        _driverIcon = driverDescriptor;
       });
     } catch (e) {
       debugPrint('Error loading custom markers: $e');
@@ -491,6 +514,23 @@ class _DriverBookingDetailsScreenState
 
     final markers = <Marker>{};
 
+    final locationProvider = Provider.of<LocationProvider>(context);
+    final double? driverLat = locationProvider.currentLatitude;
+    final double? driverLng = locationProvider.currentLongitude;
+
+    if (driverLat != null && driverLng != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('driver_current'),
+          position: LatLng(driverLat, driverLng),
+          infoWindow: const InfoWindow(title: 'My Location'),
+          icon: _driverIcon ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          anchor: const Offset(0.5, 1.0),
+        ),
+      );
+    }
+
     if (pickupLat != null && pickupLng != null) {
       markers.add(
         Marker(
@@ -520,6 +560,108 @@ class _DriverBookingDetailsScreenState
     }
 
     return markers;
+  }
+
+  Set<Polyline> _getPolylines(BookingModel booking) {
+    final statusUpper = _currentBooking.status.toUpperCase();
+    
+    if (statusUpper == 'PENDING') {
+      return _polylines;
+    }
+
+    final bool isGoingToPickup = statusUpper != 'IN_TRANSIT' &&
+        statusUpper != 'DRIVER_ARRIVED_DROP' &&
+        statusUpper != 'DELIVERED' &&
+        statusUpper != 'COMPLETED' &&
+        statusUpper != 'CANCELLED';
+
+    if (isGoingToPickup) {
+      final locationProvider = Provider.of<LocationProvider>(context);
+      final double? driverLat = locationProvider.currentLatitude;
+      final double? driverLng = locationProvider.currentLongitude;
+      final double? pickupLat = booking.pickupLatitude;
+      final double? pickupLng = booking.pickupLongitude;
+
+      if (driverLat != null && driverLng != null && pickupLat != null && pickupLng != null) {
+        final start = LatLng(driverLat, driverLng);
+        final end = LatLng(pickupLat, pickupLng);
+        final domePoints = CurvedRouteGenerator.generateCurvedRoute(start, end);
+
+        return {
+          Polyline(
+            polylineId: const PolylineId('dome_route_shadow'),
+            points: domePoints,
+            color: const Color(0x2F000000), // Shadow effect color
+            width: 9,
+            jointType: JointType.round,
+            startCap: Cap.roundCap,
+            endCap: Cap.roundCap,
+          ),
+          Polyline(
+            polylineId: const PolylineId('dome_route_main'),
+            points: domePoints,
+            color: const Color(0xFFCC2D3B), // Main route color
+            width: 4,
+            jointType: JointType.round,
+            startCap: Cap.roundCap,
+            endCap: Cap.roundCap,
+          ),
+        };
+      }
+      return {};
+    } else {
+      return _polylines;
+    }
+  }
+
+  void _fitMapBoundsForCurrentState(BookingModel booking) {
+    if (_mapController == null) return;
+
+    final statusUpper = _currentBooking.status.toUpperCase();
+    
+    if (statusUpper == 'PENDING') {
+      if (_polylineCoordinates.isNotEmpty) {
+        _fitMapBounds();
+        _hasInitialBoundsFit = true;
+      }
+      return;
+    }
+
+    final bool isGoingToPickup = statusUpper != 'IN_TRANSIT' &&
+        statusUpper != 'DRIVER_ARRIVED_DROP' &&
+        statusUpper != 'DELIVERED' &&
+        statusUpper != 'COMPLETED' &&
+        statusUpper != 'CANCELLED';
+
+    if (isGoingToPickup) {
+      final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+      final double? driverLat = locationProvider.currentLatitude;
+      final double? driverLng = locationProvider.currentLongitude;
+      final double? pickupLat = booking.pickupLatitude;
+      final double? pickupLng = booking.pickupLongitude;
+
+      if (driverLat != null && driverLng != null && pickupLat != null && pickupLng != null) {
+        final bounds = LatLngBounds(
+          southwest: LatLng(
+            driverLat < pickupLat ? driverLat : pickupLat,
+            driverLng < pickupLng ? driverLng : pickupLng,
+          ),
+          northeast: LatLng(
+            driverLat > pickupLat ? driverLat : pickupLat,
+            driverLng > pickupLng ? driverLng : pickupLng,
+          ),
+        );
+        _mapController!.animateCamera(
+          CameraUpdate.newLatLngBounds(bounds, 80),
+        );
+        _hasInitialBoundsFit = true;
+      }
+    } else {
+      if (_polylineCoordinates.isNotEmpty) {
+        _fitMapBounds();
+        _hasInitialBoundsFit = true;
+      }
+    }
   }
 
   Future<void> _makeCall(String phoneNumber) async {
@@ -803,7 +945,7 @@ class _DriverBookingDetailsScreenState
       case 'OTP_VERIFIED':
         return 'Swipe: Pick Up Goods';
       case 'GOODS_PICKED_UP':
-        return 'Swipe: Start Transit';
+        return 'Swipe: Start Ride';
       case 'IN_TRANSIT':
         return 'Swipe: Arrived at Drop';
       case 'DRIVER_ARRIVED_DROP':
@@ -869,6 +1011,12 @@ class _DriverBookingDetailsScreenState
       });
     }
 
+    if (!_hasInitialBoundsFit) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _fitMapBoundsForCurrentState(booking);
+      });
+    }
+
     return Scaffold(
       body: Stack(
         children: [
@@ -881,12 +1029,10 @@ class _DriverBookingDetailsScreenState
               ),
               onMapCreated: (controller) {
                 _mapController = controller;
-                if (_polylineCoordinates.isNotEmpty && _isRouteDrawn) {
-                  _fitMapBounds();
-                }
+                _fitMapBoundsForCurrentState(booking);
               },
               markers: _buildMarkers(booking),
-              polylines: _polylines,
+              polylines: _getPolylines(booking),
               myLocationButtonEnabled: false,
               zoomControlsEnabled: false,
               mapToolbarEnabled: false,
@@ -1118,6 +1264,23 @@ class _DriverBookingDetailsScreenState
                             _isSheetExpanded = !_isSheetExpanded;
                           });
                         },
+                        onVerticalDragUpdate: (details) {
+                          if (details.delta.dy > 5) {
+                            // User is dragging down
+                            if (_isSheetExpanded) {
+                              setState(() {
+                                _isSheetExpanded = false;
+                              });
+                            }
+                          } else if (details.delta.dy < -5) {
+                            // User is dragging up
+                            if (!_isSheetExpanded) {
+                              setState(() {
+                                _isSheetExpanded = true;
+                              });
+                            }
+                          }
+                        },
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           color: Colors.transparent,
@@ -1196,6 +1359,72 @@ class _DriverBookingDetailsScreenState
                                   ),
                               ],
                             ),
+                            if (booking.commissionAmount != null) ...[
+                              const SizedBox(height: 14),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFF9F3),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFFFFEAD2)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFFFEAD2),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.account_balance_wallet_rounded,
+                                        color: Color(0xFFE2A03F),
+                                        size: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                'Commission Deducted',
+                                                style: GoogleFonts.outfit(
+                                                  color: const Color(0xFF4A4B50),
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                              Text(
+                                                '- ₹${booking.commissionAmount!.toStringAsFixed(2)}',
+                                                style: GoogleFonts.ibmPlexMono(
+                                                  color: const Color(0xFFCC2D3B),
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            'This amount will be deducted from your wallet.',
+                                            style: GoogleFonts.outfit(
+                                              color: const Color(0xFF8E9098),
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                             const SizedBox(
                               height: 20,
                             ), // Addresses & Shipment Details
@@ -1211,7 +1440,9 @@ class _DriverBookingDetailsScreenState
                             ],
 
                             // Dynamic Action Section (Accept/Reject, OTP or Status updates)
-                            if (statusUpper == 'PENDING') ...[
+                            if (isDelivered) ...[
+                              // Already delivered, no actions needed
+                            ] else if (statusUpper == 'PENDING') ...[
                               Column(
                                 children: [
                                   SwipeSlider(
@@ -1703,6 +1934,8 @@ class _DriverBookingDetailsScreenState
                               ] else ...[
                                 // OTP verification or updates
                                 if (needsOtpVerification) ...[
+                                  _buildMessageCallButtons(),
+                                  const SizedBox(height: 16),
                                   OtpVerificationView(
                                     isLoading: _isVerifyingOtp,
                                     isSuccess: statusUpper == 'OTP_VERIFIED',
@@ -1804,7 +2037,7 @@ class _DriverBookingDetailsScreenState
                                       }
                                     },
                                     icon: const Icon(Icons.navigation_rounded),
-                                    label: const Text('Navigate to Pickup'),
+                                    label: const Text('Pickup Location'),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color(0xFF121214),
                                       foregroundColor: Colors.white,
@@ -1819,6 +2052,29 @@ class _DriverBookingDetailsScreenState
                                         fontSize: 14,
                                       ),
                                       elevation: 0,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Center(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      if (booking.pickupLatitude != null &&
+                                          booking.pickupLongitude != null) {
+                                        MapsLauncherService.launchMaps(
+                                          latitude: booking.pickupLatitude!,
+                                          longitude: booking.pickupLongitude!,
+                                        );
+                                      }
+                                    },
+                                    child: Text(
+                                      'open with maps',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        color: const Color(0xFF6C6F79),
+                                        fontWeight: FontWeight.w500,
+                                        decoration: TextDecoration.underline,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -1847,7 +2103,7 @@ class _DriverBookingDetailsScreenState
                                       }
                                     },
                                     icon: const Icon(Icons.navigation_rounded),
-                                    label: const Text('Navigate to Drop'),
+                                    label: const Text('Drop Location'),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color(0xFF121214),
                                       foregroundColor: Colors.white,
@@ -1862,6 +2118,29 @@ class _DriverBookingDetailsScreenState
                                         fontSize: 14,
                                       ),
                                       elevation: 0,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Center(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      if (booking.dropLatitude != null &&
+                                          booking.dropLongitude != null) {
+                                        MapsLauncherService.launchMaps(
+                                          latitude: booking.dropLatitude!,
+                                          longitude: booking.dropLongitude!,
+                                        );
+                                      }
+                                    },
+                                    child: Text(
+                                      'open with maps',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        color: const Color(0xFF6C6F79),
+                                        fontWeight: FontWeight.w500,
+                                        decoration: TextDecoration.underline,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -1915,7 +2194,7 @@ class _DriverBookingDetailsScreenState
           ),
 
           // Completion Modal Overlay
-          if (isDelivered)
+          if (isDelivered && !_wasAlreadyCompleted)
             Positioned.fill(
               child: Container(
                 color: const Color(0xFFF6F6F8),
@@ -1975,83 +2254,15 @@ class _DriverBookingDetailsScreenState
                         letterSpacing: -1,
                       ),
                     ),
-                    if (_wasAlreadyCompleted) ...[
-                      const SizedBox(height: 28),
-                      Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x05121214),
-                              blurRadius: 10,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.star_rounded,
-                                  color: Color(0xFFFFB000),
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Customer Rating',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w800,
-                                    color: const Color(0xFF121214),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(
-                                5,
-                                (index) => const Icon(
-                                  Icons.star_rounded,
-                                  color: Color(0xFFFFB000),
-                                  size: 24,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              '"Very fast delivery, polite behavior and well-maintained vehicle. Excellent service!"',
-                              style: GoogleFonts.outfit(
-                                fontSize: 13.5,
-                                color: const Color(0xFF4A5568),
-                                fontStyle: FontStyle.italic,
-                                fontWeight: FontWeight.w500,
-                                height: 1.4,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Going to home page in 3 seconds...',
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        color: const Color(0xFF6C6F79),
+                        fontWeight: FontWeight.w700,
                       ),
-                    ] else ...[
-                      const SizedBox(height: 16),
-                      Text(
-                        'Going to home page in 3 seconds...',
-                        style: GoogleFonts.outfit(
-                          fontSize: 14,
-                          color: const Color(0xFF6C6F79),
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
+                    ),
                     const SizedBox(height: 32),
                     SizedBox(
                       width: double.infinity,
@@ -2089,6 +2300,7 @@ class _DriverBookingDetailsScreenState
       ),
     );
   }
+
 
   Widget _buildAddressCard(BookingModel booking) {
     return Container(

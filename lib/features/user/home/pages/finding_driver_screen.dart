@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +10,7 @@ import 'package:google_polyline_algorithm/google_polyline_algorithm.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
 
@@ -27,7 +29,7 @@ class FindingDriverScreen extends StatefulWidget {
 }
 
 class _FindingDriverScreenState extends State<FindingDriverScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _animationController;
   bool _isCancelling = false;
   Timer? _statusTimer;
@@ -55,6 +57,19 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
   LatLng? _lastRouteFetchedDriverLocation;
   bool _hasInitialZoomedInOnDriver = false;
 
+  // Variables for improved driver location tracking
+  AnimationController? _markerAnimationController;
+  LatLng? _previousLocation;
+  LatLng? _targetLocation;
+  double _driverBearing = 0.0;
+  double _previousBearing = 0.0;
+  double _targetBearing = 0.0;
+  DateTime? _lastSuccessfulFetchTime;
+  DateTime? _lastDriverLocationUpdatedAt;
+  bool _isFetchingDriverLocation = false;
+  bool _isCameraMoving = false;
+  bool _isDriverLocationStaleState = false;
+
   @override
   void initState() {
     super.initState();
@@ -63,6 +78,12 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat();
+
+    _markerAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800), // 1.8 seconds (Task 6)
+    );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadCustomMarkerIcon();
     });
@@ -435,13 +456,108 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
     }
   }
 
+  double _calculateBearing(LatLng start, LatLng end) {
+    final double lat1 = start.latitude * math.pi / 180.0;
+    final double lon1 = start.longitude * math.pi / 180.0;
+    final double lat2 = end.latitude * math.pi / 180.0;
+    final double lon2 = end.longitude * math.pi / 180.0;
+
+    final double dLon = lon2 - lon1;
+
+    final double y = math.sin(dLon) * math.cos(lat2);
+    final double x = math.cos(lat1) * math.sin(lat2) -
+        math.sin(lat1) * math.cos(lat2) * math.cos(dLon);
+
+    final double radians = math.atan2(y, x);
+    final double degrees = radians * 180.0 / math.pi;
+
+    return (degrees + 360.0) % 360.0;
+  }
+
+  void _updateCameraIfNeeded(LatLng targetPos) async {
+    if (!_hasInitialZoomedInOnDriver || _mapController == null || _isCameraMoving) {
+      return;
+    }
+
+    _isCameraMoving = true;
+    try {
+      final bounds = await _mapController!.getVisibleRegion();
+      
+      final latRange = bounds.northeast.latitude - bounds.southwest.latitude;
+      final lngRange = bounds.northeast.longitude - bounds.southwest.longitude;
+      
+      final paddingLat = latRange * 0.1;
+      final paddingLng = lngRange * 0.1;
+      
+      final safeSouthwest = LatLng(
+        bounds.southwest.latitude + paddingLat,
+        bounds.southwest.longitude + paddingLng,
+      );
+      final safeNortheast = LatLng(
+        bounds.northeast.latitude - paddingLat,
+        bounds.northeast.longitude - paddingLng,
+      );
+      
+      final safeBounds = LatLngBounds(southwest: safeSouthwest, northeast: safeNortheast);
+      
+      if (!safeBounds.contains(targetPos)) {
+        await _mapController!.animateCamera(
+          CameraUpdate.newLatLng(targetPos),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error checking camera bounds: $e');
+    } finally {
+      _isCameraMoving = false;
+    }
+  }
+
+  bool get _isDriverLocationStale {
+    if (_lastSuccessfulFetchTime == null) return false;
+    final now = DateTime.now();
+    if (now.difference(_lastSuccessfulFetchTime!).inSeconds > 15) {
+      return true;
+    }
+    if (_lastDriverLocationUpdatedAt != null) {
+      final nowUtc = DateTime.now().toUtc();
+      if (nowUtc.difference(_lastDriverLocationUpdatedAt!).inSeconds > 15) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  LatLng _getCurrentAnimatedLocation() {
+    if (_previousLocation == null || _targetLocation == null) {
+      return _driverLocation ?? const LatLng(0, 0);
+    }
+    if (_markerAnimationController == null || !_markerAnimationController!.isAnimating) {
+      return _targetLocation!;
+    }
+    final t = _markerAnimationController!.value;
+    final lat = _previousLocation!.latitude +
+        (_targetLocation!.latitude - _previousLocation!.latitude) * t;
+    final lng = _previousLocation!.longitude +
+        (_targetLocation!.longitude - _previousLocation!.longitude) * t;
+    return LatLng(lat, lng);
+  }
+
+  void _checkStaleness() {
+    final currentlyStale = _isDriverLocationStale;
+    if (_isDriverLocationStaleState != currentlyStale) {
+      setState(() {
+        _isDriverLocationStaleState = currentlyStale;
+      });
+    }
+  }
+
   void _startDriverLocationTracking(int driverId) {
     _driverLocationTimer?.cancel();
 
-    // Fetch immediately on start, then every 8 seconds
+    // Fetch immediately on start, then every 2 seconds
     _fetchAndUpdateDriverLocation(driverId);
 
-    _driverLocationTimer = Timer.periodic(const Duration(seconds: 8), (
+    _driverLocationTimer = Timer.periodic(const Duration(seconds: 2), (
       timer,
     ) async {
       if (!mounted) return;
@@ -449,45 +565,109 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
     });
   }
 
-    Future<void> _fetchAndUpdateDriverLocation(int driverId) async {
-    final bookingProvider = context.read<BookingProvider>();
-    final loc = await bookingProvider.fetchDriverLocation(driverId);
-    if (loc != null && mounted) {
-      setState(() {
-        _driverLocation = LatLng(loc.latitude, loc.longitude);
-        if (loc.driverName != null) _driverName = loc.driverName;
-        if (loc.vehicleNumber != null) _vehicleNumber = loc.vehicleNumber;
-      });
+  Future<void> _fetchAndUpdateDriverLocation(int driverId) async {
+    _checkStaleness();
 
-      final statusUpper = _currentBooking.status.toUpperCase();
-      final isPreTransit = statusUpper == 'DRIVER_ASSIGNED' ||
-          statusUpper == 'ACCEPTED' ||
-          statusUpper == 'EN_ROUTE' ||
-          statusUpper == 'DRIVER_ARRIVED';
+    if (_isFetchingDriverLocation) return;
+    _isFetchingDriverLocation = true;
 
-      if (isPreTransit) {
-        bool shouldFetch = false;
-        if (_lastRouteFetchedDriverLocation == null || _polylineCoordinates.isEmpty) {
-          shouldFetch = true;
+    try {
+      final bookingProvider = context.read<BookingProvider>();
+      final loc = await bookingProvider.fetchDriverLocation(driverId);
+      if (loc != null && mounted) {
+        _lastSuccessfulFetchTime = DateTime.now();
+        if (loc.updatedAt.isNotEmpty) {
+          try {
+            _lastDriverLocationUpdatedAt = DateTime.parse(loc.updatedAt).toUtc();
+          } catch (_) {}
+        }
+
+        final newTarget = LatLng(loc.latitude, loc.longitude);
+
+        // Skip duplicate coordinates completely (Task 3)
+        if (_targetLocation != null &&
+            _targetLocation!.latitude == newTarget.latitude &&
+            _targetLocation!.longitude == newTarget.longitude) {
+          _checkStaleness();
+          return;
+        }
+
+        setState(() {
+          if (loc.driverName != null) _driverName = loc.driverName;
+          if (loc.vehicleNumber != null) _vehicleNumber = loc.vehicleNumber;
+        });
+
+        if (_driverLocation == null) {
+          // First location update, snap directly
+          setState(() {
+            _driverLocation = newTarget;
+            _previousLocation = newTarget;
+            _targetLocation = newTarget;
+            _driverBearing = 0.0;
+            _previousBearing = 0.0;
+            _targetBearing = 0.0;
+          });
         } else {
-          final double latDiff = (_driverLocation!.latitude - _lastRouteFetchedDriverLocation!.latitude).abs();
-          final double lngDiff = (_driverLocation!.longitude - _lastRouteFetchedDriverLocation!.longitude).abs();
-          if (latDiff > 0.0009 || lngDiff > 0.0009) {
+          // Capture current animated position and animate toward target (Task 2)
+          final currentPos = _getCurrentAnimatedLocation();
+          _markerAnimationController?.stop(); // Stop current animation
+          
+          _previousLocation = currentPos; // Start animating from its current position
+          _targetLocation = newTarget;
+          
+          // Calculate bearing only if moved at least 2 meters to avoid drift flickering (Task 4)
+          final double distance = Geolocator.distanceBetween(
+            currentPos.latitude,
+            currentPos.longitude,
+            newTarget.latitude,
+            newTarget.longitude,
+          );
+          
+          if (distance >= 2.0) {
+            final double bearing = _calculateBearing(currentPos, newTarget);
+            _previousBearing = _driverBearing;
+            _targetBearing = bearing;
+          } else {
+            _previousBearing = _driverBearing;
+            _targetBearing = _driverBearing;
+          }
+
+          _markerAnimationController?.forward(from: 0.0);
+        }
+
+        // Camera follow update only on new location (Task 5)
+        _updateCameraIfNeeded(newTarget);
+
+        final statusUpper = _currentBooking.status.toUpperCase();
+        final isPreTransit = statusUpper == 'DRIVER_ASSIGNED' ||
+            statusUpper == 'ACCEPTED' ||
+            statusUpper == 'EN_ROUTE' ||
+            statusUpper == 'DRIVER_ARRIVED';
+
+        if (isPreTransit) {
+          bool shouldFetch = false;
+          if (_lastRouteFetchedDriverLocation == null || _polylineCoordinates.isEmpty) {
             shouldFetch = true;
+          } else {
+            final double latDiff = (newTarget.latitude - _lastRouteFetchedDriverLocation!.latitude).abs();
+            final double lngDiff = (newTarget.longitude - _lastRouteFetchedDriverLocation!.longitude).abs();
+            if (latDiff > 0.0009 || lngDiff > 0.0009) {
+              shouldFetch = true;
+            }
+          }
+
+          if (shouldFetch) {
+            _fetchDriverToPickupRoute();
           }
         }
-
-        if (shouldFetch) {
-          _fetchDriverToPickupRoute();
-        }
+        
+        _checkStaleness();
       }
-
-      // Follow driver location once initial overview and zoom is done
-      if (_hasInitialZoomedInOnDriver &&
-          _mapController != null &&
-          _driverLocation != null) {
-        _mapController!.animateCamera(CameraUpdate.newLatLng(_driverLocation!));
-      }
+    } catch (e) {
+      debugPrint('Error fetching driver location: $e');
+      _checkStaleness();
+    } finally {
+      _isFetchingDriverLocation = false;
     }
   }
 
@@ -496,6 +676,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
     _statusTimer?.cancel();
     _driverLocationTimer?.cancel();
     _animationController.dispose();
+    _markerAnimationController?.dispose();
     super.dispose();
   }
 
@@ -909,75 +1090,151 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
               children: [
                 // Full Background Google Map
                 Positioned.fill(
-                  child: GoogleMap(
-                    initialCameraPosition: CameraPosition(
-                      target: (_polylineCoordinates.isNotEmpty)
-                          ? _polylineCoordinates.first
-                          : (_currentBooking.pickupLatitude != null &&
-                                _currentBooking.pickupLongitude != null)
-                          ? LatLng(
-                              _currentBooking.pickupLatitude!,
-                              _currentBooking.pickupLongitude!,
-                            )
-                          : const LatLng(28.6139, 77.2090),
-                      zoom: 15.5,
-                    ),
-                    onMapCreated: (controller) {
-                      _mapController = controller;
-                      if (_polylineCoordinates.isNotEmpty) {
-                        _fitMapBounds();
+                  child: AnimatedBuilder(
+                    animation: _markerAnimationController ?? const AlwaysStoppedAnimation(0.0),
+                    builder: (context, child) {
+                      LatLng? displayLoc = _driverLocation;
+                      double displayBearing = _driverBearing;
+
+                      if (_previousLocation != null &&
+                          _targetLocation != null &&
+                          _markerAnimationController != null &&
+                          _markerAnimationController!.isAnimating) {
+                        final t = _markerAnimationController!.value;
+                        final lat = _previousLocation!.latitude +
+                            (_targetLocation!.latitude - _previousLocation!.latitude) * t;
+                        final lng = _previousLocation!.longitude +
+                            (_targetLocation!.longitude - _previousLocation!.longitude) * t;
+                        displayLoc = LatLng(lat, lng);
+
+                        // Interpolate bearing smoothly
+                        double diff = _targetBearing - _previousBearing;
+                        if (diff > 180) {
+                          diff -= 360;
+                        } else if (diff < -180) {
+                          diff += 360;
+                        }
+                        displayBearing = (_previousBearing + diff * t + 360) % 360;
+
+                        // Sync display back to driverLocation state so it can be accessed outside
+                        _driverLocation = displayLoc;
+                        _driverBearing = displayBearing;
                       }
-                    },
-                    markers: {
-                      if (_currentBooking.pickupLatitude != null &&
-                          _currentBooking.pickupLongitude != null)
-                        Marker(
-                          markerId: const MarkerId('pickup'),
-                          position: LatLng(
-                            _currentBooking.pickupLatitude!,
-                            _currentBooking.pickupLongitude!,
-                          ),
-                          infoWindow: const InfoWindow(
-                            title: 'Pickup Location',
-                          ),
-                          icon: BitmapDescriptor.defaultMarkerWithHue(
-                            BitmapDescriptor.hueGreen,
-                          ),
+
+                      return GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                          target: (_polylineCoordinates.isNotEmpty)
+                              ? _polylineCoordinates.first
+                              : (_currentBooking.pickupLatitude != null &&
+                                    _currentBooking.pickupLongitude != null)
+                              ? LatLng(
+                                  _currentBooking.pickupLatitude!,
+                                  _currentBooking.pickupLongitude!,
+                                )
+                              : const LatLng(28.6139, 77.2090),
+                          zoom: 15.5,
                         ),
-                      if (_currentBooking.dropLatitude != null &&
-                          _currentBooking.dropLongitude != null)
-                        Marker(
-                          markerId: const MarkerId('drop'),
-                          position: LatLng(
-                            _currentBooking.dropLatitude!,
-                            _currentBooking.dropLongitude!,
-                          ),
-                          infoWindow: const InfoWindow(title: 'Drop Location'),
-                          icon: BitmapDescriptor.defaultMarkerWithHue(
-                            BitmapDescriptor.hueRed,
-                          ),
-                        ),
-                      if (_driverLocation != null)
-                        Marker(
-                          markerId: const MarkerId('driver_location'),
-                          position: _driverLocation!,
-                          infoWindow: InfoWindow(
-                            title: _driverName ?? 'Driver',
-                            snippet: _vehicleNumber ?? 'Vehicle',
-                          ),
-                          icon:
-                              _driverIconDescriptor ??
-                              BitmapDescriptor.defaultMarkerWithHue(
-                                BitmapDescriptor.hueOrange,
+                        onMapCreated: (controller) {
+                          _mapController = controller;
+                          if (_polylineCoordinates.isNotEmpty) {
+                            _fitMapBounds();
+                          }
+                        },
+                        markers: {
+                          if (_currentBooking.pickupLatitude != null &&
+                              _currentBooking.pickupLongitude != null)
+                            Marker(
+                              markerId: const MarkerId('pickup'),
+                              position: LatLng(
+                                _currentBooking.pickupLatitude!,
+                                _currentBooking.pickupLongitude!,
                               ),
-                        ),
+                              infoWindow: const InfoWindow(
+                                title: 'Pickup Location',
+                              ),
+                              icon: BitmapDescriptor.defaultMarkerWithHue(
+                                BitmapDescriptor.hueGreen,
+                              ),
+                            ),
+                          if (_currentBooking.dropLatitude != null &&
+                              _currentBooking.dropLongitude != null)
+                            Marker(
+                              markerId: const MarkerId('drop'),
+                              position: LatLng(
+                                _currentBooking.dropLatitude!,
+                                _currentBooking.dropLongitude!,
+                              ),
+                              infoWindow: const InfoWindow(title: 'Drop Location'),
+                              icon: BitmapDescriptor.defaultMarkerWithHue(
+                                BitmapDescriptor.hueRed,
+                              ),
+                            ),
+                          if (displayLoc != null)
+                            Marker(
+                              markerId: const MarkerId('driver_location'),
+                              position: displayLoc,
+                              rotation: displayBearing,
+                              flat: true,
+                              anchor: const Offset(0.5, 0.5),
+                              infoWindow: InfoWindow(
+                                title: _driverName ?? 'Driver',
+                                snippet: _isDriverLocationStaleState
+                                    ? '${_vehicleNumber ?? "Vehicle"} (Connection Lost)'
+                                    : (_vehicleNumber ?? 'Vehicle'),
+                              ),
+                              icon:
+                                  _driverIconDescriptor ??
+                                  BitmapDescriptor.defaultMarkerWithHue(
+                                    BitmapDescriptor.hueOrange,
+                                  ),
+                            ),
+                        },
+                        polylines: _polylines,
+                        myLocationButtonEnabled: false,
+                        zoomControlsEnabled: false,
+                        mapToolbarEnabled: false,
+                      );
                     },
-                    polylines: _polylines,
-                    myLocationButtonEnabled: false,
-                    zoomControlsEnabled: false,
-                    mapToolbarEnabled: false,
                   ),
                 ),
+
+                // Stale Location Banner Alert Overlay
+                if (_isDriverLocationStaleState)
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 72,
+                    left: 16,
+                    right: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD90429).withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x26000000),
+                            blurRadius: 10,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.wifi_off_rounded, color: Colors.white, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              "Driver's GPS signal is weak. Reconnecting...",
+                              style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
 
                 // Floating Back Button
                 Positioned(

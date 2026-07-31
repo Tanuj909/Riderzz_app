@@ -12,6 +12,7 @@ class LocationTrackingService {
   final DriverRepository _driverRepository;
   bool _isTracking = false;
   bool _hasPromptedBackground = false;
+  bool _hasActiveBooking = false;
 
   LocationTrackingService(this._driverRepository);
 
@@ -22,11 +23,24 @@ class LocationTrackingService {
     return await FlutterForegroundTask.isRunningService;
   }
 
+  /// Update active booking status and inform background isolate if running.
+  void updateHasActiveBooking(bool hasActive) {
+    if (_hasActiveBooking == hasActive) return;
+    _hasActiveBooking = hasActive;
+    if (_isTracking) {
+      FlutterForegroundTask.sendDataToTask(hasActive);
+      debugPrint('LocationTrackingService: Sent hasActiveBooking = $hasActive to foreground task.');
+    }
+  }
+
   /// Start Foreground Service background tracking.
-  Future<void> start() async {
+  Future<void> start({bool hasActiveBooking = false}) async {
+    _hasActiveBooking = hasActiveBooking;
     if (_isTracking || await FlutterForegroundTask.isRunningService) {
       _isTracking = true;
       debugPrint('LocationTrackingService: Foreground service is already running.');
+      // Keep background isolate in sync
+      FlutterForegroundTask.sendDataToTask(_hasActiveBooking);
       return;
     }
 
@@ -51,10 +65,14 @@ class LocationTrackingService {
       permission = await Geolocator.requestPermission();
     }
 
-    // 4. Save Api Base URL so background isolate can retrieve it
+    // 4. Save Api Base URL and initial booking state so background isolate can retrieve it
     await FlutterForegroundTask.saveData(
       key: 'api_base_url',
       value: ApiConstants.baseUrl,
+    );
+    await FlutterForegroundTask.saveData(
+      key: 'has_active_booking',
+      value: _hasActiveBooking,
     );
 
     // 5. Start Android Foreground Service

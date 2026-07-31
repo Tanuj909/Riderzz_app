@@ -233,6 +233,24 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                                       ),
                                     ],
                                   ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text(
+                                        'Estimated distance',
+                                        style: TextStyle(fontSize: 14, color: Color(0xFF6C6F79)),
+                                      ),
+                                      Text(
+                                        '${_stats!.distance.toStringAsFixed(1)} km',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF121214),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                   if (widget.bookingData['fastDelivery'] == true) ...[
                                     const SizedBox(height: 12),
                                     Container(

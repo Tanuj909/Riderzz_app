@@ -42,24 +42,37 @@ class _RoleRedirectScreenState extends State<RoleRedirectScreen> {
   }
 
   void _checkRoleAndRedirect() async {
-    final startTime = DateTime.now();
-    
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final locationProvider = Provider.of<LocationProvider>(context, listen: false);
 
-    // Run auth check and location initialization in parallel
-    late final bool isLoggedIn;
-    await Future.wait([
-      authProvider.tryAutoLogin().then((v) => isLoggedIn = v),
-      locationProvider.initialize(),
-    ]);
+    // Default to false — will be overwritten if auth resolves in time.
+    bool isLoggedIn = false;
 
-    final elapsedTime = DateTime.now().difference(startTime);
-    final remainingTime = const Duration(milliseconds: 1800) - elapsedTime;
-    
-    if (remainingTime > Duration.zero) {
-      await Future.delayed(remainingTime);
-    }
+    // Race the full init work against a strict 2-second wall-clock timer.
+    // Whichever finishes first wins. Splash never hangs past 2 seconds.
+    await Future.any([
+      // Auth + location in parallel, each with their own safety timeout.
+      Future.wait([
+        authProvider
+            .tryAutoLogin()
+            .then((v) => isLoggedIn = v)
+            .catchError((_) => isLoggedIn = false)
+            .timeout(
+              const Duration(milliseconds: 1800),
+              onTimeout: () => isLoggedIn = false,
+            ),
+        locationProvider
+            .initialize()
+            .catchError((_) => Future<void>.value())
+            .timeout(
+              const Duration(milliseconds: 1800),
+              onTimeout: () => Future<void>.value(),
+            ),
+      ]).catchError((_) => <void>[]),
+
+      // Hard 2-second wall-clock cap — always exits splash by this point.
+      Future.delayed(const Duration(seconds: 2)),
+    ]);
 
     if (!mounted) return;
 

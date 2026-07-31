@@ -87,7 +87,7 @@ class _UserAccountPageState extends State<UserAccountPage> {
   void _showLogoutDialog(BuildContext context, AuthProvider authProvider) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -114,7 +114,7 @@ class _UserAccountPageState extends State<UserAccountPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text('Cancel', style: GoogleFonts.outfit(color: const Color(0xFF6C6F79), fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
@@ -126,7 +126,7 @@ class _UserAccountPageState extends State<UserAccountPage> {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
             onPressed: () async {
-              Navigator.pop(context); // Close dialog
+              Navigator.pop(dialogContext); // Close dialog
               context.read<DriverHomeProvider>().clearData();
               await authProvider.logout();
               if (context.mounted) {

@@ -87,6 +87,7 @@ class BookingModel {
   final String? dropContactName;
   final String? dropContactPhone;
   final String? vehicleNumber;
+  final double? commissionAmount;
 
   BookingModel({
     required this.id,
@@ -122,6 +123,7 @@ class BookingModel {
     this.dropContactName,
     this.dropContactPhone,
     this.vehicleNumber,
+    this.commissionAmount,
   });
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
@@ -256,6 +258,7 @@ class BookingModel {
       dropContactName: dropObj?['contactPersonName'] as String?,
       dropContactPhone: dropObj?['contactPersonPhone'] as String?,
       vehicleNumber: json['vehicleNumber'] as String?,
+      commissionAmount: (json['commissionAmount'] as num?)?.toDouble(),
     );
   }
 }

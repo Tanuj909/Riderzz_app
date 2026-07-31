@@ -10,6 +10,7 @@ import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_booking_details_screen.dart';
 import 'package:riderzz_app/features/driver/home/driver_home_screen.dart';
 import 'package:riderzz_app/features/driver/profile/driver_profile_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DriverHomePage extends StatefulWidget {
   const DriverHomePage({super.key});
@@ -22,6 +23,9 @@ class _DriverHomePageState extends State<DriverHomePage> {
   Timer? _searchTimer;
   bool _isManualSearching = false;
   int _searchCountdown = 30;
+  bool _isContactDropdownExpanded = false;
+  bool _isVerifyingOtp = false;
+  String? _selectedPaymentMethod;
 
   void _handleSearchBookings() {
     if (_isManualSearching) return;
@@ -70,14 +74,120 @@ class _DriverHomePageState extends State<DriverHomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DriverHomeProvider>().fetchHomeBookings();
       context.read<DriverHomeProvider>().fetchDriverEarnings();
+      context.read<DriverHomeProvider>().fetchDriverWallet();
     });
-
   }
 
   @override
   void dispose() {
     _searchTimer?.cancel();
     super.dispose();
+  }
+
+  Widget _buildContactRow({
+    required String role,
+    required String name,
+    required String phone,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                role.toUpperCase(),
+                style: GoogleFonts.outfit(
+                  color: const Color(0xFFA2A5AE),
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                name,
+                style: GoogleFonts.outfit(
+                  color: const Color(0xFF121214),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (phone.isNotEmpty) ...[
+                const SizedBox(height: 1),
+                Text(
+                  phone,
+                  style: GoogleFonts.ibmPlexMono(
+                    color: const Color(0xFF6C6F79),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (phone.isNotEmpty)
+          IconButton(
+            onPressed: () async {
+              final Uri url = Uri(scheme: 'tel', path: phone);
+              if (await canLaunchUrl(url)) {
+                await launchUrl(url);
+              }
+            },
+            icon: const Icon(
+              Icons.phone_rounded,
+              color: Color(0xFF1C9A5B),
+              size: 18,
+            ),
+            style: IconButton.styleFrom(
+              backgroundColor: const Color(0xFF1C9A5B).withValues(alpha: 0.1),
+              padding: const EdgeInsets.all(8),
+            ),
+          )
+        else
+          const Icon(
+            Icons.phone_disabled_rounded,
+            color: Colors.grey,
+            size: 18,
+          ),
+      ],
+    );
+  }
+
+  String _getSliderText(String status) {
+    switch (status.toUpperCase()) {
+      case 'DRIVER_ASSIGNED':
+        return 'Swipe: Arrived at Pickup';
+      case 'OTP_VERIFIED':
+        return 'Swipe: Pick Up Goods';
+      case 'GOODS_PICKED_UP':
+        return 'Swipe: Start Ride';
+      case 'IN_TRANSIT':
+        return 'Swipe: Arrived at Drop';
+      case 'DRIVER_ARRIVED_DROP':
+        return 'Swipe: Complete Delivery';
+      default:
+        return 'Swipe to Proceed';
+    }
+  }
+
+  String _getNextStatus(String currentStatus) {
+    switch (currentStatus.toUpperCase()) {
+      case 'DRIVER_ASSIGNED':
+        return 'DRIVER_ARRIVED';
+      case 'OTP_VERIFIED':
+        return 'GOODS_PICKED_UP';
+      case 'GOODS_PICKED_UP':
+        return 'IN_TRANSIT';
+      case 'IN_TRANSIT':
+        return 'DRIVER_ARRIVED_DROP';
+      case 'DRIVER_ARRIVED_DROP':
+        return 'DELIVERED';
+      default:
+        return 'DELIVERED';
+    }
   }
 
   @override
@@ -113,6 +223,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
           await driverProvider.fetchDriverProfile(force: true);
           await driverProvider.fetchHomeBookings();
           await driverProvider.fetchDriverEarnings(force: true);
+          await driverProvider.fetchDriverWallet(force: true);
           await locationProvider.initialize();
         },
         child: SingleChildScrollView(
@@ -334,91 +445,247 @@ class _DriverHomePageState extends State<DriverHomePage> {
                 ),
               ],
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            child: Column(
               children: [
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        'Today\'s Earnings',
-                        style: GoogleFonts.outfit(
-                          color: const Color(0xFF6C6F79),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Text(
+                            'Today\'s Earnings',
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFF6C6F79),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '₹${driverProvider.earnings?.todayEarnings.toStringAsFixed(2) ?? '0.00'}',
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFF121214),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '₹${driverProvider.earnings?.todayEarnings.toStringAsFixed(2) ?? '0.00'}',
-                        style: GoogleFonts.outfit(
-                          color: const Color(0xFF121214),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
+                    ),
+                    Container(
+                      height: 32,
+                      width: 1,
+                      color: const Color(0xFFE1E1E6),
+                    ),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Text(
+                            'Total Earnings',
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFF6C6F79),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '₹${driverProvider.earnings?.totalEarnings.toStringAsFixed(2) ?? '0.00'}',
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFF121214),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
+                    Container(
+                      height: 32,
+                      width: 1,
+                      color: const Color(0xFFE1E1E6),
+                    ),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Text(
+                            'Trips Completed',
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFF6C6F79),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${driverProvider.earnings?.totalCompletedTrips ?? 0}',
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFFD90429),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (driverProvider.isWalletNotCreated) ...[
+                  const Divider(color: Color(0xFFE1E1E6), height: 24, thickness: 1),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: InkWell(
+                      onTap: () {
+                        final homeState = context.findAncestorStateOfType<DriverHomeScreenState>();
+                        if (homeState != null) {
+                          homeState.setIndex(2);
+                        }
+                      },
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFFF5F5),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.card_giftcard_rounded,
+                              color: Color(0xFFE31C2E),
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Activate your wallet and earn ₹50 bonus!',
+                                  style: GoogleFonts.outfit(
+                                    color: const Color(0xFFE31C2E),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 1),
+                                Text(
+                                  'Click here to claim your exclusive sign-in reward.',
+                                  style: GoogleFonts.outfit(
+                                    color: const Color(0xFF6C6F79),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Color(0xFFE31C2E),
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-                Container(
-                  height: 32,
-                  width: 1,
-                  color: const Color(0xFFE1E1E6),
-                ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        'Total Earnings',
-                        style: GoogleFonts.outfit(
-                          color: const Color(0xFF6C6F79),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '₹${driverProvider.earnings?.totalEarnings.toStringAsFixed(2) ?? '0.00'}',
-                        style: GoogleFonts.outfit(
-                          color: const Color(0xFF121214),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  height: 32,
-                  width: 1,
-                  color: const Color(0xFFE1E1E6),
-                ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        'Trips Completed',
-                        style: GoogleFonts.outfit(
-                          color: const Color(0xFF6C6F79),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${driverProvider.earnings?.totalCompletedTrips ?? 0}',
-                        style: GoogleFonts.outfit(
-                          color: const Color(0xFFD90429),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                ],
               ],
             ),
           ),
+          if (driverProvider.profile != null &&
+              (driverProvider.profile!.upiId == null ||
+                  driverProvider.profile!.upiId!.trim().isEmpty)) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF9F3),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFFFEAD2)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x05121214),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFFEAD2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Color(0xFFE2A03F),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'UPI ID Not Set',
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFF1E293B),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          'Configure UPI ID to receive payments directly using QR Code.',
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFF64748B),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const DriverProfileScreen(
+                            startInEditMode: true,
+                          ),
+                        ),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: const Color(0xFFE2A03F),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                    ),
+                    child: Text(
+                      'Update',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
 
           // Bookings in your area! Header
@@ -708,109 +975,762 @@ class _DriverHomePageState extends State<DriverHomePage> {
           ],
 
           if (driverProvider.activeBooking != null) ...[
-            // Active Ride Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Colors.white, Color(0xFFFCFCFD)],
-                ),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: const Color(0xFFE1E1E6).withValues(alpha: 0.8)),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0F121214),
-                    blurRadius: 20,
-                    offset: Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1C9A5B).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          driverProvider.activeBooking!.status,
-                          style: GoogleFonts.outfit(
-                            color: const Color(0xFF1C9A5B),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        '₹${driverProvider.activeBooking!.totalFare.toStringAsFixed(2)}',
-                        style: GoogleFonts.outfit(
-                          color: const Color(0xFF121214),
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                        ),
+            // Active Ride Card wrapped in Stack to place the Fast Booking badge on top right border
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Colors.white, Color(0xFFFCFCFD)],
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: const Color(0xFFE1E1E6).withValues(alpha: 0.8)),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x0F121214),
+                        blurRadius: 20,
+                        offset: Offset(0, 8),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'BOOKING ID: ${driverProvider.activeBooking!.bookingId}',
-                    style: GoogleFonts.outfit(
-                      color: const Color(0xFFA2A5AE),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Column(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Padding(
-                            padding: EdgeInsets.only(top: 2.0),
-                            child: Icon(Icons.circle, size: 8, color: Color(0xFF121214)),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1C9A5B).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                             child: Text(
-                              driverProvider.activeBooking!.pickupAddressName,
+                              driverProvider.activeBooking!.status,
                               style: GoogleFonts.outfit(
-                                color: const Color(0xFF121214),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                height: 1.2,
+                                color: const Color(0xFF1C9A5B),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
                               ),
                             ),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                '₹${driverProvider.activeBooking!.totalFare.toStringAsFixed(2)}',
+                                style: GoogleFonts.outfit(
+                                  color: const Color(0xFF121214),
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              if (driverProvider.activeBooking!.fastDelivery &&
+                                  driverProvider.activeBooking!.fastDeliveryCharge != null &&
+                                  driverProvider.activeBooking!.fastDeliveryCharge! > 0)
+                                Text(
+                                  '+ ₹${driverProvider.activeBooking!.fastDeliveryCharge!.toStringAsFixed(2)} Fast Charge',
+                                  style: GoogleFonts.outfit(
+                                    color: const Color(0xFFCC2D3B),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                            ],
                           ),
                         ],
                       ),
                       const SizedBox(height: 10),
-                      Row(
+                      Text(
+                        'BOOKING ID: ${driverProvider.activeBooking!.bookingId}',
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFFA2A5AE),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                      if (driverProvider.activeBooking!.commissionAmount != null) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF9F3),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFFFEAD2)),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFFFEAD2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.account_balance_wallet_rounded,
+                                  color: Color(0xFFE2A03F),
+                                  size: 16,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Commission Deducted',
+                                          style: GoogleFonts.outfit(
+                                            color: const Color(0xFF4A4B50),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        Text(
+                                          '- ₹${driverProvider.activeBooking!.commissionAmount!.toStringAsFixed(2)}',
+                                          style: GoogleFonts.ibmPlexMono(
+                                            color: const Color(0xFFCC2D3B),
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'This amount will be deducted from your wallet.',
+                                      style: GoogleFonts.outfit(
+                                        color: const Color(0xFF8E9098),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Padding(
-                            padding: EdgeInsets.only(top: 2.0),
-                            child: Icon(Icons.location_on, size: 12, color: Color(0xFFD90429)),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.only(top: 2.0),
+                                child: Icon(Icons.circle, size: 8, color: Color(0xFF121214)),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  driverProvider.activeBooking!.pickupAddressName,
+                                  style: GoogleFonts.outfit(
+                                    color: const Color(0xFF121214),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(height: 10),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.only(top: 2.0),
+                                child: Icon(Icons.location_on, size: 12, color: Color(0xFFD90429)),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  driverProvider.activeBooking!.dropAddressName,
+                                  style: GoogleFonts.outfit(
+                                    color: const Color(0xFF121214),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      
+                      // Contact Dropdown Toggle Row
+                      const SizedBox(height: 14),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _isContactDropdownExpanded = !_isContactDropdownExpanded;
+                          });
+                        },
+                        child: Container(
+                          color: Colors.transparent,
+                          child: Row(
+                            children: [
+                              Text(
+                                'CONTACT',
+                                style: GoogleFonts.outfit(
+                                  color: const Color(0xFF6C6F79),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Expanded(
+                                child: Divider(
+                                  color: Color(0xFFE1E1E6),
+                                  thickness: 1,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                _isContactDropdownExpanded
+                                    ? Icons.keyboard_arrow_up_rounded
+                                    : Icons.keyboard_arrow_down_rounded,
+                                color: const Color(0xFF6C6F79),
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Contact Dropdown Content
+                      if (_isContactDropdownExpanded) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8F9FA),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE1E1E6)),
+                          ),
+                          child: Column(
+                            children: [
+                              // Customer Contact
+                              _buildContactRow(
+                                role: 'Customer',
+                                name: driverProvider.activeBooking!.customer?.fullName ?? 'No Name',
+                                phone: driverProvider.activeBooking!.customer?.phone ?? '',
+                              ),
+                              const Divider(color: Color(0xFFE1E1E6), height: 16),
+                              
+                              // Pickup Contact
+                              _buildContactRow(
+                                role: 'Pickup Contact',
+                                name: (driverProvider.activeBooking!.pickupContactName != null &&
+                                        driverProvider.activeBooking!.pickupContactName!.isNotEmpty)
+                                    ? driverProvider.activeBooking!.pickupContactName!
+                                    : (driverProvider.activeBooking!.customer?.fullName ?? 'No Name'),
+                                phone: (driverProvider.activeBooking!.pickupContactPhone != null &&
+                                        driverProvider.activeBooking!.pickupContactPhone!.isNotEmpty)
+                                    ? driverProvider.activeBooking!.pickupContactPhone!
+                                    : (driverProvider.activeBooking!.customer?.phone ?? ''),
+                              ),
+                              const Divider(color: Color(0xFFE1E1E6), height: 16),
+                              
+                              // Drop Contact
+                              _buildContactRow(
+                                role: 'Drop Contact',
+                                name: (driverProvider.activeBooking!.dropContactName != null &&
+                                        driverProvider.activeBooking!.dropContactName!.isNotEmpty)
+                                    ? driverProvider.activeBooking!.dropContactName!
+                                    : (driverProvider.activeBooking!.customer?.fullName ?? 'No Name'),
+                                phone: (driverProvider.activeBooking!.dropContactPhone != null &&
+                                        driverProvider.activeBooking!.dropContactPhone!.isNotEmpty)
+                                    ? driverProvider.activeBooking!.dropContactPhone!
+                                    : (driverProvider.activeBooking!.customer?.phone ?? ''),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      // Status / OTP Action Section
+                      const SizedBox(height: 14),
+                      Builder(
+                        builder: (context) {
+                          final statusUpper = driverProvider.activeBooking!.status.toUpperCase();
+                          if (statusUpper == 'DRIVER_ARRIVED') {
+                            return OtpVerificationView(
+                              isLoading: _isVerifyingOtp,
+                              isSuccess: false,
+                              onOtpSubmit: (otp) async {
+                                final messenger = ScaffoldMessenger.of(context);
+                                setState(() {
+                                  _isVerifyingOtp = true;
+                                });
+                                final success = await driverProvider.verifyOtpForBooking(
+                                  driverProvider.activeBooking!.id,
+                                  otp,
+                                );
+                                setState(() {
+                                  _isVerifyingOtp = false;
+                                });
+                                if (!success && mounted) {
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        driverProvider.bookingsError ?? 'OTP verification failed',
+                                      ),
+                                      backgroundColor: Colors.redAccent,
+                                    ),
+                                  );
+                                } else if (success && mounted) {
+                                  messenger.showSnackBar(
+                                    const SnackBar(
+                                      content: Text('OTP Verified successfully!'),
+                                    ),
+                                  );
+                                }
+                              },
+                            );
+                          } else if (statusUpper == 'DRIVER_ARRIVED_DROP') {
+                            // Arrived at drop payment selection or QR
+                            if (_selectedPaymentMethod == null) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Text(
+                                    'COLLECT PAYMENT',
+                                    style: GoogleFonts.outfit(
+                                      color: const Color(0xFF6C6F79),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: InkWell(
+                                          onTap: () {
+                                            setState(() {
+                                              _selectedPaymentMethod = 'CASH';
+                                            });
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 16,
+                                              horizontal: 12,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius: BorderRadius.circular(16),
+                                              border: Border.all(
+                                                color: const Color(0xFFE1E1E6),
+                                              ),
+                                            ),
+                                            child: Column(
+                                              children: [
+                                                const Icon(
+                                                  Icons.payments_rounded,
+                                                  color: Color(0xFF1C9A5B),
+                                                  size: 32,
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  'Cash Payment',
+                                                  style: GoogleFonts.plusJakartaSans(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                    color: const Color(0xFF121214),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'Collect physical cash',
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 9,
+                                                    color: const Color(0xFF6C6F79),
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: InkWell(
+                                          onTap: () {
+                                            setState(() {
+                                              _selectedPaymentMethod = 'QR';
+                                            });
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 16,
+                                              horizontal: 12,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius: BorderRadius.circular(16),
+                                              border: Border.all(
+                                                color: const Color(0xFFE1E1E6),
+                                              ),
+                                            ),
+                                            child: Column(
+                                              children: [
+                                                const Icon(
+                                                  Icons.qr_code_2_rounded,
+                                                  color: Color(0xFFD90429),
+                                                  size: 32,
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  'UPI / QR Code',
+                                                  style: GoogleFonts.plusJakartaSans(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                    color: const Color(0xFF121214),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'Scan to pay driver',
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 9,
+                                                    color: const Color(0xFF6C6F79),
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            } else if (_selectedPaymentMethod == 'CASH') {
+                              return Column(
+                                children: [
+                                  SwipeSlider(
+                                    key: ValueKey('home_complete_cash_${driverProvider.activeBooking!.status}_${driverProvider.activeBooking!.id}'),
+                                    text: 'Swipe: Complete Delivery',
+                                    isLoading: driverProvider.isBookingsLoading,
+                                    onSwipeComplete: () async {
+                                      final messenger = ScaffoldMessenger.of(context);
+                                      final nextStatus = _getNextStatus(driverProvider.activeBooking!.status);
+                                      final success = await driverProvider.updateStatusForBooking(
+                                        driverProvider.activeBooking!.id,
+                                        nextStatus,
+                                      );
+                                      if (success && mounted) {
+                                        setState(() {
+                                          _selectedPaymentMethod = null;
+                                        });
+                                      } else if (!success && mounted) {
+                                        messenger.showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              driverProvider.bookingsError ?? 'Status update failed',
+                                            ),
+                                            backgroundColor: Colors.redAccent,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                  const SizedBox(height: 8),
+                                  TextButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _selectedPaymentMethod = null;
+                                      });
+                                    },
+                                    child: Text(
+                                      'Change Payment Method',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: const Color(0xFFD90429),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            } else if (_selectedPaymentMethod == 'QR') {
+                              final upiId = driverProvider.profile?.upiId;
+                              if (upiId == null || upiId.isEmpty) {
+                                return Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF5F5),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: const Color(0xFFFFD1D1),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      const Icon(
+                                        Icons.warning_amber_rounded,
+                                        color: Color(0xFFD90429),
+                                        size: 28,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'UPI ID is not configured. Please configure it in your profile settings.',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: const Color(0xFFD90429),
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 10),
+                                      OutlinedButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            _selectedPaymentMethod = 'CASH';
+                                          });
+                                        },
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: const Color(0xFFD90429),
+                                          side: const BorderSide(
+                                            color: Color(0xFFD90429),
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        ),
+                                        child: const Text('Choose Cash Payment Instead', style: TextStyle(fontSize: 11)),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+
+                              final String payeeName = driverProvider.profile?.name ?? 'Partner';
+                              final String upiUrl = 'upi://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=${driverProvider.activeBooking!.totalFare.toStringAsFixed(2)}&cu=INR&tn=${Uri.encodeComponent("Booking ${driverProvider.activeBooking!.bookingId}")}';
+                              final String qrImageUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${Uri.encodeComponent(upiUrl)}';
+
+                              return Column(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: const Color(0xFFE1E1E6),
+                                      ),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          'SCAN QR CODE TO PAY',
+                                          style: GoogleFonts.outfit(
+                                            color: const Color(0xFF6C6F79),
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(12),
+                                          child: Image.network(
+                                            qrImageUrl,
+                                            width: 140,
+                                            height: 140,
+                                            fit: BoxFit.contain,
+                                            errorBuilder: (context, error, stackTrace) => Container(
+                                              width: 140,
+                                              height: 140,
+                                              color: const Color(0xFFFFF5F5),
+                                              child: const Icon(
+                                                Icons.qr_code_rounded,
+                                                size: 40,
+                                                color: Color(0xFFD90429),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          '₹${driverProvider.activeBooking!.totalFare.toStringAsFixed(2)}',
+                                          style: GoogleFonts.ibmPlexMono(
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 20,
+                                            color: const Color(0xFF121214),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  SwipeSlider(
+                                    key: ValueKey('home_complete_qr_${driverProvider.activeBooking!.status}_${driverProvider.activeBooking!.id}'),
+                                    text: 'Swipe: Complete Delivery',
+                                    isLoading: driverProvider.isBookingsLoading,
+                                    onSwipeComplete: () async {
+                                      final messenger = ScaffoldMessenger.of(context);
+                                      final nextStatus = _getNextStatus(driverProvider.activeBooking!.status);
+                                      final success = await driverProvider.updateStatusForBooking(
+                                        driverProvider.activeBooking!.id,
+                                        nextStatus,
+                                      );
+                                      if (success && mounted) {
+                                        setState(() {
+                                          _selectedPaymentMethod = null;
+                                        });
+                                      } else if (!success && mounted) {
+                                        messenger.showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              driverProvider.bookingsError ?? 'Status update failed',
+                                            ),
+                                            backgroundColor: Colors.redAccent,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                  const SizedBox(height: 8),
+                                  TextButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _selectedPaymentMethod = null;
+                                      });
+                                    },
+                                    child: Text(
+                                      'Change Payment Method',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: const Color(0xFFD90429),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          } else if (statusUpper != 'DELIVERED' && 
+                                     statusUpper != 'COMPLETED' && 
+                                     statusUpper != 'CANCELLED') {
+                            return SwipeSlider(
+                              key: ValueKey('home_status_${driverProvider.activeBooking!.status}_${driverProvider.activeBooking!.id}'),
+                              text: _getSliderText(driverProvider.activeBooking!.status),
+                              isLoading: driverProvider.isBookingsLoading,
+                              onSwipeComplete: () async {
+                                final messenger = ScaffoldMessenger.of(context);
+                                final nextStatus = _getNextStatus(driverProvider.activeBooking!.status);
+                                final success = await driverProvider.updateStatusForBooking(
+                                  driverProvider.activeBooking!.id,
+                                  nextStatus,
+                                );
+                                if (!success && mounted) {
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        driverProvider.bookingsError ?? 'Status update failed',
+                                      ),
+                                      backgroundColor: Colors.redAccent,
+                                    ),
+                                  );
+                                }
+                              },
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                      
+                      // Bottom Buttons: View Details and Map Side-by-Side
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
                           Expanded(
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                final result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => DriverBookingDetailsScreen(
+                                      booking: driverProvider.activeBooking!,
+                                    ),
+                                  ),
+                                );
+                                if (result == 'go_to_wallet' && context.mounted) {
+                                  final homeState = context.findAncestorStateOfType<DriverHomeScreenState>();
+                                  if (homeState != null) {
+                                    homeState.setIndex(2);
+                                  }
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFCC2D3B),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                elevation: 0,
+                              ),
+                              child: Text(
+                                'View Active Ride Details',
+                                style: GoogleFonts.outfit(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          ElevatedButton(
+                            onPressed: () async {
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => DriverBookingDetailsScreen(
+                                    booking: driverProvider.activeBooking!,
+                                    startExpanded: false,
+                                  ),
+                                ),
+                              );
+                              if (result == 'go_to_wallet' && context.mounted) {
+                                final homeState = context.findAncestorStateOfType<DriverHomeScreenState>();
+                                if (homeState != null) {
+                                  homeState.setIndex(2);
+                                }
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF121214),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+                              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                              elevation: 0,
+                            ),
                             child: Text(
-                              driverProvider.activeBooking!.dropAddressName,
+                              'Map',
                               style: GoogleFonts.outfit(
-                                color: const Color(0xFF121214),
-                                fontSize: 13,
                                 fontWeight: FontWeight.w700,
-                                height: 1.2,
+                                fontSize: 14,
                               ),
                             ),
                           ),
@@ -818,44 +1738,38 @@ class _DriverHomePageState extends State<DriverHomePage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DriverBookingDetailsScreen(
-                              booking: driverProvider.activeBooking!,
-                            ),
+                ),
+                
+                // Fast Booking Badge overlapping the top right border
+                if (driverProvider.activeBooking!.fastDelivery)
+                  Positioned(
+                    top: -10,
+                    right: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFCC2D3B),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x33CC2D3B),
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
                           ),
-                        );
-                        if (result == 'go_to_wallet' && context.mounted) {
-                          final homeState = context.findAncestorStateOfType<DriverHomeScreenState>();
-                          if (homeState != null) {
-                            homeState.setIndex(2);
-                          }
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFCC2D3B),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        elevation: 0,
+                        ],
                       ),
                       child: Text(
-                        'View Active Ride Details',
+                        'FAST BOOKING',
                         style: GoogleFonts.outfit(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.8,
                         ),
                       ),
                     ),
                   ),
-                ],
-              ),
+              ],
             ),
           ],
           const SizedBox(height: 16),

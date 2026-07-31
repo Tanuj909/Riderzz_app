@@ -133,6 +133,7 @@ class _DriverTermsPopupState extends State<DriverTermsPopup> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       backgroundColor: const Color(0xFFE31C2E),
                       disabledBackgroundColor: const Color(0xFFE2E8F0),
+                      disabledForegroundColor: const Color(0xFF94A3B8),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       foregroundColor: Colors.white,
                       elevation: 0,

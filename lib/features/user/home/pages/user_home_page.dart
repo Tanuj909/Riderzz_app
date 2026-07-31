@@ -188,7 +188,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                   } else if (value == 'logout') {
                     showDialog(
                       context: context,
-                      builder: (context) => AlertDialog(
+                      builder: (dialogContext) => AlertDialog(
                         backgroundColor: Colors.white,
                         surfaceTintColor: Colors.transparent,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -196,7 +196,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                         content: const Text('Are you sure you want to log out of your account?', style: TextStyle(fontSize: 14)),
                         actions: [
                           TextButton(
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: () => Navigator.pop(dialogContext),
                             child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
                           ),
                           ElevatedButton(
@@ -206,7 +206,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                               elevation: 0,
                             ),
                             onPressed: () async {
-                              Navigator.pop(context);
+                              Navigator.pop(dialogContext);
                               context.read<DriverHomeProvider>().clearData();
                               final auth = context.read<AuthProvider>();
                               await auth.logout();
@@ -1208,7 +1208,87 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                 scrollDirection: Axis.horizontal,
                                 physics: const BouncingScrollPhysics(),
                                 children: [
-                                  // Card 1: Fast Delivery Promotion
+                                  // Card 1: Become a Partner Promotion
+                                  GestureDetector(
+                                    onTap: () {
+                                      showDriverTermsAndConditionsPopup(context, () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => const BecomeDriverScreen()),
+                                        );
+                                      });
+                                    },
+                                    child: Container(
+                                      width: MediaQuery.of(context).size.width * 0.8,
+                                      margin: const EdgeInsets.only(right: 14),
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [Color(0xFFFDF2F4), Color(0xFFFCE7EB)],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(color: const Color(0xFFC62E42).withOpacity(0.2), width: 1.2),
+                                        boxShadow: const [
+                                          BoxShadow(
+                                            color: Color(0x04C62E42),
+                                            offset: Offset(0, 4),
+                                            blurRadius: 12,
+                                          )
+                                        ],
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Text(
+                                                  'Become a Partner',
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: const Color(0xFF881337),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'Register as a driver and start earning on your own schedule.',
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 10.5,
+                                                    color: const Color(0xFF9F1239),
+                                                    height: 1.3,
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Container(
+                                            padding: const EdgeInsets.all(10),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              shape: BoxShape.circle,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: const Color(0xFFC62E42).withOpacity(0.1),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 2),
+                                                )
+                                              ],
+                                            ),
+                                            child: const Icon(Icons.stars_rounded, color: Color(0xFFC62E42), size: 24),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+
+                                  // Card 2: Fast Delivery Promotion
                                   GestureDetector(
                                     onTap: () {
                                       showDialog(
@@ -1345,86 +1425,6 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                               ],
                                             ),
                                             child: const Icon(Icons.bolt_rounded, color: Colors.orange, size: 24),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  
-                                  // Card 2: Become a Partner Promotion
-                                  GestureDetector(
-                                    onTap: () {
-                                      showDriverTermsAndConditionsPopup(context, () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(builder: (context) => const BecomeDriverScreen()),
-                                        );
-                                      });
-                                    },
-                                    child: Container(
-                                      width: MediaQuery.of(context).size.width * 0.8,
-                                      margin: const EdgeInsets.only(right: 14),
-                                      padding: const EdgeInsets.all(16),
-                                      decoration: BoxDecoration(
-                                        gradient: const LinearGradient(
-                                          colors: [Color(0xFFFDF2F4), Color(0xFFFCE7EB)],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        ),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(color: const Color(0xFFC62E42).withOpacity(0.2), width: 1.2),
-                                        boxShadow: const [
-                                          BoxShadow(
-                                            color: Color(0x04C62E42),
-                                            offset: Offset(0, 4),
-                                            blurRadius: 12,
-                                          )
-                                        ],
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                Text(
-                                                  'Become a Partner',
-                                                  style: GoogleFonts.outfit(
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: const Color(0xFF881337),
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  'Register as a driver and start earning on your own schedule.',
-                                                  style: GoogleFonts.outfit(
-                                                    fontSize: 10.5,
-                                                    color: const Color(0xFF9F1239),
-                                                    height: 1.3,
-                                                  ),
-                                                  maxLines: 2,
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Container(
-                                            padding: const EdgeInsets.all(10),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white,
-                                              shape: BoxShape.circle,
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: const Color(0xFFC62E42).withOpacity(0.1),
-                                                  blurRadius: 8,
-                                                  offset: const Offset(0, 2),
-                                                )
-                                              ],
-                                            ),
-                                            child: const Icon(Icons.stars_rounded, color: Color(0xFFC62E42), size: 24),
                                           ),
                                         ],
                                       ),

@@ -54,7 +54,7 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
   void _showLogoutDialog(AuthProvider authProvider) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -81,7 +81,7 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text('Cancel', style: GoogleFonts.outfit(color: const Color(0xFF6C6F79), fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
@@ -93,7 +93,7 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
             onPressed: () async {
-              Navigator.pop(context); // Close dialog
+              Navigator.pop(dialogContext); // Close dialog
               try {
                 context.read<LocationTrackingService>().stop();
               } catch (_) {}

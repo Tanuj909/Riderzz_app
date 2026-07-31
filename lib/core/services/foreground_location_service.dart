@@ -30,7 +30,7 @@ class ForegroundLocationService {
         playSound: false,
       ),
       foregroundTaskOptions: ForegroundTaskOptions(
-        eventAction: ForegroundTaskEventAction.repeat(5000), // Repeat every 5 seconds
+        eventAction: ForegroundTaskEventAction.repeat(2000), // Repeat every 2 seconds to support active booking rate
         autoRunOnBoot: false,
         allowWakeLock: true,
         allowWifiLock: true,
@@ -65,6 +65,8 @@ class ForegroundTaskHandler extends TaskHandler {
   Position? _latestPosition;
   Position? _lastSentPosition;
   StreamSubscription<Position>? _positionSubscription;
+  bool _hasActiveBooking = false;
+  DateTime? _lastAttemptTime;
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
@@ -76,6 +78,10 @@ class ForegroundTaskHandler extends TaskHandler {
       ApiConstants.customBaseUrl = savedBaseUrl;
       debugPrint('ForegroundTaskHandler: Configured baseUrl: $savedBaseUrl');
     }
+
+    // Load initial active booking state
+    _hasActiveBooking = await FlutterForegroundTask.getData<bool>(key: 'has_active_booking') ?? false;
+    debugPrint('ForegroundTaskHandler: Loaded initial active booking status: $_hasActiveBooking');
 
     // 2. Initialize dependencies for HTTP requests in this separate isolate
     final storage = SecureStorageService();
@@ -118,6 +124,19 @@ class ForegroundTaskHandler extends TaskHandler {
       return;
     }
 
+    // Determine target interval: 2 seconds if booking active, 10 seconds otherwise
+    final requiredInterval = _hasActiveBooking
+        ? const Duration(seconds: 2)
+        : const Duration(seconds: 10);
+
+    if (_lastAttemptTime != null) {
+      final elapsed = timestamp.difference(_lastAttemptTime!);
+      if (elapsed < requiredInterval) {
+        // Skip this repeat check because not enough time has elapsed
+        return;
+      }
+    }
+
     // Filter duplicate/stationary updates using a 5-meter movement threshold
     if (_lastSentPosition != null) {
       final distance = Geolocator.distanceBetween(
@@ -128,6 +147,7 @@ class ForegroundTaskHandler extends TaskHandler {
       );
       if (distance < 5.0) {
         debugPrint('ForegroundTaskHandler: Stationary (moved $distance m, threshold: 5.0m). Skipping API update.');
+        _lastAttemptTime = timestamp; // Record attempt time even if skipped to avoid spamming checks
         return;
       }
     }
@@ -139,10 +159,12 @@ class ForegroundTaskHandler extends TaskHandler {
         _latestPosition!.longitude,
       );
       _lastSentPosition = _latestPosition;
-      debugPrint('ForegroundTaskHandler: Location updated: ${_latestPosition!.latitude}, ${_latestPosition!.longitude}');
+      _lastAttemptTime = timestamp;
+      debugPrint('ForegroundTaskHandler: Location updated: ${_latestPosition!.latitude}, ${_latestPosition!.longitude} (activeBooking: $_hasActiveBooking)');
     } catch (e) {
       // Offline/connection errors are handled gracefully without crashing the service
       debugPrint('ForegroundTaskHandler: Failed to update location (offline/server error): $e');
+      _lastAttemptTime = timestamp; // Record attempt time even if failed to avoid instant retries
     }
   }
 
@@ -159,6 +181,10 @@ class ForegroundTaskHandler extends TaskHandler {
   @override
   void onReceiveData(Object data) {
     debugPrint('ForegroundTaskHandler: Data received from UI: $data');
+    if (data is bool) {
+      _hasActiveBooking = data;
+      debugPrint('ForegroundTaskHandler: Set _hasActiveBooking to $_hasActiveBooking');
+    }
   }
 
   @override
