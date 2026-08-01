@@ -1,6 +1,9 @@
 import 'package:riderzz_app/features/admin/rider_verification/data/datasource/rider_verification_datasource.dart';
 import 'package:riderzz_app/core/models/driver_wallet_model.dart';
 import 'package:riderzz_app/core/models/admin_driver_model.dart';
+import 'package:riderzz_app/core/models/admin_wallet_overview_model.dart';
+
+
 
 
 class RiderVerificationRepository {
@@ -82,5 +85,41 @@ class RiderVerificationRepository {
       amount: amount,
       description: description,
     );
+  }
+
+  Future<void> sendMessageToDriver({
+    required int driverId,
+    required String subject,
+    required String message,
+  }) async {
+    await _remoteDataSource.sendMessageToDriver(
+      driverId: driverId,
+      subject: subject,
+      message: message,
+    );
+  }
+
+  Future<Map<String, dynamic>> getAllWallets({required int page, required int size}) async {
+    return await _remoteDataSource.getAllWallets(page: page, size: size);
+  }
+
+  Future<AdminWalletOverviewModel> getWalletOverview() async {
+    return await _remoteDataSource.getWalletOverview();
+  }
+
+  Future<Map<String, dynamic>> getDriverTransactions({
+    required int driverId,
+    required int page,
+    required int size,
+  }) async {
+    return await _remoteDataSource.getDriverTransactions(driverId: driverId, page: page, size: size);
+  }
+
+  Future<Map<String, dynamic>> getPendingWithdrawals({required int page, required int size}) async {
+    return await _remoteDataSource.getPendingWithdrawals(page: page, size: size);
+  }
+
+  Future<Map<String, dynamic>> getAllWithdrawals({required int page, required int size}) async {
+    return await _remoteDataSource.getAllWithdrawals(page: page, size: size);
   }
 }

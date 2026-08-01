@@ -215,6 +215,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:riderzz_app/core/providers/location_provider.dart';
+import 'package:riderzz_app/features/user/addresses/location_picker_screen.dart';
 import 'package:riderzz_app/models/google_place.dart';
 import 'package:riderzz_app/repositories/location_repository.dart';
 import 'package:riderzz_app/utils/debounce.dart';
@@ -330,7 +333,26 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
       final details =
           await _locationRepository.getPlaceDetails(suggestion.placeId);
       if (details != null && mounted) {
-        Navigator.pop(context, details);
+        final result = await LocationPickerScreen.showSaveAddressBottomSheet(
+          context: context,
+          latitude: details.latitude ?? 0.0,
+          longitude: details.longitude ?? 0.0,
+          fullAddress: details.displayName,
+        );
+        if (result != null && mounted) {
+          final place = GooglePlace(
+            placeId: suggestion.placeId,
+            displayName: result['address'] ?? details.displayName,
+            name: result['address'] ?? details.displayName,
+            latitude: result['latitude'] ?? details.latitude,
+            longitude: result['longitude'] ?? details.longitude,
+          );
+          Navigator.pop(context, place);
+        } else {
+          setState(() {
+            _isFetchingDetails = false;
+          });
+        }
       } else if (mounted) {
         _showErrorSnackBar('Could not fetch place details. Please try again.');
         setState(() {
@@ -341,6 +363,57 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
       debugPrint('SearchScreen: Error fetching place details: $e');
       if (mounted) {
         _showErrorSnackBar('Failed to get location. Please try again.');
+        setState(() {
+          _isFetchingDetails = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _useCurrentLocation() async {
+    setState(() {
+      _isFetchingDetails = true;
+    });
+    try {
+      final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+      
+      // Force refresh current location to get the latest accurate location
+      await locationProvider.refresh();
+      
+      if (locationProvider.hasLocation && mounted) {
+        final lat = locationProvider.currentLatitude ?? 0.0;
+        final lng = locationProvider.currentLongitude ?? 0.0;
+        final address = locationProvider.currentAddress ?? 'Current Location';
+        final result = await LocationPickerScreen.showSaveAddressBottomSheet(
+          context: context,
+          latitude: lat,
+          longitude: lng,
+          fullAddress: address,
+        );
+        if (result != null && mounted) {
+          final currentPlace = GooglePlace(
+            placeId: 'current_location',
+            displayName: result['address'] ?? address,
+            name: 'Current Location',
+            latitude: result['latitude'] ?? lat,
+            longitude: result['longitude'] ?? lng,
+          );
+          Navigator.pop(context, currentPlace);
+        } else {
+          setState(() {
+            _isFetchingDetails = false;
+          });
+        }
+      } else if (mounted) {
+        _showErrorSnackBar('Unable to fetch current location. Please verify GPS permission.');
+        setState(() {
+          _isFetchingDetails = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('SearchScreen: Error using current location: $e');
+      if (mounted) {
+        _showErrorSnackBar('Error fetching current location.');
         setState(() {
           _isFetchingDetails = false;
         });
@@ -400,6 +473,43 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
                   onClear: _clearSearch,
                 ),
               ),
+              // Current Location Selector option (visible only when search query is empty)
+              if (_searchController.text.trim().isEmpty)
+                ListTile(
+                  leading: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFFF2F2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.my_location_rounded,
+                      color: Color(0xFFE31C2E),
+                      size: 18,
+                    ),
+                  ),
+                  title: Text(
+                    'Use Current Location',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF121214),
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Set your current location as address',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF6C6F79),
+                      fontSize: 11.5,
+                    ),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right_rounded,
+                    color: Color(0xFFA2A5AE),
+                  ),
+                  onTap: _useCurrentLocation,
+                ),
               const Divider(
                   height: 1, thickness: 0.5, color: Color(0xFFE1E1E6)),
               Expanded(

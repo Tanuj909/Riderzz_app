@@ -538,8 +538,9 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                   if (profile?.documents != null) {
                     for (var d in profile!.documents) {
                       if (d.docType.toUpperCase() == type) {
-                        doc = d;
-                        break;
+                        if (doc == null || d.id > doc.id) {
+                          doc = d;
+                        }
                       }
                     }
                   }
@@ -843,7 +844,7 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
               ),
               const SizedBox(width: 8),
             ],
-            if (!isUploaded || status == 'REJECTED') ...[
+            if (status != 'APPROVED') ...[
               // Upload Button
               GestureDetector(
                 onTap: () => _pickAndUploadDocument(type, provider),

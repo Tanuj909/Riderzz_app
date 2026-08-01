@@ -736,8 +736,9 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   for (final doc in profile.documents) {
                     if (doc.docType.toUpperCase() == type.toUpperCase() ||
                         (type == 'DRIVING_LICENSE_FRONT' && doc.docType.toUpperCase() == 'DRIVING_LICENSE')) {
-                      matchingDoc = doc;
-                      break;
+                      if (matchingDoc == null || doc.id > matchingDoc.id) {
+                        matchingDoc = doc;
+                      }
                     }
                   }
                   return _buildDocumentSlotRow(type, matchingDoc, provider);
@@ -814,15 +815,16 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                       icon: const Icon(Icons.visibility_rounded, color: Color(0xFF1C9A5B), size: 20),
                       onPressed: () => _showDocumentPreview(context, doc.fileUrl, _formatDocType(type)),
                     ),
-                  IconButton(
-                    tooltip: isUploaded ? 'Update Document' : 'Upload Document',
-                    icon: Icon(
-                      isUploaded ? Icons.cached_rounded : Icons.upload_file_rounded,
-                      color: const Color(0xFFD90429),
-                      size: 20,
+                  if (statusText != 'APPROVED')
+                    IconButton(
+                      tooltip: isUploaded ? 'Update Document' : 'Upload Document',
+                      icon: Icon(
+                        isUploaded ? Icons.cached_rounded : Icons.upload_file_rounded,
+                        color: const Color(0xFFD90429),
+                        size: 20,
+                      ),
+                      onPressed: () => _pickAndUploadDocument(type, provider),
                     ),
-                    onPressed: () => _pickAndUploadDocument(type, provider),
-                  ),
                 ],
               ),
             ],

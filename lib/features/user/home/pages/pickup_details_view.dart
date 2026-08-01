@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/core/providers/location_provider.dart';
 import 'package:riderzz_app/features/user/addresses/location_picker_screen.dart';
@@ -45,6 +46,10 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _selectedWeight = '0-5 Kg';
+      _locationProvider = Provider.of<LocationProvider>(context, listen: false);
+      _locationProvider?.addListener(_onLocationChanged);
+
       if (widget.initialData != null && widget.initialData!.isNotEmpty) {
         // Restore from previous input
         _pickupController.text = widget.initialData!['pickupAddressText'] ?? '';
@@ -60,8 +65,15 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
         if (dropLng != null) _dropLongitude = (dropLng as num).toDouble();
 
         _parcelType = widget.initialData!['goodsType'];
-        _selectedWeight = widget.initialData!['weightKg']?.toString() ?? '0-5 Kg';
+        if (widget.initialData!['weightKg'] != null) {
+          _selectedWeight = widget.initialData!['weightKg']?.toString();
+        }
         _goodsDescriptionController.text = widget.initialData!['goodsDescription'] ?? '';
+        
+        // If pickup controller text is empty, fill it with current location as fallback
+        if (_pickupController.text.trim().isEmpty) {
+          _setCurrentLocationAsPickup();
+        }
         setState(() {});
 
       } else if (widget.initialRoute != null) {
@@ -72,6 +84,8 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
           _pickupController.text = _formatAddress(pickup);
           _pickupLatitude = pickup['latitude'];
           _pickupLongitude = pickup['longitude'];
+        } else {
+          _setCurrentLocationAsPickup();
         }
         if (drop != null) {
           _dropController.text = _formatAddress(drop);
@@ -80,9 +94,6 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
         }
         setState(() {});
       } else {
-        _selectedWeight = '0-5 Kg';
-        _locationProvider = Provider.of<LocationProvider>(context, listen: false);
-        _locationProvider?.addListener(_onLocationChanged);
         _setCurrentLocationAsPickup();
       }
     });
@@ -210,6 +221,73 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
     return null;
   }
 
+  void _showValidationErrorDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 44, vertical: 24),
+        contentPadding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: Color(0xFFE31C2E),
+              size: 38,
+            ),
+            const SizedBox(height: 14),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: const Color(0xFF121214),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
+                fontSize: 12.5,
+                color: const Color(0xFF6C6F79),
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE31C2E),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  'OK',
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13.5,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _handleContinueFlow(BuildContext context) async {
     final pickupText = _pickupController.text.trim();
     final dropText = _dropController.text.trim();
@@ -223,15 +301,17 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
     }
 
     if (pickupText.isEmpty || dropText.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select pickup and drop locations'), backgroundColor: Colors.redAccent),
+      _showValidationErrorDialog(
+        'Missing Locations',
+        'Please select both pickup and drop-off locations to estimate fare.',
       );
       return;
     }
 
     if (pickupText.toLowerCase() == dropText.toLowerCase()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pickup and drop locations cannot be the same'), backgroundColor: Colors.redAccent),
+      _showValidationErrorDialog(
+        'Same Location',
+        'Pickup and drop-off locations cannot be the same. Please select different locations.',
       );
       return;
     }
@@ -240,8 +320,9 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
         _dropLatitude != null &&
         _pickupLatitude == _dropLatitude &&
         _pickupLongitude == _dropLongitude) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pickup and drop locations cannot be the same'), backgroundColor: Colors.redAccent),
+      _showValidationErrorDialog(
+        'Same Location',
+        'Pickup and drop-off coordinates cannot be the same. Please select different locations.',
       );
       return;
     }
@@ -454,7 +535,7 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                             });
                           }
                         },
-                        child: const Icon(Icons.map_outlined, size: 20, color: Color(0xFFE31C2E)),
+                        child: const Icon(Icons.location_on_outlined, size: 20, color: Color(0xFFE31C2E)),
                       ),
                     ],
                   ),
@@ -509,7 +590,7 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                             });
                           }
                         },
-                        child: const Icon(Icons.map_outlined, size: 20, color: Color(0xFFE31C2E)),
+                        child: const Icon(Icons.location_on_outlined, size: 20, color: Color(0xFFE31C2E)),
                       ),
                     ],
                   ),

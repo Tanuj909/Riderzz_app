@@ -24,4 +24,40 @@ class MapsLauncherService {
       }
     }
   }
+
+  /// Opens Google Maps navigation from [originLat],[originLng] to [destLat],[destLng].
+  /// Falls back to web URL if the native app is not available.
+  static Future<void> launchNavigation({
+    required double originLat,
+    required double originLng,
+    required double destLat,
+    required double destLng,
+  }) async {
+    // Google Maps native deep-link with explicit origin
+    final nativeUri = Uri.parse(
+      'google.navigation:q=$destLat,$destLng&mode=d',
+    );
+    // Web URL with origin & destination
+    final webUri = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1'
+      '&origin=$originLat,$originLng'
+      '&destination=$destLat,$destLng'
+      '&travelmode=driving',
+    );
+
+    try {
+      if (await canLaunchUrl(nativeUri)) {
+        await launchUrl(nativeUri, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(webUri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      debugPrint('Error launching navigation: $e');
+      try {
+        await launchUrl(webUri, mode: LaunchMode.externalApplication);
+      } catch (innerError) {
+        debugPrint('Fallback navigation launch failed: $innerError');
+      }
+    }
+  }
 }

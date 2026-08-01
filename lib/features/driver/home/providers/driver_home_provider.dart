@@ -9,6 +9,8 @@ import 'package:riderzz_app/core/network/api_exception.dart';
 import 'package:riderzz_app/features/driver/home/data/repositories/driver_repository.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/core/models/driver_earnings_model.dart';
+import 'package:riderzz_app/core/models/driver_message_model.dart';
+
 
 class DriverHomeProvider extends ChangeNotifier {
   final DriverRepository _driverRepository;
@@ -39,6 +41,12 @@ class DriverHomeProvider extends ChangeNotifier {
   DriverEarningsModel? _earnings;
   bool _isEarningsLoading = false;
   String? _earningsError;
+
+  // Messages properties
+  List<DriverMessageModel> _messages = [];
+  bool _isMessagesLoading = false;
+  String? _messagesError;
+
 
   final BroadcastSocketService _socketService;
   StreamSubscription<BroadcastResponse>? _broadcastSubscription;
@@ -101,6 +109,12 @@ class DriverHomeProvider extends ChangeNotifier {
   bool get isEarningsLoading => _isEarningsLoading;
   String? get earningsError => _earningsError;
 
+  // Messages getters
+  List<DriverMessageModel> get messages => _messages;
+  bool get isMessagesLoading => _isMessagesLoading;
+  String? get messagesError => _messagesError;
+
+
   void clearData() {
     _socketService.disconnect();
     _profile = null;
@@ -121,6 +135,9 @@ class DriverHomeProvider extends ChangeNotifier {
     _earnings = null;
     _isEarningsLoading = false;
     _earningsError = null;
+    _messages = [];
+    _isMessagesLoading = false;
+    _messagesError = null;
     notifyListeners();
   }
 
@@ -687,6 +704,44 @@ class DriverHomeProvider extends ChangeNotifier {
       _isBookingsLoading = false;
       notifyListeners();
       return false;
+    }
+  }
+
+  Future<void> fetchDriverMessages({bool force = false}) async {
+    if (!force && _messages.isNotEmpty) {
+      return;
+    }
+    _isMessagesLoading = true;
+    _messagesError = null;
+    notifyListeners();
+
+    try {
+      _messages = await _driverRepository.getDriverMessages();
+      _isMessagesLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isMessagesLoading = false;
+      _messagesError = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+    }
+  }
+
+  Future<void> markAllMessagesAsRead() async {
+    if (!_messages.any((m) => !m.read)) return;
+
+    _messages = _messages.map((m) => DriverMessageModel(
+      messageId: m.messageId,
+      adminName: m.adminName,
+      message: m.message,
+      sentAt: m.sentAt,
+      read: true,
+    )).toList();
+    notifyListeners();
+
+    try {
+      await _driverRepository.markMessagesAsRead();
+    } catch (_) {
+      // Local state is already updated; ignore background server errors
     }
   }
 }

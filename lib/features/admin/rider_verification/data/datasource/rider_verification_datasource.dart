@@ -2,6 +2,10 @@ import 'package:riderzz_app/core/network/api_client.dart';
 import 'package:riderzz_app/core/network/api_constants.dart';
 import 'package:riderzz_app/core/models/admin_driver_model.dart';
 import 'package:riderzz_app/core/models/driver_wallet_model.dart';
+import 'package:riderzz_app/core/models/admin_wallet_model.dart';
+import 'package:riderzz_app/core/models/admin_wallet_overview_model.dart';
+import 'package:riderzz_app/core/models/admin_withdrawal_model.dart';
+
 
 class RiderVerificationRemoteDataSource {
   final ApiClient _apiClient;
@@ -156,4 +160,124 @@ class RiderVerificationRemoteDataSource {
       },
     );
   }
+
+  /// Sends a custom message/notification to a driver.
+  Future<void> sendMessageToDriver({
+    required int driverId,
+    required String subject,
+    required String message,
+  }) async {
+    await _apiClient.post(
+      '${ApiConstants.adminDriverList.replaceAll('/list', '')}/$driverId/message',
+      data: {
+        'subject': subject,
+        'message': message,
+      },
+    );
+  }
+
+  /// Fetches all wallets (with pagination)
+  Future<Map<String, dynamic>> getAllWallets({required int page, required int size}) async {
+    final response = await _apiClient.get(
+      ApiConstants.adminWallets,
+      queryParameters: {
+        'page': page,
+        'size': size,
+      },
+    );
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
+    final List<dynamic> content = data['content'] as List<dynamic>? ?? [];
+    
+    final List<AdminWalletModel> wallets = content
+        .map((json) => AdminWalletModel.fromJson(Map<String, dynamic>.from(json)))
+        .toList();
+
+    return {
+      'wallets': wallets,
+      'isLast': data['last'] as bool? ?? true,
+    };
+  }
+
+  /// Fetches wallet overview metrics
+  Future<AdminWalletOverviewModel> getWalletOverview() async {
+    final response = await _apiClient.get(ApiConstants.adminWalletOverview);
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
+    return AdminWalletOverviewModel.fromJson(data);
+  }
+
+  /// Fetches driver transactions
+  Future<Map<String, dynamic>> getDriverTransactions({
+    required int driverId,
+    required int page,
+    required int size,
+  }) async {
+    final response = await _apiClient.get(
+      ApiConstants.adminDriverTransactions(driverId),
+      queryParameters: {
+        'page': page,
+        'size': size,
+      },
+    );
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
+    final List<dynamic> content = data['content'] as List<dynamic>? ?? [];
+    
+    final List<DriverWalletTransactionModel> transactions = content
+        .map((json) => DriverWalletTransactionModel.fromJson(Map<String, dynamic>.from(json)))
+        .toList();
+
+    return {
+      'transactions': transactions,
+      'isLast': data['last'] as bool? ?? true,
+    };
+  }
+
+  /// Fetches pending withdrawals
+  Future<Map<String, dynamic>> getPendingWithdrawals({required int page, required int size}) async {
+    final response = await _apiClient.get(
+      ApiConstants.adminWithdrawalsPending,
+      queryParameters: {
+        'page': page,
+        'size': size,
+      },
+    );
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
+    final List<dynamic> content = data['content'] as List<dynamic>? ?? [];
+    
+    final List<AdminWithdrawalModel> withdrawals = content
+        .map((json) => AdminWithdrawalModel.fromJson(Map<String, dynamic>.from(json)))
+        .toList();
+
+    return {
+      'withdrawals': withdrawals,
+      'isLast': data['last'] as bool? ?? true,
+    };
+  }
+
+  /// Fetches all withdrawals
+  Future<Map<String, dynamic>> getAllWithdrawals({required int page, required int size}) async {
+    final response = await _apiClient.get(
+      ApiConstants.adminWithdrawalsAll,
+      queryParameters: {
+        'page': page,
+        'size': size,
+      },
+    );
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
+    final List<dynamic> content = data['content'] as List<dynamic>? ?? [];
+    
+    final List<AdminWithdrawalModel> withdrawals = content
+        .map((json) => AdminWithdrawalModel.fromJson(Map<String, dynamic>.from(json)))
+        .toList();
+
+    return {
+      'withdrawals': withdrawals,
+      'isLast': data['last'] as bool? ?? true,
+    };
+  }
 }
+

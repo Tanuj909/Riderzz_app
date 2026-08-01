@@ -58,6 +58,21 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
     );
   }
 
+  void _showSendMessageDialog(AdminDriverModel driver) async {
+    final sent = await showDialog<bool>(
+      context: context,
+      builder: (context) => SendMessageDialog(driver: driver),
+    );
+    if (sent == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Message sent to driver successfully!'),
+          backgroundColor: Color(0xFF1C9A5B),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -404,29 +419,47 @@ class _RiderVerificationScreenState extends State<RiderVerificationScreen> {
 
           const SizedBox(height: 12),
 
-          // Action Button matching HTML (btn btn-outline btn-sm btn-block)
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () => _showDriverDetailsBottomSheet(driver),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                side: const BorderSide(color: Color(0xFFE1E1E6), width: 1.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _showDriverDetailsBottomSheet(driver),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    side: const BorderSide(color: Color(0xFFE1E1E6), width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    status == 'PENDING'
+                        ? 'Review Application'
+                        : 'Manage Driver Profile',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF121214),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ),
-              child: Text(
-                status == 'PENDING'
-                    ? 'Review Application'
-                    : 'Manage Driver Profile',
-                style: GoogleFonts.outfit(
-                  color: const Color(0xFF121214),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+              const SizedBox(width: 8),
+              OutlinedButton(
+                onPressed: () => _showSendMessageDialog(driver),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  side: const BorderSide(color: Color(0xFFE1E1E6), width: 1.5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.message_rounded,
+                  color: Color(0xFFE31C2E),
+                  size: 18,
                 ),
               ),
-            ),
+            ],
           ),
         ],
       ),
@@ -493,6 +526,21 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
         );
       },
     );
+  }
+
+  void _showSendMessageDialog(AdminDriverModel driver) async {
+    final sent = await showDialog<bool>(
+      context: context,
+      builder: (context) => SendMessageDialog(driver: driver),
+    );
+    if (sent == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Message sent to driver successfully!'),
+          backgroundColor: Color(0xFF1C9A5B),
+        ),
+      );
+    }
   }
 
   void _updateStatus(String targetStatus) async {
@@ -667,15 +715,31 @@ class _DriverDetailsBottomSheetState extends State<DriverDetailsBottomSheet> {
                                     ),
                                   ),
                                 const SizedBox(height: 6),
-                                TextButton.icon(
-                                  onPressed: () => _showEditDriverDialog(driver),
-                                  icon: const Icon(Icons.edit_rounded, size: 14, color: Color(0xFFE31C2E)),
-                                  label: Text('Edit Info', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFE31C2E))),
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    minimumSize: Size.zero,
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    TextButton.icon(
+                                      onPressed: () => _showSendMessageDialog(driver),
+                                      icon: const Icon(Icons.message_rounded, size: 14, color: Color(0xFFE31C2E)),
+                                      label: Text('Message', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFE31C2E))),
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    TextButton.icon(
+                                      onPressed: () => _showEditDriverDialog(driver),
+                                      icon: const Icon(Icons.edit_rounded, size: 14, color: Color(0xFFE31C2E)),
+                                      label: Text('Edit Info', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFE31C2E))),
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -2525,6 +2589,300 @@ class _EditDriverDialogState extends State<EditDriverDialog> {
           }).toList(),
         ),
       ],
+    );
+  }
+}
+
+class SendMessageDialog extends StatefulWidget {
+  final AdminDriverModel driver;
+
+  const SendMessageDialog({super.key, required this.driver});
+
+  @override
+  State<SendMessageDialog> createState() => _SendMessageDialogState();
+}
+
+class _SendMessageDialogState extends State<SendMessageDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _subjectController = TextEditingController();
+  final _messageController = TextEditingController();
+  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    _subjectController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildButton({
+    required String text,
+    required Color backgroundColor,
+    required Color textColor,
+    Border? border,
+    required VoidCallback? onTap,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(20),
+        border: border,
+        boxShadow: backgroundColor != Colors.transparent && onTap != null
+            ? [
+                BoxShadow(
+                  color: backgroundColor.withValues(alpha: 0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                )
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            alignment: Alignment.center,
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
+                color: textColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    final provider = context.read<RiderVerificationProvider>();
+    final success = await provider.sendMessageToDriver(
+      driverId: widget.driver.id,
+      subject: _subjectController.text.trim(),
+      message: _messageController.text.trim(),
+    );
+
+    if (mounted) {
+      setState(() {
+        _isSubmitting = false;
+      });
+
+      if (success) {
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(provider.errorMessage ?? 'Failed to send message'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final themeColor = const Color(0xFFD90429); // Premium Riderzz Red
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.white,
+      elevation: 12,
+      child: SingleChildScrollView(
+        child: SizedBox(
+          width: 340,
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Premium double-ring header icon
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: themeColor.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: themeColor,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: themeColor.withValues(alpha: 0.25),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.message_rounded,
+                        color: Colors.white,
+                        size: 26,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Title
+                  Text(
+                    'Message to Driver',
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1A202C),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Send a notification to ${widget.driver.name}',
+                    style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      color: const Color(0xFF6C6F79),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Subject TextFormField
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Subject',
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12, color: const Color(0xFF121214)),
+                      ),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _subjectController,
+                        style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF1A202C)),
+                        decoration: InputDecoration(
+                          hintText: 'e.g., Document Resubmission',
+                          hintStyle: GoogleFonts.outfit(color: const Color(0xFFA0AEC0), fontSize: 12),
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: themeColor, width: 1.5),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Colors.redAccent, width: 1),
+                          ),
+                          focusedErrorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Subject is required';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Message TextFormField
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Message',
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12, color: const Color(0xFF121214)),
+                      ),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _messageController,
+                        maxLines: 4,
+                        style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF1A202C)),
+                        decoration: InputDecoration(
+                          hintText: 'Please re-upload a clearer photo of your license.',
+                          hintStyle: GoogleFonts.outfit(color: const Color(0xFFA0AEC0), fontSize: 12),
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: themeColor, width: 1.5),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Colors.redAccent, width: 1),
+                          ),
+                          focusedErrorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Message is required';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildButton(
+                          text: 'Cancel',
+                          backgroundColor: Colors.transparent,
+                          textColor: const Color(0xFF4A5568),
+                          border: Border.all(color: const Color(0xFFE7E7EB)),
+                          onTap: _isSubmitting ? null : () => Navigator.pop(context),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildButton(
+                          text: _isSubmitting ? 'Sending...' : 'Send',
+                          backgroundColor: themeColor,
+                          textColor: Colors.white,
+                          onTap: _isSubmitting ? null : _submit,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

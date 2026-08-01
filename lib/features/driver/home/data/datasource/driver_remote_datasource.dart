@@ -8,6 +8,8 @@ import 'package:riderzz_app/core/models/available_vehicle_model.dart';
 import 'package:riderzz_app/core/models/bank_account_model.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/core/models/driver_earnings_model.dart';
+import 'package:riderzz_app/core/models/driver_message_model.dart';
+
 
 class DriverRemoteDataSource {
   final ApiClient _apiClient;
@@ -307,5 +309,18 @@ class DriverRemoteDataSource {
     final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
     final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
     return DriverEarningsModel.fromJson(data);
+  }
+
+  Future<List<DriverMessageModel>> getDriverMessages() async {
+    final response = await _apiClient.get(ApiConstants.driverMessages);
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final List<dynamic> list = resBody['data'] as List? ?? [];
+    return list
+        .map((json) => DriverMessageModel.fromJson(Map<String, dynamic>.from(json)))
+        .toList();
+  }
+
+  Future<void> markMessagesAsRead() async {
+    await _apiClient.put(ApiConstants.driverMessagesRead);
   }
 }

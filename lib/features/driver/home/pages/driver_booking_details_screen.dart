@@ -496,6 +496,63 @@ class _DriverBookingDetailsScreenState
     }
   }
 
+  /// Opens Google Maps navigation from driver's current location to either
+  /// the pickup (pre-DRIVER_ARRIVED) or drop (IN_TRANSIT / DRIVER_ARRIVED_DROP).
+  Future<void> _openGoogleMapsNavigation(BookingModel booking) async {
+    final locationProvider = Provider.of<LocationProvider>(
+      context,
+      listen: false,
+    );
+    final driverLat = locationProvider.currentLatitude;
+    final driverLng = locationProvider.currentLongitude;
+
+    final statusUpper = booking.status.toUpperCase();
+
+    // Heading to drop when in-transit or arrived at drop
+    final bool goingToDrop =
+        statusUpper == 'IN_TRANSIT' || statusUpper == 'DRIVER_ARRIVED_DROP';
+
+    double? destLat;
+    double? destLng;
+
+    if (goingToDrop) {
+      destLat = booking.dropLatitude;
+      destLng = booking.dropLongitude;
+    } else {
+      destLat = booking.pickupLatitude;
+      destLng = booking.pickupLongitude;
+    }
+
+    // Fallback to polyline endpoints if explicit coords are missing / zero
+    if ((destLat == null || destLat == 0.0 || destLng == null || destLng == 0.0) &&
+        _polylineCoordinates.isNotEmpty) {
+      if (goingToDrop) {
+        destLat = _polylineCoordinates.last.latitude;
+        destLng = _polylineCoordinates.last.longitude;
+      } else {
+        destLat = _polylineCoordinates.first.latitude;
+        destLng = _polylineCoordinates.first.longitude;
+      }
+    }
+
+    if (destLat == null || destLng == null) return;
+
+    if (driverLat != null && driverLng != null) {
+      await MapsLauncherService.launchNavigation(
+        originLat: driverLat,
+        originLng: driverLng,
+        destLat: destLat,
+        destLng: destLng,
+      );
+    } else {
+      // No driver location – just navigate to destination
+      await MapsLauncherService.launchMaps(
+        latitude: destLat,
+        longitude: destLng,
+      );
+    }
+  }
+
   Set<Marker> _buildMarkers(BookingModel booking) {
     double? pickupLat = booking.pickupLatitude;
     double? pickupLng = booking.pickupLongitude;
@@ -1227,6 +1284,54 @@ class _DriverBookingDetailsScreenState
                         ),
                       ),
                     ),
+                    // Navigate button: only shown for active bookings
+                    if (!isDelivered &&
+                        statusUpper != 'CANCELLED' &&
+                        statusUpper != 'FAILED') ...[
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: () => _openGoogleMapsNavigation(booking),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF121214),
+                            borderRadius: BorderRadius.circular(99),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x33000000),
+                                blurRadius: 8,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.arrow_outward_rounded,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                (statusUpper == 'IN_TRANSIT' ||
+                                        statusUpper == 'DRIVER_ARRIVED_DROP')
+                                    ? 'Drop'
+                                    : 'Pickup',
+                                style: GoogleFonts.outfit(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],

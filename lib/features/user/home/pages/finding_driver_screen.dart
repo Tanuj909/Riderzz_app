@@ -70,10 +70,47 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
   bool _isCameraMoving = false;
   bool _isDriverLocationStaleState = false;
 
+  // Cached optimization variables
+  BitmapDescriptor? _pickupIconDescriptor;
+  BitmapDescriptor? _dropIconDescriptor;
+  BitmapDescriptor? _fallbackDriverIconDescriptor;
+  Marker? _pickupMarker;
+  Marker? _dropMarker;
+  late final Dio _dio;
+
+  // Camera auto-follow configurations
+  bool _isAutoFollowActive = true;
+  bool _isProgrammaticCameraMovement = false;
+  late CameraPosition _initialCameraPosition;
+
   @override
   void initState() {
     super.initState();
     _currentBooking = widget.booking;
+    _dio = Dio();
+
+    // Cache static BitmapDescriptors
+    _pickupIconDescriptor = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
+    _dropIconDescriptor = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
+    _fallbackDriverIconDescriptor = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
+
+    // Pre-construct static markers
+    _initializeStaticMarkers();
+
+    // Cache initial camera position config
+    _initialCameraPosition = CameraPosition(
+      target: (_polylineCoordinates.isNotEmpty)
+          ? _polylineCoordinates.first
+          : (_currentBooking.pickupLatitude != null &&
+                _currentBooking.pickupLongitude != null)
+          ? LatLng(
+              _currentBooking.pickupLatitude!,
+              _currentBooking.pickupLongitude!,
+            )
+          : const LatLng(28.6139, 77.2090),
+      zoom: 15.5,
+    );
+
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -99,6 +136,36 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
           _currentBooking.routePolyline!.isNotEmpty) {
         _fetchRoute();
       }
+    }
+  }
+
+  void _initializeStaticMarkers() {
+    if (_currentBooking.pickupLatitude != null &&
+        _currentBooking.pickupLongitude != null) {
+      _pickupMarker = Marker(
+        markerId: const MarkerId('pickup'),
+        position: LatLng(
+          _currentBooking.pickupLatitude!,
+          _currentBooking.pickupLongitude!,
+        ),
+        infoWindow: const InfoWindow(
+          title: 'Pickup Location',
+        ),
+        icon: _pickupIconDescriptor ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+      );
+    }
+
+    if (_currentBooking.dropLatitude != null &&
+        _currentBooking.dropLongitude != null) {
+      _dropMarker = Marker(
+        markerId: const MarkerId('drop'),
+        position: LatLng(
+          _currentBooking.dropLatitude!,
+          _currentBooking.dropLongitude!,
+        ),
+        infoWindow: const InfoWindow(title: 'Drop Location'),
+        icon: _dropIconDescriptor ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+      );
     }
   }
 
@@ -396,7 +463,6 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
       },
     );
   }
-
   void _startPolling() {
     _statusTimer = Timer.periodic(const Duration(seconds: 8), (timer) async {
       if (!mounted) return;
@@ -422,6 +488,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
 
         setState(() {
           _currentBooking = freshBooking;
+          _initializeStaticMarkers(); // Refresh markers if booking coordinates change
         });
         if (!isNewPreTransit) {
           if (freshBooking.routePolyline != null &&
@@ -475,11 +542,12 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
   }
 
   void _updateCameraIfNeeded(LatLng targetPos) async {
-    if (!_hasInitialZoomedInOnDriver || _mapController == null || _isCameraMoving) {
+    if (!_hasInitialZoomedInOnDriver || _mapController == null || _isCameraMoving || !_isAutoFollowActive) {
       return;
     }
 
     _isCameraMoving = true;
+    _isProgrammaticCameraMovement = true;
     try {
       final bounds = await _mapController!.getVisibleRegion();
       
@@ -509,9 +577,11 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
       debugPrint('Error checking camera bounds: $e');
     } finally {
       _isCameraMoving = false;
+      Future.delayed(const Duration(milliseconds: 300), () {
+        _isProgrammaticCameraMovement = false;
+      });
     }
   }
-
   bool get _isDriverLocationStale {
     if (_lastSuccessfulFetchTime == null) return false;
     final now = DateTime.now();
@@ -592,10 +662,13 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
           return;
         }
 
-        setState(() {
-          if (loc.driverName != null) _driverName = loc.driverName;
-          if (loc.vehicleNumber != null) _vehicleNumber = loc.vehicleNumber;
-        });
+        if ((loc.driverName != null && loc.driverName != _driverName) ||
+            (loc.vehicleNumber != null && loc.vehicleNumber != _vehicleNumber)) {
+          setState(() {
+            if (loc.driverName != null) _driverName = loc.driverName;
+            if (loc.vehicleNumber != null) _vehicleNumber = loc.vehicleNumber;
+          });
+        }
 
         if (_driverLocation == null) {
           // First location update, snap directly
@@ -772,7 +845,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
     });
 
     try {
-      final dio = Dio();
+      final dio = _dio;
       final response = await dio.post(
         'https://routes.googleapis.com/directions/v2:computeRoutes',
         data: {
@@ -1000,6 +1073,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted && _mapController != null) {
         if (_driverLocation != null) {
+          _isProgrammaticCameraMovement = true;
           _mapController!.animateCamera(
             CameraUpdate.newCameraPosition(
               CameraPosition(
@@ -1007,7 +1081,11 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                 zoom: 17.5,
               ),
             ),
-          );
+          ).then((_) {
+            Future.delayed(const Duration(milliseconds: 300), () {
+              _isProgrammaticCameraMovement = false;
+            });
+          });
           setState(() {
             _hasInitialZoomedInOnDriver = true;
           });
@@ -1024,8 +1102,10 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
   void _collapseSheetAndZoomOnDriver() {
     setState(() {
       _isSheetExpanded = false;
+      _isAutoFollowActive = true; // Auto follow back on when user clicks to focus map/driver
     });
     if (_driverLocation != null && _mapController != null) {
+      _isProgrammaticCameraMovement = true;
       _mapController!.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
@@ -1033,7 +1113,18 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
             zoom: 17.5,
           ),
         ),
-      );
+      ).then((_) {
+        Future.delayed(const Duration(milliseconds: 300), () {
+          _isProgrammaticCameraMovement = false;
+        });
+      });
+    }
+  }
+
+  void _onMapCreated(GoogleMapController controller) {
+    _mapController = controller;
+    if (_polylineCoordinates.isNotEmpty) {
+      _fitMapBounds();
     }
   }
 
@@ -1122,53 +1213,18 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                       }
 
                       return GoogleMap(
-                        initialCameraPosition: CameraPosition(
-                          target: (_polylineCoordinates.isNotEmpty)
-                              ? _polylineCoordinates.first
-                              : (_currentBooking.pickupLatitude != null &&
-                                    _currentBooking.pickupLongitude != null)
-                              ? LatLng(
-                                  _currentBooking.pickupLatitude!,
-                                  _currentBooking.pickupLongitude!,
-                                )
-                              : const LatLng(28.6139, 77.2090),
-                          zoom: 15.5,
-                        ),
-                        onMapCreated: (controller) {
-                          _mapController = controller;
-                          if (_polylineCoordinates.isNotEmpty) {
-                            _fitMapBounds();
+                        initialCameraPosition: _initialCameraPosition,
+                        onMapCreated: _onMapCreated,
+                        onCameraMoveStarted: () {
+                          if (!_isProgrammaticCameraMovement) {
+                            setState(() {
+                              _isAutoFollowActive = false;
+                            });
                           }
                         },
                         markers: {
-                          if (_currentBooking.pickupLatitude != null &&
-                              _currentBooking.pickupLongitude != null)
-                            Marker(
-                              markerId: const MarkerId('pickup'),
-                              position: LatLng(
-                                _currentBooking.pickupLatitude!,
-                                _currentBooking.pickupLongitude!,
-                              ),
-                              infoWindow: const InfoWindow(
-                                title: 'Pickup Location',
-                              ),
-                              icon: BitmapDescriptor.defaultMarkerWithHue(
-                                BitmapDescriptor.hueGreen,
-                              ),
-                            ),
-                          if (_currentBooking.dropLatitude != null &&
-                              _currentBooking.dropLongitude != null)
-                            Marker(
-                              markerId: const MarkerId('drop'),
-                              position: LatLng(
-                                _currentBooking.dropLatitude!,
-                                _currentBooking.dropLongitude!,
-                              ),
-                              infoWindow: const InfoWindow(title: 'Drop Location'),
-                              icon: BitmapDescriptor.defaultMarkerWithHue(
-                                BitmapDescriptor.hueRed,
-                              ),
-                            ),
+                          if (_pickupMarker != null) _pickupMarker!,
+                          if (_dropMarker != null) _dropMarker!,
                           if (displayLoc != null)
                             Marker(
                               markerId: const MarkerId('driver_location'),
@@ -1182,11 +1238,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                                     ? '${_vehicleNumber ?? "Vehicle"} (Connection Lost)'
                                     : (_vehicleNumber ?? 'Vehicle'),
                               ),
-                              icon:
-                                  _driverIconDescriptor ??
-                                  BitmapDescriptor.defaultMarkerWithHue(
-                                    BitmapDescriptor.hueOrange,
-                                  ),
+                               icon: _driverIconDescriptor ?? _fallbackDriverIconDescriptor ?? BitmapDescriptor.defaultMarker,
                             ),
                         },
                         polylines: _polylines,
@@ -1267,6 +1319,54 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                     ),
                   ),
                 ),
+
+                // Floating Re-center Button
+                if (!_isAutoFollowActive)
+                  Positioned(
+                    bottom: _isSheetExpanded
+                        ? MediaQuery.of(context).size.height * 0.42
+                        : 90,
+                    right: 16,
+                    child: FloatingActionButton.extended(
+                      onPressed: () {
+                        setState(() {
+                          _isAutoFollowActive = true;
+                        });
+                        if (_driverLocation != null) {
+                          _isProgrammaticCameraMovement = true;
+                          _mapController!.animateCamera(
+                            CameraUpdate.newCameraPosition(
+                              CameraPosition(
+                                target: _driverLocation!,
+                                zoom: 17.5,
+                              ),
+                            ),
+                          ).then((_) {
+                            Future.delayed(const Duration(milliseconds: 300), () {
+                              if (mounted) {
+                                _isProgrammaticCameraMovement = false;
+                              }
+                            });
+                          });
+                        }
+                      },
+                      label: Text(
+                        'Re-center',
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF121214),
+                        ),
+                      ),
+                      icon: const Icon(
+                        Icons.my_location_rounded,
+                        color: Color(0xFFE31C2E),
+                        size: 18,
+                      ),
+                      backgroundColor: Colors.white,
+                      elevation: 4,
+                    ),
+                  ),
 
                 // Bottom Details Sheet Content
                 Align(
@@ -1983,7 +2083,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                             ),
                           ),
                         )
-                      else
+                      else ...[
                         SizedBox(
                           width: double.infinity,
                           height: 50,
@@ -2005,12 +2105,134 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                             ),
                           ),
                         ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton.icon(
+                            onPressed: _showBookingDetailsBottomSheet,
+                            icon: const Icon(
+                              Icons.info_outline,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            label: const Text(
+                              'View Details',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF121214),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 20),
                     ],
                   ),
                 ),
               ),
             ),
+    );
+  }
+
+  void _showBookingDetailsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return SingleChildScrollView(
+              controller: scrollController,
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Booking Details',
+                        style: GoogleFonts.outfit(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF121214),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close_rounded, color: Color(0xFF6C6F79)),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Summary Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: const Color(0xFFE1E1E6),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildDetailRow(
+                          'Booking ID',
+                          _currentBooking.bookingId,
+                        ),
+                        if (_currentBooking.estimatedDistanceKm != null) ...[
+                          const SizedBox(height: 12),
+                          _buildDetailRow(
+                            'Est. Distance',
+                            '${_currentBooking.estimatedDistanceKm!.toStringAsFixed(1)} km',
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+                        _buildDetailRow(
+                          'Est. Fare',
+                          '₹${_currentBooking.totalFare.toStringAsFixed(2)}',
+                          isMono: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Route Addresses Card
+                  _buildRouteAddressesCard(_currentBooking),
+                  const SizedBox(height: 16),
+                  
+                  // Shipment Details Card
+                  _buildShipmentDetailsCard(_currentBooking),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

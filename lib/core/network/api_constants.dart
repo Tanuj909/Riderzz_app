@@ -49,6 +49,15 @@ class ApiConstants {
   static const String driverPendingBroadcasts = '/driver/bookings/broadcasts/pending';
   static const String bookingsCurrent = '/bookings/current';
   static const String driverEarnings = '/driver/earnings';
+  static const String driverMessages = '/driver/messages';
+  static const String driverMessagesRead = '/driver/messages/read';
+
+  // Admin Wallet Endpoints
+  static const String adminWallets = '/admin/wallet/wallets';
+  static String adminDriverTransactions(int driverId) => '/admin/wallet/drivers/$driverId/transactions';
+  static const String adminWithdrawalsPending = '/admin/wallet/withdrawals/pending';
+  static const String adminWithdrawalsAll = '/admin/wallet/withdrawals/all';
+  static const String adminWalletOverview = '/admin/wallet/overview';
 
   // Support Endpoints
   static const String supportTickets = '/support/tickets';

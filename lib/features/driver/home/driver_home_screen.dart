@@ -7,8 +7,10 @@ import 'package:riderzz_app/core/services/location_tracking_service.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_home_page.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_history_page.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_wallet_page.dart';
+import 'package:riderzz_app/features/driver/home/pages/driver_messages_page.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_bank_accounts_page.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_profile_page.dart';
+
 
 class DriverHomeScreen extends StatefulWidget {
   const DriverHomeScreen({super.key});
@@ -142,6 +144,8 @@ class DriverHomeScreenState extends State<DriverHomeScreen> {
     final user = authProvider.currentUser;
     final profile = driverProvider.profile;
 
+    final unreadCount = driverProvider.messages.where((m) => !m.read).length;
+
     if (driverProvider.isLoading && profile == null) {
       return const Scaffold(
         backgroundColor: Colors.white,
@@ -197,6 +201,7 @@ class DriverHomeScreenState extends State<DriverHomeScreen> {
           DriverHomePage(),
           DriverHistoryPage(),
           DriverWalletPage(),
+          DriverMessagesPage(),
           DriverProfilePage(),
         ],
       ),
@@ -223,6 +228,9 @@ class DriverHomeScreenState extends State<DriverHomeScreen> {
               });
               if (index == 0) {
                 context.read<DriverHomeProvider>().fetchHomeBookings();
+              } else if (index == 3) {
+                context.read<DriverHomeProvider>().fetchDriverMessages(force: true);
+                context.read<DriverHomeProvider>().markAllMessagesAsRead();
               }
             },
             type: BottomNavigationBarType.fixed,
@@ -234,22 +242,37 @@ class DriverHomeScreenState extends State<DriverHomeScreen> {
             unselectedFontSize: 11,
             selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
             unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
-            items: const [
-              BottomNavigationBarItem(
+            items: [
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.home_rounded),
                 label: 'Home',
               ),
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.assignment_outlined),
                 activeIcon: Icon(Icons.assignment_rounded),
                 label: 'Rides',
               ),
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.account_balance_wallet_outlined),
                 activeIcon: Icon(Icons.account_balance_wallet_rounded),
                 label: 'Wallet',
               ),
               BottomNavigationBarItem(
+                icon: Badge(
+                  isLabelVisible: unreadCount > 0,
+                  label: Text(unreadCount.toString()),
+                  backgroundColor: const Color(0xFFD90429),
+                  child: const Icon(Icons.mail_outline_rounded),
+                ),
+                activeIcon: Badge(
+                  isLabelVisible: unreadCount > 0,
+                  label: Text(unreadCount.toString()),
+                  backgroundColor: const Color(0xFFD90429),
+                  child: const Icon(Icons.mail_rounded),
+                ),
+                label: 'Messages',
+              ),
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.person_outline_rounded),
                 activeIcon: Icon(Icons.person_rounded),
                 label: 'Profile',

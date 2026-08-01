@@ -61,6 +61,12 @@ class LocationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Forces a refresh of the current location.
+  Future<void> refresh() async {
+    _isInitialized = false;
+    await initialize();
+  }
+
   // ── Private Helpers ────────────────────────────────────────────────────
 
   Future<void> _reverseGeocode(double lat, double lng) async {

@@ -10,6 +10,7 @@ import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_booking_details_screen.dart';
 import 'package:riderzz_app/features/driver/home/driver_home_screen.dart';
 import 'package:riderzz_app/features/driver/profile/driver_profile_screen.dart';
+import 'package:riderzz_app/core/models/driver_profile_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class DriverHomePage extends StatefulWidget {
@@ -654,14 +655,24 @@ class _DriverHomePageState extends State<DriverHomePage> {
                   const SizedBox(width: 10),
                   TextButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DriverProfileScreen(
-                            startInEditMode: true,
-                          ),
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => UpdateDriverProfileDialog(
+                          profile: driverProvider.profile!,
                         ),
-                      );
+                      ).then((updated) {
+                        if (!context.mounted) return;
+                        if (updated == true) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Profile details updated successfully!'),
+                              backgroundColor: Color(0xFF1C9A5B),
+                            ),
+                          );
+                          context.read<DriverHomeProvider>().fetchDriverProfile();
+                        }
+                      });
                     },
                     style: TextButton.styleFrom(
                       backgroundColor: const Color(0xFFE2A03F),
@@ -1917,6 +1928,410 @@ class _RadarPulseAnimationState extends State<RadarPulseAnimation> with SingleTi
           ],
         );
       },
+    );
+  }
+}
+
+class UpdateDriverProfileDialog extends StatefulWidget {
+  final DriverProfileModel profile;
+
+  const UpdateDriverProfileDialog({super.key, required this.profile});
+
+  @override
+  State<UpdateDriverProfileDialog> createState() => _UpdateDriverProfileDialogState();
+}
+
+class _UpdateDriverProfileDialogState extends State<UpdateDriverProfileDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _upiController;
+  late final TextEditingController _licenseController;
+  late final TextEditingController _dobController;
+  late final TextEditingController _bioController;
+  String _selectedGender = 'MALE';
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _upiController = TextEditingController(text: widget.profile.upiId ?? '');
+    _licenseController = TextEditingController(text: widget.profile.licenseNumber);
+    _dobController = TextEditingController(text: widget.profile.dob ?? '');
+    _bioController = TextEditingController(text: widget.profile.bio);
+    _selectedGender = ['MALE', 'FEMALE', 'OTHER'].contains(widget.profile.gender.toUpperCase())
+        ? widget.profile.gender.toUpperCase()
+        : 'MALE';
+  }
+
+  @override
+  void dispose() {
+    _upiController.dispose();
+    _licenseController.dispose();
+    _dobController.dispose();
+    _bioController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    DateTime initialDate = DateTime.now().subtract(const Duration(days: 365 * 18));
+    if (_dobController.text.isNotEmpty) {
+      try {
+        initialDate = DateTime.parse(_dobController.text);
+      } catch (_) {}
+    }
+
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(1950),
+      lastDate: DateTime.now().subtract(const Duration(days: 365 * 16)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFFD90429),
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF121214),
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFD90429),
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _dobController.text = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      });
+    }
+  }
+
+  void _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    final provider = context.read<DriverHomeProvider>();
+    final success = await provider.updateProfile(
+      licenseNumber: _licenseController.text.trim(),
+      bio: _bioController.text.trim(),
+      gender: _selectedGender,
+      dob: _dobController.text.trim(),
+      upiId: _upiController.text.trim().isEmpty ? null : _upiController.text.trim(),
+    );
+
+    if (mounted) {
+      setState(() {
+        _isSubmitting = false;
+      });
+
+      if (success) {
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(provider.errorMessage ?? 'Failed to update profile'),
+            backgroundColor: const Color(0xFFD90429),
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildTextField({
+    required String label,
+    required TextEditingController controller,
+    required IconData icon,
+    required String hintText,
+    required String? Function(String?) validator,
+    int maxLines = 1,
+    bool autofocus = false,
+    bool isHighlighted = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12.5, color: const Color(0xFF121214)),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          maxLines: maxLines,
+          autofocus: autofocus,
+          style: GoogleFonts.outfit(
+            fontSize: 14,
+            color: const Color(0xFF1A202C),
+            fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
+          ),
+          decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: GoogleFonts.outfit(color: const Color(0xFFA0AEC0), fontSize: 12.5),
+            filled: true,
+            fillColor: isHighlighted ? const Color(0xFFFFF9F3) : const Color(0xFFF8FAFC),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+            prefixIcon: Icon(icon, color: isHighlighted ? const Color(0xFFE2A03F) : const Color(0xFFA2A5AE), size: 18),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                color: isHighlighted ? const Color(0xFFFFEAD2) : const Color(0xFFE7E7EB),
+                width: isHighlighted ? 1.8 : 1.0,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                color: isHighlighted ? const Color(0xFFE2A03F) : const Color(0xFFD90429),
+                width: 2.0,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Colors.redAccent, width: 1.0),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+            ),
+          ),
+          validator: validator,
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.white,
+      elevation: 12,
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.9,
+        constraints: const BoxConstraints(maxWidth: 450),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Title Area
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD90429).withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.account_box_rounded,
+                          color: Color(0xFFD90429),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Update Profile Details',
+                          style: GoogleFonts.outfit(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF121214),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, color: const Color(0xFF6C6F79)),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 32, color: Color(0xFFE7E7EB)),
+
+                  // 1. UPI ID (At the top, highlighted, auto-focused)
+                  _buildTextField(
+                    label: 'UPI ID (Required for Payouts)',
+                    controller: _upiController,
+                    icon: Icons.account_balance_wallet_rounded,
+                    hintText: 'e.g. name@upi',
+                    autofocus: true,
+                    isHighlighted: true,
+                    validator: (val) {
+                      if (val == null || val.trim().isEmpty) {
+                        return 'UPI ID is required to update';
+                      }
+                      if (!val.contains('@')) {
+                        return 'Please enter a valid UPI ID (must contain @)';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 22),
+
+                  // 2. Date of Birth
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Date of Birth',
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12.5, color: const Color(0xFF121214)),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _dobController,
+                        readOnly: true,
+                        style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF1A202C)),
+                        onTap: () => _selectDate(context),
+                        decoration: InputDecoration(
+                          hintText: 'YYYY-MM-DD',
+                          hintStyle: GoogleFonts.outfit(color: const Color(0xFFA0AEC0), fontSize: 12.5),
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                          prefixIcon: const Icon(Icons.calendar_today_rounded, color: Color(0xFFA2A5AE), size: 18),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Color(0xFFD90429), width: 2.0),
+                          ),
+                        ),
+                        validator: (val) => val == null || val.trim().isEmpty ? 'Date of birth is required' : null,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 22),
+
+                  // 3. Gender Dropdown
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Gender',
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12.5, color: const Color(0xFF121214)),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedGender,
+                        style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF1A202C)),
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          prefixIcon: const Icon(Icons.people_rounded, color: Color(0xFFA2A5AE), size: 18),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Color(0xFFD90429), width: 2.0),
+                          ),
+                        ),
+                        items: ['MALE', 'FEMALE', 'OTHER'].map((g) {
+                          return DropdownMenuItem(
+                            value: g,
+                            child: Text(g[0] + g.substring(1).toLowerCase()),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() {
+                              _selectedGender = val;
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 22),
+
+                  // 4. License Number
+                  _buildTextField(
+                    label: 'License Number',
+                    controller: _licenseController,
+                    icon: Icons.badge_rounded,
+                    hintText: 'Enter your driving license number',
+                    validator: (val) => val == null || val.trim().isEmpty ? 'License number is required' : null,
+                  ),
+                  const SizedBox(height: 22),
+
+                  // 5. Bio
+                  _buildTextField(
+                    label: 'Bio',
+                    controller: _bioController,
+                    icon: Icons.info_outline_rounded,
+                    hintText: 'Briefly describe your driving experience...',
+                    maxLines: 3,
+                    validator: (val) => val == null || val.trim().isEmpty ? 'Bio cannot be empty' : null,
+                  ),
+                  const SizedBox(height: 28),
+
+                  // Actions
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            side: const BorderSide(color: Color(0xFFE7E7EB)),
+                          ),
+                          onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+                          child: Text(
+                            'Cancel',
+                            style: GoogleFonts.outfit(color: const Color(0xFF4A5568), fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFD90429),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            elevation: 0,
+                          ),
+                          onPressed: _isSubmitting ? null : _submit,
+                          child: _isSubmitting
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : Text(
+                                  'Update',
+                                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

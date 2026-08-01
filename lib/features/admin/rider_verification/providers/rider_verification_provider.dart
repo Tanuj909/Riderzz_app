@@ -264,4 +264,28 @@ class RiderVerificationProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  /// Sends a custom message/notification to a driver.
+  Future<bool> sendMessageToDriver({
+    required int driverId,
+    required String subject,
+    required String message,
+  }) async {
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _repository.sendMessageToDriver(
+        driverId: driverId,
+        subject: subject,
+        message: message,
+      );
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
 }

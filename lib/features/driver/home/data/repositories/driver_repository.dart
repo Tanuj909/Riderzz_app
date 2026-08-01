@@ -5,6 +5,8 @@ import 'package:riderzz_app/core/models/bank_account_model.dart';
 import 'package:riderzz_app/features/driver/home/data/datasource/driver_remote_datasource.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/core/models/driver_earnings_model.dart';
+import 'package:riderzz_app/core/models/driver_message_model.dart';
+
 
 class DriverRepository {
   final DriverRemoteDataSource _remoteDataSource;
@@ -124,5 +126,13 @@ class DriverRepository {
 
   Future<DriverEarningsModel> getDriverEarnings() async {
     return await _remoteDataSource.getDriverEarnings();
+  }
+
+  Future<List<DriverMessageModel>> getDriverMessages() async {
+    return await _remoteDataSource.getDriverMessages();
+  }
+
+  Future<void> markMessagesAsRead() async {
+    await _remoteDataSource.markMessagesAsRead();
   }
 }

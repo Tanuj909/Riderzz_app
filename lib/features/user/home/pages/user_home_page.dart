@@ -1502,17 +1502,17 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE7E7EB)),
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
                   child: Row(
                     children: [
                       Container(
-                        width: 42,
-                        height: 42,
+                        width: 38,
+                        height: 38,
                         decoration: const BoxDecoration(
                           color: Color(0xFFEFF6FF),
                           shape: BoxShape.circle,
@@ -1521,32 +1521,35 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                         child: vehicle.iconUrl != null && vehicle.iconUrl!.isNotEmpty
                             ? Image.network(
                                 vehicle.iconUrl!,
-                                width: 26,
-                                height: 26,
-                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.local_shipping_outlined, color: Colors.blue, size: 22),
+                                width: 22,
+                                height: 22,
+                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.local_shipping_outlined, color: Colors.blue, size: 18),
                               )
-                            : const Icon(Icons.local_shipping_outlined, color: Colors.blue, size: 22),
+                            : const Icon(Icons.local_shipping_outlined, color: Colors.blue, size: 18),
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               'Normal Delivery',
                               style: GoogleFonts.outfit(
-                                fontSize: 14.5,
+                                fontSize: 13.5,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFF121214),
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 1),
                             Text(
                               'Standard delivery at regular rates',
                               style: GoogleFonts.outfit(
-                                fontSize: 11.5,
+                                fontSize: 11,
                                 color: const Color(0xFF6C6F79),
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
@@ -1556,7 +1559,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               
               // Fast Delivery Option Card
               GestureDetector(
@@ -1568,17 +1571,17 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF8EC),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.orange.withOpacity(0.4), width: 1.5),
+                    color: const Color(0xFFFFF7ED),
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: Colors.orange.shade300, width: 1.5),
                   ),
                   child: Row(
                     children: [
                       Container(
-                        width: 42,
-                        height: 42,
+                        width: 38,
+                        height: 38,
                         decoration: const BoxDecoration(
                           color: Color(0xFFFFF2DC),
                           shape: BoxShape.circle,
@@ -1587,56 +1590,58 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                         child: vehicle.iconUrl != null && vehicle.iconUrl!.isNotEmpty
                             ? Image.network(
                                 vehicle.iconUrl!,
-                                width: 26,
-                                height: 26,
+                                width: 22,
+                                height: 22,
                                 color: Colors.orange.shade700,
                                 colorBlendMode: BlendMode.srcIn,
-                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 22),
+                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 18),
                               )
-                            : const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 22),
+                            : const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 18),
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Wrap(
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              spacing: 6,
-                              runSpacing: 4,
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
                                   '⚡ Fast Delivery',
                                   style: GoogleFonts.outfit(
-                                    fontSize: 14.5,
+                                    fontSize: 13.5,
                                     fontWeight: FontWeight.bold,
                                     color: const Color(0xFFD35400),
                                   ),
                                 ),
+                                const SizedBox(width: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: Colors.orange,
-                                    borderRadius: BorderRadius.circular(6),
+                                    borderRadius: BorderRadius.circular(99),
                                   ),
                                   child: Text(
-                                    'RECOMMENDED',
+                                    'REC',
                                     style: GoogleFonts.outfit(
                                       color: Colors.white,
-                                      fontSize: 8,
+                                      fontSize: 7.5,
                                       fontWeight: FontWeight.w900,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 1),
                             Text(
                               'Priority dispatch & faster route delivery',
                               style: GoogleFonts.outfit(
-                                fontSize: 11.5,
+                                fontSize: 11,
                                 color: const Color(0xFFE67E22),
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
