@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:riderzz_app/core/services/foreground_location_service.dart';
+import 'package:riderzz_app/core/services/native_overlay_controller.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/app/routes/app_routes.dart';
 
@@ -72,8 +73,44 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    NativeOverlayController.initialize();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    NativeOverlayController.dispose();
+    super.dispose();
+  }
+
+  // ── Lifecycle observer ──────────────────────────────────────────────────
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+        NativeOverlayController.onAppMovedToBackground();
+        break;
+      case AppLifecycleState.resumed:
+        NativeOverlayController.onAppReturnedToForeground();
+        break;
+      default:
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

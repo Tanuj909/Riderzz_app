@@ -51,7 +51,6 @@ dependencies:
   flutter_foreground_task: ^10.0.0
   flutter_local_notifications: ^22.2.0
   stomp_dart_client: ^3.0.1
-  flutter_overlay_window: ^0.5.0
 
 dev_dependencies:
   flutter_test:

@@ -9,6 +9,10 @@
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <!-- Required for floating overlay window (Chat-Head style icon) -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <!-- Required for foregroundServiceType="specialUse" on Android 14+ -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <application
         android:label="Riderzz"
         android:name="${applicationName}"
@@ -50,6 +54,18 @@
             android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
             android:foregroundServiceType="location"
             android:exported="false" />
+
+        <!-- Native Riderzz chat-head. It owns the only WindowManager overlay. -->
+        <service
+            android:name=".OverlayService"
+            android:foregroundServiceType="specialUse"
+            android:exported="false"
+            android:stopWithTask="true"
+            android:configChanges="orientation|screenSize|smallestScreenSize|density">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Riderzz floating icon for quick app restore" />
+        </service>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
