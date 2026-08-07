@@ -52,8 +52,32 @@ import 'package:riderzz_app/features/support/data/datasource/support_remote_data
 import 'package:riderzz_app/features/support/data/repositories/support_repository.dart';
 import 'package:riderzz_app/features/support/providers/support_provider.dart';
 
+import 'package:riderzz_app/features/notification/data/datasource/notification_remote_datasource.dart';
+import 'package:riderzz_app/features/notification/data/repositories/notification_repository.dart';
+
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:riderzz_app/core/services/firebase_notification_service.dart';
+
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+
+  // Print raw data payload
+  print('Handling a background message: ${message.messageId}');
+  print('Background Message data: ${message.data}');
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp();
+
+FirebaseMessaging.onBackgroundMessage(
+    firebaseMessagingBackgroundHandler);
+
+  // Initialize FCM notification service (Phase 1)
+  await FirebaseNotificationService.instance.initialize();
 
   // Initialize communication port for background service Isolate
   FlutterForegroundTask.initCommunicationPort();
@@ -170,6 +194,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           update: (_, apiClient, previous) =>
               SupportRemoteDataSource(apiClient),
         ),
+        ProxyProvider<ApiClient, NotificationRemoteDataSource>(
+          update: (_, apiClient, previous) =>
+              NotificationRemoteDataSource(apiClient),
+        ),
 
         // 3. Repositories
         ProxyProvider<AuthRemoteDataSource, AuthRepository>(
@@ -216,23 +244,35 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ProxyProvider<SupportRemoteDataSource, SupportRepository>(
           update: (_, dataSource, previous) => SupportRepository(dataSource),
         ),
+        ProxyProvider2<NotificationRemoteDataSource, SecureStorageService, NotificationRepository>(
+          update: (_, dataSource, storage, previous) =>
+              previous ?? NotificationRepository(dataSource, storage),
+        ),
 
         // 4. State Management (Providers)
-        ChangeNotifierProxyProvider2<
+        ChangeNotifierProxyProvider3<
           AuthRepository,
           SecureStorageService,
+          NotificationRepository,
           AuthProvider
         >(
           create: (context) => AuthProvider(
             authRepository: context.read<AuthRepository>(),
             storageService: context.read<SecureStorageService>(),
+            notificationRepository: context.read<NotificationRepository>(),
           ),
-          update: (_, authRepo, storageService, previous) =>
-              previous ??
-              AuthProvider(
-                authRepository: authRepo,
-                storageService: storageService,
-              ),
+          update: (_, authRepo, storageService, notifRepo, previous) {
+            // Inject NotificationRepository into FirebaseNotificationService
+            // so token-refresh events can auto-upload.
+            FirebaseNotificationService.instance
+                .setNotificationRepository(notifRepo);
+            return previous ??
+                AuthProvider(
+                  authRepository: authRepo,
+                  storageService: storageService,
+                  notificationRepository: notifRepo,
+                );
+          },
         ),
 
         ChangeNotifierProxyProvider<AddressRepository, AddressProvider>(

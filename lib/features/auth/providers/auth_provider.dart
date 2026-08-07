@@ -4,11 +4,14 @@ import 'package:riderzz_app/core/models/user_model.dart';
 import 'package:riderzz_app/core/models/customer_profile_model.dart';
 import 'package:riderzz_app/core/storage/secure_storage_service.dart';
 import 'package:riderzz_app/core/utils/jwt_helper.dart';
+import 'package:riderzz_app/core/services/firebase_notification_service.dart';
 import 'package:riderzz_app/features/auth/data/repositories/auth_repository.dart';
+import 'package:riderzz_app/features/notification/data/repositories/notification_repository.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthRepository _authRepository;
   final SecureStorageService _storageService;
+  final NotificationRepository _notificationRepository;
 
   UserModel? _currentUser;
   CustomerProfileModel? _customerProfile;
@@ -19,8 +22,10 @@ class AuthProvider extends ChangeNotifier {
   AuthProvider({
     required AuthRepository authRepository,
     required SecureStorageService storageService,
+    required NotificationRepository notificationRepository,
   })  : _authRepository = authRepository,
-        _storageService = storageService;
+        _storageService = storageService,
+        _notificationRepository = notificationRepository;
 
   UserModel? get currentUser => _currentUser;
   CustomerProfileModel? get customerProfile => _customerProfile;
@@ -34,6 +39,23 @@ class AuthProvider extends ChangeNotifier {
     _isOtpSent = false;
     _customerProfile = null;
     notifyListeners();
+  }
+
+  // ── FCM Token Upload Helper ─────────────────────────────────────────────
+  // Called after every successful login / registration.
+  // Never throws — login must never fail because of this.
+  Future<void> _uploadFcmTokenAfterLogin() async {
+    try {
+      final fcmToken = FirebaseNotificationService.instance.fcmToken;
+      if (fcmToken == null || fcmToken.isEmpty) {
+        debugPrint('[FCM] No FCM token available, skipping upload.');
+        return;
+      }
+      debugPrint('[FCM] Login successful — uploading device token...');
+      await _notificationRepository.registerDeviceToken(fcmToken);
+    } catch (e) {
+      debugPrint('[FCM] ❌ Post-login token upload failed: $e');
+    }
   }
 
   /// Request OTP for a phone number
@@ -83,6 +105,9 @@ class AuthProvider extends ChangeNotifier {
         userId: user.userId,
       );
 
+      // Phase 2: Upload FCM token after registration
+      await _uploadFcmTokenAfterLogin();
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -121,6 +146,9 @@ class AuthProvider extends ChangeNotifier {
         userId: user.userId,
       );
 
+      // Phase 2: Upload FCM token after registration
+      await _uploadFcmTokenAfterLogin();
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -155,8 +183,12 @@ class AuthProvider extends ChangeNotifier {
           refreshToken: refreshToken,
         );
         try {
-          await fetchUserProfile();
+          fetchUserProfile();
         } catch (_) {}
+
+        // Phase 2: Upload FCM token on auto-login (duplicate check inside)
+        _uploadFcmTokenAfterLogin();
+
         notifyListeners();
         return true;
       }
@@ -191,6 +223,17 @@ class AuthProvider extends ChangeNotifier {
       await FlutterForegroundTask.stopService();
     } catch (_) {}
 
+    // Phase 2: Unregister FCM device token before clearing auth
+    try {
+      final fcmToken = FirebaseNotificationService.instance.fcmToken;
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        debugPrint('[FCM] Logout — removing device token...');
+        await _notificationRepository.unregisterDeviceToken(fcmToken);
+      }
+    } catch (e) {
+      debugPrint('[FCM] ❌ Logout token removal failed: $e');
+    }
+
     await _storageService.clearAuthData();
     _currentUser = null;
     resetState();
@@ -218,6 +261,9 @@ class AuthProvider extends ChangeNotifier {
         role: user.role,
         userId: user.userId,
       );
+
+      // Phase 2: Upload FCM token after OTP login
+      await _uploadFcmTokenAfterLogin();
 
       _isLoading = false;
       notifyListeners();
@@ -252,6 +298,9 @@ class AuthProvider extends ChangeNotifier {
         role: user.role,
         userId: user.userId,
       );
+
+      // Phase 2: Upload FCM token after password login
+      await _uploadFcmTokenAfterLogin();
 
       _isLoading = false;
       notifyListeners();
@@ -335,6 +384,9 @@ class AuthProvider extends ChangeNotifier {
         role: user.role,
         userId: user.userId,
       );
+
+      // Phase 2: Upload FCM token after admin login
+      await _uploadFcmTokenAfterLogin();
 
       _isLoading = false;
       notifyListeners();

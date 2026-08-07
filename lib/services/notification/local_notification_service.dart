@@ -19,7 +19,7 @@ class LocalNotificationService {
 
     try {
       const initializationSettings = InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        android: AndroidInitializationSettings('@drawable/ic_overlay_notification'),
       );
       await _notifications.initialize(settings: initializationSettings);
 

@@ -13,6 +13,7 @@ class ApiConstants {
   static const String registerNoOtp = '/auth/register/no-otp';
   static const String loginVerifyOtp = '/auth/login/otp';
   static const String loginWithPassword = '/auth/login/password';
+  static const String refreshToken = '/auth/refresh-token';
   static const String forgotPassword = '/auth/forgot-password';
   static const String me = '/auth/me';
   static const String customerProfileMe = '/profile/me';
@@ -61,4 +62,8 @@ class ApiConstants {
 
   // Support Endpoints
   static const String supportTickets = '/support/tickets';
+
+  // Notification Endpoints
+  static const String registerDeviceToken = '/notifications/device-token';
+  static const String unregisterDeviceToken = '/notifications/device-token';
 }

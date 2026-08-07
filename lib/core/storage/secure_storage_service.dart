@@ -7,6 +7,7 @@ class SecureStorageService {
   static const String _keyRefreshToken = 'auth_refresh_token';
   static const String _keyRole = 'user_role';
   static const String _keyUserId = 'user_id';
+  static const String _keyUploadedFcmToken = 'fcm_uploaded_token';
 
   Future<void> saveAuthData({
     required String token,
@@ -38,10 +39,25 @@ class SecureStorageService {
     return await _storage.read(key: _keyUserId);
   }
 
+  // ── FCM Token Persistence (Duplicate Upload Prevention) ───────────────
+
+  Future<void> saveUploadedFcmToken(String token) async {
+    await _storage.write(key: _keyUploadedFcmToken, value: token);
+  }
+
+  Future<String?> getUploadedFcmToken() async {
+    return await _storage.read(key: _keyUploadedFcmToken);
+  }
+
+  Future<void> clearUploadedFcmToken() async {
+    await _storage.delete(key: _keyUploadedFcmToken);
+  }
+
   Future<void> clearAuthData() async {
     await _storage.delete(key: _keyToken);
     await _storage.delete(key: _keyRefreshToken);
     await _storage.delete(key: _keyRole);
     await _storage.delete(key: _keyUserId);
+    await _storage.delete(key: _keyUploadedFcmToken);
   }
 }

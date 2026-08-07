@@ -15,8 +15,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <application
         android:label="Riderzz"
-        android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@drawable/splash_logo"
+        android:name="${applicationName}">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -43,6 +43,11 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="${GOOGLE_MAPS_API_KEY}" />
+
+        <!-- Foreground Task Notification Icon -->
+        <meta-data
+            android:name="com.pravera.flutter_foreground_task.NOTIFICATION_ICON"
+            android:resource="@drawable/ic_overlay_notification" />
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "452304817643",
+    "project_id": "riderzz-fab56",
+    "storage_bucket": "riderzz-fab56.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:452304817643:android:e502a66110b6a6a90e5dae",
+        "android_client_info": {
+          "package_name": "com.example.riderzz_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDEKxbKn8uFUdaj7Ln4WgwjQe2u2MElPg4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

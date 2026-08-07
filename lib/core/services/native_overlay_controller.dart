@@ -78,19 +78,28 @@ class NativeOverlayController {
         context: context,
         barrierDismissible: false,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('Stay connected'),
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          title: const Text(
+            'Stay connected',
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          ),
           content: const Text(
             'Allow Riderzz to display a small floating icon while the app is '
-            'in the background, so you can quickly return to an active trip.',
+            'in the background.',
+            style: TextStyle(color: Colors.black87),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Not now'),
+              child: const Text('Not now', style: TextStyle(color: Colors.black54)),
             ),
             FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFE31C2E),
+              ),
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Allow'),
+              child: const Text('Allow', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),

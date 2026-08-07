@@ -51,6 +51,9 @@ dependencies:
   flutter_foreground_task: ^10.0.0
   flutter_local_notifications: ^22.2.0
   stomp_dart_client: ^3.0.1
+  firebase_core: ^4.1.0
+  firebase_messaging: ^16.4.3
+  package_info_plus: ^8.3.0
 
 dev_dependencies:
   flutter_test:
@@ -112,3 +115,10 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: "assets/images/logo_square.png"
+  android_12:
+    color: "#FFFFFF"
+    image: "assets/images/logo_square.png"
