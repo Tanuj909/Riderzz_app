@@ -1,6 +1,7 @@
 import 'package:riderzz_app/core/network/api_client.dart';
 import 'package:riderzz_app/core/models/pricing_tier_model.dart';
 import 'package:riderzz_app/core/models/pricing_rule_model.dart';
+import 'package:riderzz_app/core/models/time_based_pricing_model.dart';
 
 class PricingRemoteDataSource {
   final ApiClient _apiClient;
@@ -129,4 +130,38 @@ class PricingRemoteDataSource {
     final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
     return PricingRuleModel.fromJson(data);
   }
+
+  Future<List<TimeBasedPricingModel>> getTimeBasedPricingRules() async {
+    final response = await _apiClient.get('/pricing/time-based');
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final List<dynamic> list = resBody['data'] is List ? resBody['data'] as List : [];
+    return list.map((json) => TimeBasedPricingModel.fromJson(Map<String, dynamic>.from(json))).toList();
+  }
+
+  Future<TimeBasedPricingModel> saveTimeBasedPricingRule({
+    required String timeSlot,
+    required String startTime,
+    required String endTime,
+    required double extraCharge,
+    required bool enabled,
+  }) async {
+    final response = await _apiClient.put(
+      '/pricing/time-based/admin',
+      data: {
+        'timeSlot': timeSlot,
+        'startTime': startTime,
+        'endTime': endTime,
+        'extraCharge': extraCharge,
+        'enabled': enabled,
+      },
+    );
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final Map<String, dynamic> data = Map<String, dynamic>.from(resBody['data'] ?? {});
+    return TimeBasedPricingModel.fromJson(data);
+  }
+
+  Future<void> deleteTimeBasedPricingRule(int id) async {
+    await _apiClient.delete('/pricing/time-based/admin/$id');
+  }
 }
+

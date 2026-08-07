@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:riderzz_app/features/admin/commission/data/repositories/pricing_repository.dart';
 import 'package:riderzz_app/core/models/pricing_tier_model.dart';
 import 'package:riderzz_app/core/models/pricing_rule_model.dart';
+import 'package:riderzz_app/core/models/time_based_pricing_model.dart';
 
 class PricingProvider extends ChangeNotifier {
   final PricingRepository _repository;
@@ -179,4 +180,83 @@ class PricingProvider extends ChangeNotifier {
       _isLoading = false;
     }
   }
+
+  List<TimeBasedPricingModel> _timeBasedRules = [];
+  List<TimeBasedPricingModel> get timeBasedRules => _timeBasedRules;
+
+  bool _isTimeBasedLoading = false;
+  bool get isTimeBasedLoading => _isTimeBasedLoading;
+
+  Future<void> fetchTimeBasedPricingRules() async {
+    _isTimeBasedLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _timeBasedRules = await _repository.getTimeBasedPricingRules();
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+    } finally {
+      _isTimeBasedLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> saveTimeBasedPricingRule({
+    required String timeSlot,
+    required String startTime,
+    required String endTime,
+    required double extraCharge,
+    required bool enabled,
+  }) async {
+    _isTimeBasedLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final savedRule = await _repository.saveTimeBasedPricingRule(
+        timeSlot: timeSlot,
+        startTime: startTime,
+        endTime: endTime,
+        extraCharge: extraCharge,
+        enabled: enabled,
+      );
+      final index = _timeBasedRules.indexWhere((r) => r.timeSlot == timeSlot || r.id == savedRule.id);
+      if (index != -1) {
+        _timeBasedRules[index] = savedRule;
+      } else {
+        _timeBasedRules.add(savedRule);
+      }
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    } finally {
+      _isTimeBasedLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> deleteTimeBasedPricingRule(int id) async {
+    _isTimeBasedLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _repository.deleteTimeBasedPricingRule(id);
+      _timeBasedRules.removeWhere((r) => r.id == id);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    } finally {
+      _isTimeBasedLoading = false;
+      notifyListeners();
+    }
+  }
 }
+

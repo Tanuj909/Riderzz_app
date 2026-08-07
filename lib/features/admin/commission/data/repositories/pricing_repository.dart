@@ -1,6 +1,7 @@
 import 'package:riderzz_app/features/admin/commission/data/datasource/pricing_datasource.dart';
 import 'package:riderzz_app/core/models/pricing_tier_model.dart';
 import 'package:riderzz_app/core/models/pricing_rule_model.dart';
+import 'package:riderzz_app/core/models/time_based_pricing_model.dart';
 
 class PricingRepository {
   final PricingRemoteDataSource _remoteDataSource;
@@ -82,4 +83,29 @@ class PricingRepository {
       dynamicPricingEnabled: dynamicPricingEnabled,
     );
   }
+
+  Future<List<TimeBasedPricingModel>> getTimeBasedPricingRules() async {
+    return await _remoteDataSource.getTimeBasedPricingRules();
+  }
+
+  Future<TimeBasedPricingModel> saveTimeBasedPricingRule({
+    required String timeSlot,
+    required String startTime,
+    required String endTime,
+    required double extraCharge,
+    required bool enabled,
+  }) async {
+    return await _remoteDataSource.saveTimeBasedPricingRule(
+      timeSlot: timeSlot,
+      startTime: startTime,
+      endTime: endTime,
+      extraCharge: extraCharge,
+      enabled: enabled,
+    );
+  }
+
+  Future<void> deleteTimeBasedPricingRule(int id) async {
+    await _remoteDataSource.deleteTimeBasedPricingRule(id);
+  }
 }
+

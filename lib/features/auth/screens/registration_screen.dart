@@ -61,7 +61,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     }
 
     final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-    if (email.isEmpty || !emailRegex.hasMatch(email)) {
+    if (email.isNotEmpty && !emailRegex.hasMatch(email)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a valid email address')),
       );
@@ -393,7 +393,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
                     // Email Address Input
                     Text(
-                      'Email Address',
+                      'Email Address (Optional)',
                       style: GoogleFonts.outfit(
                         fontSize: 13,
                         color: const Color(0xFF6C6F79),

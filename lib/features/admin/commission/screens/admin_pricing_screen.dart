@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/core/models/pricing_tier_model.dart';
+import 'package:riderzz_app/core/models/time_based_pricing_model.dart';
 import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_provider.dart';
 import 'package:riderzz_app/features/admin/commission/providers/pricing_provider.dart';
 
@@ -18,10 +19,11 @@ class _AdminPricingScreenState extends State<AdminPricingScreen> with SingleTick
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<PricingProvider>().fetchPricingTiers(1);
       context.read<AdminVehiclesProvider>().fetchVehicleTypes();
+      context.read<PricingProvider>().fetchTimeBasedPricingRules();
     });
   }
 
@@ -110,12 +112,13 @@ class _AdminPricingScreenState extends State<AdminPricingScreen> with SingleTick
                       ),
                       labelColor: Colors.white,
                       unselectedLabelColor: const Color(0xFF6C6F79),
-                      labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 13),
-                      unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13),
+                      labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 12),
+                      unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 12),
                       indicatorSize: TabBarIndicatorSize.tab,
                       dividerColor: Colors.transparent,
                       tabs: const [
                         Tab(text: 'Vehicle Pricing'),
+                        Tab(text: 'Time Slot Pricing'),
                         Tab(text: 'Pricing Rules'),
                       ],
                     ),
@@ -130,6 +133,7 @@ class _AdminPricingScreenState extends State<AdminPricingScreen> with SingleTick
                 controller: _tabController,
                 children: [
                   _VehiclePricingTab(),
+                  const _TimeSlotPricingTab(),
                   const _PricingRulesTab(),
                 ],
               ),
@@ -851,6 +855,613 @@ class _PricingRulesTabState extends State<_PricingRulesTab> {
     );
   }
 }
+
+class _TimeSlotPricingTab extends StatefulWidget {
+  const _TimeSlotPricingTab();
+
+  @override
+  State<_TimeSlotPricingTab> createState() => _TimeSlotPricingTabState();
+}
+
+class _TimeSlotPricingTabState extends State<_TimeSlotPricingTab> {
+  final List<String> _defaultTimeSlots = ['MORNING', 'AFTERNOON', 'EVENING', 'NIGHT'];
+
+  void _showFormDialog({TimeBasedPricingModel? rule, String? defaultSlot}) {
+    showDialog(
+      context: context,
+      builder: (context) => TimeSlotPricingFormDialog(rule: rule, defaultSlot: defaultSlot),
+    );
+  }
+
+  void _confirmDelete(TimeBasedPricingModel rule) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Color(0xFFD90429)),
+            const SizedBox(width: 8),
+            Text(
+              'Delete Time Rule',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: const Color(0xFF121214)),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to delete the time-based pricing rule for ${rule.timeSlot}?',
+          style: GoogleFonts.outfit(color: const Color(0xFF6C6F79), height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text('Cancel', style: GoogleFonts.outfit(color: const Color(0xFF6C6F79), fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD90429),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+            ),
+            onPressed: () async {
+              Navigator.pop(dialogCtx);
+              final provider = context.read<PricingProvider>();
+              final success = await provider.deleteTimeBasedPricingRule(rule.id);
+              if (mounted) {
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Time slot rule deleted successfully!'),
+                      backgroundColor: Color(0xFF1C9A5B),
+                    ),
+                  );
+                } else if (provider.errorMessage != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(provider.errorMessage!),
+                      backgroundColor: const Color(0xFFD90429),
+                    ),
+                  );
+                }
+              }
+            },
+            child: Text('Delete', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getSlotIcon(String slot) {
+    switch (slot.toUpperCase()) {
+      case 'MORNING':
+        return Icons.wb_sunny_rounded;
+      case 'AFTERNOON':
+        return Icons.wb_twilight_rounded;
+      case 'EVENING':
+        return Icons.wb_cloudy_rounded;
+      case 'NIGHT':
+        return Icons.nights_stay_rounded;
+      default:
+        return Icons.access_time_filled_rounded;
+    }
+  }
+
+  Color _getSlotColor(String slot) {
+    switch (slot.toUpperCase()) {
+      case 'MORNING':
+        return const Color(0xFFFF9800);
+      case 'AFTERNOON':
+        return const Color(0xFFE91E63);
+      case 'EVENING':
+        return const Color(0xFF9C27B0);
+      case 'NIGHT':
+        return const Color(0xFF3F51B5);
+      default:
+        return const Color(0xFFD90429);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<PricingProvider>(
+      builder: (context, provider, child) {
+        if (provider.isTimeBasedLoading && provider.timeBasedRules.isEmpty) {
+          return const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD90429)),
+            ),
+          );
+        }
+
+        final rulesMap = <String, TimeBasedPricingModel>{};
+        for (var r in provider.timeBasedRules) {
+          rulesMap[r.timeSlot.toUpperCase()] = r;
+        }
+
+        return RefreshIndicator(
+          onRefresh: () => provider.fetchTimeBasedPricingRules(),
+          color: const Color(0xFFD90429),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+            children: [
+              // Header Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'TIME SLOT SURGE PRICING',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11,
+                      color: const Color(0xFFA2A5AE),
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD90429),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    ),
+                    onPressed: () => _showFormDialog(),
+                    icon: const Icon(Icons.add_rounded, size: 16),
+                    label: Text('Set Time Price', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Time slots grid/list
+              ..._defaultTimeSlots.map((slot) {
+                final rule = rulesMap[slot];
+                final slotColor = _getSlotColor(slot);
+                final slotIcon = _getSlotIcon(slot);
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE1E1E6)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF121214).withValues(alpha: 0.03),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: slotColor.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(slotIcon, color: slotColor, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    slot,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 15,
+                                      color: const Color(0xFF121214),
+                                    ),
+                                  ),
+                                  if (rule != null)
+                                    Text(
+                                      '${rule.startTime} - ${rule.endTime}',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        color: const Color(0xFF6C6F79),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    )
+                                  else
+                                    Text(
+                                      'Not Configured',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        color: const Color(0xFFA2A5AE),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          if (rule != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: rule.enabled ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: rule.enabled ? const Color(0xFF4CAF50) : const Color(0xFFEF5350),
+                                ),
+                              ),
+                              child: Text(
+                                rule.enabled ? 'ACTIVE' : 'DISABLED',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: rule.enabled ? const Color(0xFF2E7D32) : const Color(0xFFC62828),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+
+                      if (rule != null) ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Extra Charge', style: GoogleFonts.outfit(fontSize: 11, color: const Color(0xFF6C6F79))),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '+₹${rule.extraCharge.toStringAsFixed(2)}',
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: const Color(0xFFD90429),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                OutlinedButton(
+                                  onPressed: () => _showFormDialog(rule: rule),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                    side: const BorderSide(color: Color(0xFFE1E1E6), width: 1.5),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                                  ),
+                                  child: Text(
+                                    'Edit Rule',
+                                    style: GoogleFonts.outfit(
+                                      color: const Color(0xFF121214),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                InkWell(
+                                  onTap: () => _confirmDelete(rule),
+                                  borderRadius: BorderRadius.circular(999),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(7),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFDEBEC),
+                                      borderRadius: BorderRadius.circular(999),
+                                      border: Border.all(color: const Color(0xFFE31C2E).withValues(alpha: 0.2)),
+                                    ),
+                                    child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFE31C2E), size: 16),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ] else ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'No price surge set for this slot',
+                              style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79)),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => _showFormDialog(defaultSlot: slot),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF121214),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                              ),
+                              child: Text('Configure', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class TimeSlotPricingFormDialog extends StatefulWidget {
+  final TimeBasedPricingModel? rule;
+  final String? defaultSlot;
+
+  const TimeSlotPricingFormDialog({super.key, this.rule, this.defaultSlot});
+
+  @override
+  State<TimeSlotPricingFormDialog> createState() => _TimeSlotPricingFormDialogState();
+}
+
+class _TimeSlotPricingFormDialogState extends State<TimeSlotPricingFormDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _startTimeController = TextEditingController();
+  final _endTimeController = TextEditingController();
+  final _extraChargeController = TextEditingController();
+  String _selectedSlot = 'MORNING';
+  bool _enabled = true;
+  bool _isSaving = false;
+
+  final List<String> _slots = ['MORNING', 'AFTERNOON', 'EVENING', 'NIGHT'];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.rule != null) {
+      final r = widget.rule!;
+      _selectedSlot = r.timeSlot.toUpperCase();
+      _startTimeController.text = r.startTime;
+      _endTimeController.text = r.endTime;
+      _extraChargeController.text = r.extraCharge.toStringAsFixed(2);
+      _enabled = r.enabled;
+    } else {
+      if (widget.defaultSlot != null) {
+        _selectedSlot = widget.defaultSlot!.toUpperCase();
+      }
+      _setDefaultTimesForSlot(_selectedSlot);
+    }
+  }
+
+  void _setDefaultTimesForSlot(String slot) {
+    switch (slot) {
+      case 'MORNING':
+        _startTimeController.text = '06:00:00';
+        _endTimeController.text = '12:00:00';
+        break;
+      case 'AFTERNOON':
+        _startTimeController.text = '12:00:00';
+        _endTimeController.text = '17:00:00';
+        break;
+      case 'EVENING':
+        _startTimeController.text = '17:00:00';
+        _endTimeController.text = '22:00:00';
+        break;
+      case 'NIGHT':
+        _startTimeController.text = '22:00:00';
+        _endTimeController.text = '06:00:00';
+        break;
+    }
+  }
+
+  @override
+  void dispose() {
+    _startTimeController.dispose();
+    _endTimeController.dispose();
+    _extraChargeController.dispose();
+    super.dispose();
+  }
+
+  void _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    final provider = context.read<PricingProvider>();
+    final double extraCharge = double.parse(_extraChargeController.text.trim());
+
+    final success = await provider.saveTimeBasedPricingRule(
+      timeSlot: _selectedSlot,
+      startTime: _startTimeController.text.trim(),
+      endTime: _endTimeController.text.trim(),
+      extraCharge: extraCharge,
+      enabled: _enabled,
+    );
+
+    setState(() {
+      _isSaving = false;
+    });
+
+    if (mounted) {
+      if (success) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Time-based pricing saved successfully!'),
+            backgroundColor: Color(0xFF1C9A5B),
+          ),
+        );
+      } else if (provider.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(provider.errorMessage!),
+            backgroundColor: const Color(0xFFD90429),
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Text(
+        widget.rule == null ? 'Set Time Slot Pricing' : 'Edit Time Slot Pricing',
+        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 18, color: const Color(0xFF121214)),
+      ),
+      content: SizedBox(
+        width: MediaQuery.of(context).size.width,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildInputLabel('Time Slot'),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F1F4),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: const Color(0xFFE1E1E6)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _selectedSlot,
+                      isExpanded: true,
+                      borderRadius: BorderRadius.circular(20),
+                      dropdownColor: Colors.white,
+                      style: GoogleFonts.outfit(color: const Color(0xFF121214), fontSize: 13.5, fontWeight: FontWeight.bold),
+                      disabledHint: Text(
+                        _selectedSlot,
+                        style: GoogleFonts.outfit(color: const Color(0xFF121214), fontSize: 13.5, fontWeight: FontWeight.bold),
+                      ),
+                      items: _slots.map((slot) {
+                        return DropdownMenuItem<String>(
+                          value: slot,
+                          child: Text(slot, style: GoogleFonts.outfit(color: const Color(0xFF121214), fontSize: 13.5, fontWeight: FontWeight.bold)),
+                        );
+                      }).toList(),
+                      onChanged: widget.rule != null
+                          ? null
+                          : (val) {
+                              if (val != null) {
+                                setState(() {
+                                  _selectedSlot = val;
+                                  _setDefaultTimesForSlot(val);
+                                });
+                              }
+                            },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildFormField(_startTimeController, 'Start Time (HH:mm:ss)', '06:00:00'),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildFormField(_endTimeController, 'End Time (HH:mm:ss)', '12:00:00'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _buildFormField(_extraChargeController, 'Extra Charge (₹)', '10'),
+                const SizedBox(height: 14),
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('Rule Enabled', style: GoogleFonts.outfit(fontSize: 13.5, fontWeight: FontWeight.bold, color: const Color(0xFF121214))),
+                  activeColor: const Color(0xFFD90429),
+                  value: _enabled,
+                  onChanged: (val) {
+                    setState(() {
+                      _enabled = val;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSaving ? null : () => Navigator.pop(context),
+          child: Text('Cancel', style: GoogleFonts.outfit(color: const Color(0xFF6C6F79), fontWeight: FontWeight.bold)),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFD90429),
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+          ),
+          onPressed: _isSaving ? null : _submit,
+          child: _isSaving
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)),
+                )
+              : Text('Save Price', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInputLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Text(
+        label,
+        style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79), fontWeight: FontWeight.w500),
+      ),
+    );
+  }
+
+  Widget _buildFormField(TextEditingController controller, String label, String hint) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildInputLabel(label),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1F1F4),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: const Color(0xFFE1E1E6)),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+          child: TextFormField(
+            controller: controller,
+            style: GoogleFonts.outfit(color: const Color(0xFF121214), fontSize: 13.5),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: GoogleFonts.outfit(color: const Color(0xFFA2A5AE)),
+              border: InputBorder.none,
+              isDense: true,
+            ),
+            validator: (val) => (val == null || val.trim().isEmpty) ? 'Required' : null,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 
 class PricingTierFormDialog extends StatefulWidget {
   final PricingTierModel? tier;

@@ -391,17 +391,16 @@ class OverlayView(
     private val touchSlop = dp(8)
 
     init {
-        background = GradientDrawable().apply {
-            shape = GradientDrawable.OVAL
-            colors = intArrayOf(Color.rgb(227, 28, 46), Color.rgb(138, 0, 0))
-            gradientType = GradientDrawable.LINEAR_GRADIENT
-            setStroke(dp(2), Color.WHITE)
-        }
         elevation = dp(8).toFloat()
+        outlineProvider = object : android.view.ViewOutlineProvider() {
+            override fun getOutline(view: View, outline: android.graphics.Outline) {
+                outline.setOval(0, 0, view.width, view.height)
+            }
+        }
+        clipToOutline = true
         addView(ImageView(context).apply {
-            setImageDrawable(context.applicationInfo.loadIcon(context.packageManager))
-            scaleType = ImageView.ScaleType.CENTER_INSIDE
-            setPadding(dp(12), dp(12), dp(12), dp(12))
+            setImageResource(R.drawable.ic_floating_icon)
+            scaleType = ImageView.ScaleType.CENTER_CROP
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
         })
         setOnTouchListener(::handleTouch)
