@@ -421,7 +421,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Expanded(child: SizedBox()),
+                Expanded(
+                  child: _buildQuickAccessCard(
+                    icon: Icons.people_outline_rounded,
+                    title: 'All\nUsers',
+                    onTap: () {
+                      Navigator.pushNamed(context, '/admin_all_users');
+                    },
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 20),

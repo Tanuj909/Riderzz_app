@@ -32,6 +32,9 @@ import 'package:riderzz_app/features/admin/rider_verification/data/datasource/ri
 import 'package:riderzz_app/features/admin/rider_verification/data/repositories/rider_verification_repository.dart';
 import 'package:riderzz_app/features/admin/rider_verification/providers/rider_verification_provider.dart';
 import 'package:riderzz_app/features/admin/wallets/providers/admin_wallets_provider.dart';
+import 'package:riderzz_app/features/admin/users/data/datasource/admin_users_remote_datasource.dart';
+import 'package:riderzz_app/features/admin/users/data/repositories/admin_users_repository.dart';
+import 'package:riderzz_app/features/admin/users/providers/admin_users_provider.dart';
 import 'package:riderzz_app/features/driver/home/data/datasource/driver_remote_datasource.dart';
 import 'package:riderzz_app/features/driver/home/data/repositories/driver_repository.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
@@ -198,6 +201,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           update: (_, apiClient, previous) =>
               NotificationRemoteDataSource(apiClient),
         ),
+        ProxyProvider<ApiClient, AdminUsersRemoteDataSource>(
+          update: (_, apiClient, previous) =>
+              AdminUsersRemoteDataSource(apiClient),
+        ),
 
         // 3. Repositories
         ProxyProvider<AuthRemoteDataSource, AuthRepository>(
@@ -247,6 +254,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ProxyProvider2<NotificationRemoteDataSource, SecureStorageService, NotificationRepository>(
           update: (_, dataSource, storage, previous) =>
               previous ?? NotificationRepository(dataSource, storage),
+        ),
+        ProxyProvider<AdminUsersRemoteDataSource, AdminUsersRepository>(
+          update: (_, dataSource, previous) =>
+              AdminUsersRepository(dataSource),
         ),
 
         // 4. State Management (Providers)
@@ -371,6 +382,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               SupportProvider(context.read<SupportRepository>()),
           update: (_, repository, previous) =>
               previous ?? SupportProvider(repository),
+        ),
+        ChangeNotifierProxyProvider<AdminUsersRepository, AdminUsersProvider>(
+          create: (context) =>
+              AdminUsersProvider(context.read<AdminUsersRepository>()),
+          update: (_, repository, previous) =>
+              previous ?? AdminUsersProvider(repository),
         ),
       ],
       child: MaterialApp(

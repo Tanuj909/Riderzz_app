@@ -60,6 +60,10 @@ class ApiConstants {
   static const String adminWithdrawalsAll = '/admin/wallet/withdrawals/all';
   static const String adminWalletOverview = '/admin/wallet/overview';
 
+  // Admin Profile Endpoints
+  static const String adminUsers = '/profile/admin/users';
+
+
   // Support Endpoints
   static const String supportTickets = '/support/tickets';
 
