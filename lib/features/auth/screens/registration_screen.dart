@@ -624,7 +624,7 @@ class _AnimatedSpeedLogoState extends State<AnimatedSpeedLogo> with SingleTicker
       child: SlideTransition(
         position: _animation,
         child: Image.asset(
-          'assets/images/logo/logo.jpeg',
+          'assets/logo/logo.png',
           fit: BoxFit.contain,
         ),
       ),

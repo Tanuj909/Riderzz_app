@@ -7,6 +7,13 @@ import 'package:riderzz_app/features/user/home/user_home_screen.dart';
 import 'package:riderzz_app/features/driver/home/driver_home_screen.dart';
 import 'package:riderzz_app/features/admin/dashboard/admin_dashboard_screen.dart';
 
+enum AuthResult {
+  loggedOut,
+  customer,
+  driver,
+  admin,
+}
+
 class RoleRedirectScreen extends StatefulWidget {
   const RoleRedirectScreen({super.key});
 
@@ -14,83 +21,203 @@ class RoleRedirectScreen extends StatefulWidget {
   State<RoleRedirectScreen> createState() => _RoleRedirectScreenState();
 }
 
-class _RoleRedirectScreenState extends State<RoleRedirectScreen> {
+class _RoleRedirectScreenState extends State<RoleRedirectScreen> with TickerProviderStateMixin {
+  bool _hasNavigated = false;
+  bool _isLooping = false;
+  late AnimationController _entranceController;
+  late AnimationController _loopController;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<Offset> _entranceAlignmentAnimation;
+  late Animation<Offset> _loopAlignmentAnimation;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkRoleAndRedirect();
+
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+
+    _loopController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _entranceController,
+        curve: const Interval(0.0, 0.4, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _entranceController,
+        curve: const Interval(0.0, 0.4, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    _entranceAlignmentAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(-2.0, 0.0), // Moves all the way left and disappears
+    ).animate(
+      CurvedAnimation(
+        parent: _entranceController,
+        curve: const Interval(0.6, 1.0, curve: Curves.easeInOutCubic),
+      ),
+    );
+
+    _loopAlignmentAnimation = Tween<Offset>(
+      begin: const Offset(2.0, 0.0), // Starts from right
+      end: const Offset(-2.0, 0.0),  // Moves to left and disappears
+    ).animate(
+      CurvedAnimation(
+        parent: _loopController,
+        curve: Curves.linear,
+      ),
+    );
+
+    _entranceController.forward().then((_) {
+      if (mounted) {
+        setState(() {
+          _isLooping = true;
+        });
+        _loopController.repeat();
+      }
+    });
+
+    _initializeLocationInBackground();
+    _checkAuthentication();
+  }
+
+  @override
+  void dispose() {
+    _entranceController.dispose();
+    _loopController.dispose();
+    super.dispose();
+  }
+
+  void _initializeLocationInBackground() {
+    final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+    // Start location initialization/fetching in the background.
+    // Location MUST NOT block navigation.
+    locationProvider.initialize().catchError((error) {
+      debugPrint('Location initialization failed: $error');
     });
   }
 
-  void _navigateTo(Widget page, String routeName) {
+  Future<void> _checkAuthentication() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    AuthResult result = AuthResult.loggedOut;
+
+    try {
+      // Allow the animation to play out completely (1000ms) before navigating, 
+      // while also fetching the auth result in parallel.
+      final results = await Future.wait([
+        authProvider.tryAutoLogin(),
+        () async {
+          int elapsed = _entranceController.lastElapsedDuration?.inMilliseconds ?? 0;
+          int remaining = 1200 - elapsed;
+          if (remaining > 0) {
+            await Future.delayed(Duration(milliseconds: remaining));
+          }
+        }(),
+      ]);
+
+      final isLoggedIn = results[0] as bool;
+
+      if (isLoggedIn && authProvider.currentUser != null) {
+        final role = authProvider.currentUser!.role;
+        switch (role) {
+          case 'CUSTOMER':
+            result = AuthResult.customer;
+            break;
+          case 'DRIVER':
+            result = AuthResult.driver;
+            break;
+          case 'ADMIN':
+            result = AuthResult.admin;
+            break;
+          default:
+            result = AuthResult.loggedOut;
+        }
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Auto-login failed: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      result = AuthResult.loggedOut;
+    }
+
+    _routeToDestination(result);
+  }
+
+  void _routeToDestination(AuthResult result) {
+    if (_hasNavigated || !mounted) return;
+    _hasNavigated = true;
+
+    Widget destination;
+    String routeName;
+
+    switch (result) {
+      case AuthResult.customer:
+        destination = const UserHomeScreen();
+        routeName = '/user_home';
+        break;
+      case AuthResult.driver:
+        destination = const DriverHomeScreen();
+        routeName = '/driver_home';
+        break;
+      case AuthResult.admin:
+        destination = const AdminDashboardScreen();
+        routeName = '/admin_dashboard';
+        break;
+      case AuthResult.loggedOut:
+      default:
+        destination = const LoginScreen();
+        routeName = '/login';
+        break;
+    }
+
     Navigator.pushAndRemoveUntil(
       context,
       PageRouteBuilder(
         settings: RouteSettings(name: routeName),
-        pageBuilder: (context, animation, secondaryAnimation) => page,
+        pageBuilder: (context, animation, secondaryAnimation) => destination,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(
             opacity: animation,
             child: child,
           );
         },
-        transitionDuration: const Duration(milliseconds: 600),
+        transitionDuration: const Duration(milliseconds: 300),
       ),
       (route) => false,
     );
   }
 
-  void _checkRoleAndRedirect() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final locationProvider = Provider.of<LocationProvider>(context, listen: false);
-
-    // Default to false — will be overwritten if auth resolves in time.
-    bool isLoggedIn = false;
-
-    // Race the full init work against a strict 2-second wall-clock timer.
-    // Whichever finishes first wins. Splash never hangs past 2 seconds.
-    // Start location init in the background without awaiting it.
-    locationProvider.initialize().catchError((_) => Future<void>.value());
-
-    await Future.any([
-      // Only wait for Auth. It reads from local storage so it's instant (< 10ms).
-      authProvider
-          .tryAutoLogin()
-          .then((v) => isLoggedIn = v)
-          .catchError((_) => isLoggedIn = false)
-          .timeout(
-            const Duration(milliseconds: 300),
-            onTimeout: () => isLoggedIn = false,
-          ),
-
-      // Hard 300ms wall-clock cap — always exits splash by this point.
-      Future.delayed(const Duration(milliseconds: 300)),
-    ]);
-
-    if (!mounted) return;
-
-    if (isLoggedIn && authProvider.currentUser != null) {
-      final role = authProvider.currentUser!.role;
-      if (role == 'ROLE_USER' || role == 'CUSTOMER' || role == 'ROLE_CUSTOMER') {
-        _navigateTo(const UserHomeScreen(), '/user_home');
-      } else if (role == 'ROLE_DRIVER' || role == 'DRIVER') {
-        _navigateTo(const DriverHomeScreen(), '/driver_home');
-      } else if (role == 'ADMIN' || role == 'ROLE_ADMIN') {
-        _navigateTo(const AdminDashboardScreen(), '/admin_dashboard');
-      } else {
-        _navigateTo(const UserHomeScreen(), '/user_home');
-      }
-    } else {
-      _navigateTo(const LoginScreen(), '/login');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       backgroundColor: Colors.white,
-      body: SizedBox.shrink(),
+      body: Center(
+        child: SlideTransition(
+          position: _isLooping ? _loopAlignmentAnimation : _entranceAlignmentAnimation,
+          child: FadeTransition(
+            opacity: _isLooping ? const AlwaysStoppedAnimation(1.0) : _fadeAnimation,
+            child: ScaleTransition(
+              scale: _isLooping ? const AlwaysStoppedAnimation(1.0) : _scaleAnimation,
+              child: Image.asset(
+                'assets/logo/logo.png',
+                width: 280, // Approx suitable size for the wide text logo
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
+

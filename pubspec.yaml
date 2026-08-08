@@ -66,11 +66,12 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.4
 
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/logo/app_icon.png"
+  image_path: "assets/app_icon/icon.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -86,8 +87,8 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - .env
-    - assets/images/logo/logo.jpeg
-    - assets/images/logo.png
+    - assets/logo/logo.png
+    - assets/logo/logo_splash.png
     - assets/icons/
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -118,7 +119,7 @@ flutter:
 
 flutter_native_splash:
   color: "#FFFFFF"
-  image: "assets/images/logo_square.png"
+  image: "assets/app_icon/icon_splash.png"
   android_12:
     color: "#FFFFFF"
-    image: "assets/images/logo_square.png"
+    image: "assets/app_icon/icon_splash.png"

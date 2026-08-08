@@ -15,7 +15,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <application
         android:label="Riderzz"
-        android:icon="@drawable/splash_logo"
+        android:icon="@mipmap/ic_launcher"
         android:name="${applicationName}">
         <activity
             android:name=".MainActivity"
