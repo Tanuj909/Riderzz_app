@@ -28,18 +28,9 @@ class LocationPickerScreen extends StatefulWidget {
     required double latitude,
     required double longitude,
     required String fullAddress,
+    String? searchQuery,
+    Placemark? placemark,
   }) async {
-    // Show loading dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
-        ),
-      ),
-    );
-
     String addressLine1 = fullAddress;
     String addressLine2 = '';
     String landmark = '';
@@ -48,22 +39,18 @@ class LocationPickerScreen extends StatefulWidget {
     String country = 'India';
     String postalCode = '400001';
 
-    try {
-      final placemarks = await placemarkFromCoordinates(latitude, longitude);
-      if (placemarks.isNotEmpty) {
-        final pm = placemarks.first;
-        final street = pm.street ?? '';
-        final subLocality = pm.subLocality ?? '';
-        addressLine1 = street.isNotEmpty ? street : fullAddress;
-        addressLine2 = subLocality;
-        landmark = pm.thoroughfare ?? '';
-        city = pm.locality ?? city;
-        state = pm.administrativeArea ?? state;
-        country = pm.country ?? country;
-        postalCode = pm.postalCode ?? postalCode;
-      }
-    } catch (e) {
-      debugPrint("Pre-geocoding failed: $e");
+    if (placemark != null) {
+      final pm = placemark;
+      final street = pm.street ?? '';
+      final subLocality = pm.subLocality ?? '';
+      addressLine1 = street.isNotEmpty ? street : fullAddress;
+      addressLine2 = subLocality;
+      landmark = pm.thoroughfare ?? '';
+      city = pm.locality ?? city;
+      state = pm.administrativeArea ?? state;
+      country = pm.country ?? country;
+      postalCode = pm.postalCode ?? postalCode;
+    } else {
       final parts = fullAddress.split(',');
       if (parts.isNotEmpty) {
         addressLine1 = parts[0].trim();
@@ -76,19 +63,17 @@ class LocationPickerScreen extends StatefulWidget {
       }
     }
 
-    if (context.mounted) {
-      Navigator.pop(context); // Dismiss loading dialog
-    } else {
-      return null;
-    }
-
     final formKey = GlobalKey<FormState>();
     
-    // Auto-fill Address Label with the initial name segment of chosen location
+    // Auto-fill Address Label with search query if available, otherwise initial name segment
     String initialLabel = '';
-    final parts = fullAddress.split(',');
-    if (parts.isNotEmpty) {
-      initialLabel = parts[0].trim();
+    if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+      initialLabel = searchQuery.split(',').first.trim();
+    } else {
+      final parts = fullAddress.split(',');
+      if (parts.isNotEmpty) {
+        initialLabel = parts[0].trim();
+      }
     }
     
     final labelController = TextEditingController(text: initialLabel);
@@ -615,6 +600,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   
   String _fullAddress = "Fetching location details...";
   bool _isLoading = false;
+  Placemark? _currentPlacemark;
 
   @override
   void initState() {
@@ -651,6 +637,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);
       if (placemarks.isNotEmpty) {
         final pm = placemarks.first;
+        _currentPlacemark = pm;
         List<String> parts = [];
         
         // Construct a clean, comprehensive address format
@@ -678,6 +665,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
           _isLoading = false;
         });
       } else {
+        _currentPlacemark = null;
         setState(() {
           _fullAddress = "Unknown Location";
           _isLoading = false;
@@ -685,6 +673,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       }
     } catch (e) {
       debugPrint("Reverse geocoding failed: $e");
+      _currentPlacemark = null;
       setState(() {
         _fullAddress = "Unable to resolve address. Try panning the map.";
         _isLoading = false;
@@ -992,6 +981,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                   latitude: _latitude,
                                   longitude: _longitude,
                                   fullAddress: _fullAddress,
+                                  searchQuery: _searchController.text,
+                                  placemark: _currentPlacemark,
                                 );
                                 if (result != null && mounted) {
                                   navigator.pop(result);

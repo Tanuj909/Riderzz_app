@@ -79,261 +79,316 @@ class _RaiseTicketScreenState extends State<RaiseTicketScreen> {
     final supportProvider = Provider.of<SupportProvider>(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: Text(
-          'Raise Support Ticket',
-          style: GoogleFonts.plusJakartaSans(
-            fontWeight: FontWeight.w800,
-            fontSize: 18,
-            color: const Color(0xFF0F172A),
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: supportProvider.isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD90429)),
-              ),
-            )
-          : Form(
-              key: _formKey,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Heading label for Categories
-                    Text(
-                      'SELECT CATEGORY',
-                      style: GoogleFonts.outfit(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF64748B),
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    // Categories Grid UI
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 4,
-                        crossAxisSpacing: 8,
-                        mainAxisSpacing: 8,
-                        childAspectRatio: 1.0,
-                      ),
-                      itemCount: _categories.length,
-                      itemBuilder: (context, index) {
-                        final cat = _categories[index];
-                        final isSelected = _selectedCategory == cat['code'];
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedCategory = cat['code'];
-                            });
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            decoration: BoxDecoration(
-                              color: isSelected ? const Color(0xFFFDF2F4) : Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isSelected ? const Color(0xFFD90429) : const Color(0xFFE2E8F0),
-                                width: isSelected ? 2 : 1,
-                              ),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  cat['icon'],
-                                  color: isSelected ? const Color(0xFFD90429) : const Color(0xFF64748B),
-                                  size: 24,
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  cat['label'],
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                    fontSize: 10.5,
-                                    color: isSelected ? const Color(0xFFD90429) : const Color(0xFF64748B),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    // Priority Row
-                    Text(
-                      'PRIORITY',
-                      style: GoogleFonts.outfit(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF64748B),
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: _priorities.map((p) {
-                        final isSelected = _selectedPriority == p['code'];
-                        final Color pColor = p['color'];
-                        return Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 3.0),
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _selectedPriority = p['code'];
-                                });
-                              },
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: isSelected ? pColor.withOpacity(0.12) : Colors.white,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: isSelected ? pColor : const Color(0xFFE2E8F0),
-                                    width: isSelected ? 1.8 : 1,
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    p['label'],
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12,
-                                      color: isSelected ? pColor : const Color(0xFF64748B),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 24),
-                    // Subject field
-                    Text(
-                      'SUBJECT',
-                      style: GoogleFonts.outfit(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF64748B),
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _subjectController,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter a subject';
-                        }
-                        return null;
-                      },
-                      style: GoogleFonts.outfit(fontSize: 14.5, color: const Color(0xFF0F172A)),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.white,
-                        hintText: 'E.g., Payment deducted but booking failed',
-                        hintStyle: GoogleFonts.outfit(color: const Color(0xFF94A3B8), fontSize: 14),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+      backgroundColor: const Color(0xFFF6F6F8),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Custom Header
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: Colors.white,
+              child: Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFD90429), width: 1.5),
-                        ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(height: 24),
-                    // Description
-                    Text(
-                      'DESCRIPTION',
-                      style: GoogleFonts.outfit(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF64748B),
-                        letterSpacing: 1.2,
-                      ),
+                    child: IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF121214), size: 18),
+                      padding: const EdgeInsets.all(10),
+                      constraints: const BoxConstraints(),
                     ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _descriptionController,
-                      maxLines: 6,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please write details of your query';
-                        }
-                        return null;
-                      },
-                      style: GoogleFonts.outfit(fontSize: 14.5, color: const Color(0xFF0F172A)),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.white,
-                        hintText: 'Please detail what happened...',
-                        hintStyle: GoogleFonts.outfit(color: const Color(0xFF94A3B8), fontSize: 14),
-                        contentPadding: const EdgeInsets.all(16),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFD90429), width: 1.5),
-                        ),
-                      ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    'Raise Ticket',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF121214),
                     ),
-                    const SizedBox(height: 32),
-                    // Submit button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: _submitTicket,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD90429),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          'Submit Ticket',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
+            
+            // Content
+            Expanded(
+              child: supportProvider.isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
+                      ),
+                    )
+                  : Form(
+                      key: _formKey,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'How can we help you?',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF121214),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Please fill out the details below to raise a support ticket.',
+                              style: GoogleFonts.outfit(
+                                fontSize: 14,
+                                color: const Color(0xFF6C6F79),
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+
+                            // CATEGORY
+                            _buildSectionLabel('Select Category'),
+                            const SizedBox(height: 12),
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                childAspectRatio: 2.8,
+                              ),
+                              itemCount: _categories.length,
+                              itemBuilder: (context, index) {
+                                final cat = _categories[index];
+                                final isSelected = _selectedCategory == cat['code'];
+                                return GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedCategory = cat['code'];
+                                    });
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? const Color(0xFFE31C2E).withOpacity(0.08) : Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
+                                        width: isSelected ? 1.5 : 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          cat['icon'],
+                                          color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFF6C6F79),
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            cat['label'],
+                                            style: GoogleFonts.outfit(
+                                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                              fontSize: 14,
+                                              color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFF121214),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 32),
+
+                            // PRIORITY
+                            _buildSectionLabel('Priority Level'),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: _priorities.map((p) {
+                                final isSelected = _selectedPriority == p['code'];
+                                final Color pColor = p['color'];
+                                return Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _selectedPriority = p['code'];
+                                        });
+                                      },
+                                      child: AnimatedContainer(
+                                        duration: const Duration(milliseconds: 200),
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        decoration: BoxDecoration(
+                                          color: isSelected ? pColor : Colors.white,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: isSelected ? pColor : const Color(0xFFE7E7EB),
+                                            width: 1,
+                                          ),
+                                          boxShadow: isSelected
+                                              ? [
+                                                  BoxShadow(
+                                                    color: pColor.withOpacity(0.3),
+                                                    blurRadius: 8,
+                                                    offset: const Offset(0, 4),
+                                                  )
+                                                ]
+                                              : null,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            p['label'],
+                                            style: GoogleFonts.outfit(
+                                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                              fontSize: 13,
+                                              color: isSelected ? Colors.white : const Color(0xFF6C6F79),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 32),
+
+                            // SUBJECT
+                            _buildSectionLabel('Subject'),
+                            const SizedBox(height: 8),
+                            _buildTextField(
+                              controller: _subjectController,
+                              hintText: 'e.g., Issue with recent booking payment',
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Subject is required';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 24),
+
+                            // DESCRIPTION
+                            _buildSectionLabel('Description'),
+                            const SizedBox(height: 8),
+                            _buildTextField(
+                              controller: _descriptionController,
+                              hintText: 'Please describe your issue in detail...',
+                              maxLines: 5,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Description is required';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 40),
+
+                            // SUBMIT BUTTON
+                            SizedBox(
+                              width: double.infinity,
+                              height: 54,
+                              child: ElevatedButton(
+                                onPressed: _submitTicket,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFE31C2E),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(28),
+                                  ),
+                                  elevation: 4,
+                                  shadowColor: const Color(0xFFE31C2E).withOpacity(0.4),
+                                ),
+                                child: Text(
+                                  'Submit Ticket',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionLabel(String text) {
+    return Text(
+      text,
+      style: GoogleFonts.outfit(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFF121214),
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hintText,
+    int maxLines = 1,
+    required String? Function(String?) validator,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        controller: controller,
+        maxLines: maxLines,
+        validator: validator,
+        style: GoogleFonts.outfit(fontSize: 15, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
+        decoration: InputDecoration(
+          hintText: hintText,
+          hintStyle: GoogleFonts.outfit(color: const Color(0xFFB0B8C4), fontSize: 14, fontWeight: FontWeight.w400),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xFFE31C2E), width: 1.5),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Colors.redAccent, width: 1.0),
+          ),
+        ),
+      ),
     );
   }
 }
