@@ -10,7 +10,8 @@ import GoogleMaps
   ) -> Bool {
     // Try to load Google Maps API key from .env file bundled in assets
     var apiKey = "YOUR_GOOGLE_MAPS_API_KEY"
-    if let envPath = Bundle.main.path(forResource: "flutter_assets/.env", ofType: nil) {
+    let envAssetKey = FlutterDartProject.lookupKey(forAsset: ".env")
+    if let envPath = Bundle.main.path(forResource: envAssetKey, ofType: nil) {
       if let content = try? String(contentsOfFile: envPath, encoding: .utf8) {
         let lines = content.components(separatedBy: .newlines)
         for line in lines {
