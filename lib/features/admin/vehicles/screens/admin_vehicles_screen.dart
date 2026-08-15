@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:riderzz_app/core/models/vehicle_type_model.dart';
 import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_provider.dart';
 
@@ -483,34 +485,45 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
   bool _isSaving = false;
 
   String? _selectedTypeName;
+  File? _selectedImageFile;
+  final ImagePicker _picker = ImagePicker();
+  Future<void> _pickImage() async {
+    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      final file = File(pickedFile.path);
+      final int fileSizeInBytes = await file.length();
+      
+      if (fileSizeInBytes > 10 * 1024 * 1024) { // 10 MB limit
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error_outline_rounded, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Image is too large. Please select an image under 10MB.',
+                      style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFFD90429),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+        }
+        return;
+      }
 
-  final Map<String, List<String>> _iconsMap = {
-    'Two-Wheeler': [
-      'https://cdn-icons-png.flaticon.com/128/12660/12660130.png',
-      'https://cdn-icons-png.flaticon.com/128/11528/11528908.png',
-    ],
-    'Three-Wheeler': [
-      'https://cdn-icons-png.flaticon.com/128/7261/7261208.png',
-    ],
-    'Four-Wheeler': [
-      'https://cdn-icons-png.flaticon.com/128/1670/1670915.png',
-    ],
-    'Others': [
-      'https://cdn-icons-png.flaticon.com/128/12660/12660130.png',
-      'https://cdn-icons-png.flaticon.com/128/11528/11528908.png',
-      'https://cdn-icons-png.flaticon.com/128/7261/7261208.png',
-      'https://cdn-icons-png.flaticon.com/128/1670/1670915.png',
-    ],
-  };
-
-  List<String> _getAvailableIcons() {
-    if (_selectedTypeName == null) return [];
-    final list = List<String>.from(_iconsMap[_selectedTypeName!] ?? []);
-    final currentUrl = _iconUrlController.text.trim();
-    if (currentUrl.isNotEmpty && !list.contains(currentUrl)) {
-      list.add(currentUrl);
+      setState(() {
+        _selectedImageFile = file;
+        _iconUrlController.text = pickedFile.path; // Just to hold a non-empty string for validation if needed
+      });
     }
-    return list;
   }
 
   @override
@@ -519,7 +532,7 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
     if (widget.vehicleType != null) {
       final v = widget.vehicleType!;
       final name = v.name;
-      if (name == 'Two-Wheeler' || name == 'Three-Wheeler' || name == 'Four-Wheeler') {
+      if (['Two-Wheeler', '3wheeler', 'EECO', 'ATA ACE', 'E loader', '8ft pick up', '10fit Truck', 'Truck 14ft', 'Truck 17ft', 'Truck 20ft'].contains(name)) {
         _selectedTypeName = name;
         _nameController.text = '';
       } else {
@@ -568,20 +581,22 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
     final success = widget.vehicleType == null
         ? await provider.createVehicleType(
             name: finalName,
-            iconUrl: _iconUrlController.text.trim(),
+            icon: _selectedImageFile,
             maxWeightKg: int.parse(_maxWeightController.text.trim()),
             minimumWalletBalance: double.parse(_minWalletController.text.trim()),
             tollEnabled: _tollEnabled,
             dynamicPricingEnabled: _dynamicPricingEnabled,
+            active: _active,
           )
         : await provider.updateVehicleType(
             id: widget.vehicleType!.id,
             name: finalName,
-            iconUrl: _iconUrlController.text.trim(),
+            icon: _selectedImageFile,
             maxWeightKg: int.parse(_maxWeightController.text.trim()),
             minimumWalletBalance: double.parse(_minWalletController.text.trim()),
             tollEnabled: _tollEnabled,
             dynamicPricingEnabled: _dynamicPricingEnabled,
+            active: _active,
           );
 
     setState(() {
@@ -593,16 +608,50 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              widget.vehicleType == null
-                  ? 'Vehicle type created successfully!'
-                  : 'Vehicle type updated successfully!',
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_outline_rounded, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    widget.vehicleType == null
+                        ? 'Vehicle type created successfully!'
+                        : 'Vehicle type updated successfully!',
+                    style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
             ),
+            backgroundColor: const Color(0xFF1C9A5B),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
           ),
         );
       } else if (provider.errorMessage != null) {
+        String errMsg = provider.errorMessage!;
+        if (errMsg.toLowerCase().contains("maximum upload size exceeded") || errMsg.toLowerCase().contains("payload too large")) {
+          errMsg = "Image is too large. Please select a smaller image (under 10MB).";
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(provider.errorMessage!)),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    errMsg,
+                    style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFFD90429),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
+          ),
         );
       }
     }
@@ -669,7 +718,20 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
                         isDense: true,
                       ),
                       dropdownColor: Colors.white,
-                      items: ['Two-Wheeler', 'Three-Wheeler', 'Four-Wheeler', 'Others']
+                      menuMaxHeight: 220, // Approx 4 items height
+                      items: [
+                        'Two-Wheeler',
+                        '3wheeler',
+                        'EECO',
+                        'ATA ACE',
+                        'E loader',
+                        '8ft pick up',
+                        '10fit Truck',
+                        'Truck 14ft',
+                        'Truck 17ft',
+                        'Truck 20ft',
+                        'Others'
+                      ]
                           .map((val) => DropdownMenuItem<String>(
                                 value: val,
                                 child: Text(val, style: GoogleFonts.outfit(fontSize: 14)),
@@ -679,10 +741,6 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
                         if (val != null) {
                           setState(() {
                             _selectedTypeName = val;
-                            final list = _iconsMap[val] ?? [];
-                            if (list.isNotEmpty && !list.contains(_iconUrlController.text)) {
-                              _iconUrlController.text = list.first;
-                            }
                           });
                         }
                       },
@@ -801,79 +859,45 @@ class _VehicleTypeFormBottomSheetState extends State<VehicleTypeFormBottomSheet>
   }
 
   Widget _buildIconSelector() {
-    if (_selectedTypeName == null) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Select Icon',
-            style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79), fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            height: 56,
-            alignment: Alignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Vehicle Icon',
+          style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79), fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: _pickImage,
+          child: Container(
+            height: 100,
+            width: double.infinity,
             decoration: BoxDecoration(
               color: const Color(0xFFF6F6F8),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: const Color(0xFFE7E7EB)),
             ),
-            child: Text(
-              'Select a type name to see icons',
-              style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79)),
-            ),
-          ),
-        ],
-      );
-    }
-
-    final availableIcons = _getAvailableIcons();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Select Icon',
-          style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79), fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 56,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: availableIcons.length,
-            itemBuilder: (context, index) {
-              final iconUrl = availableIcons[index];
-              final isSelected = _iconUrlController.text == iconUrl;
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _iconUrlController.text = iconUrl;
-                  });
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.all(6),
-                  width: 56,
-                  decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFFFFF0F0) : const Color(0xFFF6F6F8),
-                    border: Border.all(
-                      color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
-                      width: isSelected ? 2 : 1,
-                    ),
+            child: _selectedImageFile != null
+                ? ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Image.network(
-                    iconUrl,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.broken_image_rounded,
-                      color: Color(0xFF64748B),
-                      size: 20,
-                    ),
-                  ),
-                ),
-              );
-            },
+                    child: Image.file(_selectedImageFile!, fit: BoxFit.contain),
+                  )
+                : (_iconUrlController.text.isNotEmpty && _iconUrlController.text.startsWith('http'))
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.network(_iconUrlController.text, fit: BoxFit.contain),
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.add_photo_alternate_rounded, color: Color(0xFFB0B8C4), size: 32),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Tap to upload icon',
+                            style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79)),
+                          ),
+                        ],
+                      ),
           ),
         ),
       ],

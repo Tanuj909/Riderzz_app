@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/features/admin/vehicles/screens/admin_vehicles_screen.dart';
+import 'package:riderzz_app/features/admin/vehicles/screens/admin_registered_vehicles_screen.dart';
 import 'package:riderzz_app/features/admin/rider_verification/rider_verification_screen.dart';
 import 'package:riderzz_app/features/admin/rider_verification/providers/rider_verification_provider.dart';
 import 'package:riderzz_app/features/admin/wallets/screens/admin_wallets_screen.dart';
@@ -84,10 +85,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               activeIcon: Icon(Icons.assignment_rounded),
               label: 'Requests',
             ),
+            // BottomNavigationBarItem(
+            //   icon: Icon(Icons.commute_outlined),
+            //   activeIcon: Icon(Icons.commute_rounded),
+            //   label: 'Reg. Vehicles',
+            // ),
             BottomNavigationBarItem(
               icon: Icon(Icons.local_shipping_outlined),
               activeIcon: Icon(Icons.local_shipping_rounded),
-              label: 'Vehicles',
+              label: 'Vehicle Types',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.account_balance_wallet_outlined),
@@ -106,9 +112,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         return _buildDashboardTab();
       case 1:
         return const RiderVerificationScreen();
-      case 2:
+      // case 2:
+      //   return const AdminRegisteredVehiclesScreen();
+      case 2: // Was 3
         return const AdminVehiclesScreen();
-      case 3:
+      case 3: // Was 4
         return const AdminWalletsScreen();
       default:
         return _buildDashboardTab();
@@ -369,7 +377,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     title: 'Vehicle\nManagement',
                     onTap: () {
                       setState(() {
-                        _currentIndex = 2;
+                        _currentIndex = 3;
                       });
                     },
                   ),
@@ -381,7 +389,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     title: 'Wallet\nOperations',
                     onTap: () {
                       setState(() {
-                        _currentIndex = 3;
+                        _currentIndex = 4;
                       });
                     },
                   ),

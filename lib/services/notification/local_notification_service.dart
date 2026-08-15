@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
@@ -20,6 +21,11 @@ class LocalNotificationService {
     try {
       const initializationSettings = InitializationSettings(
         android: AndroidInitializationSettings('@drawable/ic_overlay_notification'),
+        iOS: DarwinInitializationSettings(
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
+        ),
       );
       await _notifications.initialize(settings: initializationSettings);
 
@@ -70,13 +76,15 @@ class LocalNotificationService {
     }
 
     try {
-      final androidPlugin = _notifications
-          .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >();
-      if (androidPlugin == null ||
-          await androidPlugin.areNotificationsEnabled() != true) {
-        return;
+      if (Platform.isAndroid) {
+        final androidPlugin = _notifications
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
+        if (androidPlugin == null ||
+            await androidPlugin.areNotificationsEnabled() != true) {
+          return;
+        }
       }
 
       const title = 'New Delivery Request';
@@ -110,6 +118,11 @@ class LocalNotificationService {
             playSound: true,
             enableVibration: true,
             autoCancel: true,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
           ),
         ),
         payload: booking.id.toString(),

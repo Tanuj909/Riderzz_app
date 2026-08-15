@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:riderzz_app/core/models/vehicle_type_model.dart';
 import 'package:riderzz_app/features/admin/vehicles/data/repositories/admin_vehicles_repository.dart';
@@ -39,11 +40,12 @@ class AdminVehiclesProvider extends ChangeNotifier {
 
   Future<bool> createVehicleType({
     required String name,
-    required String iconUrl,
+    File? icon,
     required int maxWeightKg,
     required double minimumWalletBalance,
     required bool tollEnabled,
     required bool dynamicPricingEnabled,
+    bool active = true,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -52,11 +54,12 @@ class AdminVehiclesProvider extends ChangeNotifier {
     try {
       final newType = await _repository.createVehicleType(
         name: name,
-        iconUrl: iconUrl,
+        icon: icon,
         maxWeightKg: maxWeightKg,
         minimumWalletBalance: minimumWalletBalance,
         tollEnabled: tollEnabled,
         dynamicPricingEnabled: dynamicPricingEnabled,
+        active: active,
       );
       _vehicleTypes.add(newType);
       _isLoading = false;
@@ -73,11 +76,12 @@ class AdminVehiclesProvider extends ChangeNotifier {
   Future<bool> updateVehicleType({
     required int id,
     required String name,
-    required String iconUrl,
+    File? icon,
     required int maxWeightKg,
     required double minimumWalletBalance,
     required bool tollEnabled,
     required bool dynamicPricingEnabled,
+    bool active = true,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -87,11 +91,12 @@ class AdminVehiclesProvider extends ChangeNotifier {
       final updatedType = await _repository.updateVehicleType(
         id: id,
         name: name,
-        iconUrl: iconUrl,
+        icon: icon,
         maxWeightKg: maxWeightKg,
         minimumWalletBalance: minimumWalletBalance,
         tollEnabled: tollEnabled,
         dynamicPricingEnabled: dynamicPricingEnabled,
+        active: active,
       );
       final index = _vehicleTypes.indexWhere((element) => element.id == id);
       if (index != -1) {
@@ -116,6 +121,99 @@ class AdminVehiclesProvider extends ChangeNotifier {
     try {
       await _repository.deleteVehicleType(id);
       _vehicleTypes.removeWhere((element) => element.id == id);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // --- Registered Vehicles (Driver Vehicles) ---
+  
+  List<dynamic> _registeredVehicles = [];
+  List<dynamic> get registeredVehicles => _registeredVehicles;
+
+  int _regVehiclesPage = 0;
+  bool _regVehiclesHasMore = true;
+  bool get regVehiclesHasMore => _regVehiclesHasMore;
+  bool _isLoadingRegVehicles = false;
+  bool get isLoadingRegVehicles => _isLoadingRegVehicles;
+
+  String? _regVehiclesStatusFilter = 'ALL';
+  String? get regVehiclesStatusFilter => _regVehiclesStatusFilter;
+  
+  int? _regVehiclesTypeIdFilter;
+  int? get regVehiclesTypeIdFilter => _regVehiclesTypeIdFilter;
+
+  void setRegVehiclesStatusFilter(String status) {
+    _regVehiclesStatusFilter = status;
+    fetchRegisteredVehicles(isRefresh: true);
+  }
+
+  void setRegVehiclesTypeIdFilter(int? typeId) {
+    _regVehiclesTypeIdFilter = typeId;
+    fetchRegisteredVehicles(isRefresh: true);
+  }
+
+  Future<void> fetchRegisteredVehicles({bool isRefresh = false}) async {
+    if (isRefresh) {
+      _regVehiclesPage = 0;
+      _regVehiclesHasMore = true;
+      _registeredVehicles.clear();
+    }
+
+    if (!_regVehiclesHasMore || _isLoadingRegVehicles) return;
+
+    _isLoadingRegVehicles = true;
+    _errorMessage = null;
+    // Don't notify listeners if we're just loading next page to avoid flickers,
+    // but do notify if refresh to show indicator if needed. 
+    if (isRefresh) notifyListeners();
+
+    try {
+      final response = await _repository.fetchRegisteredVehicles(
+        status: _regVehiclesStatusFilter,
+        vehicleTypeId: _regVehiclesTypeIdFilter,
+        page: _regVehiclesPage,
+        size: 20,
+      );
+
+      final List<dynamic> content = response['content'] ?? [];
+      final bool last = response['last'] ?? true;
+
+      _registeredVehicles.addAll(content);
+      _regVehiclesHasMore = !last;
+      _regVehiclesPage++;
+      _isLoadingRegVehicles = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoadingRegVehicles = false;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+    }
+  }
+
+  Future<bool> updateRegisteredVehicleStatus(int id, String newStatus) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _repository.updateRegisteredVehicleStatus(id, newStatus);
+      
+      // Update local state if successful
+      final index = _registeredVehicles.indexWhere((element) => element['id'] == id);
+      if (index != -1) {
+        // Since it's dynamic Map, we update it directly
+        final Map<String, dynamic> updatedVehicle = Map<String, dynamic>.from(_registeredVehicles[index]);
+        updatedVehicle['status'] = newStatus;
+        _registeredVehicles[index] = updatedVehicle;
+      }
+      
       _isLoading = false;
       notifyListeners();
       return true;
