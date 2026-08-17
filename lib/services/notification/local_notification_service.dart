@@ -134,6 +134,65 @@ class LocalNotificationService {
     }
   }
 
+  static Future<void> showGenericNotification({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+
+    try {
+      if (Platform.isAndroid) {
+        final androidPlugin = _notifications
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
+        if (androidPlugin == null ||
+            await androidPlugin.areNotificationsEnabled() != true) {
+          return;
+        }
+      }
+
+      debugPrint('========== LOCAL NOTIFICATION ==========');
+      debugPrint('Showing generic notification');
+      debugPrint('ID: $id');
+      debugPrint('Title: $title');
+      debugPrint('Body: $body');
+      debugPrint('========================================');
+
+      await _notifications.show(
+        id: id > 0 ? id : DateTime.now().millisecondsSinceEpoch.remainder(1 << 31),
+        title: title,
+        body: body,
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _channelId,
+            _channelName,
+            channelDescription: _channelDescription,
+            importance: Importance.max,
+            priority: Priority.high,
+            playSound: true,
+            enableVibration: true,
+            autoCancel: true,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        payload: payload,
+      );
+    } catch (error) {
+      debugPrint(
+        '[LocalNotificationService] Unable to show generic notification: $error',
+      );
+    }
+  }
+
   static String _textOrFallback(String value) {
     final trimmedValue = value.trim();
     return trimmedValue.isEmpty || trimmedValue == 'N/A'

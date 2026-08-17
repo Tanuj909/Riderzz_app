@@ -14,6 +14,9 @@ import 'dart:ui' as ui;
 import 'package:riderzz_app/core/services/maps_launcher_service.dart';
 import 'package:riderzz_app/core/network/api_client.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:async';
+import 'package:riderzz_app/core/services/broadcast_socket_service.dart';
+import 'package:riderzz_app/features/notification/data/models/notification_model.dart';
 
 class DriverBookingDetailsScreen extends StatefulWidget {
   final BookingModel booking;
@@ -33,6 +36,7 @@ class DriverBookingDetailsScreen extends StatefulWidget {
 class _DriverBookingDetailsScreenState
     extends State<DriverBookingDetailsScreen> {
   GoogleMapController? _mapController;
+  StreamSubscription<NotificationModel>? _notificationSubscription;
   late bool _isSheetExpanded;
   bool _isVerifyingOtp = false;
   String? _selectedPaymentMethod;
@@ -70,12 +74,46 @@ class _DriverBookingDetailsScreenState
         (initialStatus == 'DELIVERED' || initialStatus == 'COMPLETED');
     _loadMarkerIcons();
     _fetchRoute();
+    _subscribeToBookingNotifications();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DriverHomeProvider>().fetchDriverProfile();
       _loadFreshBookingDetails();
       if (initialStatus == 'CANCELLED' || initialStatus == 'FAILED') {
         _showStatusModal(initialStatus);
       }
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _subscribeToBookingNotifications() {
+    final socketService = context.read<BroadcastSocketService>();
+
+    _notificationSubscription?.cancel();
+
+    _notificationSubscription =
+        socketService.notifications.listen((notification) {
+      if (notification.type != 'BOOKING_STATUS_UPDATED') {
+        return;
+      }
+
+      if (notification.bookingStatus != 'CANCELLED') {
+        return;
+      }
+
+      if (notification.bookingId != _currentBooking.id) {
+        return;
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      _checkAndShowStatusDialog('CANCELLED');
     });
   }
 

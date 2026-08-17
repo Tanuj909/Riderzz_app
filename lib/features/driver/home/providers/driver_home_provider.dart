@@ -10,6 +10,7 @@ import 'package:riderzz_app/features/driver/home/data/repositories/driver_reposi
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/core/models/driver_earnings_model.dart';
 import 'package:riderzz_app/core/models/driver_message_model.dart';
+import 'package:riderzz_app/features/notification/data/models/notification_model.dart';
 
 
 class DriverHomeProvider extends ChangeNotifier {
@@ -50,9 +51,11 @@ class DriverHomeProvider extends ChangeNotifier {
 
   final BroadcastSocketService _socketService;
   StreamSubscription<BroadcastResponse>? _broadcastSubscription;
+  StreamSubscription<NotificationModel>? _notificationSubscription;
 
   DriverHomeProvider(this._driverRepository, this._socketService) {
     _subscribeToBroadcasts();
+    _subscribeToNotifications();
   }
 
   void _subscribeToBroadcasts() {
@@ -76,9 +79,45 @@ class DriverHomeProvider extends ChangeNotifier {
     }
   }
 
+  void _subscribeToNotifications() {
+    _notificationSubscription?.cancel();
+
+    _notificationSubscription =
+        _socketService.notifications.listen((notification) {
+      _handleIncomingNotification(notification);
+    });
+  }
+
+  void _handleIncomingNotification(NotificationModel notification) {
+    if (notification.type != 'BOOKING_STATUS_UPDATED') {
+      return;
+    }
+
+    if (notification.bookingStatus != 'CANCELLED') {
+      return;
+    }
+
+    if (_activeBooking == null) {
+      return;
+    }
+
+    if (notification.bookingId != _activeBooking!.id) {
+      return;
+    }
+
+    debugPrint(
+      '[DriverHomeProvider] Active booking cancelled via WebSocket: '
+      'bookingId=${notification.bookingId}',
+    );
+
+    _activeBooking = null;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _broadcastSubscription?.cancel();
+    _notificationSubscription?.cancel();
     super.dispose();
   }
 

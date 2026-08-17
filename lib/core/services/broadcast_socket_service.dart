@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:riderzz_app/core/network/api_constants.dart';
 import 'package:riderzz_app/core/storage/secure_storage_service.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
+import 'package:riderzz_app/features/notification/data/models/notification_model.dart';
 import 'package:riderzz_app/services/notification/local_notification_service.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
@@ -33,6 +34,7 @@ class BroadcastSocketService {
   final SecureStorageService _storageService;
   StompClient? _client;
   final _broadcastController = StreamController<BroadcastResponse>.broadcast();
+  final _notificationController = StreamController<NotificationModel>.broadcast();
 
   bool _isConnecting = false;
   bool _isConnected = false;
@@ -48,6 +50,7 @@ class BroadcastSocketService {
   }
 
   Stream<BroadcastResponse> get broadcasts => _broadcastController.stream;
+  Stream<NotificationModel> get notifications => _notificationController.stream;
   bool get isConnected => _isConnected;
 
   Future<void> connect() async {
@@ -185,6 +188,35 @@ class BroadcastSocketService {
       },
     );
     debugPrint("Subscribed to /user/queue/broadcasts");
+
+    _client?.subscribe(
+      destination: '/user/queue/notifications',
+      callback: (StompFrame frame) {
+        debugPrint("========== NOTIFICATION RECEIVED ==========");
+        debugPrint("Destination: ${frame.headers}");
+        debugPrint("Payload: ${frame.body}");
+        if (frame.body != null) {
+          try {
+            final jsonMap = json.decode(frame.body!) as Map<String, dynamic>;
+            final notification = NotificationModel.fromJson(jsonMap);
+            debugPrint("Notification ID: ${notification.id}");
+            _notificationController.add(notification);
+            unawaited(
+              LocalNotificationService.showGenericNotification(
+                id: notification.id,
+                title: notification.title,
+                body: notification.message,
+                payload: notification.actionUrl,
+              ),
+            );
+          } catch (e) {
+            debugPrint("Notification Parse Error: $e");
+            debugPrint(frame.body);
+          }
+        }
+      },
+    );
+    debugPrint("Subscribed to /user/queue/notifications");
   }
 
   void _onDisconnect(StompFrame frame) {
