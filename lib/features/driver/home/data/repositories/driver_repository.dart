@@ -120,6 +120,10 @@ class DriverRepository {
     await _remoteDataSource.rejectBooking(bookingId, reason);
   }
 
+  Future<void> cancelBooking(int bookingId, String reason) async {
+    await _remoteDataSource.cancelBooking(bookingId, reason);
+  }
+
   Future<List<BookingModel>> getPendingBroadcasts() async {
     return await _remoteDataSource.fetchPendingBroadcasts();
   }

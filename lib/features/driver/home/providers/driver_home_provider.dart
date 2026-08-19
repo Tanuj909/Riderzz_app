@@ -641,23 +641,9 @@ class DriverHomeProvider extends ChangeNotifier {
     }
 
     try {
-      // 1. Fetch My Driver Bookings (only on non-silent load/refresh)
+      // 1. (Removed) Fetch My Driver Bookings - Only fetch when history tab is opened as per user request
       if (!silent) {
-        final driverBookings = await _driverRepository.getDriverBookings(page: 0, size: 20);
-        
-        BookingModel? active;
-        if (driverBookings.isNotEmpty) {
-          final latest = driverBookings.first;
-          final statusUpper = latest.status.toUpperCase();
-          if (statusUpper != 'DELIVERED' && 
-              statusUpper != 'COMPLETED' && 
-              statusUpper != 'CANCELLED' && 
-              statusUpper != 'PENDING') {
-            active = latest;
-          }
-        }
-
-        _activeBooking = active;
+        _activeBooking = null;
       }
 
       // 2. If no active booking, fetch pending broadcasts
@@ -736,6 +722,23 @@ class DriverHomeProvider extends ChangeNotifier {
 
     try {
       await _driverRepository.rejectBooking(bookingId, reason);
+      await fetchHomeBookings();
+      return true;
+    } catch (e) {
+      _bookingsError = e.toString().replaceFirst('Exception: ', '');
+      _isBookingsLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> cancelBookingForDriver(int bookingId, String reason) async {
+    _isBookingsLoading = true;
+    _bookingsError = null;
+    notifyListeners();
+
+    try {
+      await _driverRepository.cancelBooking(bookingId, reason);
       await fetchHomeBookings();
       return true;
     } catch (e) {

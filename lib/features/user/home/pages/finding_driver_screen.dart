@@ -13,7 +13,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
-
+import 'package:riderzz_app/core/services/broadcast_socket_service.dart';
+import 'package:riderzz_app/features/notification/data/models/notification_model.dart';
 class FindingDriverScreen extends StatefulWidget {
   final BookingModel booking;
   final String vehicleName;
@@ -32,12 +33,12 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
   bool _isCancelling = false;
-  Timer? _statusTimer;
   late BookingModel _currentBooking;
   String? _generatedOtp;
   bool _otpLoading = false;
   bool _hasShownRatingDialog = false;
-
+  StreamSubscription<NotificationModel>? _notificationSubscription;
+  bool _isFetchingFromWebSocket = false;
   GoogleMapController? _mapController;
   List<LatLng> _polylineCoordinates = [];
   Set<Polyline> _polylines = {};
@@ -124,7 +125,61 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadCustomMarkerIcon();
     });
-    _startPolling();
+
+    final socketService = context.read<BroadcastSocketService>();
+    socketService.connect();
+
+    _notificationSubscription = socketService.notifications.listen((notification) async {
+      if (notification.type == 'BOOKING_STATUS_UPDATED' &&
+          notification.bookingId == _currentBooking.id) {
+        if (_isFetchingFromWebSocket) return;
+        _isFetchingFromWebSocket = true;
+
+        try {
+          if (!mounted) return;
+          final bookingProvider = context.read<BookingProvider>();
+          final freshBooking = await bookingProvider.fetchBookingById(_currentBooking.id);
+
+          if (freshBooking != null && mounted) {
+            final oldStatus = _currentBooking.status.toUpperCase();
+            final newStatus = freshBooking.status.toUpperCase();
+            final isOldPreTransit = oldStatus == 'DRIVER_ASSIGNED' || oldStatus == 'ACCEPTED' || oldStatus == 'EN_ROUTE' || oldStatus == 'DRIVER_ARRIVED';
+            final isNewPreTransit = newStatus == 'DRIVER_ASSIGNED' || newStatus == 'ACCEPTED' || newStatus == 'EN_ROUTE' || newStatus == 'DRIVER_ARRIVED';
+
+            if (isOldPreTransit && !isNewPreTransit) {
+              _hasInitialZoomedInOnDriver = false;
+            }
+
+            setState(() {
+              _currentBooking = freshBooking;
+              _initializeStaticMarkers();
+            });
+
+            if (!isNewPreTransit) {
+              if (freshBooking.routePolyline != null &&
+                  (_polylineCoordinates.isEmpty || _polylines.any((p) => p.polylineId.value == 'driver_to_pickup_route'))) {
+                _fetchRoute();
+              }
+            }
+
+            final driverId = freshBooking.driverId ?? freshBooking.driver?.userId;
+            if (driverId != null && _driverLocationTimer == null) {
+              _startDriverLocationTracking(driverId);
+            }
+          }
+        } finally {
+          _isFetchingFromWebSocket = false;
+        }
+      }
+    });
+
+    // Check on startup if driver is already assigned
+    final initialDriverId =
+        _currentBooking.driverId ?? _currentBooking.driver?.userId;
+    if (initialDriverId != null) {
+      _startDriverLocationTracking(initialDriverId);
+    }
+
     final statusUpper = _currentBooking.status.toUpperCase();
     final isPreTransit = statusUpper == 'DRIVER_ASSIGNED' ||
         statusUpper == 'ACCEPTED' ||
@@ -463,65 +518,6 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
       },
     );
   }
-  void _startPolling() {
-    _statusTimer = Timer.periodic(const Duration(seconds: 8), (timer) async {
-      if (!mounted) return;
-      final bookingProvider = context.read<BookingProvider>();
-      final freshBooking = await bookingProvider.fetchBookingById(
-        _currentBooking.id,
-      );
-      if (freshBooking != null && mounted) {
-        final oldStatus = _currentBooking.status.toUpperCase();
-        final newStatus = freshBooking.status.toUpperCase();
-        final isOldPreTransit = oldStatus == 'DRIVER_ASSIGNED' ||
-            oldStatus == 'ACCEPTED' ||
-            oldStatus == 'EN_ROUTE' ||
-            oldStatus == 'DRIVER_ARRIVED';
-        final isNewPreTransit = newStatus == 'DRIVER_ASSIGNED' ||
-            newStatus == 'ACCEPTED' ||
-            newStatus == 'EN_ROUTE' ||
-            newStatus == 'DRIVER_ARRIVED';
-
-        if (isOldPreTransit && !isNewPreTransit) {
-          _hasInitialZoomedInOnDriver = false;
-        }
-
-        setState(() {
-          _currentBooking = freshBooking;
-          _initializeStaticMarkers(); // Refresh markers if booking coordinates change
-        });
-        if (!isNewPreTransit) {
-          if (freshBooking.routePolyline != null &&
-              (_polylineCoordinates.isEmpty ||
-                  _polylines.any((p) => p.polylineId.value == 'driver_to_pickup_route'))) {
-            _fetchRoute();
-          }
-        }
-
-        // Start location tracking if driver is assigned and timer is not running
-        final driverId = freshBooking.driverId ?? freshBooking.driver?.userId;
-        if (driverId != null && _driverLocationTimer == null) {
-          _startDriverLocationTracking(driverId);
-        }
-
-        // Stop polling if booking is finalized
-        final statusLower = freshBooking.status.toLowerCase();
-        if (statusLower == 'cancelled' ||
-            statusLower == 'delivered' ||
-            statusLower == 'completed') {
-          timer.cancel();
-          _driverLocationTimer?.cancel();
-        }
-      }
-    });
-
-    // Check on startup if driver is already assigned
-    final initialDriverId =
-        _currentBooking.driverId ?? _currentBooking.driver?.userId;
-    if (initialDriverId != null) {
-      _startDriverLocationTracking(initialDriverId);
-    }
-  }
 
   double _calculateBearing(LatLng start, LatLng end) {
     final double lat1 = start.latitude * math.pi / 180.0;
@@ -746,7 +742,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
 
   @override
   void dispose() {
-    _statusTimer?.cancel();
+    _notificationSubscription?.cancel();
     _driverLocationTimer?.cancel();
     _animationController.dispose();
     _markerAnimationController?.dispose();

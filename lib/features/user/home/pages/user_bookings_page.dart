@@ -20,9 +20,6 @@ class _UserBookingsPageState extends State<UserBookingsPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BookingProvider>().fetchBookings();
-    });
   }
 
   String _formatDateTime(String isoString) {
@@ -199,7 +196,7 @@ class _UserBookingsPageState extends State<UserBookingsPage> {
 
               if (provider.errorMessage != null && provider.bookings.isEmpty) {
                 return RefreshIndicator(
-                  onRefresh: () => provider.fetchBookings(),
+                  onRefresh: () => provider.fetchBookings(page: 0),
                   color: const Color(0xFFC62E42),
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -220,7 +217,7 @@ class _UserBookingsPageState extends State<UserBookingsPage> {
                           const SizedBox(height: 16),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFC62E42)),
-                            onPressed: () => provider.fetchBookings(),
+                            onPressed: () => provider.fetchBookings(page: 0),
                             child: Text('Retry', style: GoogleFonts.outfit(color: Colors.white)),
                           ),
                         ],
@@ -247,7 +244,7 @@ class _UserBookingsPageState extends State<UserBookingsPage> {
 
               if (filteredBookings.isEmpty) {
                 return RefreshIndicator(
-                  onRefresh: () => provider.fetchBookings(),
+                  onRefresh: () => provider.fetchBookings(page: 0),
                   color: const Color(0xFFC62E42),
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -279,14 +276,17 @@ class _UserBookingsPageState extends State<UserBookingsPage> {
                 );
               }
 
-              return RefreshIndicator(
-                onRefresh: () => provider.fetchBookings(),
-                color: const Color(0xFFC62E42),
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  itemCount: filteredBookings.length,
-                  itemBuilder: (context, index) {
-                    final booking = filteredBookings[index];
+              return Column(
+                children: [
+                  Expanded(
+                    child: RefreshIndicator(
+                      onRefresh: () => provider.fetchBookings(page: 0),
+                      color: const Color(0xFFC62E42),
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        itemCount: filteredBookings.length,
+                        itemBuilder: (context, index) {
+                          final booking = filteredBookings[index];
                     final isCompleted = booking.status.toUpperCase() == 'DELIVERED' || booking.status.toUpperCase() == 'COMPLETED';
                     final isCancelled = booking.status.toUpperCase() == 'CANCELLED';
 
@@ -479,7 +479,7 @@ class _UserBookingsPageState extends State<UserBookingsPage> {
                                         ),
                                       ).then((_) {
                                         if (context.mounted) {
-                                          Provider.of<BookingProvider>(context, listen: false).fetchBookings();
+                                          Provider.of<BookingProvider>(context, listen: false).fetchBookings(page: 0);
                                           Provider.of<BookingProvider>(context, listen: false).fetchCurrentBookings();
                                         }
                                       });
@@ -552,7 +552,73 @@ class _UserBookingsPageState extends State<UserBookingsPage> {
                     return cardWidget;
                   },
                 ),
-              );
+              ),
+            ),
+            // Pagination Controls
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: provider.currentPage > 0
+                        ? () {
+                            provider.fetchBookings(page: provider.currentPage - 1);
+                          }
+                        : null,
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 14),
+                    label: Text('Previous', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF1F5F9),
+                      foregroundColor: const Color(0xFF475569),
+                      disabledBackgroundColor: const Color(0xFFF8FAFC),
+                      disabledForegroundColor: const Color(0xFFCBD5E1),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  Text(
+                    'Page ${provider.currentPage + 1}',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF475569),
+                      fontSize: 14,
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: provider.hasMore
+                        ? () {
+                            provider.fetchBookings(page: provider.currentPage + 1);
+                          }
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFC62E42),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: const Color(0xFFF1F5F9),
+                      disabledForegroundColor: const Color(0xFFCBD5E1),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Next', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
             },
           ),
         ),

@@ -12,8 +12,8 @@ class BookingRepository {
     return await _remoteDataSource.createBooking(requestData);
   }
 
-  Future<List<BookingModel>> fetchBookings() async {
-    return await _remoteDataSource.fetchBookings();
+  Future<List<BookingModel>> fetchBookings({int page = 0, int size = 20}) async {
+    return await _remoteDataSource.fetchBookings(page: page, size: size);
   }
 
   Future<BookingModel> getBookingById(int id) async {

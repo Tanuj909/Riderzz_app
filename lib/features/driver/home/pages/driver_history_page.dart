@@ -19,6 +19,9 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
   
   List<BookingModel> _bookings = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  int _currentPage = 0;
   String? _error;
 
   @override
@@ -27,27 +30,55 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
     _fetchHistory();
   }
 
-  Future<void> _fetchHistory() async {
+  Future<void> _fetchHistory({bool loadMore = false}) async {
     if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    
+    if (loadMore) {
+      if (_isLoadingMore || !_hasMore) return;
+      setState(() {
+        _isLoadingMore = true;
+      });
+    } else {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+        _currentPage = 0;
+        _hasMore = true;
+      });
+    }
 
     try {
       final repo = context.read<DriverRepository>();
-      final data = await repo.getDriverBookings(page: 0, size: 50);
+      final nextPage = loadMore ? _currentPage + 1 : 0;
+      final data = await repo.getDriverBookings(page: nextPage, size: 5);
+      
       if (mounted) {
         setState(() {
-          _bookings = data;
-          _isLoading = false;
+          if (loadMore) {
+            if (data.isEmpty) {
+              _hasMore = false;
+            } else {
+              _bookings.addAll(data);
+              _currentPage = nextPage;
+              if (data.length < 5) _hasMore = false;
+            }
+            _isLoadingMore = false;
+          } else {
+            _bookings = data;
+            _isLoading = false;
+            if (data.length < 5) _hasMore = false;
+          }
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _error = e.toString().replaceFirst('Exception: ', '');
-          _isLoading = false;
+          if (loadMore) {
+            _isLoadingMore = false;
+          } else {
+            _isLoading = false;
+          }
         });
       }
     }
@@ -476,6 +507,42 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                                 );
                               },
                             ),
+                            if (_hasMore && !_isLoading) ...[
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton(
+                                  onPressed: _isLoadingMore
+                                      ? null
+                                      : () => _fetchHistory(loadMore: true),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: const Color(0xFFD90429),
+                                    side: const BorderSide(color: Color(0xFFD90429)),
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                  child: _isLoadingMore
+                                      ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD90429)),
+                                          ),
+                                        )
+                                      : Text(
+                                          'Next Page',
+                                          style: GoogleFonts.outfit(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                            ],
                         ],
                       ),
                     ),

@@ -21,6 +21,7 @@ class DriverHomeScreen extends StatefulWidget {
 
 class DriverHomeScreenState extends State<DriverHomeScreen> {
   int _currentIndex = 0;
+  final Set<int> _initializedIndices = {0};
   DriverHomeProvider? _driverHomeProvider;
 
   void setIndex(int index) {
@@ -197,12 +198,12 @@ class DriverHomeScreenState extends State<DriverHomeScreen> {
       backgroundColor: const Color(0xFFF6F6F8),
       body: IndexedStack(
         index: _currentIndex,
-        children: const [
-          DriverHomePage(),
-          DriverHistoryPage(),
-          DriverWalletPage(),
-          DriverMessagesPage(),
-          DriverProfilePage(),
+        children: [
+          const DriverHomePage(),
+          _initializedIndices.contains(1) ? const DriverHistoryPage() : const SizedBox.shrink(),
+          _initializedIndices.contains(2) ? const DriverWalletPage() : const SizedBox.shrink(),
+          _initializedIndices.contains(3) ? const DriverMessagesPage() : const SizedBox.shrink(),
+          _initializedIndices.contains(4) ? const DriverProfilePage() : const SizedBox.shrink(),
         ],
       ),
       bottomNavigationBar: Container(
@@ -225,6 +226,7 @@ class DriverHomeScreenState extends State<DriverHomeScreen> {
             onTap: (index) {
               setState(() {
                 _currentIndex = index;
+                _initializedIndices.add(index);
               });
               if (index == 0) {
                 context.read<DriverHomeProvider>().fetchHomeBookings();

@@ -286,6 +286,13 @@ class DriverRemoteDataSource {
     );
   }
 
+  Future<void> cancelBooking(int bookingId, String reason) async {
+    await _apiClient.post(
+      '${ApiConstants.driverBookings}/$bookingId/cancel',
+      data: {'reason': reason},
+    );
+  }
+
   Future<List<BookingModel>> fetchPendingBroadcasts() async {
     final response = await _apiClient.get(ApiConstants.driverPendingBroadcasts);
     dynamic rawData;

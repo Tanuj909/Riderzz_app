@@ -13,12 +13,15 @@ import 'package:riderzz_app/features/user/home/pages/choose_vehicle_screen.dart'
 import 'package:riderzz_app/features/user/home/pages/booking_flow_bottom_sheet.dart';
 import 'package:riderzz_app/features/user/home/pages/finding_driver_screen.dart';
 import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
+import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/user/home/widgets/booking_details_bottom_sheet.dart';
 import 'package:riderzz_app/features/user/profile/screens/customer_profile_screen.dart';
 import 'package:riderzz_app/features/user/saved_routes/screens/saved_route_list_screen.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 import 'package:riderzz_app/features/driver/profile/become_driver_screen.dart';
 import 'package:riderzz_app/features/driver/profile/widgets/driver_terms_popup.dart';
+import 'package:riderzz_app/core/services/broadcast_socket_service.dart';
+import 'package:riderzz_app/features/notification/data/models/notification_model.dart';
 import 'dart:ui';
 import 'dart:math';
 
@@ -39,7 +42,8 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
   Map<String, dynamic>? _selectedRoute;
   final Map<int, bool> _fastDeliveryAvailability = {};
   bool _isFastDeliveryLoading = false;
-  bool _isRecentBookingsExpanded = true;
+  StreamSubscription<NotificationModel>? _notificationSubscription;
+  bool _isFetchingFromWebSocket = false;
 
   String _formatBookingDate(String isoString) {
     try {
@@ -103,17 +107,299 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<SavedRouteProvider>(context, listen: false).fetchSavedRoutes();
-      Provider.of<BookingProvider>(context, listen: false).fetchBookings();
       Provider.of<BookingProvider>(context, listen: false).fetchCurrentBookings();
       _checkFastDeliveryAvailability();
+    });
+
+    final socketService = context.read<BroadcastSocketService>();
+    socketService.connect();
+    _notificationSubscription = socketService.notifications.listen((notification) async {
+      if (notification.type == 'BOOKING_STATUS_UPDATED') {
+        final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
+        if (isCurrent && !_isFetchingFromWebSocket) {
+          _isFetchingFromWebSocket = true;
+          try {
+            if (mounted) {
+              await context.read<BookingProvider>().fetchCurrentBookings();
+              
+              if (mounted && notification.bookingId != null) {
+                final freshBooking = await context.read<BookingProvider>().fetchBookingById(notification.bookingId!);
+                if (freshBooking != null) {
+                  final statusUpper = freshBooking.status.toUpperCase();
+                  if (statusUpper == 'DELIVERED' || statusUpper == 'COMPLETED') {
+                    _showRatingDialog(freshBooking);
+                  }
+                }
+              }
+            }
+          } finally {
+            _isFetchingFromWebSocket = false;
+          }
+        }
+      }
     });
   }
 
   @override
   void dispose() {
+    _notificationSubscription?.cancel();
     _animController.dispose();
     super.dispose();
   }
+  void _showRatingDialog(BookingModel completedBooking) {
+    int selectedStars = 5;
+    final reviewController = TextEditingController();
+    bool isSubmitting = false;
+    final bookingProvider = context.read<BookingProvider>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0,
+                    vertical: 28.0,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Header Icon
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFEF3C7),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.star_rounded,
+                          color: Color(0xFFFFB000),
+                          size: 40,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Title
+                      Text(
+                        'Rate Your Ride',
+                        style: GoogleFonts.outfit(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF121214),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Subtitle
+                      Text(
+                        'How was your delivery partner ${completedBooking.driver?.fullName ?? "Driver"}?',
+                        style: GoogleFonts.outfit(
+                          fontSize: 14,
+                          color: const Color(0xFF6C6F79),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Star Rating selector
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(5, (index) {
+                          final starValue = index + 1;
+                          final isSelected = starValue <= selectedStars;
+                          return GestureDetector(
+                            onTap: isSubmitting
+                                ? null
+                                : () {
+                                    setDialogState(() {
+                                      selectedStars = starValue;
+                                    });
+                                  },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4.0,
+                              ),
+                              child: Icon(
+                                Icons.star_rounded,
+                                color: isSelected
+                                    ? const Color(0xFFFFB000)
+                                    : const Color(0xFFE2E8F0),
+                                size: 38,
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Review Comment box
+                      TextField(
+                        controller: reviewController,
+                        maxLines: 3,
+                        enabled: !isSubmitting,
+                        style: GoogleFonts.outfit(
+                          fontSize: 14,
+                          color: const Color(0xFF121214),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Share your feedback (optional)...',
+                          hintStyle: GoogleFonts.outfit(
+                            color: const Color(0xFFA2A5AE),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          contentPadding: const EdgeInsets.all(16),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE31C2E),
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+
+                      // Action buttons
+                      Row(
+                        children: [
+                          // Close option
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: isSubmitting
+                                  ? null
+                                  : () {
+                                      Navigator.pop(dialogContext);
+                                    },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF6C6F79),
+                                side: const BorderSide(
+                                  color: Color(0xFFE2E8F0),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(100),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                              ),
+                              child: Text(
+                                'Close',
+                                style: GoogleFonts.outfit(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+
+                          // Submit option
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: isSubmitting
+                                  ? null
+                                  : () async {
+                                      setDialogState(() {
+                                        isSubmitting = true;
+                                      });
+
+                                      final success = await bookingProvider
+                                          .submitRating(
+                                            bookingId: completedBooking.id,
+                                            ratingType: 'CUSTOMER_TO_DRIVER',
+                                            stars: selectedStars,
+                                            review:
+                                                reviewController.text
+                                                    .trim()
+                                                    .isNotEmpty
+                                                ? reviewController.text.trim()
+                                                : 'Ride was smooth.',
+                                          );
+
+                                      if (success) {
+                                        scaffoldMessenger.showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Rating submitted successfully',
+                                            ),
+                                          ),
+                                        );
+                                        Navigator.pop(dialogContext);
+                                      } else {
+                                        setDialogState(() {
+                                          isSubmitting = false;
+                                        });
+                                        scaffoldMessenger.showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              bookingProvider.errorMessage ??
+                                                  'Failed to submit rating',
+                                            ),
+                                            backgroundColor: Colors.redAccent,
+                                          ),
+                                        );
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFE31C2E),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(100),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                              ),
+                              child: Text(
+                                'Submit',
+                                style: GoogleFonts.outfit(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   String _getInitials(String? name) {
     if (name == null || name.trim().isEmpty) return 'U';
     final parts = name.trim().split(' ');
@@ -132,7 +418,6 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
       onRefresh: () async {
         await Future.wait([
           Provider.of<SavedRouteProvider>(context, listen: false).fetchSavedRoutes(),
-          Provider.of<BookingProvider>(context, listen: false).fetchBookings(),
           Provider.of<BookingProvider>(context, listen: false).fetchCurrentBookings(),
         ]);
       },
@@ -917,7 +1202,11 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                             vehicleName: vName,
                                           ),
                                         ),
-                                      );
+                                      ).then((_) {
+                                        if (mounted) {
+                                          context.read<BookingProvider>().fetchCurrentBookings();
+                                        }
+                                      });
                                     },
                                     style: ElevatedButton.styleFrom(
                                       padding: const EdgeInsets.symmetric(vertical: 10),
@@ -1052,7 +1341,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                 crossAxisCount: 2,
                                 crossAxisSpacing: 12,
                                 mainAxisSpacing: 12,
-                                childAspectRatio: 1.25,
+                                childAspectRatio: 1.1,
                               ),
                               itemCount: sortedVehicles.length,
                               itemBuilder: (context, idx) {
@@ -1102,21 +1391,21 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                                       children: [
                                                         const Spacer(),
                                                         Container(
-                                                          width: 44,
-                                                          height: 44,
+                                                          width: 72,
+                                                          height: 72,
                                                           alignment: Alignment.center,
                                                           child: vehicle.iconUrl != null && vehicle.iconUrl!.isNotEmpty
                                                               ? Image.network(
                                                                   vehicle.iconUrl!,
-                                                                  width: 40,
-                                                                  height: 40,
+                                                                  width: 64,
+                                                                  height: 64,
                                                                   errorBuilder: (context, error, stackTrace) => const Icon(
                                                                     Icons.local_shipping_rounded,
-                                                                    size: 36,
+                                                                    size: 52,
                                                                     color: Color(0xFFE31C2E),
                                                                   ),
                                                                 )
-                                                              : const Icon(Icons.local_shipping_rounded, size: 36, color: Color(0xFFE31C2E)),
+                                                              : const Icon(Icons.local_shipping_rounded, size: 52, color: Color(0xFFE31C2E)),
                                                         ),
                                                         const SizedBox(height: 8),
                                                         Text(
@@ -1143,21 +1432,21 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                                     children: [
                                                       const Spacer(),
                                                       Container(
-                                                        width: 44,
-                                                        height: 44,
+                                                        width: 72,
+                                                        height: 72,
                                                         alignment: Alignment.center,
                                                         child: vehicle.iconUrl != null && vehicle.iconUrl!.isNotEmpty
                                                             ? Image.network(
                                                                 vehicle.iconUrl!,
-                                                                width: 40,
-                                                                height: 40,
+                                                                width: 64,
+                                                                height: 64,
                                                                 errorBuilder: (context, error, stackTrace) => const Icon(
                                                                   Icons.local_shipping_rounded,
-                                                                  size: 36,
+                                                                  size: 52,
                                                                   color: Color(0xFFE31C2E),
                                                                 ),
                                                               )
-                                                            : const Icon(Icons.local_shipping_rounded, size: 36, color: Color(0xFFE31C2E)),
+                                                            : const Icon(Icons.local_shipping_rounded, size: 52, color: Color(0xFFE31C2E)),
                                                       ),
                                                       const SizedBox(height: 8),
                                                       Text(
@@ -1188,8 +1477,6 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                 );
                               },
                             ),
-                            // Recent Bookings Section (moved below AVAILABLE VEHICLES)
-                            _buildRecentBookingsDropdown(bookingProvider, vehiclesProvider),
                             // What's New News Section
                             const SizedBox(height: 28),
                             Text(
@@ -1676,214 +1963,6 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildRecentBookingsDropdown(
-    BookingProvider bookingProvider,
-    AdminVehiclesProvider vehiclesProvider,
-  ) {
-    if (bookingProvider.bookings.isEmpty) return const SizedBox.shrink();
-
-    final recentBookings = bookingProvider.bookings
-        .where((b) =>
-            b.status.toUpperCase() == 'DELIVERED' ||
-            b.status.toUpperCase() == 'COMPLETED')
-        .take(2)
-        .toList();
-
-    if (recentBookings.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 24),
-        InkWell(
-          onTap: () {
-            setState(() {
-              _isRecentBookingsExpanded = !_isRecentBookingsExpanded;
-            });
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              children: [
-                Text(
-                  'RECENT BOOKINGS',
-                  style: GoogleFonts.outfit(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.1,
-                    color: const Color(0xFFA2A5AE),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Container(
-                    height: 1,
-                    color: const Color(0xFFE7E7EB),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  _isRecentBookingsExpanded
-                      ? Icons.keyboard_arrow_up_rounded
-                      : Icons.keyboard_arrow_down_rounded,
-                  color: const Color(0xFFA2A5AE),
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        AnimatedCrossFade(
-          firstChild: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFE7E7EB)),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x0D121214),
-                  offset: Offset(0, 1),
-                  blurRadius: 2,
-                )
-              ],
-            ),
-            child: Column(
-              children: recentBookings.asMap().entries.map((entry) {
-                final index = entry.key;
-                final booking = entry.value;
-                final vehicleName = vehiclesProvider.vehicleTypes
-                    .where((v) => v.id == booking.vehicleTypeId)
-                    .map((v) => v.name)
-                    .firstWhere((name) => true, orElse: () => 'Vehicle');
-
-                String dateStr = '';
-                try {
-                  if (booking.createdAt.isNotEmpty) {
-                    final dt = DateTime.parse(booking.createdAt).toLocal();
-                    const months = [
-                      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-                    ];
-                    dateStr = '${months[dt.month - 1]} ${dt.day}';
-                  }
-                } catch (_) {}
-
-                return Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFDEBEC),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            alignment: Alignment.center,
-                            child: const Icon(
-                              Icons.history_rounded,
-                              color: Color(0xFFE31C2E),
-                              size: 19,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${booking.pickupAddressName.split(',').first} → ${booking.dropAddressName.split(',').first}',
-                                  style: const TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF121214),
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '$dateStr · $vehicleName',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF6C6F79),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                '₹${booking.totalFare.toStringAsFixed(0)}',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: 'IBM Plex Mono',
-                                  color: Color(0xFF121214),
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              ElevatedButton(
-                                onPressed: () {
-                                  final route = {
-                                    'pickupAddress': {
-                                      'address': booking.pickupAddressName,
-                                      'latitude': booking.pickupLatitude,
-                                      'longitude': booking.pickupLongitude,
-                                    },
-                                    'dropAddress': {
-                                      'address': booking.dropAddressName,
-                                      'latitude': booking.dropLatitude,
-                                      'longitude': booking.dropLongitude,
-                                    }
-                                  };
-                                  _showNewBookingModal(route: route);
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 4),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  backgroundColor: const Color(0xFFE31C2E),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8)),
-                                  elevation: 0,
-                                ),
-                                child: const Text(
-                                  'Repeat',
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (index < recentBookings.length - 1)
-                      const Divider(
-                          color: Color(0xFFE7E7EB), height: 1, thickness: 1),
-                  ],
-                );
-              }).toList(),
-            ),
-          ),
-          secondChild: const SizedBox.shrink(),
-          crossFadeState: _isRecentBookingsExpanded
-              ? CrossFadeState.showFirst
-              : CrossFadeState.showSecond,
-          duration: const Duration(milliseconds: 300),
-        ),
-      ],
-    );
-  }
 }
 
 

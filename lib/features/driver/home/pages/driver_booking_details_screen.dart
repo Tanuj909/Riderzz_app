@@ -1033,6 +1033,177 @@ class _DriverBookingDetailsScreenState
     );
   }
 
+  void _showCancelDialog(
+    BuildContext context,
+    DriverHomeProvider driverProvider,
+    int bookingId,
+  ) {
+    final controller = TextEditingController(
+      text: 'Vehicle broke down',
+    );
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFE5E7),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.cancel_rounded,
+                        color: Color(0xFFE53E4F),
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Cancel Booking',
+                      style: GoogleFonts.outfit(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF121214),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Please provide a reason for cancelling this booking.',
+                  style: GoogleFonts.outfit(
+                    fontSize: 14,
+                    color: const Color(0xFF6C6F79),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: controller,
+                  maxLines: 3,
+                  style: GoogleFonts.outfit(
+                    fontSize: 14,
+                    color: const Color(0xFF121214),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Enter reason...',
+                    hintStyle: GoogleFonts.outfit(
+                      color: const Color(0xFFA2A5AE),
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    contentPadding: const EdgeInsets.all(16),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFE53E4F),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF6C6F79),
+                        side: const BorderSide(
+                          color: Color(0xFFE2E8F0),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                      ),
+                      child: Text(
+                        'Close',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        final success = await driverProvider
+                            .cancelBookingForDriver(bookingId, controller.text);
+                        if (success && mounted) {
+                          Navigator.pop(
+                            context,
+                          ); // Pop details screen since it's cancelled
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Booking cancelled successfully'),
+                            ),
+                          );
+                        } else if (!success && mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                driverProvider.bookingsError ??
+                                    'Failed to cancel booking',
+                              ),
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFCC2D3B),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   String _getSliderText(String status) {
     switch (status.toUpperCase()) {
       case 'DRIVER_ASSIGNED':
@@ -2125,6 +2296,57 @@ class _DriverBookingDetailsScreenState
                                       final nextStatus = _getNextStatus(
                                         booking.status,
                                       );
+                                      if (nextStatus == 'IN_TRANSIT') {
+                                        final confirm = await showDialog<bool>(
+                                          context: context,
+                                          builder: (ctx) => AlertDialog(
+                                            backgroundColor: Colors.white,
+                                            title: Text(
+                                              'Start Ride',
+                                              style: GoogleFonts.outfit(
+                                                fontWeight: FontWeight.w800,
+                                                color: const Color(0xFF121214),
+                                              ),
+                                            ),
+                                            content: Text(
+                                              'Are you sure you want to start the ride? You cannot cancel the booking once the ride has started.',
+                                              style: GoogleFonts.outfit(
+                                                color: const Color(0xFF6C6F79),
+                                              ),
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(ctx, false),
+                                                child: Text(
+                                                  'Cancel',
+                                                  style: GoogleFonts.outfit(
+                                                    color: const Color(0xFF6C6F79),
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                              ElevatedButton(
+                                                onPressed: () => Navigator.pop(ctx, true),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: const Color(0xFFE31C2E),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(100),
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                  'Start Ride',
+                                                  style: GoogleFonts.outfit(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                        if (confirm != true) return;
+                                      }
+
                                       final success = await driverProvider
                                           .updateStatusForBooking(
                                             booking.id,
@@ -2288,8 +2510,7 @@ class _DriverBookingDetailsScreenState
                                   ),
                                 ),
                               ],
-                              if (statusUpper != 'IN_TRANSIT' &&
-                                  statusUpper != 'DRIVER_ARRIVED_DROP') ...[
+                              if (statusUpper == 'PENDING') ...[
                                 const SizedBox(height: 12),
                                 SizedBox(
                                   width: double.infinity,
@@ -2313,6 +2534,39 @@ class _DriverBookingDetailsScreenState
                                     ),
                                     child: const Text(
                                       'Reject Booking',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ] else if (statusUpper != 'IN_TRANSIT' &&
+                                         statusUpper != 'DRIVER_ARRIVED_DROP' &&
+                                         statusUpper != 'DELIVERED') ...[
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton(
+                                    onPressed: () => _showCancelDialog(
+                                      context,
+                                      driverProvider,
+                                      booking.id,
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: const Color(0xFFD90429),
+                                      side: const BorderSide(
+                                        color: Color(0xFFD90429),
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(100),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'Cancel Booking',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 14,

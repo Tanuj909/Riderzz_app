@@ -23,8 +23,11 @@ class BookingRemoteDataSource {
     return BookingModel.fromJson(data);
   }
 
-  Future<List<BookingModel>> fetchBookings() async {
-    final response = await _apiClient.get(ApiConstants.bookings);
+  Future<List<BookingModel>> fetchBookings({int page = 0, int size = 20}) async {
+    final response = await _apiClient.get(
+      ApiConstants.bookings,
+      queryParameters: {'page': page, 'size': size},
+    );
     final Map<String, dynamic> resBody = Map<String, dynamic>.from(
       response.data,
     );

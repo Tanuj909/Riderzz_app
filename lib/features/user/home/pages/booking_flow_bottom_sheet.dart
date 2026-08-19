@@ -58,6 +58,7 @@ class _BookingFlowBottomSheetState extends State<BookingFlowBottomSheet> {
 
   void _onConfirm(BookingModel result) {
     widget.onBookingConfirmed();
+    final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
     Navigator.pop(context); // Close bottom sheet
     Navigator.push(
       context,
@@ -68,10 +69,7 @@ class _BookingFlowBottomSheetState extends State<BookingFlowBottomSheet> {
         ),
       ),
     ).then((_) {
-      if (context.mounted) {
-        Provider.of<BookingProvider>(context, listen: false).fetchBookings();
-        Provider.of<BookingProvider>(context, listen: false).fetchCurrentBookings();
-      }
+      bookingProvider.fetchCurrentBookings();
     });
   }
 

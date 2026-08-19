@@ -65,9 +65,9 @@ class BroadcastSocketService {
     final token = await _storageService.getToken();
     final role = await _storageService.getRole();
 
-    if (token == null || role != 'DRIVER') {
+    if (token == null || (role != 'DRIVER' && role != 'CUSTOMER')) {
       debugPrint(
-        '[BroadcastSocketService] No token or user is not a DRIVER. Aborting socket connection.',
+        '[BroadcastSocketService] No token or unauthorized role. Aborting socket connection.',
       );
       _isConnecting = false;
       return;

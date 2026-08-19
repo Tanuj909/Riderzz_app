@@ -77,11 +77,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                 children: [
                   UserHomePage(
                     onBookingConfirmed: () {
-                      context.read<BookingProvider>().fetchBookings();
-                      context.read<BookingProvider>().fetchCurrentBookings();
-                      setState(() {
-                        _currentIndex = 1;
-                      });
+                      // Intentionally empty. No background API calls or tab switches.
                     },
                   ),
                   const UserBookingsPage(),
@@ -108,9 +104,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           });
           if (index == 0) {
             context.read<BookingProvider>().fetchCurrentBookings();
-            context.read<BookingProvider>().fetchBookings();
           } else if (index == 1) {
-            context.read<BookingProvider>().fetchBookings();
+            context.read<BookingProvider>().fetchBookings(page: 0);
           }
         },
         type: BottomNavigationBarType.fixed,

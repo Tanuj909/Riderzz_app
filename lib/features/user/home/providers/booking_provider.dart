@@ -21,13 +21,26 @@ class BookingProvider extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  Future<void> fetchBookings() async {
+  int _currentPage = 0;
+  bool _hasMore = true;
+
+  int get currentPage => _currentPage;
+  bool get hasMore => _hasMore;
+
+  Future<void> fetchBookings({int page = 0}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      _bookings = await _repository.fetchBookings();
+      final fetchedBookings = await _repository.fetchBookings(
+        page: page,
+        size: 10,
+      );
+      _bookings = fetchedBookings;
+      _currentPage = page;
+      // If we got less than 10 items, there are no more pages.
+      _hasMore = fetchedBookings.length == 10; 
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
     } finally {
