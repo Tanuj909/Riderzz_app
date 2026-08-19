@@ -265,14 +265,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       ],
                   onSelected: (String value) async {
                     if (value == 'logout') {
+                      final navigator = Navigator.of(context, rootNavigator: true);
                       await authProvider.logout();
-                      if (mounted) {
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          '/login',
-                          (route) => false,
-                        );
-                      }
+                      navigator.pushNamedAndRemoveUntil(
+                        '/login',
+                        (route) => false,
+                      );
                     }
                   },
                 ),

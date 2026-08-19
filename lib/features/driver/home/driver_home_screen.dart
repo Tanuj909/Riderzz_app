@@ -147,7 +147,7 @@ class DriverHomeScreenState extends State<DriverHomeScreen> {
 
     final unreadCount = driverProvider.messages.where((m) => !m.read).length;
 
-    if (driverProvider.isLoading && profile == null) {
+    if (profile == null && driverProvider.errorMessage == null) {
       return const Scaffold(
         backgroundColor: Colors.white,
         body: Center(

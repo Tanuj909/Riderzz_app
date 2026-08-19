@@ -1453,6 +1453,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                         setState(() {
                                           _selectedPaymentMethod = null;
                                         });
+                                        return true;
                                       } else if (!success && mounted) {
                                         messenger.showSnackBar(
                                           SnackBar(
@@ -1462,7 +1463,9 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                             backgroundColor: Colors.redAccent,
                                           ),
                                         );
+                                        return false;
                                       }
+                                      return false;
                                     },
                                   ),
                                   const SizedBox(height: 8),
@@ -1610,6 +1613,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                         setState(() {
                                           _selectedPaymentMethod = null;
                                         });
+                                        return true;
                                       } else if (!success && mounted) {
                                         messenger.showSnackBar(
                                           SnackBar(
@@ -1619,7 +1623,9 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                             backgroundColor: Colors.redAccent,
                                           ),
                                         );
+                                        return false;
                                       }
+                                      return false;
                                     },
                                   ),
                                   const SizedBox(height: 8),
@@ -1652,6 +1658,58 @@ class _DriverHomePageState extends State<DriverHomePage> {
                               onSwipeComplete: () async {
                                 final messenger = ScaffoldMessenger.of(context);
                                 final nextStatus = _getNextStatus(driverProvider.activeBooking!.status);
+                                
+                                if (nextStatus == 'IN_TRANSIT') {
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (ctx) => AlertDialog(
+                                      backgroundColor: Colors.white,
+                                      title: Text(
+                                        'Start Ride',
+                                        style: GoogleFonts.outfit(
+                                          fontWeight: FontWeight.w800,
+                                          color: const Color(0xFF121214),
+                                        ),
+                                      ),
+                                      content: Text(
+                                        'Are you sure you want to start the ride? You cannot cancel the booking once the ride has started.',
+                                        style: GoogleFonts.outfit(
+                                          color: const Color(0xFF6C6F79),
+                                        ),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(ctx, false),
+                                          child: Text(
+                                            'Cancel',
+                                            style: GoogleFonts.outfit(
+                                              color: const Color(0xFF6C6F79),
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () => Navigator.pop(ctx, true),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFFE31C2E),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(100),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'Start Ride',
+                                            style: GoogleFonts.outfit(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (confirm != true) return false;
+                                }
+
                                 final success = await driverProvider.updateStatusForBooking(
                                   driverProvider.activeBooking!.id,
                                   nextStatus,
@@ -1665,7 +1723,9 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                       backgroundColor: Colors.redAccent,
                                     ),
                                   );
+                                  return false;
                                 }
+                                return success;
                               },
                             );
                           }

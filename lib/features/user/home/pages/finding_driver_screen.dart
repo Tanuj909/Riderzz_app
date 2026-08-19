@@ -143,6 +143,20 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
           if (freshBooking != null && mounted) {
             final oldStatus = _currentBooking.status.toUpperCase();
             final newStatus = freshBooking.status.toUpperCase();
+            
+            if (newStatus == 'CANCELLED') {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Booking has been cancelled by the driver.'),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+                Navigator.of(context).pop();
+              }
+              return;
+            }
+
             final isOldPreTransit = oldStatus == 'DRIVER_ASSIGNED' || oldStatus == 'ACCEPTED' || oldStatus == 'EN_ROUTE' || oldStatus == 'DRIVER_ARRIVED';
             final isNewPreTransit = newStatus == 'DRIVER_ASSIGNED' || newStatus == 'ACCEPTED' || newStatus == 'EN_ROUTE' || newStatus == 'DRIVER_ARRIVED';
 

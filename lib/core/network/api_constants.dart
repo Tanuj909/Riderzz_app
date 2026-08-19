@@ -47,6 +47,7 @@ class ApiConstants {
   static const String primaryBankAccount = '/wallet/bank-accounts/primary';
   static const String bookingsAll = '/bookings/all';
   static const String driverBookings = '/driver/bookings';
+  static const String driverActiveBooking = '/driver/bookings/active';
   static const String driverPendingBroadcasts = '/driver/bookings/broadcasts/pending';
   static const String bookingsCurrent = '/bookings/current';
   static const String driverEarnings = '/driver/earnings';

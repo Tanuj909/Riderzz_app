@@ -93,15 +93,14 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
             onPressed: () async {
+              final navigator = Navigator.of(context, rootNavigator: true);
               Navigator.pop(dialogContext); // Close dialog
               try {
                 context.read<LocationTrackingService>().stop();
               } catch (_) {}
               context.read<DriverHomeProvider>().clearData();
               await authProvider.logout();
-              if (mounted) {
-                Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-              }
+              navigator.pushNamedAndRemoveUntil('/login', (route) => false);
             },
             child: Text('Logout', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
           ),

@@ -641,9 +641,9 @@ class DriverHomeProvider extends ChangeNotifier {
     }
 
     try {
-      // 1. (Removed) Fetch My Driver Bookings - Only fetch when history tab is opened as per user request
+      // 1. Fetch Active Booking
       if (!silent) {
-        _activeBooking = null;
+        _activeBooking = await _driverRepository.getActiveBooking();
       }
 
       // 2. If no active booking, fetch pending broadcasts

@@ -128,6 +128,13 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                   final statusUpper = freshBooking.status.toUpperCase();
                   if (statusUpper == 'DELIVERED' || statusUpper == 'COMPLETED') {
                     _showRatingDialog(freshBooking);
+                  } else if (statusUpper == 'CANCELLED') {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Booking has been cancelled by the driver.'),
+                        backgroundColor: Colors.redAccent,
+                      ),
+                    );
                   }
                 }
               }
@@ -491,13 +498,12 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                               elevation: 0,
                             ),
                             onPressed: () async {
+                              final navigator = Navigator.of(context, rootNavigator: true);
                               Navigator.pop(dialogContext);
                               context.read<DriverHomeProvider>().clearData();
                               final auth = context.read<AuthProvider>();
                               await auth.logout();
-                              if (context.mounted) {
-                                Navigator.pushReplacementNamed(context, '/login');
-                              }
+                              navigator.pushNamedAndRemoveUntil('/login', (route) => false);
                             },
                             child: const Text('Logout', style: TextStyle(fontWeight: FontWeight.bold)),
                           ),

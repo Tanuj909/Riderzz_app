@@ -126,12 +126,11 @@ class _UserAccountPageState extends State<UserAccountPage> {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
             onPressed: () async {
+              final navigator = Navigator.of(context, rootNavigator: true);
               Navigator.pop(dialogContext); // Close dialog
               context.read<DriverHomeProvider>().clearData();
               await authProvider.logout();
-              if (context.mounted) {
-                Navigator.pushReplacementNamed(context, '/login');
-              }
+              navigator.pushNamedAndRemoveUntil('/login', (route) => false);
             },
             child: Text('Logout', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
           ),

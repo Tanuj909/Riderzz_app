@@ -1782,6 +1782,7 @@ class _DriverBookingDetailsScreenState
                                             content: Text('Booking accepted!'),
                                           ),
                                         );
+                                        return true;
                                       } else if (!success && mounted) {
                                         final errorMsg = driverProvider.bookingsError ?? '';
                                         final isLowBalance = errorMsg.toLowerCase().contains('wallet') ||
@@ -1790,19 +1791,16 @@ class _DriverBookingDetailsScreenState
                                         if (isLowBalance) {
                                           _showLowBalanceDialog(context);
                                         } else {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
+                                          ScaffoldMessenger.of(context).showSnackBar(
                                             SnackBar(
-                                              content: Text(
-                                                driverProvider.bookingsError ??
-                                                    'Failed to accept booking',
-                                              ),
+                                              content: Text(errorMsg.isEmpty ? 'Failed to accept booking' : errorMsg),
                                               backgroundColor: Colors.redAccent,
                                             ),
                                           );
                                         }
+                                        return false;
                                       }
+                                      return false;
                                     },
                                   ),
                                 ],
@@ -1980,6 +1978,7 @@ class _DriverBookingDetailsScreenState
                                             await _loadFreshBookingDetails(
                                               force: true,
                                             );
+                                            return true;
                                           } else if (!success && mounted) {
                                             ScaffoldMessenger.of(
                                               context,
@@ -1994,7 +1993,9 @@ class _DriverBookingDetailsScreenState
                                                     Colors.redAccent,
                                               ),
                                             );
+                                            return false;
                                           }
+                                          return false;
                                         },
                                       ),
                                       const SizedBox(height: 8),
@@ -2204,6 +2205,7 @@ class _DriverBookingDetailsScreenState
                                                 await _loadFreshBookingDetails(
                                                   force: true,
                                                 );
+                                                return true;
                                               } else if (!success && mounted) {
                                                 ScaffoldMessenger.of(
                                                   context,
@@ -2218,7 +2220,9 @@ class _DriverBookingDetailsScreenState
                                                         Colors.redAccent,
                                                   ),
                                                 );
+                                                return false;
                                               }
+                                              return false;
                                             },
                                           ),
                                           const SizedBox(height: 8),
@@ -2344,7 +2348,7 @@ class _DriverBookingDetailsScreenState
                                             ],
                                           ),
                                         );
-                                        if (confirm != true) return;
+                                        if (confirm != true) return false;
                                       }
 
                                       final success = await driverProvider
@@ -2359,6 +2363,7 @@ class _DriverBookingDetailsScreenState
                                         await _loadFreshBookingDetails(
                                           force: true,
                                         );
+                                        return true;
                                       } else if (!success && mounted) {
                                         ScaffoldMessenger.of(
                                           context,
@@ -2371,7 +2376,9 @@ class _DriverBookingDetailsScreenState
                                             backgroundColor: Colors.redAccent,
                                           ),
                                         );
+                                        return false;
                                       }
+                                      return false;
                                     },
                                   ),
                                 ],
@@ -3125,7 +3132,7 @@ class _DriverBookingDetailsScreenState
 
 class SwipeSlider extends StatefulWidget {
   final String text;
-  final VoidCallback onSwipeComplete;
+  final Future<bool> Function() onSwipeComplete;
   final bool isLoading;
 
   const SwipeSlider({
@@ -3216,14 +3223,20 @@ class _SwipeSliderState extends State<SwipeSlider> {
                         _thumbPosition = maxDistance;
                     });
                   },
-                  onHorizontalDragEnd: (details) {
+                  onHorizontalDragEnd: (details) async {
                     if (_isCompleted || widget.isLoading) return;
                     if (_thumbPosition >= maxDistance * 0.85) {
                       setState(() {
                         _thumbPosition = maxDistance;
                         _isCompleted = true;
                       });
-                      widget.onSwipeComplete();
+                      final success = await widget.onSwipeComplete();
+                      if (success != true && mounted) {
+                        setState(() {
+                          _thumbPosition = 0;
+                          _isCompleted = false;
+                        });
+                      }
                     } else {
                       setState(() {
                         _thumbPosition = 0;

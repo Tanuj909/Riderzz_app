@@ -227,6 +227,23 @@ class DriverRemoteDataSource {
     }
   }
 
+  Future<BookingModel?> fetchActiveBooking() async {
+    try {
+      final response = await _apiClient.get(ApiConstants.driverActiveBooking);
+      if (response.data != null && response.data['data'] != null) {
+        return BookingModel.fromJson(Map<String, dynamic>.from(response.data['data']));
+      }
+      return null;
+    } on ApiException catch (e) {
+      if (e.statusCode == 404 || e.message.toLowerCase().contains('not found')) {
+        return null;
+      }
+      throw Exception(e.message);
+    } catch (e) {
+      throw Exception('An unexpected error occurred');
+    }
+  }
+
   Future<List<BookingModel>> fetchDriverBookings({int page = 0, int size = 20}) async {
     final response = await _apiClient.get('${ApiConstants.driverBookings}?page=$page&size=$size');
     final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);

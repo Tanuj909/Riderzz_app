@@ -96,6 +96,10 @@ class DriverRepository {
     return await _remoteDataSource.getPrimaryBankAccount();
   }
 
+  Future<BookingModel?> getActiveBooking() async {
+    return await _remoteDataSource.fetchActiveBooking();
+  }
+
   Future<List<BookingModel>> getDriverBookings({int page = 0, int size = 20}) async {
     return await _remoteDataSource.fetchDriverBookings(page: page, size: size);
   }
