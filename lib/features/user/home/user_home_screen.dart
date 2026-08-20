@@ -18,6 +18,8 @@ class UserHomeScreen extends StatefulWidget {
 
 class _UserHomeScreenState extends State<UserHomeScreen> {
   int _currentIndex = 0;
+  final List<bool> _visitedTabs = [true, false, false, false, false];
+
 
   String _getInitials(String? name) {
     if (name == null || name.trim().isEmpty) return 'U';
@@ -80,16 +82,19 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                       // Intentionally empty. No background API calls or tab switches.
                     },
                   ),
-                  const UserBookingsPage(),
-                  const AddressListScreen(showBackButton: false),
-                  const SavedRouteListScreen(showBackButton: false),
-                  UserAccountPage(
-                    onNavigateToHistory: () {
-                      setState(() {
-                        _currentIndex = 1;
-                      });
-                    },
-                  ),
+                  _visitedTabs[1] ? const UserBookingsPage() : const SizedBox.shrink(),
+                  _visitedTabs[2] ? const AddressListScreen(showBackButton: false) : const SizedBox.shrink(),
+                  _visitedTabs[3] ? const SavedRouteListScreen(showBackButton: false) : const SizedBox.shrink(),
+                  _visitedTabs[4]
+                      ? UserAccountPage(
+                          onNavigateToHistory: () {
+                            setState(() {
+                              _currentIndex = 1;
+                              _visitedTabs[1] = true;
+                            });
+                          },
+                        )
+                      : const SizedBox.shrink(),
                 ],
               ),
             ),
@@ -101,6 +106,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         onTap: (index) {
           setState(() {
             _currentIndex = index;
+            _visitedTabs[index] = true;
           });
           if (index == 0) {
             context.read<BookingProvider>().fetchCurrentBookings();

@@ -40,8 +40,7 @@ class UserHomePage extends StatefulWidget {
 class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   Map<String, dynamic>? _selectedRoute;
-  final Map<int, bool> _fastDeliveryAvailability = {};
-  bool _isFastDeliveryLoading = false;
+
   StreamSubscription<NotificationModel>? _notificationSubscription;
   bool _isFetchingFromWebSocket = false;
 
@@ -58,44 +57,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
     }
   }
 
-  Future<void> _checkFastDeliveryAvailability() async {
-    if (mounted) {
-      setState(() {
-        _isFastDeliveryLoading = true;
-      });
-    }
-    try {
-      final vehiclesProvider = Provider.of<AdminVehiclesProvider>(context, listen: false);
-      final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
-      
-      if (vehiclesProvider.vehicleTypes.isEmpty) {
-        await vehiclesProvider.fetchVehicleTypes();
-      }
 
-      final futures = vehiclesProvider.vehicleTypes.map((vehicle) async {
-        try {
-          final tier = await bookingProvider.getApplicablePricingTier(vehicle.id, 5.0);
-          if (tier != null) {
-            _fastDeliveryAvailability[vehicle.id] = tier.fastDeliveryEnabled;
-          } else {
-            _fastDeliveryAvailability[vehicle.id] = false;
-          }
-        } catch (e) {
-          _fastDeliveryAvailability[vehicle.id] = false;
-        }
-      }).toList();
-
-      await Future.wait(futures);
-    } catch (e) {
-      debugPrint('Error checking fast delivery availability: $e');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isFastDeliveryLoading = false;
-        });
-      }
-    }
-  }
 
   @override
   void initState() {
@@ -106,9 +68,8 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
     )..repeat();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<SavedRouteProvider>(context, listen: false).fetchSavedRoutes();
       Provider.of<BookingProvider>(context, listen: false).fetchCurrentBookings();
-      _checkFastDeliveryAvailability();
+      Provider.of<AdminVehiclesProvider>(context, listen: false).fetchVehicleTypes();
     });
 
     final socketService = context.read<BroadcastSocketService>();
@@ -424,8 +385,8 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
     return RefreshIndicator(
       onRefresh: () async {
         await Future.wait([
-          Provider.of<SavedRouteProvider>(context, listen: false).fetchSavedRoutes(),
           Provider.of<BookingProvider>(context, listen: false).fetchCurrentBookings(),
+          Provider.of<AdminVehiclesProvider>(context, listen: false).fetchVehicleTypes(),
         ]);
       },
       color: const Color(0xFFE31C2E),
@@ -1328,14 +1289,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                   else
                     Builder(
                       builder: (context) {
-                        final sortedVehicles = List<VehicleTypeModel>.from(vehiclesProvider.vehicleTypes)
-                          ..sort((a, b) {
-                            final aFast = _fastDeliveryAvailability[a.id] == true;
-                            final bFast = _fastDeliveryAvailability[b.id] == true;
-                            if (aFast && !bFast) return -1;
-                            if (!aFast && bFast) return 1;
-                            return 0;
-                          });
+                        final sortedVehicles = List<VehicleTypeModel>.from(vehiclesProvider.vehicleTypes);
 
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1352,11 +1306,9 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                               itemCount: sortedVehicles.length,
                               itemBuilder: (context, idx) {
                                 final vehicle = sortedVehicles[idx];
-                                final isFastAvailable = _fastDeliveryAvailability[vehicle.id] == true;
-                                
                                 return GestureDetector(
                                   onTap: () {
-                                    if (isFastAvailable) {
+                                    if (vehicle.isFastDelivery == true) {
                                       _showDeliveryOptionDialog(vehicle);
                                     } else {
                                       _showNewBookingModal(
@@ -1382,7 +1334,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                       clipBehavior: Clip.none,
                                       children: [
                                         Positioned.fill(
-                                          child: isFastAvailable
+                                          child: vehicle.isFastDelivery == true
                                               ? ShiningContainer(
                                                   isSelected: false,
                                                   child: Container(
@@ -1471,7 +1423,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                                   ),
                                                 ),
                                         ),
-                                        if (isFastAvailable)
+                                        if (vehicle.isFastDelivery == true)
                                           const Positioned(
                                             top: -8,
                                             right: 16,

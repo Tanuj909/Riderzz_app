@@ -13,6 +13,7 @@ class VehicleTypeModel {
   final String? iconUrl;
   final bool? tollEnabled;
   final bool? dynamicPricingEnabled;
+  final bool? isFastDelivery;
 
   VehicleTypeModel({
     required this.id,
@@ -29,6 +30,7 @@ class VehicleTypeModel {
     this.iconUrl,
     this.tollEnabled,
     this.dynamicPricingEnabled,
+    this.isFastDelivery,
   });
 
   factory VehicleTypeModel.fromJson(Map<String, dynamic> json) {
@@ -47,6 +49,7 @@ class VehicleTypeModel {
       iconUrl: json['iconUrl'] as String?,
       tollEnabled: json['tollEnabled'] as bool?,
       dynamicPricingEnabled: json['dynamicPricingEnabled'] as bool?,
+      isFastDelivery: json['isFastDelivery'] as bool?,
     );
   }
 
@@ -66,6 +69,7 @@ class VehicleTypeModel {
       'iconUrl': iconUrl,
       'tollEnabled': tollEnabled,
       'dynamicPricingEnabled': dynamicPricingEnabled,
+      'isFastDelivery': isFastDelivery,
     };
   }
 }
