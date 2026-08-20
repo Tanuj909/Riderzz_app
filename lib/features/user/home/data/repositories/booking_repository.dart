@@ -46,6 +46,16 @@ class BookingRepository {
     );
   }
 
+  Future<Map<String, dynamic>?> getTimeBasedPricing(
+    int vehicleTypeId,
+    String time,
+  ) async {
+    return await _remoteDataSource.getTimeBasedPricing(
+      vehicleTypeId,
+      time,
+    );
+  }
+
   Future<bool> submitRating({
     required int bookingId,
     required String ratingType,

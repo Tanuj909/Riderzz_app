@@ -556,65 +556,77 @@ class _UserBookingsPageState extends State<UserBookingsPage> {
             ),
             // Pagination Controls
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              decoration: BoxDecoration(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: const BoxDecoration(
                 color: Colors.white,
-                border: Border(top: BorderSide(color: Colors.grey.shade200)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: provider.currentPage > 0
-                        ? () {
-                            provider.fetchBookings(page: provider.currentPage - 1);
-                          }
-                        : null,
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 14),
-                    label: Text('Previous', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF1F5F9),
-                      foregroundColor: const Color(0xFF475569),
-                      disabledBackgroundColor: const Color(0xFFF8FAFC),
-                      disabledForegroundColor: const Color(0xFFCBD5E1),
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                  Text(
-                    'Page ${provider.currentPage + 1}',
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF475569),
-                      fontSize: 14,
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: provider.hasMore
-                        ? () {
-                            provider.fetchBookings(page: provider.currentPage + 1);
-                          }
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFC62E42),
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: const Color(0xFFF1F5F9),
-                      disabledForegroundColor: const Color(0xFFCBD5E1),
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('Next', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
-                        const SizedBox(width: 6),
-                        const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-                      ],
-                    ),
-                  ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0x08000000), // Very subtle shadow
+                    blurRadius: 10,
+                    offset: Offset(0, -4),
+                  )
                 ],
+              ),
+              child: SafeArea(
+                top: false,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: provider.currentPage > 0
+                          ? () {
+                              provider.fetchBookings(page: provider.currentPage - 1);
+                            }
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF1F5F9),
+                        foregroundColor: const Color(0xFF475569),
+                        disabledBackgroundColor: const Color(0xFFF8FAFC),
+                        disabledForegroundColor: const Color(0xFFCBD5E1),
+                        elevation: 0,
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(40, 40),
+                        shape: const CircleBorder(),
+                      ),
+                      child: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
+                    ),
+                    const SizedBox(width: 24),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'Page ${provider.currentPage + 1}',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF121214),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    ElevatedButton(
+                      onPressed: provider.hasMore
+                          ? () {
+                              provider.fetchBookings(page: provider.currentPage + 1);
+                            }
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFC62E42),
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: const Color(0xFFF1F5F9),
+                        disabledForegroundColor: const Color(0xFFCBD5E1),
+                        elevation: 0,
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(40, 40),
+                        shape: const CircleBorder(),
+                      ),
+                      child: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

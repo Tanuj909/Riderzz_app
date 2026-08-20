@@ -32,6 +32,7 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
   int? _durationMin;
   String? _encodedPolyline;
   final Map<int, PricingTierModel> _applicablePrices = {};
+  final Map<int, Map<String, dynamic>> _timeBasedPrices = {};
   bool _fastDeliverySelected = false;
 
   @override
@@ -166,6 +167,9 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
       final vehiclesProvider = Provider.of<AdminVehiclesProvider>(context, listen: false);
       final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
       
+      final now = DateTime.now();
+      final timeString = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
       final futures = vehiclesProvider.vehicleTypes.map((vehicle) async {
         try {
           final tier = await bookingProvider.getApplicablePricingTier(vehicle.id, distance);
@@ -174,6 +178,15 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
           }
         } catch (e) {
           debugPrint('Error fetching applicable pricing tier for vehicle ${vehicle.id}: $e');
+        }
+
+        try {
+          final tbp = await bookingProvider.getTimeBasedPricing(vehicle.id, timeString);
+          if (tbp != null && tbp['enabled'] == true) {
+            _timeBasedPrices[vehicle.id] = tbp;
+          }
+        } catch (e) {
+          debugPrint('Error fetching time based pricing for vehicle ${vehicle.id}: $e');
         }
       }).toList();
 
@@ -318,7 +331,8 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                   final double distance = _distanceKm ?? 0.0;
                   final double distanceFare = (distance * perKmRate).roundToDouble();
                   final double fastDeliveryCharge = tier?.fastDeliveryEnabled == true ? (tier?.fastDeliveryCharge ?? 0.0) : 0.0;
-                  final double totalFare = baseFare + distanceFare + (isSelected && _fastDeliverySelected && tier?.fastDeliveryEnabled == true ? fastDeliveryCharge : 0.0);
+                  final double timeBasedExtraCharge = (_timeBasedPrices[vehicle.id]?['extraCharge'] as num?)?.toDouble() ?? 0.0;
+                  final double totalFare = baseFare + distanceFare + timeBasedExtraCharge + (isSelected && _fastDeliverySelected && tier?.fastDeliveryEnabled == true ? fastDeliveryCharge : 0.0);
 
                   final cardWidget = Container(
                     margin: const EdgeInsets.only(bottom: 10, top: 4),
@@ -617,6 +631,8 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                                 updatedBookingData['estimatedDurationMin'] = _durationMin;
                                 updatedBookingData['routePolyline'] = _encodedPolyline;
                                 updatedBookingData['applicablePricingTier'] = tier;
+                                updatedBookingData['timeBasedPricing'] = _timeBasedPrices[selectedVehicle.id];
+                                updatedBookingData['timeBasedExtraCharge'] = (_timeBasedPrices[selectedVehicle.id]?['extraCharge'] as num?)?.toDouble() ?? 0.0;
                                 updatedBookingData['fastDelivery'] = _fastDeliverySelected && tier?.fastDeliveryEnabled == true;
                                 updatedBookingData['fastDeliveryCharge'] = tier?.fastDeliveryEnabled == true ? tier?.fastDeliveryCharge : null;
 

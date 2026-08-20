@@ -250,27 +250,29 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                         ],
                       ),
                       if (booking.fastDelivery && booking.fastDeliveryCharge != null) ...[
+                        const SizedBox(height: 16),
+                        const Divider(height: 1, thickness: 1, color: Color(0xFFF1F1F4)),
+                        const SizedBox(height: 16),
+                        Text(
+                          'SURCHARGES & ADD-ONS',
+                          style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF6C6F79), letterSpacing: 0.5),
+                        ),
                         const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF8EC),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.orange.withOpacity(0.2)),
-                          ),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Row(
                                 children: [
-                                  const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 16),
+                                  const Icon(Icons.flash_on_rounded, size: 16, color: Colors.orange),
                                   const SizedBox(width: 6),
                                   Text(
-                                    '⚡ Fast Delivery Charge',
+                                    'Fast Delivery',
                                     style: GoogleFonts.outfit(
-                                      fontWeight: FontWeight.bold,
                                       fontSize: 13,
-                                      color: const Color(0xFFE67E22),
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF121214),
                                     ),
                                   ),
                                 ],
@@ -278,33 +280,38 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                               Text(
                                 '₹${booking.fastDeliveryCharge!.toStringAsFixed(2)}',
                                 style: GoogleFonts.outfit(
-                                  fontWeight: FontWeight.bold,
                                   fontSize: 13,
-                                  color: const Color(0xFFE67E22),
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF121214),
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ],
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFE7E7EB)),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('Total Charged Fare', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13, color: const Color(0xFF121214))),
-                            Text(
-                              '₹${booking.totalFare.toStringAsFixed(2)}',
-                              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: const Color(0xFFE31C2E)),
+                      const SizedBox(height: 16),
+                      const Divider(height: 1, thickness: 1, color: Color(0xFFE7E7EB)),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Total Charged Fare',
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: const Color(0xFF121214),
                             ),
-                          ],
-                        ),
+                          ),
+                          Text(
+                            '₹${booking.totalFare.toStringAsFixed(2)}',
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: const Color(0xFFE31C2E),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 20),
                       if (booking.status.toUpperCase() == 'DRIVER_ARRIVED') ...[

@@ -127,6 +127,30 @@ class BookingRemoteDataSource {
     return PricingTierModel.fromJson(data);
   }
 
+  Future<Map<String, dynamic>?> getTimeBasedPricing(
+    int vehicleTypeId,
+    String time,
+  ) async {
+    try {
+      final response = await _apiClient.get(
+        '/time-based-pricing/resolve',
+        queryParameters: {
+          'vehicleTypeId': vehicleTypeId.toString(),
+          'time': time,
+        },
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+        if (resBody['data'] != null) {
+          return Map<String, dynamic>.from(resBody['data']);
+        }
+      }
+    } catch (e) {
+      // Ignored or logged
+    }
+    return null;
+  }
+
   Future<bool> submitRating({
     required int bookingId,
     required String ratingType,

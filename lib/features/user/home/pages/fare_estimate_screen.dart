@@ -26,6 +26,7 @@ class _RefundStats {
   final int time;
   final double baseFare;
   final double distanceFare;
+  final double timeBasedExtraCharge;
   final double finalFare;
   final String? encodedPolyline;
 
@@ -34,6 +35,7 @@ class _RefundStats {
     required this.time,
     required this.baseFare,
     required this.distanceFare,
+    required this.timeBasedExtraCharge,
     required this.finalFare,
     this.encodedPolyline,
   });
@@ -168,8 +170,10 @@ class _FareEstimateViewState extends State<FareEstimateView> {
 
     final bool fastDelivery = widget.bookingData['fastDelivery'] == true;
     final double fastDeliveryCharge = widget.bookingData['fastDeliveryCharge'] as double? ?? 0.0;
+    
+    final double timeBasedExtraCharge = widget.bookingData['timeBasedExtraCharge'] as double? ?? 0.0;
 
-    double finalFare = baseFare + distanceFare;
+    double finalFare = baseFare + distanceFare + timeBasedExtraCharge;
     if (fastDelivery) {
       finalFare += fastDeliveryCharge;
     }
@@ -180,6 +184,7 @@ class _FareEstimateViewState extends State<FareEstimateView> {
         time: estTime,
         baseFare: baseFare,
         distanceFare: distanceFare,
+        timeBasedExtraCharge: timeBasedExtraCharge,
         finalFare: finalFare,
         encodedPolyline: encodedPolyline,
       );
@@ -251,21 +256,77 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                                       ),
                                     ],
                                   ),
-                                  if (widget.bookingData['fastDelivery'] == true) ...[
-                                    const SizedBox(height: 12),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFFF8EC),
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(color: Colors.orange.withOpacity(0.2)),
-                                      ),
-                                      child: _buildFareRow(
-                                        '⚡ Fast Delivery Charge',
-                                        widget.bookingData['fastDeliveryCharge'] as double? ?? 0.0,
-                                        isHighlighted: true,
-                                      ),
+                                  if (_stats!.timeBasedExtraCharge > 0 || widget.bookingData['fastDelivery'] == true) ...[
+                                    const SizedBox(height: 16),
+                                    const Divider(height: 1, thickness: 1, color: Color(0xFFF1F1F4)),
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      'Surcharges & Add-ons',
+                                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFA2A5AE)),
                                     ),
+                                    const SizedBox(height: 12),
+                                    if (_stats!.timeBasedExtraCharge > 0)
+                                      Padding(
+                                        padding: const EdgeInsets.only(bottom: 10),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.trending_up_rounded, size: 16, color: Color(0xFFE31C2E)),
+                                                const SizedBox(width: 6),
+                                                const Text(
+                                                  'Price Surge',
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Color(0xFF121214),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            Text(
+                                              '₹${_stats!.timeBasedExtraCharge.toStringAsFixed(2)}',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFF121214),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    if (widget.bookingData['fastDelivery'] == true)
+                                      Padding(
+                                        padding: const EdgeInsets.only(bottom: 6),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.flash_on_rounded, size: 16, color: Colors.orange),
+                                                const SizedBox(width: 6),
+                                                const Text(
+                                                  'Fast Delivery',
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Color(0xFF121214),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            Text(
+                                              '₹${(widget.bookingData['fastDeliveryCharge'] as double? ?? 0.0).toStringAsFixed(2)}',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFF121214),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                   ],
                                   const SizedBox(height: 16),
                                   const Divider(height: 1, thickness: 1, color: Color(0xFFE7E7EB)),

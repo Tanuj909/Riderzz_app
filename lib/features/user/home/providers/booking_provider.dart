@@ -173,6 +173,21 @@ class BookingProvider extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>?> getTimeBasedPricing(
+    int vehicleTypeId,
+    String time,
+  ) async {
+    try {
+      return await _repository.getTimeBasedPricing(
+        vehicleTypeId,
+        time,
+      );
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      return null;
+    }
+  }
+
   Future<bool> submitRating({
     required int bookingId,
     required String ratingType,
