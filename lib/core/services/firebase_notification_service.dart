@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:riderzz_app/features/notification/data/repositories/notification_repository.dart';
+import 'package:riderzz_app/services/notification/local_notification_service.dart';
 
 /// Phase 1 + Phase 2 – Firebase Cloud Messaging Service
 ///
@@ -148,7 +149,14 @@ class FirebaseNotificationService {
       debugPrint('Data       : ${message.data}');
       debugPrint('=============================================');
 
-      // TODO (Phase 3): Show a local notification using LocalNotificationService
+      if (Platform.isAndroid && message.notification != null) {
+        LocalNotificationService.showGenericNotification(
+          id: message.hashCode,
+          title: message.notification!.title ?? 'New Notification',
+          body: message.notification!.body ?? '',
+          payload: message.data.toString(),
+        );
+      }
     });
 
     // ── Notification tap – app was in background ────────────────────────
