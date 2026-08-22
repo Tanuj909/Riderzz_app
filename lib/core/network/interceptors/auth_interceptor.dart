@@ -171,8 +171,22 @@ class AuthInterceptor extends Interceptor {
           if (data != null) {
             final newAccessToken = data['accessToken'] as String?;
             final newRefreshToken = data['refreshToken'] as String?;
-            final role = data['role'] as String? ?? 'CUSTOMER';
-            final userId = data['userId'] as int? ?? 0;
+            
+            final existingRole = await _storageService.getRole();
+            final existingUserIdStr = await _storageService.getUserId();
+            final existingUserId = int.tryParse(existingUserIdStr ?? '') ?? 0;
+
+            final role = data['role']?.toString() ?? existingRole ?? 'CUSTOMER';
+            
+            final rawUserId = data['userId'];
+            int userId = existingUserId;
+            if (rawUserId != null) {
+              if (rawUserId is int) {
+                userId = rawUserId;
+              } else {
+                userId = int.tryParse(rawUserId.toString()) ?? existingUserId;
+              }
+            }
 
             if (newAccessToken != null && newAccessToken.isNotEmpty) {
               debugPrint('AuthInterceptor: Token refresh succeeded.');

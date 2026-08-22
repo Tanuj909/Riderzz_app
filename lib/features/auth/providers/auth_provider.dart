@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:dio/dio.dart';
+import 'package:riderzz_app/core/network/api_constants.dart';
 import 'package:riderzz_app/core/models/user_model.dart';
 import 'package:riderzz_app/core/models/customer_profile_model.dart';
 import 'package:riderzz_app/core/storage/secure_storage_service.dart';
@@ -162,11 +164,86 @@ class AuthProvider extends ChangeNotifier {
 
   /// Try local storage login auto recovery
   Future<bool> tryAutoLogin() async {
-    final token = await _storageService.getToken();
+    String? token = await _storageService.getToken();
     if (token != null && JwtHelper.isTokenExpired(token)) {
-      debugPrint('Token has expired, logging out user.');
-      await logout();
-      return false;
+      debugPrint('Token has expired locally during auto-login. Attempting manual refresh.');
+      final refreshToken = await _storageService.getRefreshToken();
+      if (refreshToken == null || refreshToken.isEmpty) {
+        debugPrint('No refresh token available. Logging out.');
+        await logout();
+        return false;
+      }
+      
+      try {
+        final refreshDio = Dio(
+          BaseOptions(
+            baseUrl: ApiConstants.baseUrl,
+            connectTimeout: const Duration(seconds: 15),
+            receiveTimeout: const Duration(seconds: 15),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+          ),
+        );
+        
+        final response = await refreshDio.post(
+          ApiConstants.refreshToken,
+          data: {'refreshToken': refreshToken},
+        );
+
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          final resData = response.data;
+          final data = resData['data'] != null && resData['data'] is Map ? resData['data'] : resData;
+          if (data != null) {
+            final newAccessToken = data['accessToken'] as String?;
+            final newRefreshToken = data['refreshToken'] as String?;
+            
+            final existingRole = await _storageService.getRole();
+            final existingUserIdStr = await _storageService.getUserId();
+            final existingUserId = int.tryParse(existingUserIdStr ?? '') ?? 0;
+
+            final role = data['role']?.toString() ?? existingRole ?? 'CUSTOMER';
+            
+            final rawUserId = data['userId'];
+            int userId = existingUserId;
+            if (rawUserId != null) {
+              if (rawUserId is int) {
+                userId = rawUserId;
+              } else {
+                userId = int.tryParse(rawUserId.toString()) ?? existingUserId;
+              }
+            }
+
+            if (newAccessToken != null && newAccessToken.isNotEmpty) {
+              debugPrint('Startup Token refresh succeeded.');
+              await _storageService.saveAuthData(
+                token: newAccessToken,
+                refreshToken: newRefreshToken ?? refreshToken,
+                role: role,
+                userId: userId,
+              );
+              token = newAccessToken; // Update local variable to proceed
+            } else {
+               debugPrint('Startup Token refresh failed: newAccessToken is null.');
+               await logout();
+               return false;
+            }
+          } else {
+            debugPrint('Startup Token refresh failed: data is null.');
+            await logout();
+            return false;
+          }
+        } else {
+          debugPrint('Startup Token refresh failed: invalid status code.');
+          await logout();
+          return false;
+        }
+      } catch (e) {
+        debugPrint('Startup Token refresh API error: $e');
+        await logout();
+        return false;
+      }
     }
 
     final role = await _storageService.getRole();
