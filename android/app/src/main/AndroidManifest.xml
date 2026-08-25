@@ -49,6 +49,11 @@
             android:name="com.pravera.flutter_foreground_task.NOTIFICATION_ICON"
             android:resource="@drawable/ic_overlay_notification" />
 
+        <!-- Firebase Default Notification Channel -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="booking_requests_high_v1" />
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

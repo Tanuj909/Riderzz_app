@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:riderzz_app/core/network/api_constants.dart';
+import 'package:riderzz_app/core/services/notification_deduplicator.dart';
 import 'package:riderzz_app/core/storage/secure_storage_service.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/notification/data/models/notification_model.dart';
@@ -10,22 +12,30 @@ import 'package:stomp_dart_client/stomp_dart_client.dart';
 
 class BroadcastResponse {
   final BookingModel booking;
+    final String? notificationId;
   final int? expiresInSeconds;
 
-  BroadcastResponse({required this.booking, this.expiresInSeconds});
+  BroadcastResponse({
+    required this.booking,
+    this.expiresInSeconds,
+    this.notificationId,
+  });
 
-  factory BroadcastResponse.fromJson(Map<String, dynamic> json) {
+factory BroadcastResponse.fromJson(Map<String, dynamic> json) {
     final data = json['data'];
+
     final bookingJson = json['booking'] is Map<String, dynamic>
         ? json['booking'] as Map<String, dynamic>
         : data is List && data.isNotEmpty && data.first is Map
         ? Map<String, dynamic>.from(data.first as Map)
         : json;
+
     return BroadcastResponse(
       booking: BookingModel.fromJson(bookingJson),
       expiresInSeconds:
           json['expiresInSeconds'] as int? ??
           bookingJson['expiresInSeconds'] as int?,
+      notificationId: json['notificationId']?.toString(),
     );
   }
 }
@@ -174,12 +184,37 @@ class BroadcastSocketService {
             final jsonMap = json.decode(frame.body!) as Map<String, dynamic>;
             final response = BroadcastResponse.fromJson(jsonMap);
             debugPrint("Booking ID: ${response.booking.id}");
+debugPrint(
+  "🔵 WS notificationId: ${response.notificationId}",
+);
+
+            debugPrint("Booking ID: ${response.booking.id}");
             _broadcastController.add(response);
-            unawaited(
-              LocalNotificationService.showBookingNotification(
-                booking: response.booking,
-              ),
-            );
+            
+            if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+              final id = response.notificationId;
+              debugPrint('[DEDUP] WS Broadcast notificationId: $id');
+              
+              final shouldShow = NotificationDeduplicator.shouldShow(
+                notificationId: id,
+                title: 'New Booking',
+                body: 'Booking ID: ${response.booking.id}',
+              );
+
+              if (shouldShow) {
+                debugPrint('[DEDUP] Showing notificationId: $id');
+                unawaited(
+                  LocalNotificationService.showBookingNotification(
+                    booking: response.booking,
+                    notificationId: id,
+                  ),
+                );
+              } else {
+                debugPrint('[DEDUP] Suppressed duplicate notificationId: $id');
+              }
+            } else {
+              debugPrint('[WS] Ignored broadcast notification display (App is not in foreground)');
+            }
           } catch (e) {
             debugPrint("JSON Parse Error: $e");
             debugPrint(frame.body);
@@ -187,6 +222,7 @@ class BroadcastSocketService {
         }
       },
     );
+    
     debugPrint("Subscribed to /user/queue/broadcasts");
 
     _client?.subscribe(
@@ -201,14 +237,41 @@ class BroadcastSocketService {
             final notification = NotificationModel.fromJson(jsonMap);
             debugPrint("Notification ID: ${notification.id}");
             _notificationController.add(notification);
-            unawaited(
-              LocalNotificationService.showGenericNotification(
-                id: notification.id,
+            
+            if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+              final id = notification.notificationId;
+              debugPrint('[DEDUP] WS General notificationId: $id');
+
+              final shouldShow = NotificationDeduplicator.shouldShow(
+                notificationId: id,
                 title: notification.title,
                 body: notification.message,
-                payload: notification.actionUrl,
-              ),
-            );
+              );
+              
+              if (shouldShow) {
+                debugPrint('[DEDUP] Showing notificationId: $id');
+                
+                int localId = notification.id;
+                if (id != null && id.isNotEmpty) {
+                  localId = LocalNotificationService.generateLocalId(id);
+                  debugPrint('[LOCAL_ID] notificationId: $id');
+                  debugPrint('[LOCAL_ID] localNotificationId: $localId');
+                }
+                
+                unawaited(
+                  LocalNotificationService.showGenericNotification(
+                    id: localId,
+                    title: notification.title,
+                    body: notification.message,
+                    payload: notification.actionUrl,
+                  ),
+                );
+              } else {
+                debugPrint('[DEDUP] Suppressed duplicate notificationId: $id');
+              }
+            } else {
+              debugPrint('[WS] Ignored notification display (App is not in foreground)');
+            }
           } catch (e) {
             debugPrint("Notification Parse Error: $e");
             debugPrint(frame.body);

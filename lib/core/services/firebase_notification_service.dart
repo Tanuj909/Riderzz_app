@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:riderzz_app/features/notification/data/repositories/notification_repository.dart';
 import 'package:riderzz_app/services/notification/local_notification_service.dart';
+import 'package:riderzz_app/core/services/notification_deduplicator.dart';
 
 /// Phase 1 + Phase 2 – Firebase Cloud Messaging Service
 ///
@@ -128,9 +129,9 @@ class FirebaseNotificationService {
     if (!Platform.isIOS) return;
 
     await _messaging.setForegroundNotificationPresentationOptions(
-      alert: true,
+      alert: false, // Disabled so we can manually handle and deduplicate in foreground
       badge: true,
-      sound: true,
+      sound: false,
     );
     debugPrint('[FCM] iOS foreground presentation options set.');
   }
@@ -147,15 +148,41 @@ class FirebaseNotificationService {
       debugPrint('Title      : ${message.notification?.title}');
       debugPrint('Body       : ${message.notification?.body}');
       debugPrint('Data       : ${message.data}');
+        debugPrint(
+    "🟢 FCM notificationId: ${message.data['notificationId']}",
+  );
       debugPrint('=============================================');
 
-      if (Platform.isAndroid && message.notification != null) {
-        LocalNotificationService.showGenericNotification(
-          id: message.hashCode,
-          title: message.notification!.title ?? 'New Notification',
-          body: message.notification!.body ?? '',
-          payload: message.data.toString(),
-        );
+      if (message.notification != null) {
+        final title = message.notification!.title ?? 'New Notification';
+        final body = message.notification!.body ?? '';
+        final id = message.data['notificationId']?.toString();
+
+        debugPrint('[DEDUP] FCM notificationId: $id');
+
+        if (NotificationDeduplicator.shouldShow(
+          notificationId: id,
+          title: title,
+          body: body,
+        )) {
+          debugPrint('[DEDUP] Showing notificationId: $id');
+          
+          int localId = message.hashCode;
+          if (id != null && id.isNotEmpty) {
+            localId = LocalNotificationService.generateLocalId(id);
+            debugPrint('[LOCAL_ID] notificationId: $id');
+            debugPrint('[LOCAL_ID] localNotificationId: $localId');
+          }
+          
+          LocalNotificationService.showGenericNotification(
+            id: localId,
+            title: title,
+            body: body,
+            payload: message.data.toString(),
+          );
+        } else {
+          debugPrint('[DEDUP] Suppressed duplicate notificationId: $id');
+        }
       }
     });
 

@@ -8,6 +8,7 @@ class NotificationModel {
   final String? bookingStatus;
   final bool readFlag;
   final String createdAt;
+  final String? notificationId;
 
   NotificationModel({
     required this.id,
@@ -19,6 +20,7 @@ class NotificationModel {
     this.bookingStatus,
     this.readFlag = false,
     required this.createdAt,
+    this.notificationId,
   });
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,7 @@ class NotificationModel {
       bookingStatus: json['bookingStatus'] as String?,
       readFlag: json['readFlag'] as bool? ?? false,
       createdAt: json['createdAt'] as String? ?? '',
+      notificationId: json['notificationId']?.toString(),
     );
   }
 }

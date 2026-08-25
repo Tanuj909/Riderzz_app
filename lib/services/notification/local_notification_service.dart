@@ -6,7 +6,7 @@ import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 class LocalNotificationService {
   LocalNotificationService._();
 
-  static const _channelId = 'booking_requests';
+  static const _channelId = 'booking_requests_high_v1';
   static const _channelName = 'Booking Requests';
   static const _channelDescription =
       'Alerts for new delivery booking requests.';
@@ -14,6 +14,10 @@ class LocalNotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
   static bool _isInitialized = false;
+
+  static int generateLocalId(String notificationId) {
+    return notificationId.hashCode.abs() % (1 << 31);
+  }
 
   static Future<void> initialize() async {
     if (_isInitialized) return;
@@ -39,6 +43,8 @@ class LocalNotificationService {
         return;
       }
 
+      debugPrint('[NOTIFICATION_CHANNEL] Creating channel: $_channelId');
+      debugPrint('[NOTIFICATION_CHANNEL] Importance: HIGH');
       await androidPlugin.createNotificationChannel(
         const AndroidNotificationChannel(
           _channelId,
@@ -70,6 +76,7 @@ class LocalNotificationService {
 
   static Future<void> showBookingNotification({
     required BookingModel booking,
+    String? notificationId,
   }) async {
     if (!_isInitialized) {
       await initialize();
@@ -102,10 +109,19 @@ class LocalNotificationService {
       debugPrint('Body: $body');
       debugPrint('========================================');
 
-      await _notifications.show(
-        id: booking.id > 0
+      int localId;
+      if (notificationId != null && notificationId.isNotEmpty) {
+        localId = generateLocalId(notificationId);
+        debugPrint('[LOCAL_ID] notificationId: $notificationId');
+        debugPrint('[LOCAL_ID] localNotificationId: $localId');
+      } else {
+        localId = booking.id > 0
             ? booking.id
-            : DateTime.now().millisecondsSinceEpoch.remainder(1 << 31),
+            : DateTime.now().millisecondsSinceEpoch.remainder(1 << 31);
+      }
+
+      await _notifications.show(
+        id: localId,
         title: title,
         body: body,
         notificationDetails: const NotificationDetails(
