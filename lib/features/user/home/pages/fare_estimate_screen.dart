@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
 import 'package:riderzz_app/core/models/vehicle_type_model.dart';
 import 'package:riderzz_app/core/models/pricing_tier_model.dart';
+import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
 
 class FareEstimateView extends StatefulWidget {
   final Map<String, dynamic> bookingData;
@@ -27,8 +29,9 @@ class _RefundStats {
   final double baseFare;
   final double distanceFare;
   final double timeBasedExtraCharge;
-  final double finalFare;
   final String? encodedPolyline;
+  final PricingTierModel? tier;
+  final Map<String, dynamic>? timeBasedPricing;
 
   _RefundStats({
     required this.distance,
@@ -36,27 +39,30 @@ class _RefundStats {
     required this.baseFare,
     required this.distanceFare,
     required this.timeBasedExtraCharge,
-    required this.finalFare,
     this.encodedPolyline,
+    this.tier,
+    this.timeBasedPricing,
   });
 }
 
 class _FareEstimateViewState extends State<FareEstimateView> {
   _RefundStats? _stats;
   bool _isLoading = true;
+  bool _fastDeliverySelected = false;
 
   @override
   void initState() {
     super.initState();
+    _fastDeliverySelected = widget.bookingData['fastDelivery'] == true;
     _fetchRouteAndCalculateFare();
   }
 
-  String _getTravelMode(String vehicleName) {
-    final nameLower = vehicleName.toLowerCase();
-    if (nameLower.contains('bike') ||
-        nameLower.contains('scooty') ||
-        nameLower.contains('scooter')) {
+  String _getTravelMode(VehicleTypeModel vehicle) {
+    final cat = vehicle.category?.toUpperCase() ?? '';
+    if (cat == 'TWO_WHEELER') {
       return 'TWO_WHEELER';
+    } else if (cat == 'TRUCK') {
+      return 'TRUCK';
     }
     return 'DRIVE';
   }
@@ -82,17 +88,27 @@ class _FareEstimateViewState extends State<FareEstimateView> {
     final dropLat = widget.bookingData['dropLatitude'] as double?;
     final dropLng = widget.bookingData['dropLongitude'] as double?;
 
+    final currentTravelMode = _getTravelMode(vehicle);
+    final fetchedTravelMode = widget.bookingData['fetchedTravelMode'] as String?;
+    final fetchedPickupLat = widget.bookingData['fetchedPickupLat'] as double?;
+    final fetchedDropLat = widget.bookingData['fetchedDropLat'] as double?;
+
     debugPrint('FareEstimate: Pickup ($pickupLat, $pickupLng) → Drop ($dropLat, $dropLng)');
 
-    double distance = 8.4;
-    int estTime = 28;
-    String? encodedPolyline;
+    double distance = widget.bookingData['estimatedDistanceKm'] as double? ?? 8.4;
+    int estTime = widget.bookingData['estimatedDurationMin'] as int? ?? widget.bookingData['estimatedTimeMin'] as int? ?? 28;
+    String? encodedPolyline = widget.bookingData['routePolyline'] as String?;
 
-    if (widget.bookingData['estimatedDistanceKm'] != null) {
-      distance = widget.bookingData['estimatedDistanceKm'] as double;
-      estTime = widget.bookingData['estimatedDurationMin'] as int? ?? widget.bookingData['estimatedTimeMin'] as int? ?? 28;
-      encodedPolyline = widget.bookingData['routePolyline'] as String?;
-    } else if (pickupLat != null && pickupLng != null && dropLat != null && dropLng != null) {
+    bool shouldFetchRoute = true;
+    if (encodedPolyline != null && 
+        fetchedTravelMode == currentTravelMode && 
+        fetchedPickupLat == pickupLat && 
+        fetchedDropLat == dropLat) {
+      shouldFetchRoute = false;
+      debugPrint('FareEstimate: Using cached Google Route API response for $currentTravelMode');
+    }
+
+    if (shouldFetchRoute && pickupLat != null && pickupLng != null && dropLat != null && dropLng != null) {
       try {
         final googleApiKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
         if (googleApiKey.isNotEmpty) {
@@ -116,7 +132,7 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                   }
                 }
               },
-              "travelMode": _getTravelMode(vehicle.name),
+              "travelMode": _getTravelMode(vehicle),
               "routingPreference": "TRAFFIC_AWARE"
             },
             options: Options(
@@ -158,25 +174,39 @@ class _FareEstimateViewState extends State<FareEstimateView> {
           estTime = (distance * 3.0 + 3).round();
         }
       } catch (e) {
+        debugPrint('Error fetching exact route: $e');
         distance = _calculateHaversineDistance(pickupLat, pickupLng, dropLat, dropLng);
         estTime = (distance * 3.0 + 3).round();
       }
     }
 
-    final tier = widget.bookingData['applicablePricingTier'] as PricingTierModel?;
+    if (!mounted) return;
+
+    final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
+    
+    PricingTierModel? tier;
+    try {
+      tier = await bookingProvider.getApplicablePricingTier(vehicle.id, distance);
+    } catch (e) {
+      debugPrint('Error fetching tier in fare estimate: $e');
+    }
+
+    Map<String, dynamic>? timeBasedPricing;
+    final now = DateTime.now();
+    final timeString = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+    try {
+      final tbp = await bookingProvider.getTimeBasedPricing(vehicle.id, timeString);
+      if (tbp != null && tbp['enabled'] == true) {
+        timeBasedPricing = tbp;
+      }
+    } catch (e) {
+      debugPrint('Error fetching time based pricing: $e');
+    }
+
     final double baseFare = tier?.baseFare ?? vehicle.baseFare;
     final double perKmRate = tier?.perKmRate ?? vehicle.perKmRate;
     final double distanceFare = (distance * perKmRate).roundToDouble();
-
-    final bool fastDelivery = widget.bookingData['fastDelivery'] == true;
-    final double fastDeliveryCharge = widget.bookingData['fastDeliveryCharge'] as double? ?? 0.0;
-    
-    final double timeBasedExtraCharge = widget.bookingData['timeBasedExtraCharge'] as double? ?? 0.0;
-
-    double finalFare = baseFare + distanceFare + timeBasedExtraCharge;
-    if (fastDelivery) {
-      finalFare += fastDeliveryCharge;
-    }
+    final double timeBasedExtraCharge = (timeBasedPricing?['extraCharge'] as num?)?.toDouble() ?? 0.0;
 
     setState(() {
       _stats = _RefundStats(
@@ -185,9 +215,15 @@ class _FareEstimateViewState extends State<FareEstimateView> {
         baseFare: baseFare,
         distanceFare: distanceFare,
         timeBasedExtraCharge: timeBasedExtraCharge,
-        finalFare: finalFare,
         encodedPolyline: encodedPolyline,
+        tier: tier,
+        timeBasedPricing: timeBasedPricing,
       );
+      
+      if (tier?.fastDeliveryEnabled != true) {
+        _fastDeliverySelected = false;
+      }
+      
       _isLoading = false;
     });
   }
@@ -195,6 +231,22 @@ class _FareEstimateViewState extends State<FareEstimateView> {
   @override
   Widget build(BuildContext context) {
     final vehicle = widget.bookingData['vehicleType'] as VehicleTypeModel;
+    final tier = _stats?.tier;
+    
+    // Toll logic
+    final bool isTollEnabled = vehicle.tollEnabled == true;
+    final double tollAmount = 0.0; // Currently no defaultTollAmount in VehicleTypeModel
+    
+    // Fast delivery logic
+    final bool canFastDelivery = tier?.fastDeliveryEnabled == true;
+    final double fastDeliveryCharge = tier?.fastDeliveryCharge ?? 0.0;
+
+    double finalFare = 0.0;
+    if (_stats != null) {
+      finalFare = _stats!.baseFare + _stats!.distanceFare + _stats!.timeBasedExtraCharge;
+      if (isTollEnabled) finalFare += tollAmount;
+      if (_fastDeliverySelected && canFastDelivery) finalFare += fastDeliveryCharge;
+    }
 
     return _isLoading
         ? const Center(
@@ -256,7 +308,7 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                                       ),
                                     ],
                                   ),
-                                  if (_stats!.timeBasedExtraCharge > 0 || widget.bookingData['fastDelivery'] == true) ...[
+                                  if (_stats!.timeBasedExtraCharge > 0 || (_fastDeliverySelected && canFastDelivery) || (isTollEnabled && tollAmount > 0)) ...[
                                     const SizedBox(height: 16),
                                     const Divider(height: 1, thickness: 1, color: Color(0xFFF1F1F4)),
                                     const SizedBox(height: 16),
@@ -296,7 +348,38 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                                           ],
                                         ),
                                       ),
-                                    if (widget.bookingData['fastDelivery'] == true)
+                                    if (isTollEnabled && tollAmount > 0)
+                                      Padding(
+                                        padding: const EdgeInsets.only(bottom: 10),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.toll_rounded, size: 16, color: Colors.blue),
+                                                const SizedBox(width: 6),
+                                                const Text(
+                                                  'Toll Charge',
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Color(0xFF121214),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            Text(
+                                              '₹${tollAmount.toStringAsFixed(2)}',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFF121214),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    if (_fastDeliverySelected && canFastDelivery)
                                       Padding(
                                         padding: const EdgeInsets.only(bottom: 6),
                                         child: Row(
@@ -317,7 +400,7 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                                               ],
                                             ),
                                             Text(
-                                              '₹${(widget.bookingData['fastDeliveryCharge'] as double? ?? 0.0).toStringAsFixed(2)}',
+                                              '₹${fastDeliveryCharge.toStringAsFixed(2)}',
                                               style: const TextStyle(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w600,
@@ -343,7 +426,7 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                                         ),
                                       ),
                                       Text(
-                                        '₹${_stats!.finalFare.toStringAsFixed(2)}',
+                                        '₹${finalFare.toStringAsFixed(2)}',
                                         style: const TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.bold,
@@ -356,7 +439,7 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                               ),
                             );
 
-                            if (widget.bookingData['fastDelivery'] == true) {
+                            if (_fastDeliverySelected && canFastDelivery) {
                               return Stack(
                                 clipBehavior: Clip.none,
                                 children: [
@@ -404,6 +487,65 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                     ),
                   ),
                 ),
+                if (canFastDelivery)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                    child: Column(
+                      children: [
+                        const Text(
+                          'This Amount will be added in the final fare!',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFFE31C2E),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: _fastDeliverySelected ? const Color(0xFFFFF2DC) : const Color(0xFFFFF8EC),
+                            borderRadius: BorderRadius.circular(100),
+                            border: Border.all(
+                              color: _fastDeliverySelected ? Colors.orange : Colors.orange.withOpacity(0.3),
+                              width: _fastDeliverySelected ? 1.5 : 1.0,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Fast Delivery (+ ₹${fastDeliveryCharge.toStringAsFixed(0)})',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: Color(0xFF121214),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Switch(
+                                value: _fastDeliverySelected,
+                                activeColor: Colors.white,
+                                activeTrackColor: Colors.orange,
+                                inactiveThumbColor: const Color(0xFFA2A5AE),
+                                inactiveTrackColor: const Color(0xFFF1F1F4),
+                                onChanged: (val) {
+                                  setState(() {
+                                    _fastDeliverySelected = val;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                   child: Row(
@@ -435,11 +577,29 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                             ),
                             onPressed: () {
                               final updatedBookingData = Map<String, dynamic>.from(widget.bookingData);
-                              updatedBookingData['finalFare'] = _stats!.finalFare;
+                              updatedBookingData['finalFare'] = finalFare;
                               updatedBookingData['baseFare'] = _stats!.baseFare;
                               updatedBookingData['estimatedDistanceKm'] = _stats!.distance;
                               updatedBookingData['estimatedTimeMin'] = _stats!.time;
                               updatedBookingData['routePolyline'] = _stats!.encodedPolyline;
+                              
+                              updatedBookingData['fetchedTravelMode'] = _getTravelMode(vehicle);
+                              updatedBookingData['fetchedPickupLat'] = widget.bookingData['pickupLatitude'];
+                              updatedBookingData['fetchedDropLat'] = widget.bookingData['dropLatitude'];
+                              
+                              // Pass the updated fast delivery choice
+                              updatedBookingData['fastDelivery'] = _fastDeliverySelected && canFastDelivery;
+                              updatedBookingData['fastDeliveryCharge'] = (_fastDeliverySelected && canFastDelivery) ? fastDeliveryCharge : null;
+                              
+                              // Pass the updated pricing items
+                              updatedBookingData['applicablePricingTier'] = _stats?.tier;
+                              updatedBookingData['timeBasedPricing'] = _stats?.timeBasedPricing;
+                              updatedBookingData['timeBasedExtraCharge'] = _stats?.timeBasedExtraCharge;
+
+                              // Toll logic
+                              if (isTollEnabled) {
+                                updatedBookingData['tollCharge'] = tollAmount;
+                              }
 
                               widget.onNext(updatedBookingData);
                             },

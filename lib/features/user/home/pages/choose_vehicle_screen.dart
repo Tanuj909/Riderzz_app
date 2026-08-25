@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
-import 'package:dio/dio.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_provider.dart';
 import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
-import 'package:riderzz_app/core/models/pricing_tier_model.dart';
 import 'package:riderzz_app/core/models/vehicle_type_model.dart';
+import 'package:riderzz_app/core/models/pricing_tier_model.dart';
 
 class ChooseVehicleView extends StatefulWidget {
   final Map<String, dynamic> bookingData;
@@ -27,20 +25,16 @@ class ChooseVehicleView extends StatefulWidget {
 
 class _ChooseVehicleViewState extends State<ChooseVehicleView> {
   int? _selectedVehicleId;
-  bool _isRouteAndPricingLoading = true;
-  double? _distanceKm;
-  int? _durationMin;
-  String? _encodedPolyline;
-  final Map<int, PricingTierModel> _applicablePrices = {};
-  final Map<int, Map<String, dynamic>> _timeBasedPrices = {};
+  bool _isLoading = true;
   bool _fastDeliverySelected = false;
+  final Map<int, PricingTierModel> _applicablePrices = {};
 
   @override
   void initState() {
     super.initState();
     _fastDeliverySelected = widget.bookingData['fastDelivery'] == true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchRouteAndPricing().then((_) {
+      _fetchVehicles().then((_) {
         if (mounted) {
           final vehiclesProvider = Provider.of<AdminVehiclesProvider>(context, listen: false);
           final vehicleTypes = vehiclesProvider.vehicleTypes;
@@ -68,7 +62,7 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
     return dist;
   }
 
-  Future<void> _fetchRouteAndPricing() async {
+  Future<void> _fetchVehicles() async {
     try {
       final vehiclesProvider = Provider.of<AdminVehiclesProvider>(context, listen: false);
       if (vehiclesProvider.vehicleTypes.isEmpty) {
@@ -84,92 +78,14 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
     final dropLng = widget.bookingData['dropLongitude'] as double?;
 
     double distance = 8.4;
-    int estTime = 28;
-    String? encodedPolyline;
-
     if (pickupLat != null && pickupLng != null && dropLat != null && dropLng != null) {
-      try {
-        final googleApiKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
-        if (googleApiKey.isNotEmpty) {
-          final dio = Dio();
-          final response = await dio.post(
-            'https://routes.googleapis.com/directions/v2:computeRoutes',
-            data: {
-              "origin": {
-                "location": {
-                  "latLng": {
-                    "latitude": pickupLat,
-                    "longitude": pickupLng,
-                  }
-                }
-              },
-              "destination": {
-                "location": {
-                  "latLng": {
-                    "latitude": dropLat,
-                    "longitude": dropLng,
-                  }
-                }
-              },
-              "travelMode": "DRIVE",
-              "routingPreference": "TRAFFIC_AWARE"
-            },
-            options: Options(
-              headers: {
-                'Content-Type': 'application/json',
-                'X-Goog-Api-Key': googleApiKey,
-                'X-Goog-FieldMask': 'routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline',
-              },
-            ),
-          );
-
-          if (response.statusCode == 200 && response.data != null) {
-            final routes = response.data['routes'] as List?;
-            if (routes != null && routes.isNotEmpty) {
-              final route = routes.first;
-              final distanceMeters = route['distanceMeters'] as int?;
-              final durationStr = route['duration'] as String?;
-              encodedPolyline = route['polyline']?['encodedPolyline'] as String?;
-
-              if (distanceMeters != null) {
-                distance = (distanceMeters / 1000.0 * 100.0).round() / 100.0;
-              }
-
-              if (durationStr != null) {
-                final numericOnly = durationStr.replaceAll('s', '');
-                final seconds = int.tryParse(numericOnly) ?? 0;
-                estTime = (seconds / 60.0).round();
-              }
-            } else {
-              distance = _calculateHaversineDistance(pickupLat, pickupLng, dropLat, dropLng);
-              estTime = (distance * 3.0 + 3).round();
-            }
-          } else {
-            distance = _calculateHaversineDistance(pickupLat, pickupLng, dropLat, dropLng);
-            estTime = (distance * 3.0 + 3).round();
-          }
-        } else {
-          distance = _calculateHaversineDistance(pickupLat, pickupLng, dropLat, dropLng);
-          estTime = (distance * 3.0 + 3).round();
-        }
-      } catch (e) {
-        debugPrint('Error fetching google route: $e');
-        distance = _calculateHaversineDistance(pickupLat, pickupLng, dropLat, dropLng);
-        estTime = (distance * 3.0 + 3).round();
-      }
+      distance = _calculateHaversineDistance(pickupLat, pickupLng, dropLat, dropLng);
     }
-
-    _distanceKm = distance;
-    _durationMin = estTime;
-    _encodedPolyline = encodedPolyline;
 
     if (mounted) {
       final vehiclesProvider = Provider.of<AdminVehiclesProvider>(context, listen: false);
       final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
       
-      final now = DateTime.now();
-      final timeString = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-
       final futures = vehiclesProvider.vehicleTypes.map((vehicle) async {
         try {
           final tier = await bookingProvider.getApplicablePricingTier(vehicle.id, distance);
@@ -179,29 +95,12 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
         } catch (e) {
           debugPrint('Error fetching applicable pricing tier for vehicle ${vehicle.id}: $e');
         }
-
-        try {
-          final tbp = await bookingProvider.getTimeBasedPricing(vehicle.id, timeString);
-          if (tbp != null && tbp['enabled'] == true) {
-            _timeBasedPrices[vehicle.id] = tbp;
-          }
-        } catch (e) {
-          debugPrint('Error fetching time based pricing for vehicle ${vehicle.id}: $e');
-        }
       }).toList();
 
       await Future.wait(futures);
-    }
 
-    if (mounted) {
       setState(() {
-        _isRouteAndPricingLoading = false;
-        // If the pre-selected vehicle doesn't have a pricing tier, deselect it
-        if (_selectedVehicleId != null) {
-          if (_applicablePrices[_selectedVehicleId!] == null) {
-            _selectedVehicleId = null;
-          }
-        }
+        _isLoading = false;
       });
     }
   }
@@ -243,14 +142,12 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
     return 0.0;
   }
 
-  int? _getRecommendedVehicleIndex(List<VehicleTypeModel> vehicles, Map<int, PricingTierModel> applicablePrices) {
-    // Filter to only vehicles that have pricing
-    final availableVehicles = vehicles.where((v) => applicablePrices[v.id] != null).toList();
-    if (availableVehicles.isEmpty) return null;
+  int? _getRecommendedVehicleIndex(List<VehicleTypeModel> vehicles) {
+    if (vehicles.isEmpty) return null;
     final weightStr = widget.bookingData['weightKg'];
     final weight = _parseWeightKg(weightStr);
     
-    final sortedVehicles = List<VehicleTypeModel>.from(availableVehicles)
+    final sortedVehicles = List<VehicleTypeModel>.from(vehicles)
       ..sort((a, b) => a.maxWeightKg.compareTo(b.maxWeightKg));
     
     VehicleTypeModel? recommended;
@@ -270,9 +167,9 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
   Widget build(BuildContext context) {
     return Consumer<AdminVehiclesProvider>(
       builder: (context, vehiclesProvider, child) {
-        final vehicleTypes = vehiclesProvider.vehicleTypes;
+        final vehicleTypes = vehiclesProvider.vehicleTypes.where((v) => v.isActive).toList();
 
-        if (_isRouteAndPricingLoading || (vehiclesProvider.isLoading && vehicleTypes.isEmpty)) {
+        if (_isLoading || (vehiclesProvider.isLoading && vehicleTypes.isEmpty)) {
           return const Center(
             child: CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
@@ -292,26 +189,58 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
         // Sort vehicleTypes: fast delivery enabled first, then others
         final sortedVehicleTypes = List<VehicleTypeModel>.from(vehicleTypes);
         sortedVehicleTypes.sort((a, b) {
-          final tierA = _applicablePrices[a.id];
-          final tierB = _applicablePrices[b.id];
-          final hasFastA = tierA?.fastDeliveryEnabled == true ? 1 : 0;
-          final hasFastB = tierB?.fastDeliveryEnabled == true ? 1 : 0;
+          final hasFastA = a.isFastDelivery == true ? 1 : 0;
+          final hasFastB = b.isFastDelivery == true ? 1 : 0;
           return hasFastB.compareTo(hasFastA);
         });
 
-        final recommendedIndex = _getRecommendedVehicleIndex(sortedVehicleTypes, _applicablePrices);
+        final recommendedIndex = _getRecommendedVehicleIndex(sortedVehicleTypes);
 
         return Column(
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: 14, bottom: 4),
-              child: Text(
-                '(${_distanceKm?.toStringAsFixed(1) ?? "0.0"} km delivery)',
-                style: GoogleFonts.outfit(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF6C6F79),
-                ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Pricing shown is Estimated!',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF6C6F79),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          backgroundColor: Colors.white,
+                          surfaceTintColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          title: Text(
+                            'Estimated Fare',
+                            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF121214)),
+                          ),
+                          content: Text(
+                            'The fare shown on screen is not final, it is estimated. Final fare will be shown on the next screen!',
+                            style: GoogleFonts.poppins(fontSize: 14, color: const Color(0xFF6C6F79), height: 1.4),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: Text('OK', style: GoogleFonts.poppins(color: const Color(0xFFE31C2E), fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    child: const Icon(Icons.info_outline, color: Color(0xFFE31C2E), size: 20),
+                  ),
+                ],
               ),
             ),
             Expanded(
@@ -323,28 +252,19 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                   final isSelected = _selectedVehicleId == vehicle.id;
                   final isRecommended = recommendedIndex == index;
                   final etaString = _getVehicleEta(vehicle.name);
-                  final tier = _applicablePrices[vehicle.id];
-                  final hasPricing = tier != null;
 
-                  final double baseFare = tier?.baseFare ?? vehicle.baseFare;
-                  final double perKmRate = tier?.perKmRate ?? vehicle.perKmRate;
-                  final double distance = _distanceKm ?? 0.0;
-                  final double distanceFare = (distance * perKmRate).roundToDouble();
-                  final double fastDeliveryCharge = tier?.fastDeliveryEnabled == true ? (tier?.fastDeliveryCharge ?? 0.0) : 0.0;
-                  final double timeBasedExtraCharge = (_timeBasedPrices[vehicle.id]?['extraCharge'] as num?)?.toDouble() ?? 0.0;
-                  final double totalFare = baseFare + distanceFare + timeBasedExtraCharge + (isSelected && _fastDeliverySelected && tier?.fastDeliveryEnabled == true ? fastDeliveryCharge : 0.0);
+                  double displayBaseFare = _applicablePrices[vehicle.id]?.baseFare ?? vehicle.baseFare;
+                  if (isSelected && _fastDeliverySelected && vehicle.isFastDelivery == true) {
+                    displayBaseFare += _applicablePrices[vehicle.id]?.fastDeliveryCharge ?? 0.0;
+                  }
 
                   final cardWidget = Container(
                     margin: const EdgeInsets.only(bottom: 10, top: 4),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: !hasPricing
-                          ? const Color(0xFFF1F1F4).withValues(alpha: 0.5)
-                          : (isSelected ? const Color(0xFFFDEBEC) : Colors.white),
+                      color: isSelected ? const Color(0xFFFDEBEC) : Colors.white,
                       border: Border.all(
-                        color: !hasPricing
-                            ? const Color(0xFFE7E7EB)
-                            : (isSelected ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB)),
+                        color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
                         width: 1.5,
                       ),
                       borderRadius: BorderRadius.circular(20),
@@ -390,7 +310,7 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                                       color: Color(0xFF121214),
                                     ),
                                   ),
-                                  if (isRecommended && hasPricing)
+                                  if (isRecommended)
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
@@ -415,62 +335,43 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                                     'Up to ${vehicle.maxWeightKg} kg',
                                     style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79)),
                                   ),
-                                  if (hasPricing) ...[
-                                    const SizedBox(width: 4),
-                                    const Text('·', style: TextStyle(fontSize: 12, color: Color(0xFF6C6F79))),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      etaString,
-                                      style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79)),
-                                    ),
-                                  ],
+                                  const SizedBox(width: 4),
+                                  const Text('·', style: TextStyle(fontSize: 12, color: Color(0xFF6C6F79))),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    etaString,
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79)),
+                                  ),
                                 ],
                               ),
                             ],
                           ),
                         ),
-                        if (hasPricing)
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                '₹${totalFare.toStringAsFixed(0)}',
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF121214),
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              const Text(
-                                'est.',
-                                style: TextStyle(fontSize: 11, color: Color(0xFF6C6F79)),
-                              ),
-                            ],
-                          )
-                        else
-                          SizedBox(
-                            width: 100,
-                            child: Text(
-                              '(Delivery not avilable for ${_distanceKm?.toStringAsFixed(1) ?? "0.0"} km)',
-                              textAlign: TextAlign.right,
-                              style: GoogleFonts.outfit(
-                                fontSize: 10,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '₹${displayBaseFare.toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                fontSize: 15,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFFD90429),
-                                height: 1.25,
+                                color: Color(0xFF121214),
                               ),
                             ),
-                          ),
+                            const SizedBox(height: 2),
+                            const Text(
+                              '',
+                              style: TextStyle(fontSize: 11, color: Color(0xFF6C6F79)),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   );
 
-                  Widget childWidget = !hasPricing
-                      ? Opacity(opacity: 0.65, child: cardWidget)
-                      : cardWidget;
+                  Widget childWidget = cardWidget;
 
-                  if (hasPricing && tier.fastDeliveryEnabled == true) {
+                  if (vehicle.isFastDelivery == true) {
                     childWidget = Stack(
                       clipBehavior: Clip.none,
                       children: [
@@ -516,17 +417,14 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                   }
 
                   return GestureDetector(
-                    onTap: !hasPricing
-                        ? null
-                        : () {
-                            setState(() {
-                              _selectedVehicleId = vehicle.id;
-                              final tier = _applicablePrices[vehicle.id];
-                              if (tier?.fastDeliveryEnabled != true) {
-                                _fastDeliverySelected = false;
-                              }
-                            });
-                          },
+                    onTap: () {
+                      setState(() {
+                        _selectedVehicleId = vehicle.id;
+                        if (vehicle.isFastDelivery != true) {
+                          _fastDeliverySelected = false;
+                        }
+                      });
+                    },
                     child: childWidget,
                   );
                 },
@@ -537,52 +435,64 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
               builder: (context) {
                 if (_selectedVehicleId == null) return const SizedBox.shrink();
                 final vehicle = sortedVehicleTypes.firstWhere((v) => v.id == _selectedVehicleId, orElse: () => sortedVehicleTypes.first);
-                final tier = _applicablePrices[vehicle.id];
-                if (tier?.fastDeliveryEnabled != true) return const SizedBox.shrink();
+                if (vehicle.isFastDelivery != true) return const SizedBox.shrink();
 
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: _fastDeliverySelected ? const Color(0xFFFFF2DC) : const Color(0xFFFFF8EC),
-                      borderRadius: BorderRadius.circular(100),
-                      border: Border.all(
-                        color: _fastDeliverySelected ? Colors.orange : Colors.orange.withOpacity(0.3),
-                        width: _fastDeliverySelected ? 1.5 : 1.0,
+                  child: Column(
+                    children: [
+                      const Text(
+                        'This amount will be added to the final fare.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFFE31C2E),
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: _fastDeliverySelected ? const Color(0xFFFFF2DC) : const Color(0xFFFFF8EC),
+                          borderRadius: BorderRadius.circular(100),
+                          border: Border.all(
+                            color: _fastDeliverySelected ? Colors.orange : Colors.orange.withOpacity(0.3),
+                            width: _fastDeliverySelected ? 1.5 : 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Fast Delivery (+ ₹${tier!.fastDeliveryCharge!.toStringAsFixed(0)})',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: Color(0xFF121214),
-                              ),
+                            Row(
+                              children: [
+                                const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Fast Delivery (+ ₹${_applicablePrices[vehicle.id]?.fastDeliveryCharge?.toStringAsFixed(0) ?? "0"})',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: Color(0xFF121214),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Switch(
+                              value: _fastDeliverySelected,
+                              activeColor: Colors.white,
+                              activeTrackColor: Colors.orange,
+                              inactiveThumbColor: const Color(0xFFA2A5AE),
+                              inactiveTrackColor: const Color(0xFFF1F1F4),
+                              onChanged: (val) {
+                                setState(() {
+                                  _fastDeliverySelected = val;
+                                });
+                              },
                             ),
                           ],
                         ),
-                        Switch(
-                          value: _fastDeliverySelected,
-                          activeColor: Colors.white,
-                          activeTrackColor: Colors.orange,
-                          inactiveThumbColor: const Color(0xFFA2A5AE),
-                          inactiveTrackColor: const Color(0xFFF1F1F4),
-                          onChanged: (val) {
-                            setState(() {
-                              _fastDeliverySelected = val;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 );
               },
@@ -618,23 +528,14 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        onPressed: (_selectedVehicleId == null ||
-                                    _applicablePrices[_selectedVehicleId!] == null)
+                        onPressed: _selectedVehicleId == null
                             ? null
                             : () {
                                 final selectedVehicle = sortedVehicleTypes.firstWhere((v) => v.id == _selectedVehicleId);
-                                final tier = _applicablePrices[selectedVehicle.id];
                                 final updatedBookingData = Map<String, dynamic>.from(widget.bookingData);
                                 updatedBookingData['vehicleId'] = selectedVehicle.id;
                                 updatedBookingData['vehicleType'] = selectedVehicle;
-                                updatedBookingData['estimatedDistanceKm'] = _distanceKm;
-                                updatedBookingData['estimatedDurationMin'] = _durationMin;
-                                updatedBookingData['routePolyline'] = _encodedPolyline;
-                                updatedBookingData['applicablePricingTier'] = tier;
-                                updatedBookingData['timeBasedPricing'] = _timeBasedPrices[selectedVehicle.id];
-                                updatedBookingData['timeBasedExtraCharge'] = (_timeBasedPrices[selectedVehicle.id]?['extraCharge'] as num?)?.toDouble() ?? 0.0;
-                                updatedBookingData['fastDelivery'] = _fastDeliverySelected && tier?.fastDeliveryEnabled == true;
-                                updatedBookingData['fastDeliveryCharge'] = tier?.fastDeliveryEnabled == true ? tier?.fastDeliveryCharge : null;
+                                updatedBookingData['fastDelivery'] = _fastDeliverySelected && selectedVehicle.isFastDelivery == true;
 
                                 widget.onNext(updatedBookingData);
                               },

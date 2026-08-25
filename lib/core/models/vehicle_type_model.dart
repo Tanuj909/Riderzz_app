@@ -1,6 +1,7 @@
 class VehicleTypeModel {
   final int id;
   final String name;
+  final String? category;
   final double baseFare;
   final double perKmRate;
   final int maxWeightKg;
@@ -18,6 +19,7 @@ class VehicleTypeModel {
   VehicleTypeModel({
     required this.id,
     required this.name,
+    this.category,
     required this.baseFare,
     required this.perKmRate,
     required this.maxWeightKg,
@@ -37,6 +39,7 @@ class VehicleTypeModel {
     return VehicleTypeModel(
       id: json['id'] as int,
       name: json['name'] as String,
+      category: json['category'] as String?,
       baseFare: ((json['baseFare'] ?? 0.0) as num).toDouble(),
       perKmRate: ((json['perKmRate'] ?? 0.0) as num).toDouble(),
       maxWeightKg: json['maxWeightKg'] as int,
@@ -57,6 +60,7 @@ class VehicleTypeModel {
     return {
       'id': id,
       'name': name,
+      'category': category,
       'baseFare': baseFare,
       'perKmRate': perKmRate,
       'maxWeightKg': maxWeightKg,
