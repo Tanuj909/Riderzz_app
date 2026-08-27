@@ -32,6 +32,7 @@ class _RefundStats {
   final String? encodedPolyline;
   final PricingTierModel? tier;
   final Map<String, dynamic>? timeBasedPricing;
+  final bool tollExists;
 
   _RefundStats({
     required this.distance,
@@ -42,6 +43,7 @@ class _RefundStats {
     this.encodedPolyline,
     this.tier,
     this.timeBasedPricing,
+    this.tollExists = false,
   });
 }
 
@@ -49,6 +51,7 @@ class _FareEstimateViewState extends State<FareEstimateView> {
   _RefundStats? _stats;
   bool _isLoading = true;
   bool _fastDeliverySelected = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -99,12 +102,14 @@ class _FareEstimateViewState extends State<FareEstimateView> {
     int estTime = widget.bookingData['estimatedDurationMin'] as int? ?? widget.bookingData['estimatedTimeMin'] as int? ?? 28;
     String? encodedPolyline = widget.bookingData['routePolyline'] as String?;
 
+    bool fetchedTollExists = false;
     bool shouldFetchRoute = true;
     if (encodedPolyline != null && 
         fetchedTravelMode == currentTravelMode && 
         fetchedPickupLat == pickupLat && 
         fetchedDropLat == dropLat) {
       shouldFetchRoute = false;
+      fetchedTollExists = widget.bookingData['tollExists'] ?? false;
       debugPrint('FareEstimate: Using cached Google Route API response for $currentTravelMode');
     }
 
@@ -112,34 +117,43 @@ class _FareEstimateViewState extends State<FareEstimateView> {
       try {
         final googleApiKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
         if (googleApiKey.isNotEmpty) {
+          final isTollEnabled = vehicle.tollEnabled == true;
+          final requestData = {
+            "origin": {
+              "location": {
+                "latLng": {
+                  "latitude": pickupLat,
+                  "longitude": pickupLng,
+                }
+              }
+            },
+            "destination": {
+              "location": {
+                "latLng": {
+                  "latitude": dropLat,
+                  "longitude": dropLng,
+                }
+              }
+            },
+            "travelMode": _getTravelMode(vehicle),
+            "routingPreference": "TRAFFIC_AWARE"
+          };
+          
+          if (isTollEnabled) {
+            requestData['extraComputations'] = ['TOLLS'];
+          }
+
           final dio = Dio();
           final response = await dio.post(
             'https://routes.googleapis.com/directions/v2:computeRoutes',
-            data: {
-              "origin": {
-                "location": {
-                  "latLng": {
-                    "latitude": pickupLat,
-                    "longitude": pickupLng,
-                  }
-                }
-              },
-              "destination": {
-                "location": {
-                  "latLng": {
-                    "latitude": dropLat,
-                    "longitude": dropLng,
-                  }
-                }
-              },
-              "travelMode": _getTravelMode(vehicle),
-              "routingPreference": "TRAFFIC_AWARE"
-            },
+            data: requestData,
             options: Options(
               headers: {
                 'Content-Type': 'application/json',
                 'X-Goog-Api-Key': googleApiKey,
-                'X-Goog-FieldMask': 'routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline',
+                'X-Goog-FieldMask': isTollEnabled 
+                    ? 'routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline,routes.travelAdvisory.tollInfo'
+                    : 'routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline',
               },
             ),
           );
@@ -161,20 +175,58 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                 final seconds = int.tryParse(numericOnly) ?? 0;
                 estTime = (seconds / 60.0).round();
               }
+              
+              if (vehicle.tollEnabled == true) {
+                final travelAdvisory = route['travelAdvisory'];
+                if (travelAdvisory != null && travelAdvisory is Map) {
+                  final tollInfo = travelAdvisory['tollInfo'];
+                  if (tollInfo != null && tollInfo is Map) {
+                    fetchedTollExists = true;
+                  }
+                }
+              }
             } else {
+              if (vehicle.tollEnabled == true) {
+                setState(() {
+                  _errorMessage = 'Unable to calculate tolls for this route. Please try again.';
+                  _isLoading = false;
+                });
+                return;
+              }
               distance = _calculateHaversineDistance(pickupLat, pickupLng, dropLat, dropLng);
               estTime = (distance * 3.0 + 3).round();
             }
           } else {
+            if (vehicle.tollEnabled == true) {
+              setState(() {
+                _errorMessage = 'Unable to calculate tolls for this route. Please try again.';
+                _isLoading = false;
+              });
+              return;
+            }
             distance = _calculateHaversineDistance(pickupLat, pickupLng, dropLat, dropLng);
             estTime = (distance * 3.0 + 3).round();
           }
         } else {
+          if (vehicle.tollEnabled == true) {
+            setState(() {
+              _errorMessage = 'Unable to calculate tolls for this route. Please try again.';
+              _isLoading = false;
+            });
+            return;
+          }
           distance = _calculateHaversineDistance(pickupLat, pickupLng, dropLat, dropLng);
           estTime = (distance * 3.0 + 3).round();
         }
       } catch (e) {
         debugPrint('Error fetching exact route: $e');
+        if (vehicle.tollEnabled == true) {
+          setState(() {
+            _errorMessage = 'Unable to calculate tolls for this route. Please try again.';
+            _isLoading = false;
+          });
+          return;
+        }
         distance = _calculateHaversineDistance(pickupLat, pickupLng, dropLat, dropLng);
         estTime = (distance * 3.0 + 3).round();
       }
@@ -218,6 +270,7 @@ class _FareEstimateViewState extends State<FareEstimateView> {
         encodedPolyline: encodedPolyline,
         tier: tier,
         timeBasedPricing: timeBasedPricing,
+        tollExists: fetchedTollExists,
       );
       
       if (tier?.fastDeliveryEnabled != true) {
@@ -235,17 +288,55 @@ class _FareEstimateViewState extends State<FareEstimateView> {
     
     // Toll logic
     final bool isTollEnabled = vehicle.tollEnabled == true;
-    final double tollAmount = 0.0; // Currently no defaultTollAmount in VehicleTypeModel
+    final bool tollExists = _stats?.tollExists ?? false;
+    final double tollAmount = tollExists ? (vehicle.defaultTollAmount ?? 0.0) : 0.0;
     
     // Fast delivery logic
     final bool canFastDelivery = tier?.fastDeliveryEnabled == true;
     final double fastDeliveryCharge = tier?.fastDeliveryCharge ?? 0.0;
+    
+    final double commissionAmount = tier?.commission ?? 0.0;
 
     double finalFare = 0.0;
     if (_stats != null) {
-      finalFare = _stats!.baseFare + _stats!.distanceFare + _stats!.timeBasedExtraCharge;
-      if (isTollEnabled) finalFare += tollAmount;
+      finalFare = _stats!.baseFare + _stats!.distanceFare + _stats!.timeBasedExtraCharge + commissionAmount;
+      if (tollAmount > 0) finalFare += tollAmount;
       if (_fastDeliverySelected && canFastDelivery) finalFare += fastDeliveryCharge;
+    }
+
+    if (_errorMessage != null) {
+      return Container(
+        color: Colors.white,
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              _errorMessage!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, color: Color(0xFF121214)),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: widget.onBack,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE31C2E),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const Text('Go Back'),
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     return _isLoading
@@ -348,6 +439,7 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                                           ],
                                         ),
                                       ),
+
                                     if (isTollEnabled && tollAmount > 0)
                                       Padding(
                                         padding: const EdgeInsets.only(bottom: 10),
@@ -492,8 +584,10 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
                     child: Column(
                       children: [
-                        const Text(
-                          'This Amount will be added in the final fare!',
+                        Text(
+                          _fastDeliverySelected 
+                              ? 'Fast Delivery amount added to the final fare!' 
+                              : 'Choose Fast Delivery!',
                           style: TextStyle(
                             fontSize: 12,
                             color: Color(0xFFE31C2E),
@@ -502,7 +596,7 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                         ),
                         const SizedBox(height: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
                           decoration: BoxDecoration(
                             color: _fastDeliverySelected ? const Color(0xFFFFF2DC) : const Color(0xFFFFF8EC),
                             borderRadius: BorderRadius.circular(100),
@@ -597,8 +691,11 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                               updatedBookingData['timeBasedExtraCharge'] = _stats?.timeBasedExtraCharge;
 
                               // Toll logic
-                              if (isTollEnabled) {
+                              updatedBookingData['tollExists'] = _stats?.tollExists ?? false;
+                              if (tollAmount > 0) {
                                 updatedBookingData['tollCharge'] = tollAmount;
+                              } else {
+                                updatedBookingData.remove('tollCharge');
                               }
 
                               widget.onNext(updatedBookingData);

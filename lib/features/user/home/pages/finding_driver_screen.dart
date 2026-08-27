@@ -148,7 +148,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Booking has been cancelled by the driver.'),
+                    content: Text('Booking has been cancelled.'),
                     backgroundColor: Colors.redAccent,
                   ),
                 );
@@ -1792,6 +1792,14 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                                       '₹${_currentBooking.totalFare.toStringAsFixed(2)}',
                                       isMono: true,
                                     ),
+                                    if (_currentBooking.tollAmount != null && _currentBooking.tollAmount! > 0) ...[
+                                      const SizedBox(height: 12),
+                                      _buildDetailRow(
+                                        'Toll Charge',
+                                        '₹${_currentBooking.tollAmount!.toStringAsFixed(2)}',
+                                        isMono: true,
+                                      ),
+                                    ],
                                     Builder(
                                       builder: (context) {
                                         final statusUpper = _currentBooking.status.toUpperCase();
@@ -2226,6 +2234,14 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                           '₹${_currentBooking.totalFare.toStringAsFixed(2)}',
                           isMono: true,
                         ),
+                        if (_currentBooking.tollAmount != null && _currentBooking.tollAmount! > 0) ...[
+                          const SizedBox(height: 12),
+                          _buildDetailRow(
+                            'Toll Charge',
+                            '₹${_currentBooking.tollAmount!.toStringAsFixed(2)}',
+                            isMono: true,
+                          ),
+                        ],
                       ],
                     ),
                   ),

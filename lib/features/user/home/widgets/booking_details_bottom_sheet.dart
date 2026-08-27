@@ -249,7 +249,7 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                           ),
                         ],
                       ),
-                      if (booking.fastDelivery && booking.fastDeliveryCharge != null) ...[
+                      if ((booking.fastDelivery && booking.fastDeliveryCharge != null) || (booking.tollAmount != null && booking.tollAmount! > 0)) ...[
                         const SizedBox(height: 16),
                         const Divider(height: 1, thickness: 1, color: Color(0xFFF1F1F4)),
                         const SizedBox(height: 16),
@@ -258,36 +258,68 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                           style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF6C6F79), letterSpacing: 0.5),
                         ),
                         const SizedBox(height: 12),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.flash_on_rounded, size: 16, color: Colors.orange),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Fast Delivery',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: const Color(0xFF121214),
+                        if (booking.fastDelivery && booking.fastDeliveryCharge != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.flash_on_rounded, size: 16, color: Colors.orange),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Fast Delivery',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF121214),
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              Text(
-                                '₹${booking.fastDeliveryCharge!.toStringAsFixed(2)}',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF121214),
+                                  ],
                                 ),
-                              ),
-                            ],
+                                Text(
+                                  '₹${booking.fastDeliveryCharge!.toStringAsFixed(2)}',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF121214),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                        if (booking.tollAmount != null && booking.tollAmount! > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.toll_rounded, size: 16, color: Colors.blue),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Toll Charge',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF121214),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  '₹${booking.tollAmount!.toStringAsFixed(2)}',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF121214),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                       ],
                       const SizedBox(height: 16),
                       const Divider(height: 1, thickness: 1, color: Color(0xFFE7E7EB)),

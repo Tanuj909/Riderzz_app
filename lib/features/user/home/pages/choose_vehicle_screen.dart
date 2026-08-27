@@ -249,7 +249,8 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                 itemCount: sortedVehicleTypes.length,
                 itemBuilder: (context, index) {
                   final vehicle = sortedVehicleTypes[index];
-                  final isSelected = _selectedVehicleId == vehicle.id;
+                  final isDeliverable = _applicablePrices.containsKey(vehicle.id);
+                  final isSelected = _selectedVehicleId == vehicle.id && isDeliverable;
                   final isRecommended = recommendedIndex == index;
                   final etaString = _getVehicleEta(vehicle.name);
 
@@ -262,9 +263,9 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                     margin: const EdgeInsets.only(bottom: 10, top: 4),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFFFDEBEC) : Colors.white,
+                      color: isSelected ? const Color(0xFFFDEBEC) : (isDeliverable ? Colors.white : const Color(0xFFFAFAFA)),
                       border: Border.all(
-                        color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
+                        color: isSelected ? const Color(0xFFE31C2E) : (isDeliverable ? const Color(0xFFE7E7EB) : const Color(0xFFF1F1F4)),
                         width: 1.5,
                       ),
                       borderRadius: BorderRadius.circular(20),
@@ -329,7 +330,8 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                                 ],
                               ),
                               const SizedBox(height: 2),
-                              Row(
+                              Wrap(
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
                                   Text(
                                     'Up to ${vehicle.maxWeightKg} kg',
@@ -347,24 +349,34 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                             ],
                           ),
                         ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '₹${displayBaseFare.toStringAsFixed(0)}',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF121214),
+                        isDeliverable
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '₹${displayBaseFare.toStringAsFixed(0)}',
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF121214),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  const Text(
+                                    '',
+                                    style: TextStyle(fontSize: 11, color: Color(0xFF6C6F79)),
+                                  ),
+                                ],
+                              )
+                            : const Text(
+                                "Not Deliverable!",
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFFE31C2E),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 2),
-                            const Text(
-                              '',
-                              style: TextStyle(fontSize: 11, color: Color(0xFF6C6F79)),
-                            ),
-                          ],
-                        ),
                       ],
                     ),
                   );
@@ -417,14 +429,14 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                   }
 
                   return GestureDetector(
-                    onTap: () {
+                    onTap: isDeliverable ? () {
                       setState(() {
                         _selectedVehicleId = vehicle.id;
                         if (vehicle.isFastDelivery != true) {
                           _fastDeliverySelected = false;
                         }
                       });
-                    },
+                    } : null,
                     child: childWidget,
                   );
                 },
@@ -441,8 +453,10 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
                   child: Column(
                     children: [
-                      const Text(
-                        'This amount will be added to the final fare.',
+                      Text(
+                        _fastDeliverySelected 
+                            ? 'Fast Delivery Charges will be added!' 
+                            : 'Choose Fast Delivery!',
                         style: TextStyle(
                           fontSize: 12,
                           color: Color(0xFFE31C2E),
@@ -451,7 +465,7 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                       ),
                       const SizedBox(height: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
                         decoration: BoxDecoration(
                           color: _fastDeliverySelected ? const Color(0xFFFFF2DC) : const Color(0xFFFFF8EC),
                           borderRadius: BorderRadius.circular(100),
@@ -468,7 +482,7 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                                 const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 20),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Fast Delivery (+ ₹${_applicablePrices[vehicle.id]?.fastDeliveryCharge?.toStringAsFixed(0) ?? "0"})',
+                                  'Fast Delivery',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
@@ -528,7 +542,7 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        onPressed: _selectedVehicleId == null
+                        onPressed: _selectedVehicleId == null || !_applicablePrices.containsKey(_selectedVehicleId)
                             ? null
                             : () {
                                 final selectedVehicle = sortedVehicleTypes.firstWhere((v) => v.id == _selectedVehicleId);

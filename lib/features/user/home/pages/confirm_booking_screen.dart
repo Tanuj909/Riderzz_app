@@ -58,6 +58,7 @@ class _ConfirmBookingViewState extends State<ConfirmBookingView> {
       'estimatedDistanceKm': widget.bookingData['estimatedDistanceKm'] as double? ?? 0.0,
       'routePolyline': widget.bookingData['routePolyline'] as String?,
       'fastDelivery': widget.bookingData['fastDelivery'] == true,
+      'isToll': widget.bookingData['tollExists'] == true,
     };
 
     final bookingProvider = context.read<BookingProvider>();

@@ -92,7 +92,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                   } else if (statusUpper == 'CANCELLED') {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Booking has been cancelled by the driver.'),
+                        content: Text('Booking has been cancelled.'),
                         backgroundColor: Colors.redAccent,
                       ),
                     );

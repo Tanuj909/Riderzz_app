@@ -8,6 +8,7 @@ import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
 import 'package:riderzz_app/features/user/home/pages/finding_driver_screen.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/user/home/pages/pickup_details_view.dart';
+import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
 
 class BookingFlowBottomSheet extends StatefulWidget {
   final Map<String, dynamic>? initialRoute;
@@ -38,6 +39,9 @@ class _BookingFlowBottomSheetState extends State<BookingFlowBottomSheet> {
       if (widget.preSelectedVehicleTypeId != null) 'vehicleId': widget.preSelectedVehicleTypeId,
       if (widget.preSelectedFastDelivery != null) 'fastDelivery': widget.preSelectedFastDelivery,
     };
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AddressProvider>().fetchAddresses();
+    });
   }
 
   final List<String> _tabs = [

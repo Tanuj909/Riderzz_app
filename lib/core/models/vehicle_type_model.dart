@@ -13,6 +13,7 @@ class VehicleTypeModel {
   final String? deletedAt;
   final String? iconUrl;
   final bool? tollEnabled;
+  final double? defaultTollAmount;
   final bool? dynamicPricingEnabled;
   final bool? isFastDelivery;
 
@@ -31,6 +32,7 @@ class VehicleTypeModel {
     this.deletedAt,
     this.iconUrl,
     this.tollEnabled,
+    this.defaultTollAmount,
     this.dynamicPricingEnabled,
     this.isFastDelivery,
   });
@@ -51,6 +53,7 @@ class VehicleTypeModel {
       deletedAt: json['deletedAt'] as String?,
       iconUrl: json['iconUrl'] as String?,
       tollEnabled: json['tollEnabled'] as bool?,
+      defaultTollAmount: ((json['defaultTollAmount'] ?? 0.0) as num?)?.toDouble(),
       dynamicPricingEnabled: json['dynamicPricingEnabled'] as bool?,
       isFastDelivery: json['isFastDelivery'] as bool?,
     );
@@ -72,6 +75,7 @@ class VehicleTypeModel {
       'deletedAt': deletedAt,
       'iconUrl': iconUrl,
       'tollEnabled': tollEnabled,
+      'defaultTollAmount': defaultTollAmount,
       'dynamicPricingEnabled': dynamicPricingEnabled,
       'isFastDelivery': isFastDelivery,
     };
