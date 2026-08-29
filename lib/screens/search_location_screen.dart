@@ -218,6 +218,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/core/providers/location_provider.dart';
 import 'package:riderzz_app/features/user/addresses/location_picker_screen.dart';
+import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
+import 'package:riderzz_app/features/user/saved_routes/providers/saved_route_provider.dart';
 import 'package:riderzz_app/models/google_place.dart';
 import 'package:riderzz_app/repositories/location_repository.dart';
 import 'package:riderzz_app/utils/debounce.dart';
@@ -390,6 +392,7 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
           latitude: lat,
           longitude: lng,
           fullAddress: address,
+          placemark: locationProvider.currentPlacemark,
         );
         if (result != null && mounted) {
           final currentPlace = GooglePlace(
@@ -514,7 +517,9 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
               const Divider(
                   height: 1, thickness: 0.5, color: Color(0xFFE1E1E6)),
               Expanded(
-                child: _buildBody(),
+                child: _searchController.text.trim().isNotEmpty
+                    ? _buildBody()
+                    : _buildAddressesList(),
               ),
             ],
           ),
@@ -531,6 +536,76 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAddressesList() {
+    return Consumer<AddressProvider>(
+      builder: (context, provider, child) {
+        if (provider.isLoading) {
+          return const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E))));
+        }
+
+        final addresses = provider.addresses;
+        if (addresses.isEmpty) {
+          return Center(
+            child: Text(
+              'No saved addresses',
+              style: GoogleFonts.outfit(color: const Color(0xFF6C6F79), fontSize: 14),
+            ),
+          );
+        }
+
+        return ListView.separated(
+          itemCount: addresses.length,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          separatorBuilder: (context, index) => const Divider(height: 1, thickness: 0.5, color: Color(0xFFE7E7EB)),
+          itemBuilder: (context, index) {
+            final address = addresses[index];
+            final label = address['label'] ?? 'Saved Address';
+            
+            // Construct a meaningful subtitle
+            final parts = <String>[];
+            if (address['addressLine1'] != null && address['addressLine1'].toString().isNotEmpty) {
+              parts.add(address['addressLine1']);
+            }
+            if (address['addressLine2'] != null && address['addressLine2'].toString().isNotEmpty) {
+              parts.add(address['addressLine2']);
+            }
+            if (address['city'] != null && address['city'].toString().isNotEmpty) {
+              parts.add(address['city']);
+            }
+            final addressString = parts.join(', ');
+
+            return ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF1F1F4),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.location_on_rounded, color: Color(0xFF121214), size: 20),
+              ),
+              title: Text(
+                addressString,
+                style: GoogleFonts.outfit(fontWeight: FontWeight.w500, fontSize: 14, color: const Color(0xFF121214)),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              onTap: () {
+                final place = GooglePlace(
+                  placeId: 'saved_address_${address['id']}',
+                  name: label,
+                  displayName: addressString,
+                  latitude: address['latitude'],
+                  longitude: address['longitude'],
+                );
+                Navigator.pop(context, place);
+              },
+            );
+          },
+        );
+      },
     );
   }
 

@@ -15,6 +15,7 @@ class LocationProvider extends ChangeNotifier {
   double? _currentLatitude;
   double? _currentLongitude;
   String? _currentAddress;
+  Placemark? _currentPlacemark;
   LocationPermission _permissionStatus = LocationPermission.denied;
   bool _isInitialized = false;
 
@@ -23,6 +24,7 @@ class LocationProvider extends ChangeNotifier {
   double? get currentLatitude => _currentLatitude;
   double? get currentLongitude => _currentLongitude;
   String? get currentAddress => _currentAddress;
+  Placemark? get currentPlacemark => _currentPlacemark;
   LocationPermission get permissionStatus => _permissionStatus;
   bool get isInitialized => _isInitialized;
 
@@ -74,6 +76,7 @@ class LocationProvider extends ChangeNotifier {
       final placemarks = await placemarkFromCoordinates(lat, lng);
       if (placemarks.isNotEmpty) {
         final pm = placemarks.first;
+        _currentPlacemark = pm;
         final parts = <String>[];
 
         if (pm.name != null && pm.name!.isNotEmpty && pm.name != pm.subLocality) {

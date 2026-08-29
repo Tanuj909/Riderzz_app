@@ -180,46 +180,45 @@ class _SavedRouteListScreenState extends State<SavedRouteListScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Route Name',
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
-                                color: const Color(0xFF121214),
-                                fontWeight: FontWeight.w600,
+                            Padding(
+                              padding: const EdgeInsets.only(left: 12),
+                              child: Text(
+                                'Route Name',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  color: const Color(0xFF6C6F79),
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.3,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            TextFormField(
-                              controller: nameController,
-                              style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: Colors.white,
-                                prefixIcon: const Icon(Icons.edit_road_rounded, size: 18, color: Color(0xFF6C6F79)),
-                                prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                                hintText: 'e.g. Home to Warehouse, Gym to Office',
-                                hintStyle: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                isDense: true,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                  borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                  borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                  borderSide: const BorderSide(color: Color(0xFF121214)),
-                                ),
+                            const SizedBox(height: 2),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF6F6F8),
+                                border: Border.all(color: const Color(0xFFE7E7EB), width: 1.0),
+                                borderRadius: BorderRadius.circular(28),
                               ),
-                              validator: (val) {
-                                if (val == null || val.trim().isEmpty) {
-                                  return 'Route Name is required';
-                                }
-                                return null;
-                              },
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: TextFormField(
+                                controller: nameController,
+                                style: GoogleFonts.poppins(fontSize: 14, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
+                                decoration: InputDecoration(
+                                  prefixIcon: const Icon(Icons.route_outlined, size: 18, color: Color(0xFF6C6F79)),
+                                  prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 20),
+                                  hintText: 'e.g. Home to Warehouse',
+                                  hintStyle: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13),
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                                ),
+                                validator: (val) {
+                                  if (val == null || val.trim().isEmpty) {
+                                    return 'Route Name is required';
+                                  }
+                                  return null;
+                                },
+                              ),
                             ),
                           ],
                         ),
@@ -229,70 +228,69 @@ class _SavedRouteListScreenState extends State<SavedRouteListScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Pickup Address',
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
-                                color: const Color(0xFF121214),
-                                fontWeight: FontWeight.w600,
+                            Padding(
+                              padding: const EdgeInsets.only(left: 12),
+                              child: Text(
+                                'Pickup Address',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  color: const Color(0xFF6C6F79),
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.3,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            DropdownButtonFormField<int>(
-                              value: selectedPickupId,
-                              isExpanded: true,
-                              dropdownColor: Colors.white,
-                              icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF6C6F79)),
-                              borderRadius: BorderRadius.circular(24),
-                              style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: Colors.white,
-                                prefixIcon: const Icon(Icons.circle_outlined, size: 16, color: Color(0xFF1C9A5B)),
-                                prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                isDense: true,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                  borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                  borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                  borderSide: const BorderSide(color: Color(0xFF121214)),
-                                ),
+                            const SizedBox(height: 2),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF6F6F8),
+                                border: Border.all(color: const Color(0xFFE7E7EB), width: 1.0),
+                                borderRadius: BorderRadius.circular(28),
                               ),
-                              hint: Text('Select Pickup Location', style: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13)),
-                              items: addresses.map((addr) {
-                                final id = (addr['id'] as num).toInt();
-                                final label = addr['label'] ?? '';
-                                final details = addr['address'] ?? '';
-                                return DropdownMenuItem<int>(
-                                  value: id,
-                                  child: Text(
-                                    '$label ($details)',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.poppins(
-                                      color: const Color(0xFF121214),
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: DropdownButtonFormField<int>(
+                                value: selectedPickupId,
+                                isExpanded: true,
+                                dropdownColor: Colors.white,
+                                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6C6F79), size: 20),
+                                borderRadius: BorderRadius.circular(16),
+                                style: GoogleFonts.poppins(fontSize: 14, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
+                                decoration: InputDecoration(
+                                  prefixIcon: const Icon(Icons.my_location_rounded, size: 16, color: Color(0xFF1C9A5B)),
+                                  prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 20),
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                                ),
+                                hint: Text('Select Pickup Location', style: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13)),
+                                items: addresses.map((addr) {
+                                  final id = (addr['id'] as num).toInt();
+                                  final label = addr['label'] ?? '';
+                                  final details = addr['addressLine1'] ?? '';
+                                  return DropdownMenuItem<int>(
+                                    value: id,
+                                    child: Text(
+                                      label.isNotEmpty ? '$label ($details)' : details,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.poppins(
+                                        color: const Color(0xFF121214),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (val) {
-                                setModalState(() {
-                                  selectedPickupId = val;
-                                });
-                              },
-                              validator: (val) {
-                                if (val == null) return 'Pickup Location is required';
-                                return null;
-                              },
+                                  );
+                                }).toList(),
+                                onChanged: (val) {
+                                  setModalState(() {
+                                    selectedPickupId = val;
+                                  });
+                                },
+                                validator: (val) {
+                                  if (val == null) return 'Pickup Location is required';
+                                  return null;
+                                },
+                              ),
                             ),
                           ],
                         ),
@@ -302,71 +300,70 @@ class _SavedRouteListScreenState extends State<SavedRouteListScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Drop Address',
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
-                                color: const Color(0xFF121214),
-                                fontWeight: FontWeight.w600,
+                            Padding(
+                              padding: const EdgeInsets.only(left: 12),
+                              child: Text(
+                                'Drop Address',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  color: const Color(0xFF6C6F79),
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.3,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            DropdownButtonFormField<int>(
-                              value: selectedDropId,
-                              isExpanded: true,
-                              dropdownColor: Colors.white,
-                              icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF6C6F79)),
-                              borderRadius: BorderRadius.circular(24),
-                              style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: Colors.white,
-                                prefixIcon: const Icon(Icons.location_on_rounded, size: 16, color: Color(0xFFB9700A)),
-                                prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                isDense: true,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                  borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                  borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                  borderSide: const BorderSide(color: Color(0xFF121214)),
-                                ),
+                            const SizedBox(height: 2),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF6F6F8),
+                                border: Border.all(color: const Color(0xFFE7E7EB), width: 1.0),
+                                borderRadius: BorderRadius.circular(28),
                               ),
-                              hint: Text('Select Drop Location', style: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13)),
-                              items: addresses.map((addr) {
-                                final id = (addr['id'] as num).toInt();
-                                final label = addr['label'] ?? '';
-                                final details = addr['address'] ?? '';
-                                return DropdownMenuItem<int>(
-                                  value: id,
-                                  child: Text(
-                                    '$label ($details)',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.poppins(
-                                      color: const Color(0xFF121214),
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: DropdownButtonFormField<int>(
+                                value: selectedDropId,
+                                isExpanded: true,
+                                dropdownColor: Colors.white,
+                                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6C6F79), size: 20),
+                                borderRadius: BorderRadius.circular(16),
+                                style: GoogleFonts.poppins(fontSize: 14, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
+                                decoration: InputDecoration(
+                                  prefixIcon: const Icon(Icons.location_on_rounded, size: 16, color: Color(0xFFE31C2E)),
+                                  prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 20),
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                                ),
+                                hint: Text('Select Drop Location', style: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13)),
+                                items: addresses.map((addr) {
+                                  final id = (addr['id'] as num).toInt();
+                                  final label = addr['label'] ?? '';
+                                  final details = addr['addressLine1'] ?? '';
+                                  return DropdownMenuItem<int>(
+                                    value: id,
+                                    child: Text(
+                                      label.isNotEmpty ? '$label ($details)' : details,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.poppins(
+                                        color: const Color(0xFF121214),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (val) {
-                                setModalState(() {
-                                  selectedDropId = val;
-                                });
-                              },
-                              validator: (val) {
-                                if (val == null) return 'Drop Location is required';
-                                if (val == selectedPickupId) return 'Pickup & Drop cannot be identical';
-                                return null;
-                              },
+                                  );
+                                }).toList(),
+                                onChanged: (val) {
+                                  setModalState(() {
+                                    selectedDropId = val;
+                                  });
+                                },
+                                validator: (val) {
+                                  if (val == null) return 'Drop Location is required';
+                                  if (val == selectedPickupId) return 'Pickup & Drop cannot be identical';
+                                  return null;
+                                },
+                              ),
                             ),
                           ],
                         ),

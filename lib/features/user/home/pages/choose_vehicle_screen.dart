@@ -255,6 +255,8 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                   final etaString = _getVehicleEta(vehicle.name);
 
                   double displayBaseFare = _applicablePrices[vehicle.id]?.baseFare ?? vehicle.baseFare;
+                  double commission = _applicablePrices[vehicle.id]?.commission ?? (vehicle.baseFare * (vehicle.commissionPct / 100));
+                  displayBaseFare += commission;
                   if (isSelected && _fastDeliverySelected && vehicle.isFastDelivery == true) {
                     displayBaseFare += _applicablePrices[vehicle.id]?.fastDeliveryCharge ?? 0.0;
                   }

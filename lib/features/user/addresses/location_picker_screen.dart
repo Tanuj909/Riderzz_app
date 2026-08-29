@@ -217,7 +217,7 @@ class LocationPickerScreen extends StatefulWidget {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
 
                         // Highlighted and Shifted fields above Address Line 1
                         _buildStaticInputField(
@@ -227,7 +227,7 @@ class LocationPickerScreen extends StatefulWidget {
                           prefixIcon: Icons.person_outline_rounded,
                           isHighlighted: true,
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
                         _buildStaticInputField(
                           label: 'Contact Person Phone (Optional)',
                           hint: '10-digit mobile number',
@@ -246,7 +246,7 @@ class LocationPickerScreen extends StatefulWidget {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
 
                         // Address Line 1
                         _buildStaticInputField(
@@ -261,7 +261,16 @@ class LocationPickerScreen extends StatefulWidget {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
+
+                        // Landmark (Moved here)
+                        _buildStaticInputField(
+                          label: 'Landmark (Optional)',
+                          hint: 'Opposite, Near by reference point',
+                          controller: landmarkController,
+                          prefixIcon: Icons.flag_outlined,
+                        ),
+                        const SizedBox(height: 8),
 
                         // City & Postal Code Row
                         Row(
@@ -299,7 +308,7 @@ class LocationPickerScreen extends StatefulWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
 
                         // Accordion Toggle for Optional Details
                         InkWell(
@@ -342,14 +351,7 @@ class LocationPickerScreen extends StatefulWidget {
                             controller: addressLine2Controller,
                             prefixIcon: Icons.home_outlined,
                           ),
-                          const SizedBox(height: 12),
-                          _buildStaticInputField(
-                            label: 'Landmark (Optional)',
-                            hint: 'Opposite, Near by reference point',
-                            controller: landmarkController,
-                            prefixIcon: Icons.flag_outlined,
-                          ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 8),
                           _buildStaticInputField(
                             label: 'State',
                             hint: 'State name',
@@ -362,7 +364,7 @@ class LocationPickerScreen extends StatefulWidget {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 8),
                         ],
 
                         // Set Default Address Switch Row
@@ -560,7 +562,7 @@ class LocationPickerScreen extends StatefulWidget {
             ),
           ),
         ),
-        const SizedBox(height: 5),
+        const SizedBox(height: 2),
         Container(
           decoration: BoxDecoration(
             color: bgColor,
@@ -588,7 +590,8 @@ class LocationPickerScreen extends StatefulWidget {
               hintText: hint,
               hintStyle: const TextStyle(color: Color(0xFFB0B8C4), fontSize: 13),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 8),
             ),
           ),
         ),

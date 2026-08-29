@@ -310,7 +310,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
 
                         // Address Line 1
                         _buildInputField(
@@ -325,7 +325,16 @@ class _AddressListScreenState extends State<AddressListScreen> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
+
+                        // Landmark (Moved here)
+                        _buildInputField(
+                          label: 'Landmark (Optional)',
+                          hint: 'Opposite, Near by reference point',
+                          controller: landmarkController,
+                          prefixIcon: Icons.flag_outlined,
+                        ),
+                        const SizedBox(height: 8),
 
                         // City & Postal Code Row
                         Row(
@@ -363,7 +372,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
 
                         // Contact Person details placed outside dropdown
                         _buildInputField(
@@ -372,7 +381,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                           controller: contactPersonNameController,
                           prefixIcon: Icons.person_outline_rounded,
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
                         _buildInputField(
                           label: 'Contact Person Phone (Optional)',
                           hint: '10-digit mobile number',
@@ -390,7 +399,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
 
                         // Accordion Toggle for Optional Details
                         InkWell(
@@ -433,14 +442,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                             controller: addressLine2Controller,
                             prefixIcon: Icons.home_outlined,
                           ),
-                          const SizedBox(height: 12),
-                          _buildInputField(
-                            label: 'Landmark (Optional)',
-                            hint: 'Opposite, Near by reference point',
-                            controller: landmarkController,
-                            prefixIcon: Icons.flag_outlined,
-                          ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 8),
                           _buildInputField(
                             label: 'State',
                             hint: 'State name',
@@ -564,7 +566,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 2),
         TextFormField(
           controller: controller,
           style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
@@ -574,10 +576,10 @@ class _AddressListScreenState extends State<AddressListScreen> {
             filled: true,
             fillColor: Colors.white,
             prefixIcon: Icon(prefixIcon, size: 18, color: const Color(0xFF6C6F79)),
-            prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 32),
             hintText: hint,
             hintStyle: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13),
-            contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
             isDense: true,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(24),

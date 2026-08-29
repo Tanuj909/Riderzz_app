@@ -8,6 +8,7 @@ import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
 import 'package:riderzz_app/features/user/home/pages/finding_driver_screen.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/user/home/pages/pickup_details_view.dart';
+import 'package:riderzz_app/features/user/saved_routes/providers/saved_route_provider.dart';
 import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
 
 class BookingFlowBottomSheet extends StatefulWidget {
@@ -41,6 +42,7 @@ class _BookingFlowBottomSheetState extends State<BookingFlowBottomSheet> {
     };
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AddressProvider>().fetchAddresses();
+      context.read<SavedRouteProvider>().fetchSavedRoutes();
     });
   }
 
