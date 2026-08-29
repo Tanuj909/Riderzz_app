@@ -86,7 +86,7 @@ class GooglePlacesService {
             'Content-Type': 'application/json',
             'X-Goog-Api-Key': _apiKey,
             'X-Goog-FieldMask':
-                'id,displayName,formattedAddress,location',
+                'id,displayName,formattedAddress,location,addressComponents',
           },
         ),
       );

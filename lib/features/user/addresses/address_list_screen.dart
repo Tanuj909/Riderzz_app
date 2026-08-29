@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/features/user/addresses/location_picker_screen.dart';
+import 'package:riderzz_app/models/google_place.dart';
 import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
 
 class AddressListScreen extends StatefulWidget {
@@ -73,7 +74,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
     final cityController = TextEditingController(text: addressToEdit?['city'] ?? 'Mumbai');
     final stateController = TextEditingController(text: addressToEdit?['state'] ?? 'Maharashtra');
     final countryController = TextEditingController(text: 'India');
-    final postalCodeController = TextEditingController(text: addressToEdit?['postalCode'] ?? '400001');
+    final postalCodeController = TextEditingController(text: addressToEdit?['postalCode'] ?? '');
     final locationController = TextEditingController(text: addressToEdit?['address'] ?? '');
     final contactPersonNameController = TextEditingController(text: addressToEdit?['contactPersonName'] ?? '');
     final contactPersonPhoneController = TextEditingController(text: addressToEdit?['contactPersonPhone'] ?? '');
@@ -165,6 +166,8 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                 locationController.text = addr;
                               });
 
+                              final googlePlace = result['googlePlace'] as GooglePlace?;
+
                               try {
                                 final placemarks = await placemarkFromCoordinates(latitude!, longitude!);
                                 if (placemarks.isNotEmpty) {
@@ -177,7 +180,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                     landmarkController.text = pm.thoroughfare ?? '';
                                     cityController.text = pm.locality ?? 'Mumbai';
                                     stateController.text = pm.administrativeArea ?? 'Maharashtra';
-                                    postalCodeController.text = pm.postalCode ?? '400001';
+                                    postalCodeController.text = pm.postalCode ?? '';
                                   });
                                 }
                               } catch (_) {
@@ -193,6 +196,26 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                     }
                                   });
                                 }
+                              }
+
+                              if (googlePlace != null) {
+                                setModalState(() {
+                                  if (googlePlace.street != null && googlePlace.street!.isNotEmpty) {
+                                    addressLine1Controller.text = googlePlace.street!;
+                                  }
+                                  if (googlePlace.city != null && googlePlace.city!.isNotEmpty) {
+                                    cityController.text = googlePlace.city!;
+                                  }
+                                  if (googlePlace.state != null && googlePlace.state!.isNotEmpty) {
+                                    stateController.text = googlePlace.state!;
+                                  }
+                                  if (googlePlace.country != null && googlePlace.country!.isNotEmpty) {
+                                    countryController.text = googlePlace.country!;
+                                  }
+                                  if (googlePlace.postalCode != null && googlePlace.postalCode!.isNotEmpty) {
+                                    postalCodeController.text = googlePlace.postalCode!;
+                                  }
+                                });
                               }
                             }
                           },

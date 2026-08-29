@@ -338,6 +338,7 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
           latitude: details.latitude ?? 0.0,
           longitude: details.longitude ?? 0.0,
           fullAddress: details.displayName,
+          googlePlace: details,
         );
         if (result != null && mounted) {
           final place = GooglePlace(

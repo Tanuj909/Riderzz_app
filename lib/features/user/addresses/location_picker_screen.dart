@@ -30,6 +30,7 @@ class LocationPickerScreen extends StatefulWidget {
     required String fullAddress,
     String? searchQuery,
     Placemark? placemark,
+    GooglePlace? googlePlace,
   }) async {
     String addressLine1 = fullAddress;
     String addressLine2 = '';
@@ -37,7 +38,7 @@ class LocationPickerScreen extends StatefulWidget {
     String city = 'Mumbai';
     String state = 'Maharashtra';
     String country = 'India';
-    String postalCode = '400001';
+    String postalCode = ''; // Default to empty
 
     if (placemark != null) {
       final pm = placemark;
@@ -61,6 +62,14 @@ class LocationPickerScreen extends StatefulWidget {
           city = parts[parts.length - 2].trim();
         }
       }
+    }
+
+    if (googlePlace != null) {
+      if (googlePlace.street != null && googlePlace.street!.isNotEmpty) addressLine1 = googlePlace.street!;
+      if (googlePlace.city != null && googlePlace.city!.isNotEmpty) city = googlePlace.city!;
+      if (googlePlace.state != null && googlePlace.state!.isNotEmpty) state = googlePlace.state!;
+      if (googlePlace.country != null && googlePlace.country!.isNotEmpty) country = googlePlace.country!;
+      if (googlePlace.postalCode != null && googlePlace.postalCode!.isNotEmpty) postalCode = googlePlace.postalCode!;
     }
 
     final formKey = GlobalKey<FormState>();
@@ -601,6 +610,14 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   String _fullAddress = "Fetching location details...";
   bool _isLoading = false;
   Placemark? _currentPlacemark;
+  GooglePlace? _selectedGooglePlace;
+
+  bool _isMapAtSelectedPlace() {
+    if (_selectedGooglePlace == null || _selectedGooglePlace!.latitude == null || _selectedGooglePlace!.longitude == null) return false;
+    final latDiff = (_latitude - _selectedGooglePlace!.latitude!).abs();
+    final lngDiff = (_longitude - _selectedGooglePlace!.longitude!).abs();
+    return latDiff < 0.0001 && lngDiff < 0.0001;
+  }
 
   @override
   void initState() {
@@ -811,6 +828,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                             _searchController.text = place.displayName;
                             _latitude = place.latitude!;
                             _longitude = place.longitude!;
+                            _selectedGooglePlace = place;
                           });
                           _mapController?.animateCamera(
                             CameraUpdate.newLatLngZoom(
@@ -983,6 +1001,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                   fullAddress: _fullAddress,
                                   searchQuery: _searchController.text,
                                   placemark: _currentPlacemark,
+                                  googlePlace: _isMapAtSelectedPlace() ? _selectedGooglePlace : null,
                                 );
                                 if (result != null && mounted) {
                                   navigator.pop(result);
@@ -992,6 +1011,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                   'latitude': _latitude,
                                   'longitude': _longitude,
                                   'address': _fullAddress,
+                                  'googlePlace': _isMapAtSelectedPlace() ? _selectedGooglePlace : null,
                                 });
                               }
                             },
