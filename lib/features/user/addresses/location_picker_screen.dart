@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:riderzz_app/core/providers/location_provider.dart';
 import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
 import 'package:riderzz_app/core/services/location_service.dart';
+import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
 import 'package:geolocator/geolocator.dart';
 
 class LocationPickerScreen extends StatefulWidget {
@@ -220,6 +221,42 @@ class LocationPickerScreen extends StatefulWidget {
                         const SizedBox(height: 8),
 
                         // Highlighted and Shifted fields above Address Line 1
+                        Padding(
+                          padding: const EdgeInsets.only(left: 12, bottom: 4),
+                          child: GestureDetector(
+                            onTap: () async {
+                              try {
+                                final FlutterNativeContactPicker picker = FlutterNativeContactPicker();
+                                final contact = await picker.selectPhoneNumber();
+                                if (contact != null) {
+                                  if (contact.fullName != null && contact.fullName!.isNotEmpty) {
+                                    contactPersonNameController.text = contact.fullName!;
+                                  }
+                                  if (contact.phoneNumbers != null && contact.phoneNumbers!.isNotEmpty) {
+                                    String? rawNumber = contact.selectedPhoneNumber;
+                                    if (rawNumber != null) {
+                                      String sanitized = rawNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+                                      contactPersonPhoneController.text = sanitized;
+                                    }
+                                  }
+                                }
+                              } catch (e) {
+                                debugPrint('Error picking contact: $e');
+                              }
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.contacts_rounded, color: Color(0xFFE31C2E), size: 14),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Choose from contacts',
+                                  style: TextStyle(fontSize: 10, color: const Color(0xFFE31C2E), fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                         _buildStaticInputField(
                           label: 'Contact Person Name (Optional)',
                           hint: 'Name of the contact person',
@@ -235,6 +272,29 @@ class LocationPickerScreen extends StatefulWidget {
                           prefixIcon: Icons.phone_android_outlined,
                           keyboardType: TextInputType.phone,
                           isHighlighted: true,
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.contacts_rounded, color: Color(0xFFE31C2E)),
+                            onPressed: () async {
+                              try {
+                                final FlutterNativeContactPicker picker = FlutterNativeContactPicker();
+                                final contact = await picker.selectPhoneNumber();
+                                if (contact != null) {
+                                  if (contact.fullName != null && contact.fullName!.isNotEmpty) {
+                                    contactPersonNameController.text = contact.fullName!;
+                                  }
+                                  if (contact.phoneNumbers != null && contact.phoneNumbers!.isNotEmpty) {
+                                    String? rawNumber = contact.selectedPhoneNumber;
+                                    if (rawNumber != null) {
+                                      String sanitized = rawNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+                                      contactPersonPhoneController.text = sanitized;
+                                    }
+                                  }
+                                }
+                              } catch (e) {
+                                debugPrint('Error picking contact: $e');
+                              }
+                            },
+                          ),
                           validator: (val) {
                             if (val == null || val.trim().isEmpty) {
                               return null;
@@ -541,57 +601,47 @@ class LocationPickerScreen extends StatefulWidget {
     required IconData prefixIcon,
     TextInputType? keyboardType,
     FormFieldValidator<String>? validator,
+    Widget? suffixIcon,
     bool isHighlighted = false,
   }) {
-    final bgColor = isHighlighted ? const Color(0xFFFFF5F5) : const Color(0xFFF6F6F8);
-    final borderColor = isHighlighted ? const Color(0xFFFCA5A5) : const Color(0xFFE7E7EB);
-    final iconColor = isHighlighted ? const Color(0xFFE31C2E) : const Color(0xFF6C6F79);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 12),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: isHighlighted ? const Color(0xFFE31C2E) : const Color(0xFF6C6F79),
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.3,
-            ),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: const Color(0xFF121214),
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 2),
-        Container(
-          decoration: BoxDecoration(
-            color: bgColor,
-            border: Border.all(color: borderColor, width: isHighlighted ? 1.5 : 1.0),
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: isHighlighted
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFFE31C2E).withValues(alpha: 0.06),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    )
-                  ]
-                : null,
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: TextFormField(
-            controller: controller,
-            style: const TextStyle(fontSize: 14, color: Color(0xFF121214), fontWeight: FontWeight.w500),
-            keyboardType: keyboardType,
-            validator: validator,
-            decoration: InputDecoration(
-              prefixIcon: Icon(prefixIcon, size: 18, color: iconColor),
-              prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 20),
-              hintText: hint,
-              hintStyle: const TextStyle(color: Color(0xFFB0B8C4), fontSize: 13),
-              border: InputBorder.none,
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(vertical: 8),
+        TextFormField(
+          controller: controller,
+          style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
+          keyboardType: keyboardType,
+          validator: validator,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.white,
+            prefixIcon: Icon(prefixIcon, size: 18, color: const Color(0xFF6C6F79)),
+            prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            suffixIcon: suffixIcon,
+            hintText: hint,
+            hintStyle: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13),
+            contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            isDense: true,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: const BorderSide(color: Color(0xFF121214)),
             ),
           ),
         ),

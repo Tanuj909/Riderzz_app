@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/features/user/addresses/location_picker_screen.dart';
 import 'package:riderzz_app/models/google_place.dart';
 import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
+import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
 
 class AddressListScreen extends StatefulWidget {
   final bool showBackButton;
@@ -375,6 +376,47 @@ class _AddressListScreenState extends State<AddressListScreen> {
                         const SizedBox(height: 8),
 
                         // Contact Person details placed outside dropdown
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            GestureDetector(
+                              onTap: () async {
+                                try {
+                                  final FlutterNativeContactPicker picker = FlutterNativeContactPicker();
+                                  final contact = await picker.selectPhoneNumber();
+                                  if (contact != null) {
+                                    if (contact.fullName != null && contact.fullName!.isNotEmpty) {
+                                      contactPersonNameController.text = contact.fullName!;
+                                    }
+                                    if (contact.phoneNumbers != null && contact.phoneNumbers!.isNotEmpty) {
+                                      String? rawNumber = contact.selectedPhoneNumber;
+                                      if (rawNumber != null) {
+                                        String sanitized = rawNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+                                        contactPersonPhoneController.text = sanitized;
+                                      }
+                                    }
+                                  }
+                                } catch (e) {
+                                  debugPrint('Error picking contact: $e');
+                                }
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 4, right: 12),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.contacts_rounded, color: Color(0xFFE31C2E), size: 14),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Choose from contacts',
+                                      style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFFE31C2E), fontWeight: FontWeight.w600),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                         _buildInputField(
                           label: 'Contact Person Name (Optional)',
                           hint: 'Name of the contact person',
@@ -388,6 +430,29 @@ class _AddressListScreenState extends State<AddressListScreen> {
                           controller: contactPersonPhoneController,
                           prefixIcon: Icons.phone_android_outlined,
                           keyboardType: TextInputType.phone,
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.contacts_rounded, color: Color(0xFFE31C2E)),
+                            onPressed: () async {
+                              try {
+                                final FlutterNativeContactPicker picker = FlutterNativeContactPicker();
+                                final contact = await picker.selectPhoneNumber();
+                                if (contact != null) {
+                                  if (contact.fullName != null && contact.fullName!.isNotEmpty) {
+                                    contactPersonNameController.text = contact.fullName!;
+                                  }
+                                  if (contact.phoneNumbers != null && contact.phoneNumbers!.isNotEmpty) {
+                                    String? rawNumber = contact.selectedPhoneNumber;
+                                    if (rawNumber != null) {
+                                      String sanitized = rawNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+                                      contactPersonPhoneController.text = sanitized;
+                                    }
+                                  }
+                                }
+                              } catch (e) {
+                                debugPrint('Error picking contact: $e');
+                              }
+                            },
+                          ),
                           validator: (val) {
                             if (val == null || val.trim().isEmpty) {
                               return null;
@@ -554,6 +619,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
     required IconData prefixIcon,
     TextInputType? keyboardType,
     FormFieldValidator<String>? validator,
+    Widget? suffixIcon,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -576,10 +642,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
             filled: true,
             fillColor: Colors.white,
             prefixIcon: Icon(prefixIcon, size: 18, color: const Color(0xFF6C6F79)),
-            prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 32),
+            prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            suffixIcon: suffixIcon,
             hintText: hint,
             hintStyle: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13),
-            contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
             isDense: true,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(24),
