@@ -33,6 +33,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
   bool _isCancelling = false;
+  bool _hasNavigatedAway = false;
   late BookingModel _currentBooking;
   String? _generatedOtp;
   bool _otpLoading = false;
@@ -145,14 +146,18 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
             final newStatus = freshBooking.status.toUpperCase();
             
             if (newStatus == 'CANCELLED') {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Booking has been cancelled.'),
-                    backgroundColor: Colors.redAccent,
-                  ),
-                );
-                Navigator.of(context).pop();
+              if (mounted && !_isCancelling && !_hasNavigatedAway) {
+                final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
+                if (isCurrent) {
+                  _hasNavigatedAway = true;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Booking has been cancelled.'),
+                      backgroundColor: Colors.redAccent,
+                    ),
+                  );
+                  Navigator.of(context).pop();
+                }
               }
               return;
             }
@@ -780,13 +785,19 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
       });
 
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Booking cancelled successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.popUntil(context, (route) => route.isFirst);
+        if (!_hasNavigatedAway) {
+          final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
+          if (isCurrent) {
+            _hasNavigatedAway = true;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Booking cancelled successfully'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            Navigator.popUntil(context, (route) => route.isFirst);
+          }
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1178,6 +1189,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                       size: 20,
                     ),
                     onPressed: () {
+                      _hasNavigatedAway = true;
                       Navigator.popUntil(context, (route) => route.isFirst);
                     },
                     padding: EdgeInsets.zero,
@@ -1304,6 +1316,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                   left: 16,
                   child: GestureDetector(
                     onTap: () {
+                      _hasNavigatedAway = true;
                       Navigator.popUntil(context, (route) => route.isFirst);
                     },
                     child: Container(
@@ -1899,6 +1912,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                                 height: 50,
                                 child: ElevatedButton(
                                   onPressed: () {
+                                    _hasNavigatedAway = true;
                                     Navigator.popUntil(
                                       context,
                                       (route) => route.isFirst,
