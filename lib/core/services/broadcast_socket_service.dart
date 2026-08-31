@@ -14,11 +14,15 @@ class BroadcastResponse {
   final BookingModel booking;
     final String? notificationId;
   final int? expiresInSeconds;
+  final String? title;
+  final String? type;
 
   BroadcastResponse({
     required this.booking,
     this.expiresInSeconds,
     this.notificationId,
+    this.title,
+    this.type,
   });
 
 factory BroadcastResponse.fromJson(Map<String, dynamic> json) {
@@ -36,6 +40,8 @@ factory BroadcastResponse.fromJson(Map<String, dynamic> json) {
           json['expiresInSeconds'] as int? ??
           bookingJson['expiresInSeconds'] as int?,
       notificationId: json['notificationId']?.toString(),
+      title: json['title'] as String?,
+      type: json['type'] as String?,
     );
   }
 }
@@ -203,12 +209,18 @@ debugPrint(
 
               if (shouldShow) {
                 debugPrint('[DEDUP] Showing notificationId: $id');
-                unawaited(
-                  LocalNotificationService.showBookingNotification(
-                    booking: response.booking,
-                    notificationId: id,
-                  ),
-                );
+                _storageService.getRole().then((role) {
+                  if (role == 'DRIVER' && response.type == 'BOOKING_BROADCAST') {
+                    unawaited(
+                      LocalNotificationService.showBookingNotification(
+                        booking: response.booking,
+                        notificationId: id,
+                      ),
+                    );
+                  } else {
+                    debugPrint('[WS] Skipped booking alert for role: $role, type: ${response.type}');
+                  }
+                });
               } else {
                 debugPrint('[DEDUP] Suppressed duplicate notificationId: $id');
               }

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 
@@ -10,6 +11,11 @@ class LocalNotificationService {
   static const _channelName = 'Booking Requests';
   static const _channelDescription =
       'Alerts for new delivery booking requests.';
+
+  static const _bookingChannelId = 'new_booking_alert_v1';
+  static const _bookingChannelName = 'New Booking Alerts';
+  static const _bookingChannelDescription =
+      'Alerts with custom sound for new delivery booking requests.';
 
   static final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
@@ -53,6 +59,20 @@ class LocalNotificationService {
           importance: Importance.high,
           playSound: true,
           enableVibration: true,
+        ),
+      );
+
+      debugPrint('[NOTIFICATION_CHANNEL] Creating channel: $_bookingChannelId');
+      await androidPlugin.createNotificationChannel(
+        AndroidNotificationChannel(
+          _bookingChannelId,
+          _bookingChannelName,
+          description: _bookingChannelDescription,
+          importance: Importance.high,
+          playSound: true,
+          sound: const RawResourceAndroidNotificationSound('booking_alert'),
+          enableVibration: true,
+          vibrationPattern: Int64List.fromList([0, 500, 200, 500, 200, 500]),
         ),
       );
 
@@ -120,25 +140,37 @@ class LocalNotificationService {
             : DateTime.now().millisecondsSinceEpoch.remainder(1 << 31);
       }
 
+      if (Platform.isIOS) {
+        try {
+          const MethodChannel channel = MethodChannel('com.riderzz.app/haptic');
+          await channel.invokeMethod('playBookingHaptic');
+        } catch (e) {
+          debugPrint('Error playing iOS haptic: $e');
+        }
+      }
+
       await _notifications.show(
         id: localId,
         title: title,
         body: body,
-        notificationDetails: const NotificationDetails(
+        notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
-            _channelId,
-            _channelName,
-            channelDescription: _channelDescription,
+            _bookingChannelId,
+            _bookingChannelName,
+            channelDescription: _bookingChannelDescription,
             importance: Importance.max,
             priority: Priority.high,
             playSound: true,
+            sound: const RawResourceAndroidNotificationSound('booking_alert'),
             enableVibration: true,
+            vibrationPattern: Int64List.fromList([0, 500, 200, 500, 200, 500]),
             autoCancel: true,
           ),
-          iOS: DarwinNotificationDetails(
+          iOS: const DarwinNotificationDetails(
             presentAlert: true,
             presentBadge: true,
             presentSound: true,
+            sound: 'booking_alert.caf',
           ),
         ),
         payload: booking.id.toString(),

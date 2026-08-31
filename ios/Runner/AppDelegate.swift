@@ -1,9 +1,12 @@
 import Flutter
 import UIKit
 import GoogleMaps
+import CoreHaptics
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+  var hapticEngine: CHHapticEngine?
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -28,10 +31,64 @@ import GoogleMaps
     if #available(iOS 10.0, *) {
       UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate
     }
+
+    if let controller = window?.rootViewController as? FlutterViewController {
+        let hapticChannel = FlutterMethodChannel(name: "com.riderzz.app/haptic",
+                                                 binaryMessenger: controller.binaryMessenger)
+        hapticChannel.setMethodCallHandler({ [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+            if call.method == "playBookingHaptic" {
+                self?.playBookingHaptic()
+                result(nil)
+            } else {
+                result(FlutterMethodNotImplemented)
+            }
+        })
+    }
+
+    createAndStartHapticEngine()
+
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+  }
+
+  func createAndStartHapticEngine() {
+      guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
+      do {
+          hapticEngine = try CHHapticEngine()
+          try hapticEngine?.start()
+          
+          hapticEngine?.resetHandler = { [weak self] in
+              do {
+                  try self?.hapticEngine?.start()
+              } catch {
+                  print("Failed to restart the haptic engine: \(error)")
+              }
+          }
+      } catch {
+          print("There was an error creating the haptic engine: \(error.localizedDescription)")
+      }
+  }
+
+  func playBookingHaptic() {
+      guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
+      do {
+          try hapticEngine?.start()
+          
+          let intensity = CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0)
+          let sharpness = CHHapticEventParameter(parameterID: .hapticSharpness, value: 1.0)
+          
+          let event1 = CHHapticEvent(eventType: .hapticTransient, parameters: [intensity, sharpness], relativeTime: 0)
+          let event2 = CHHapticEvent(eventType: .hapticTransient, parameters: [intensity, sharpness], relativeTime: 0.2)
+          let event3 = CHHapticEvent(eventType: .hapticTransient, parameters: [intensity, sharpness], relativeTime: 0.4)
+          
+          let pattern = try CHHapticPattern(events: [event1, event2, event3], parameters: [])
+          let player = try hapticEngine?.makePlayer(with: pattern)
+          try player?.start(atTime: CHHapticTimeImmediate)
+      } catch {
+          print("Failed to play haptic pattern: \(error.localizedDescription)")
+      }
   }
 }
