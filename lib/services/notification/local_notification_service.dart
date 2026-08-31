@@ -187,6 +187,7 @@ class LocalNotificationService {
     required String title,
     required String body,
     String? payload,
+    bool isBookingAlert = false,
   }) async {
     if (!_isInitialized) {
       await initialize();
@@ -211,26 +212,55 @@ class LocalNotificationService {
       debugPrint('Body: $body');
       debugPrint('========================================');
 
+      if (isBookingAlert && Platform.isIOS) {
+        try {
+          const MethodChannel channel = MethodChannel('com.riderzz.app/haptic');
+          await channel.invokeMethod('playBookingHaptic');
+        } catch (e) {
+          debugPrint('Error playing iOS haptic: $e');
+        }
+      }
+
       await _notifications.show(
         id: id > 0 ? id : DateTime.now().millisecondsSinceEpoch.remainder(1 << 31),
         title: title,
         body: body,
-        notificationDetails: const NotificationDetails(
-          android: AndroidNotificationDetails(
-            _channelId,
-            _channelName,
-            channelDescription: _channelDescription,
-            importance: Importance.max,
-            priority: Priority.high,
-            playSound: true,
-            enableVibration: true,
-            autoCancel: true,
-          ),
-          iOS: DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-          ),
+        notificationDetails: NotificationDetails(
+          android: isBookingAlert
+              ? AndroidNotificationDetails(
+                  _bookingChannelId,
+                  _bookingChannelName,
+                  channelDescription: _bookingChannelDescription,
+                  importance: Importance.max,
+                  priority: Priority.high,
+                  playSound: true,
+                  sound: const RawResourceAndroidNotificationSound('booking_alert'),
+                  enableVibration: true,
+                  vibrationPattern: Int64List.fromList([0, 500, 200, 500, 200, 500]),
+                  autoCancel: true,
+                )
+              : const AndroidNotificationDetails(
+                  _channelId,
+                  _channelName,
+                  channelDescription: _channelDescription,
+                  importance: Importance.max,
+                  priority: Priority.high,
+                  playSound: true,
+                  enableVibration: true,
+                  autoCancel: true,
+                ),
+          iOS: isBookingAlert
+              ? const DarwinNotificationDetails(
+                  presentAlert: true,
+                  presentBadge: true,
+                  presentSound: true,
+                  sound: 'booking_alert.caf',
+                )
+              : const DarwinNotificationDetails(
+                  presentAlert: true,
+                  presentBadge: true,
+                  presentSound: true,
+                ),
         ),
         payload: payload,
       );

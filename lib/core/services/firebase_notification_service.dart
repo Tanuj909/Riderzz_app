@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:riderzz_app/features/notification/data/repositories/notification_repository.dart';
 import 'package:riderzz_app/services/notification/local_notification_service.dart';
 import 'package:riderzz_app/core/services/notification_deduplicator.dart';
+import 'package:riderzz_app/core/storage/secure_storage_service.dart';
 
 /// Phase 1 + Phase 2 – Firebase Cloud Messaging Service
 ///
@@ -142,7 +143,7 @@ class FirebaseNotificationService {
 
   void _setupMessageListeners() {
     // ── Foreground messages ──────────────────────────────────────────────
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       debugPrint('========== FCM FOREGROUND MESSAGE ==========');
       debugPrint('Message ID : ${message.messageId}');
       debugPrint('Title      : ${message.notification?.title}');
@@ -174,11 +175,15 @@ class FirebaseNotificationService {
             debugPrint('[LOCAL_ID] localNotificationId: $localId');
           }
           
+          final role = await SecureStorageService().getRole();
+          final isBookingAlert = role == 'DRIVER' && message.data['type'] == 'BOOKING_BROADCAST';
+          
           LocalNotificationService.showGenericNotification(
             id: localId,
             title: title,
             body: body,
             payload: message.data.toString(),
+            isBookingAlert: isBookingAlert,
           );
         } else {
           debugPrint('[DEDUP] Suppressed duplicate notificationId: $id');
