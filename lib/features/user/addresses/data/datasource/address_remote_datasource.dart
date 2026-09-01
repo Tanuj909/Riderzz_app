@@ -82,6 +82,18 @@ class AddressRemoteDataSource {
     return ApiResponse.fromJson(Map<String, dynamic>.from(response.data), (data) => data);
   }
 
+  Future<ApiResponse<dynamic>> updateAddressContact({
+    required int id,
+    required int userId,
+    required Map<String, dynamic> data,
+  }) async {
+    final response = await _apiClient.patch(
+      '${ApiConstants.addresses}/$id/contact?userId=$userId',
+      data: data,
+    );
+    return ApiResponse.fromJson(Map<String, dynamic>.from(response.data), (data) => data);
+  }
+
   Future<ApiResponse<dynamic>> setDefaultAddress(int id) async {
     final response = await _apiClient.patch('${ApiConstants.addresses}/$id/default');
     return ApiResponse.fromJson(Map<String, dynamic>.from(response.data), (data) => data);

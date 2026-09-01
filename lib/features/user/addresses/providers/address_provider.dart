@@ -103,6 +103,44 @@ class AddressProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> updateAddressContact({
+    required int id,
+    required int userId,
+    required Map<String, dynamic> data,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _addressRepository.updateAddressContact(
+        id: id,
+        userId: userId,
+        data: data,
+      );
+
+      if (response.success) {
+        await fetchAddresses();
+        return true;
+      } else {
+        _errorMessage = response.message;
+      }
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> deleteAddress(int id) async {
     _isLoading = true;
     _errorMessage = null;

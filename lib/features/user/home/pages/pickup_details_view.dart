@@ -406,6 +406,10 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
       'goodsType': _parcelType,
       'goodsDescription': _goodsDescriptionController.text.trim(),
       'weightKg': _selectedWeight,
+      'pickupContactName': _pickupContactName,
+      'pickupContactPhone': _pickupContactPhone,
+      'dropContactName': _dropContactName,
+      'dropContactPhone': _dropContactPhone,
     };
 
     widget.onContinue(bookingData);
@@ -440,6 +444,7 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                     Padding(
                       padding: const EdgeInsets.only(left: 12, bottom: 4),
                       child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
                         onTap: () async {
                           try {
                             final FlutterNativeContactPicker picker = FlutterNativeContactPicker();
@@ -522,11 +527,20 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                             if (nameController.text.trim() != (item['contactPersonName'] ?? '') ||
                                 phoneController.text.trim() != (item['contactPersonPhone'] ?? '')) {
                               
-                              final updatedData = Map<String, dynamic>.from(item);
-                              updatedData['contactPersonName'] = nameController.text.trim();
-                              updatedData['contactPersonPhone'] = phoneController.text.trim();
+                              final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                              final userId = authProvider.currentUser?.userId;
+                              if (userId == null) {
+                                setDialogState(() => isUpdating = false);
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User not found')));
+                                return;
+                              }
+
+                              final updatedData = {
+                                'contactPersonName': nameController.text.trim(),
+                                'contactPersonPhone': phoneController.text.trim(),
+                              };
                               
-                              final success = await provider.updateAddress(id: item['id'], data: updatedData);
+                              final success = await provider.updateAddressContact(id: item['id'], userId: userId, data: updatedData);
                               
                               if (!success) {
                                 setDialogState(() => isUpdating = false);
@@ -623,6 +637,7 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                         Padding(
                           padding: const EdgeInsets.only(left: 12, bottom: 4),
                           child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
                             onTap: () async {
                               try {
                                 final FlutterNativeContactPicker picker = FlutterNativeContactPicker();
@@ -695,6 +710,7 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                         Padding(
                           padding: const EdgeInsets.only(left: 12, bottom: 4),
                           child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
                             onTap: () async {
                               try {
                                 final FlutterNativeContactPicker picker = FlutterNativeContactPicker();
@@ -774,6 +790,14 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                           if (formKey.currentState!.validate()) {
                             setDialogState(() => isUpdating = true);
                             final provider = Provider.of<AddressProvider>(context, listen: false);
+                            final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                            final userId = authProvider.currentUser?.userId;
+                            
+                            if (userId == null) {
+                              setDialogState(() => isUpdating = false);
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User not found')));
+                              return;
+                            }
                             
                             bool pickupChanged = pickupNameController.text.trim() != (pickup['contactPersonName'] ?? '') ||
                                                  pickupPhoneController.text.trim() != (pickup['contactPersonPhone'] ?? '');
@@ -781,17 +805,19 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                                                dropPhoneController.text.trim() != (drop['contactPersonPhone'] ?? '');
 
                             if (pickupChanged && pickup['id'] != null) {
-                              final updatedData = Map<String, dynamic>.from(pickup);
-                              updatedData['contactPersonName'] = pickupNameController.text.trim();
-                              updatedData['contactPersonPhone'] = pickupPhoneController.text.trim();
-                              await provider.updateAddress(id: pickup['id'], data: updatedData);
+                              final updatedData = {
+                                'contactPersonName': pickupNameController.text.trim(),
+                                'contactPersonPhone': pickupPhoneController.text.trim(),
+                              };
+                              await provider.updateAddressContact(id: pickup['id'], userId: userId, data: updatedData);
                             }
 
                             if (dropChanged && drop['id'] != null) {
-                              final updatedData = Map<String, dynamic>.from(drop);
-                              updatedData['contactPersonName'] = dropNameController.text.trim();
-                              updatedData['contactPersonPhone'] = dropPhoneController.text.trim();
-                              await provider.updateAddress(id: drop['id'], data: updatedData);
+                              final updatedData = {
+                                'contactPersonName': dropNameController.text.trim(),
+                                'contactPersonPhone': dropPhoneController.text.trim(),
+                              };
+                              await provider.updateAddressContact(id: drop['id'], userId: userId, data: updatedData);
                             }
                             
                             setState(() {

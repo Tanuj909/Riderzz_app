@@ -24,6 +24,18 @@ class AddressRepository {
     );
   }
 
+  Future<ApiResponse<dynamic>> updateAddressContact({
+    required int id,
+    required int userId,
+    required Map<String, dynamic> data,
+  }) async {
+    return await _remoteDataSource.updateAddressContact(
+      id: id,
+      userId: userId,
+      data: data,
+    );
+  }
+
   Future<ApiResponse<dynamic>> deleteAddress(int id) async {
     return await _remoteDataSource.deleteAddress(id);
   }

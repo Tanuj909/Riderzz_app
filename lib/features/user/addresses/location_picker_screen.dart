@@ -36,29 +36,18 @@ class LocationPickerScreen extends StatefulWidget {
     String addressLine1 = fullAddress;
     String addressLine2 = '';
     String landmark = '';
-    String city = 'Mumbai';
-    String state = 'Maharashtra';
-    String country = 'India';
+    String city = '';
+    String state = '';
+    String country = '';
     String postalCode = ''; // Default to empty
 
     if (placemark != null) {
       final pm = placemark;
-      final street = pm.street ?? '';
-      final subLocality = pm.subLocality ?? '';
-      addressLine1 = street.isNotEmpty ? street : fullAddress;
-      addressLine2 = subLocality;
-      landmark = pm.thoroughfare ?? '';
       city = pm.locality ?? city;
-      state = pm.administrativeArea ?? state;
-      country = pm.country ?? country;
       postalCode = pm.postalCode ?? postalCode;
     } else {
       final parts = fullAddress.split(',');
       if (parts.isNotEmpty) {
-        addressLine1 = parts[0].trim();
-        if (parts.length > 1) {
-          addressLine2 = parts[1].trim();
-        }
         if (parts.length > 2) {
           city = parts[parts.length - 2].trim();
         }
@@ -66,10 +55,7 @@ class LocationPickerScreen extends StatefulWidget {
     }
 
     if (googlePlace != null) {
-      if (googlePlace.street != null && googlePlace.street!.isNotEmpty) addressLine1 = googlePlace.street!;
       if (googlePlace.city != null && googlePlace.city!.isNotEmpty) city = googlePlace.city!;
-      if (googlePlace.state != null && googlePlace.state!.isNotEmpty) state = googlePlace.state!;
-      if (googlePlace.country != null && googlePlace.country!.isNotEmpty) country = googlePlace.country!;
       if (googlePlace.postalCode != null && googlePlace.postalCode!.isNotEmpty) postalCode = googlePlace.postalCode!;
     }
 
@@ -77,7 +63,9 @@ class LocationPickerScreen extends StatefulWidget {
     
     // Auto-fill Address Label with search query if available, otherwise initial name segment
     String initialLabel = '';
-    if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+    if (googlePlace != null && googlePlace.name.isNotEmpty) {
+      initialLabel = googlePlace.name;
+    } else if (searchQuery != null && searchQuery.trim().isNotEmpty) {
       initialLabel = searchQuery.split(',').first.trim();
     } else {
       final parts = fullAddress.split(',');
@@ -105,7 +93,7 @@ class LocationPickerScreen extends StatefulWidget {
       selectedType = 'OFFICE';
     }
     
-    bool isDefault = false;
+    int currentTab = 0;
     bool showAdvanced = false;
 
     if (!context.mounted) return null;
@@ -143,13 +131,25 @@ class LocationPickerScreen extends StatefulWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Save this Location?',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF121214),
-                              ),
+                            Row(
+                              children: [
+                                if (currentTab == 1)
+                                  GestureDetector(
+                                    onTap: () => setModalState(() => currentTab = 0),
+                                    child: const Padding(
+                                      padding: EdgeInsets.only(right: 8),
+                                      child: Icon(Icons.arrow_back, color: Color(0xFF121214)),
+                                    ),
+                                  ),
+                                Text(
+                                  currentTab == 0 ? 'Save this Location?' : 'Contact Details',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF121214),
+                                  ),
+                                ),
+                              ],
                             ),
                             IconButton(
                               onPressed: () => Navigator.pop(context),
@@ -161,296 +161,268 @@ class LocationPickerScreen extends StatefulWidget {
                         ),
                         const SizedBox(height: 16),
 
-                        // Preset chips row
-                        Row(
-                          children: [
-                            _buildStaticModalTypeChip(
-                              label: 'Home',
-                              icon: Icons.home_rounded,
-                              isSelected: selectedType == 'HOME',
-                              onTap: () {
-                                setModalState(() {
-                                  selectedType = 'HOME';
-                                  labelController.text = 'Home';
-                                });
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            _buildStaticModalTypeChip(
-                              label: 'Office',
-                              icon: Icons.business_rounded,
-                              isSelected: selectedType == 'OFFICE',
-                              onTap: () {
-                                setModalState(() {
-                                  selectedType = 'OFFICE';
-                                  labelController.text = 'Office';
-                                });
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            _buildStaticModalTypeChip(
-                              label: 'Other',
-                              icon: Icons.location_on_rounded,
-                              isSelected: selectedType == 'OTHER',
-                              onTap: () {
-                                setModalState(() {
-                                  selectedType = 'OTHER';
-                                  if (labelController.text == 'Home' || labelController.text == 'Office') {
-                                    labelController.clear();
-                                  }
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Label Input
-                        _buildStaticInputField(
-                          label: 'Address Label',
-                          hint: 'e.g. Friend\'s House, Gym, Factory',
-                          controller: labelController,
-                          prefixIcon: Icons.bookmark_border_rounded,
-                          validator: (val) {
-                            if (val == null || val.trim().isEmpty) {
-                              return 'Label is required';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Highlighted and Shifted fields above Address Line 1
-                        Padding(
-                          padding: const EdgeInsets.only(left: 12, bottom: 4),
-                          child: GestureDetector(
-                            onTap: () async {
-                              try {
-                                final FlutterNativeContactPicker picker = FlutterNativeContactPicker();
-                                final contact = await picker.selectPhoneNumber();
-                                if (contact != null) {
-                                  if (contact.fullName != null && contact.fullName!.isNotEmpty) {
-                                    contactPersonNameController.text = contact.fullName!;
-                                  }
-                                  if (contact.phoneNumbers != null && contact.phoneNumbers!.isNotEmpty) {
-                                    String? rawNumber = contact.selectedPhoneNumber;
-                                    if (rawNumber != null) {
-                                      String sanitized = rawNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-                                      contactPersonPhoneController.text = sanitized;
-                                    }
-                                  }
-                                }
-                              } catch (e) {
-                                debugPrint('Error picking contact: $e');
-                              }
-                            },
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.contacts_rounded, color: Color(0xFFE31C2E), size: 14),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Choose from contacts',
-                                  style: TextStyle(fontSize: 10, color: const Color(0xFFE31C2E), fontWeight: FontWeight.w600),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        _buildStaticInputField(
-                          label: 'Contact Person Name (Optional)',
-                          hint: 'Name of the contact person',
-                          controller: contactPersonNameController,
-                          prefixIcon: Icons.person_outline_rounded,
-                          isHighlighted: true,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildStaticInputField(
-                          label: 'Contact Person Phone (Optional)',
-                          hint: '10-digit mobile number',
-                          controller: contactPersonPhoneController,
-                          prefixIcon: Icons.phone_android_outlined,
-                          keyboardType: TextInputType.phone,
-                          isHighlighted: true,
-                          suffixIcon: IconButton(
-                            icon: const Icon(Icons.contacts_rounded, color: Color(0xFFE31C2E)),
-                            onPressed: () async {
-                              try {
-                                final FlutterNativeContactPicker picker = FlutterNativeContactPicker();
-                                final contact = await picker.selectPhoneNumber();
-                                if (contact != null) {
-                                  if (contact.fullName != null && contact.fullName!.isNotEmpty) {
-                                    contactPersonNameController.text = contact.fullName!;
-                                  }
-                                  if (contact.phoneNumbers != null && contact.phoneNumbers!.isNotEmpty) {
-                                    String? rawNumber = contact.selectedPhoneNumber;
-                                    if (rawNumber != null) {
-                                      String sanitized = rawNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-                                      contactPersonPhoneController.text = sanitized;
-                                    }
-                                  }
-                                }
-                              } catch (e) {
-                                debugPrint('Error picking contact: $e');
-                              }
-                            },
-                          ),
-                          validator: (val) {
-                            if (val == null || val.trim().isEmpty) {
-                              return null;
-                            }
-                            final regExp = RegExp(r'^(?:\+91|91)?[6-9]\d{9}$');
-                            if (!regExp.hasMatch(val.trim())) {
-                              return 'Enter a valid 10-digit Indian phone number';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Address Line 1
-                        _buildStaticInputField(
-                          label: 'Address Line 1',
-                          hint: 'Flat/House No., Building, Street',
-                          controller: addressLine1Controller,
-                          prefixIcon: Icons.location_on_outlined,
-                          validator: (val) {
-                            if (val == null || val.trim().isEmpty) {
-                              return 'Address Line 1 is required';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Landmark (Moved here)
-                        _buildStaticInputField(
-                          label: 'Landmark (Optional)',
-                          hint: 'Opposite, Near by reference point',
-                          controller: landmarkController,
-                          prefixIcon: Icons.flag_outlined,
-                        ),
-                        const SizedBox(height: 8),
-
-                        // City & Postal Code Row
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: _buildStaticInputField(
-                                label: 'City',
-                                hint: 'City name',
-                                controller: cityController,
-                                prefixIcon: Icons.location_city_outlined,
-                                validator: (val) {
-                                  if (val == null || val.trim().isEmpty) {
-                                    return 'Required';
-                                  }
-                                  return null;
+                        if (currentTab == 0) ...[
+                          // Preset chips row
+                          Row(
+                            children: [
+                              _buildStaticModalTypeChip(
+                                label: 'Home',
+                                icon: Icons.home_rounded,
+                                isSelected: selectedType == 'HOME',
+                                onTap: () {
+                                  setModalState(() {
+                                    selectedType = 'HOME';
+                                    labelController.text = 'Home';
+                                  });
                                 },
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildStaticInputField(
-                                label: 'Postal Code',
-                                hint: 'Pin code',
-                                controller: postalCodeController,
-                                prefixIcon: Icons.pin_drop_outlined,
-                                keyboardType: TextInputType.number,
-                                validator: (val) {
-                                  if (val == null || val.trim().isEmpty) {
-                                    return 'Required';
-                                  }
-                                  return null;
+                              const SizedBox(width: 8),
+                              _buildStaticModalTypeChip(
+                                label: 'Office',
+                                icon: Icons.business_rounded,
+                                isSelected: selectedType == 'OFFICE',
+                                onTap: () {
+                                  setModalState(() {
+                                    selectedType = 'OFFICE';
+                                    labelController.text = 'Office';
+                                  });
                                 },
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Accordion Toggle for Optional Details
-                        InkWell(
-                          onTap: () {
-                            setModalState(() {
-                              showAdvanced = !showAdvanced;
-                            });
-                          },
-                          borderRadius: BorderRadius.circular(8),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  showAdvanced ? 'Hide Optional Details' : 'Show Optional Details',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFFE31C2E),
-                                  ),
-                                ),
-                                Icon(
-                                  showAdvanced ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                                  color: const Color(0xFFE31C2E),
-                                  size: 20,
-                                ),
-                              ],
-                            ),
+                              const SizedBox(width: 8),
+                              _buildStaticModalTypeChip(
+                                label: 'Other',
+                                icon: Icons.location_on_rounded,
+                                isSelected: selectedType == 'OTHER',
+                                onTap: () {
+                                  setModalState(() {
+                                    selectedType = 'OTHER';
+                                    if (labelController.text == 'Home' || labelController.text == 'Office') {
+                                      labelController.clear();
+                                    }
+                                  });
+                                },
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(height: 4),
+                          const SizedBox(height: 16),
 
-                        // Optional Advanced Fields (Collapsed/Expanded)
-                        if (showAdvanced) ...[
-                          const SizedBox(height: 8),
+                          // Label Input
                           _buildStaticInputField(
-                            label: 'Address Line 2 (Optional)',
-                            hint: 'Locality, Sector, Area',
-                            controller: addressLine2Controller,
-                            prefixIcon: Icons.home_outlined,
-                          ),
-                          const SizedBox(height: 8),
-                          _buildStaticInputField(
-                            label: 'State',
-                            hint: 'State name',
-                            controller: stateController,
-                            prefixIcon: Icons.map_outlined,
+                            label: 'Address Label',
+                            hint: 'e.g. Friend\'s House, Gym, Factory',
+                            controller: labelController,
+                            prefixIcon: Icons.bookmark_border_rounded,
                             validator: (val) {
                               if (val == null || val.trim().isEmpty) {
-                                return 'Required';
+                                return 'Label is required';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Address Line 1
+                          _buildStaticInputField(
+                            label: 'Address Line 1',
+                            hint: 'Flat/House No., Building, Street',
+                            controller: addressLine1Controller,
+                            prefixIcon: Icons.location_on_outlined,
+                            validator: (val) {
+                              if (val == null || val.trim().isEmpty) {
+                                return 'Address Line 1 is required';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Landmark
+                          _buildStaticInputField(
+                            label: 'Landmark (Optional)',
+                            hint: 'Opposite, Near by reference point',
+                            controller: landmarkController,
+                            prefixIcon: Icons.flag_outlined,
+                          ),
+                          const SizedBox(height: 8),
+
+                          // City & Postal Code Row
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: _buildStaticInputField(
+                                  label: 'City',
+                                  hint: 'City name',
+                                  controller: cityController,
+                                  prefixIcon: Icons.location_city_outlined,
+                                  validator: (val) {
+                                    if (val == null || val.trim().isEmpty) {
+                                      return 'Required';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildStaticInputField(
+                                  label: 'Postal Code',
+                                  hint: 'Pin code',
+                                  controller: postalCodeController,
+                                  prefixIcon: Icons.pin_drop_outlined,
+                                  keyboardType: TextInputType.number,
+                                  validator: (val) {
+                                    if (val == null || val.trim().isEmpty) {
+                                      return 'Required';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Accordion Toggle for Optional Details
+                          InkWell(
+                            onTap: () {
+                              setModalState(() {
+                                showAdvanced = !showAdvanced;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 6.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    showAdvanced ? 'Hide Optional Details' : 'Show Optional Details',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFFE31C2E),
+                                    ),
+                                  ),
+                                  Icon(
+                                    showAdvanced ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                                    color: const Color(0xFFE31C2E),
+                                    size: 20,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+
+                          // Optional Advanced Fields (Collapsed/Expanded)
+                          if (showAdvanced) ...[
+                            const SizedBox(height: 8),
+                            _buildStaticInputField(
+                              label: 'Address Line 2 (Optional)',
+                              hint: 'Locality, Sector, Area',
+                              controller: addressLine2Controller,
+                              prefixIcon: Icons.home_outlined,
+                            ),
+                            const SizedBox(height: 8),
+                            _buildStaticInputField(
+                              label: 'State (Optional)',
+                              hint: 'State name',
+                              controller: stateController,
+                              prefixIcon: Icons.map_outlined,
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                        ],
+
+                        if (currentTab == 1) ...[
+                          Padding(
+                            padding: const EdgeInsets.only(left: 12, bottom: 4),
+                            child: GestureDetector(
+                              onTap: () async {
+                                try {
+                                  final FlutterNativeContactPicker picker = FlutterNativeContactPicker();
+                                  final contact = await picker.selectPhoneNumber();
+                                  if (contact != null) {
+                                    if (contact.fullName != null && contact.fullName!.isNotEmpty) {
+                                      contactPersonNameController.text = contact.fullName!;
+                                    }
+                                    if (contact.phoneNumbers != null && contact.phoneNumbers!.isNotEmpty) {
+                                      String? rawNumber = contact.selectedPhoneNumber;
+                                      if (rawNumber != null) {
+                                        String sanitized = rawNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+                                        contactPersonPhoneController.text = sanitized;
+                                      }
+                                    }
+                                  }
+                                } catch (e) {
+                                  debugPrint('Error picking contact: $e');
+                                }
+                              },
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.contacts_rounded, color: Color(0xFFE31C2E), size: 14),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Choose from contacts',
+                                    style: TextStyle(fontSize: 10, color: const Color(0xFFE31C2E), fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          _buildStaticInputField(
+                            label: 'Contact Person Name (Optional)',
+                            hint: 'Name of the contact person',
+                            controller: contactPersonNameController,
+                            prefixIcon: Icons.person_outline_rounded,
+                            isHighlighted: true,
+                          ),
+                          const SizedBox(height: 8),
+                          _buildStaticInputField(
+                            label: 'Contact Person Phone (Optional)',
+                            hint: '10-digit mobile number',
+                            controller: contactPersonPhoneController,
+                            prefixIcon: Icons.phone_android_outlined,
+                            keyboardType: TextInputType.phone,
+                            isHighlighted: true,
+                            suffixIcon: IconButton(
+                              icon: const Icon(Icons.contacts_rounded, color: Color(0xFFE31C2E)),
+                              onPressed: () async {
+                                try {
+                                  final FlutterNativeContactPicker picker = FlutterNativeContactPicker();
+                                  final contact = await picker.selectPhoneNumber();
+                                  if (contact != null) {
+                                    if (contact.fullName != null && contact.fullName!.isNotEmpty) {
+                                      contactPersonNameController.text = contact.fullName!;
+                                    }
+                                    if (contact.phoneNumbers != null && contact.phoneNumbers!.isNotEmpty) {
+                                      String? rawNumber = contact.selectedPhoneNumber;
+                                      if (rawNumber != null) {
+                                        String sanitized = rawNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+                                        contactPersonPhoneController.text = sanitized;
+                                      }
+                                    }
+                                  }
+                                } catch (e) {
+                                  debugPrint('Error picking contact: $e');
+                                }
+                              },
+                            ),
+                            validator: (val) {
+                              if (val == null || val.trim().isEmpty) {
+                                return null;
+                              }
+                              final regExp = RegExp(r'^(?:\+91|91)?[6-9]\d{9}$');
+                              if (!regExp.hasMatch(val.trim())) {
+                                return 'Enter a valid 10-digit Indian phone number';
                               }
                               return null;
                             },
                           ),
                           const SizedBox(height: 8),
                         ],
-
-                        // Set Default Address Switch Row
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Set as Default Address',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF121214),
-                              ),
-                            ),
-                            Switch(
-                              value: isDefault,
-                              activeThumbColor: const Color(0xFFE31C2E),
-                              activeTrackColor: const Color(0xFFE31C2E).withValues(alpha: 0.5),
-                              onChanged: (val) {
-                                setModalState(() {
-                                  isDefault = val;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
                         const SizedBox(height: 20),
 
                         // Buttons Row
@@ -471,12 +443,19 @@ class LocationPickerScreen extends StatefulWidget {
                                   onPressed: () async {
                                     if (!formKey.currentState!.validate()) return;
 
+                                    if (currentTab == 0) {
+                                      setModalState(() {
+                                        currentTab = 1;
+                                      });
+                                      return;
+                                    }
+
                                     final label = labelController.text.trim();
                                     final addrLine1 = addressLine1Controller.text.trim();
                                     final addrLine2 = addressLine2Controller.text.trim();
                                     final landm = landmarkController.text.trim();
                                     final cit = cityController.text.trim();
-                                    final stat = stateController.text.trim();
+                                    final stat = stateController.text.trim().isEmpty ? '.' : stateController.text.trim();
                                     final postCode = postalCodeController.text.trim();
                                     final countr = countryController.text.trim();
 
@@ -492,7 +471,7 @@ class LocationPickerScreen extends StatefulWidget {
                                       'postalCode': postCode,
                                       'latitude': latitude,
                                       'longitude': longitude,
-                                      'defaultAddress': isDefault,
+                                      'defaultAddress': false,
                                       'contactPersonName': contactPersonNameController.text.trim(),
                                       'contactPersonPhone': contactPersonPhoneController.text.trim(),
                                     };
@@ -527,9 +506,9 @@ class LocationPickerScreen extends StatefulWidget {
                                       }
                                     }
                                   },
-                                  child: const Text(
-                                    'Continue',
-                                    style: TextStyle(
+                                  child: Text(
+                                    currentTab == 0 ? 'Continue' : 'Save Address',
+                                    style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -612,7 +591,7 @@ class LocationPickerScreen extends StatefulWidget {
           style: GoogleFonts.poppins(
             fontSize: 12,
             color: const Color(0xFF121214),
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 2),
