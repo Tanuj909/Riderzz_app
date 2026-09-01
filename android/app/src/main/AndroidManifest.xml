@@ -13,6 +13,8 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
     <!-- Required for foregroundServiceType="specialUse" on Android 14+ -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
+    <!-- Required to turn on screen and display alert over lock screen for new booking broadcasts -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
     <application
         android:label="Riderzz"
         android:icon="@mipmap/ic_launcher"
@@ -52,7 +54,7 @@
         <!-- Firebase Default Notification Channel -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="booking_requests_high_v1" />
+            android:value="new_booking_alert_v1" />
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
@@ -64,6 +66,15 @@
             android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
             android:foregroundServiceType="location"
             android:exported="false" />
+
+        <!-- Custom FCM Service to trigger Full-Screen Intent for BOOKING_BROADCAST when app is terminated/locked -->
+        <service
+            android:name=".RiderzzFcmService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
 
         <!-- Native Riderzz chat-head. It owns the only WindowManager overlay. -->
         <service

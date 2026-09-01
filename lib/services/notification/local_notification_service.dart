@@ -165,6 +165,8 @@ class LocalNotificationService {
             enableVibration: true,
             vibrationPattern: Int64List.fromList([0, 500, 200, 500, 200, 500]),
             autoCancel: true,
+            fullScreenIntent: true,
+            visibility: NotificationVisibility.public,
           ),
           iOS: const DarwinNotificationDetails(
             presentAlert: true,
@@ -238,6 +240,8 @@ class LocalNotificationService {
                   enableVibration: true,
                   vibrationPattern: Int64List.fromList([0, 500, 200, 500, 200, 500]),
                   autoCancel: true,
+                  fullScreenIntent: true,
+                  visibility: NotificationVisibility.public,
                 )
               : const AndroidNotificationDetails(
                   _channelId,

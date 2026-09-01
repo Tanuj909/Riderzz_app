@@ -8,6 +8,8 @@ import 'package:riderzz_app/features/user/addresses/providers/address_provider.d
 import 'package:riderzz_app/features/user/saved_routes/providers/saved_route_provider.dart';
 import 'package:riderzz_app/screens/search_location_screen.dart';
 import 'package:riderzz_app/models/google_place.dart';
+import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
+import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 
 class PickupDetailsView extends StatefulWidget {
   final Map<String, dynamic>? initialRoute;
@@ -36,6 +38,11 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
   double? _pickupLongitude;
   double? _dropLatitude;
   double? _dropLongitude;
+
+  String? _pickupContactName;
+  String? _pickupContactPhone;
+  String? _dropContactName;
+  String? _dropContactPhone;
 
   String? _parcelType;
   bool _isCreatingBooking = false;
@@ -69,6 +76,11 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
           _selectedWeight = widget.initialData!['weightKg']?.toString();
         }
         _goodsDescriptionController.text = widget.initialData!['goodsDescription'] ?? '';
+        
+        _pickupContactName = widget.initialData!['pickupContactName'];
+        _pickupContactPhone = widget.initialData!['pickupContactPhone'];
+        _dropContactName = widget.initialData!['dropContactName'];
+        _dropContactPhone = widget.initialData!['dropContactPhone'];
         
         // If pickup controller text is empty, fill it with current location as fallback
         if (_pickupController.text.trim().isEmpty) {
@@ -131,11 +143,18 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
 
   void _setCurrentLocationAsPickup() {
     final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (locationProvider.hasLocation) {
       setState(() {
         _pickupController.text = locationProvider.currentAddress ?? '';
         _pickupLatitude = locationProvider.currentLatitude;
         _pickupLongitude = locationProvider.currentLongitude;
+        
+        final user = authProvider.currentUser;
+        if (user != null) {
+          _pickupContactName = user.name ?? authProvider.customerProfile?.fullName;
+          _pickupContactPhone = user.phone;
+        }
       });
     }
   }
@@ -392,6 +411,429 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
     widget.onContinue(bookingData);
   }
 
+  void _showContactDetailsPopup(BuildContext context, Map<String, dynamic> item, String label, bool isPickup) {
+    final nameController = TextEditingController(text: item['contactPersonName'] ?? '');
+    final phoneController = TextEditingController(text: item['contactPersonPhone'] ?? '');
+    final formKey = GlobalKey<FormState>();
+    bool isUpdating = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              title: Text(
+                'Confirm Contact Person',
+                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 12, bottom: 4),
+                      child: GestureDetector(
+                        onTap: () async {
+                          try {
+                            final FlutterNativeContactPicker picker = FlutterNativeContactPicker();
+                            final contact = await picker.selectPhoneNumber();
+                            if (contact != null) {
+                              if (contact.fullName != null && contact.fullName!.isNotEmpty) {
+                                nameController.text = contact.fullName!;
+                              }
+                              if (contact.phoneNumbers != null && contact.phoneNumbers!.isNotEmpty) {
+                                String? rawNumber = contact.selectedPhoneNumber;
+                                if (rawNumber != null) {
+                                  String sanitized = rawNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+                                  phoneController.text = sanitized;
+                                }
+                              }
+                            }
+                          } catch (e) {
+                            debugPrint('Error picking contact: $e');
+                          }
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.contacts_rounded, color: Color(0xFFE31C2E), size: 14),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Choose from contacts',
+                              style: TextStyle(fontSize: 12, color: Color(0xFFE31C2E), fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: nameController,
+                      style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
+                      decoration: InputDecoration(
+                        labelText: 'Contact Person Name',
+                        labelStyle: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFFE7E7EB))),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFFE7E7EB))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFF121214))),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
+                      decoration: InputDecoration(
+                        labelText: 'Contact Person Phone',
+                        labelStyle: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFFE7E7EB))),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFFE7E7EB))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFF121214))),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isUpdating ? null : () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                ),
+                ElevatedButton(
+                  onPressed: isUpdating
+                      ? null
+                      : () async {
+                          if (formKey.currentState!.validate()) {
+                            setDialogState(() => isUpdating = true);
+                            final provider = Provider.of<AddressProvider>(context, listen: false);
+                            
+                            // Check if changed
+                            if (nameController.text.trim() != (item['contactPersonName'] ?? '') ||
+                                phoneController.text.trim() != (item['contactPersonPhone'] ?? '')) {
+                              
+                              final updatedData = Map<String, dynamic>.from(item);
+                              updatedData['contactPersonName'] = nameController.text.trim();
+                              updatedData['contactPersonPhone'] = phoneController.text.trim();
+                              
+                              final success = await provider.updateAddress(id: item['id'], data: updatedData);
+                              
+                              if (!success) {
+                                setDialogState(() => isUpdating = false);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(provider.errorMessage ?? 'Failed to update address')),
+                                );
+                                return;
+                              }
+                            }
+                            
+                            // Set location
+                            setState(() {
+                              if (isPickup) {
+                                _pickupController.text = item['address'] ?? '';
+                                _pickupLatitude = item['lat'] is num ? (item['lat'] as num).toDouble() : null;
+                                _pickupLongitude = item['lng'] is num ? (item['lng'] as num).toDouble() : null;
+                                _pickupContactName = nameController.text.trim();
+                                _pickupContactPhone = phoneController.text.trim();
+                              } else {
+                                _dropController.text = item['address'] ?? '';
+                                _dropLatitude = item['lat'] is num ? (item['lat'] as num).toDouble() : null;
+                                _dropLongitude = item['lng'] is num ? (item['lng'] as num).toDouble() : null;
+                                _dropContactName = nameController.text.trim();
+                                _dropContactPhone = phoneController.text.trim();
+                              }
+                            });
+                            
+                            Navigator.pop(dialogContext); // close dialog
+                            
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              SnackBar(
+                                content: Text('${isPickup ? "Pickup" : "Drop"} set to $label'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE31C2E),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: isUpdating
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('Confirm', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showRouteContactDetailsPopup(BuildContext context, Map<String, dynamic> item) {
+    final routeName = item['routeName'] ?? '';
+    final pickup = item['pickupAddress'] ?? {};
+    final drop = item['dropAddress'] ?? {};
+
+    final pickupNameController = TextEditingController(text: pickup['contactPersonName'] ?? '');
+    final pickupPhoneController = TextEditingController(text: pickup['contactPersonPhone'] ?? '');
+
+    final dropNameController = TextEditingController(text: drop['contactPersonName'] ?? '');
+    final dropPhoneController = TextEditingController(text: drop['contactPersonPhone'] ?? '');
+
+    final formKey = GlobalKey<FormState>();
+    bool isUpdating = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              title: Text(
+                'Confirm Contacts',
+                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              content: Form(
+                key: formKey,
+                child: SizedBox(
+                  width: double.maxFinite,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Pickup Contact
+                        Text('Pickup Contact', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF1C9A5B))),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 12, bottom: 4),
+                          child: GestureDetector(
+                            onTap: () async {
+                              try {
+                                final FlutterNativeContactPicker picker = FlutterNativeContactPicker();
+                                final contact = await picker.selectPhoneNumber();
+                                if (contact != null) {
+                                  if (contact.fullName != null && contact.fullName!.isNotEmpty) {
+                                    pickupNameController.text = contact.fullName!;
+                                  }
+                                  if (contact.phoneNumbers != null && contact.phoneNumbers!.isNotEmpty) {
+                                    String? rawNumber = contact.selectedPhoneNumber;
+                                    if (rawNumber != null) {
+                                      String sanitized = rawNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+                                      pickupPhoneController.text = sanitized;
+                                    }
+                                  }
+                                }
+                              } catch (e) {
+                                debugPrint('Error picking contact: $e');
+                              }
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.contacts_rounded, color: Color(0xFF1C9A5B), size: 14),
+                                const SizedBox(width: 4),
+                                const Text(
+                                  'Choose from contacts',
+                                  style: TextStyle(fontSize: 12, color: Color(0xFF1C9A5B), fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        TextFormField(
+                          controller: pickupNameController,
+                          style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
+                          decoration: InputDecoration(
+                            labelText: 'Contact Person Name',
+                            labelStyle: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFFE7E7EB))),
+                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFFE7E7EB))),
+                            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFF121214))),
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: pickupPhoneController,
+                          keyboardType: TextInputType.phone,
+                          style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
+                          decoration: InputDecoration(
+                            labelText: 'Contact Person Phone',
+                            labelStyle: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFFE7E7EB))),
+                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFFE7E7EB))),
+                            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFF121214))),
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Divider(color: Color(0xFFE7E7EB), height: 1),
+                        const SizedBox(height: 16),
+                        
+                        // Drop Contact
+                        Text('Drop Contact', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFFB9700A))),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 12, bottom: 4),
+                          child: GestureDetector(
+                            onTap: () async {
+                              try {
+                                final FlutterNativeContactPicker picker = FlutterNativeContactPicker();
+                                final contact = await picker.selectPhoneNumber();
+                                if (contact != null) {
+                                  if (contact.fullName != null && contact.fullName!.isNotEmpty) {
+                                    dropNameController.text = contact.fullName!;
+                                  }
+                                  if (contact.phoneNumbers != null && contact.phoneNumbers!.isNotEmpty) {
+                                    String? rawNumber = contact.selectedPhoneNumber;
+                                    if (rawNumber != null) {
+                                      String sanitized = rawNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+                                      dropPhoneController.text = sanitized;
+                                    }
+                                  }
+                                }
+                              } catch (e) {
+                                debugPrint('Error picking contact: $e');
+                              }
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.contacts_rounded, color: Color(0xFFB9700A), size: 14),
+                                const SizedBox(width: 4),
+                                const Text(
+                                  'Choose from contacts',
+                                  style: TextStyle(fontSize: 12, color: Color(0xFFB9700A), fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        TextFormField(
+                          controller: dropNameController,
+                          style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
+                          decoration: InputDecoration(
+                            labelText: 'Contact Person Name',
+                            labelStyle: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFFE7E7EB))),
+                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFFE7E7EB))),
+                            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFF121214))),
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: dropPhoneController,
+                          keyboardType: TextInputType.phone,
+                          style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
+                          decoration: InputDecoration(
+                            labelText: 'Contact Person Phone',
+                            labelStyle: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFFE7E7EB))),
+                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFFE7E7EB))),
+                            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFF121214))),
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isUpdating ? null : () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                ),
+                ElevatedButton(
+                  onPressed: isUpdating
+                      ? null
+                      : () async {
+                          if (formKey.currentState!.validate()) {
+                            setDialogState(() => isUpdating = true);
+                            final provider = Provider.of<AddressProvider>(context, listen: false);
+                            
+                            bool pickupChanged = pickupNameController.text.trim() != (pickup['contactPersonName'] ?? '') ||
+                                                 pickupPhoneController.text.trim() != (pickup['contactPersonPhone'] ?? '');
+                            bool dropChanged = dropNameController.text.trim() != (drop['contactPersonName'] ?? '') ||
+                                               dropPhoneController.text.trim() != (drop['contactPersonPhone'] ?? '');
+
+                            if (pickupChanged && pickup['id'] != null) {
+                              final updatedData = Map<String, dynamic>.from(pickup);
+                              updatedData['contactPersonName'] = pickupNameController.text.trim();
+                              updatedData['contactPersonPhone'] = pickupPhoneController.text.trim();
+                              await provider.updateAddress(id: pickup['id'], data: updatedData);
+                            }
+
+                            if (dropChanged && drop['id'] != null) {
+                              final updatedData = Map<String, dynamic>.from(drop);
+                              updatedData['contactPersonName'] = dropNameController.text.trim();
+                              updatedData['contactPersonPhone'] = dropPhoneController.text.trim();
+                              await provider.updateAddress(id: drop['id'], data: updatedData);
+                            }
+                            
+                            setState(() {
+                              _pickupController.text = pickup['address'] ?? '';
+                              _pickupLatitude = pickup['lat'] is num ? (pickup['lat'] as num).toDouble() : null;
+                              _pickupLongitude = pickup['lng'] is num ? (pickup['lng'] as num).toDouble() : null;
+                              _pickupContactName = pickupNameController.text.trim();
+                              _pickupContactPhone = pickupPhoneController.text.trim();
+
+                              _dropController.text = drop['address'] ?? '';
+                              _dropLatitude = drop['lat'] is num ? (drop['lat'] as num).toDouble() : null;
+                              _dropLongitude = drop['lng'] is num ? (drop['lng'] as num).toDouble() : null;
+                              _dropContactName = dropNameController.text.trim();
+                              _dropContactPhone = dropPhoneController.text.trim();
+                            });
+                            
+                            Navigator.pop(dialogContext); // close dialog
+                            
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              SnackBar(
+                                content: Text('Route set to "$routeName"'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE31C2E),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: isUpdating
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('Confirm', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showLocationActionSheet(BuildContext context, Map<String, dynamic> item, String label) {
     showModalBottomSheet(
       context: context,
@@ -419,18 +861,8 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                 leading: const Icon(Icons.pin_drop_rounded, color: Color(0xFF1C9A5B)),
                 title: const Text('Set as Pickup Location', style: TextStyle(fontSize: 14,color: Colors.black87,)),
                 onTap: () {
-                  setState(() {
-                    _pickupController.text = item['address'] ?? '';
-                    _pickupLatitude = item['lat'] is num ? (item['lat'] as num).toDouble() : null;
-                    _pickupLongitude = item['lng'] is num ? (item['lng'] as num).toDouble() : null;
-                  });
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(this.context).showSnackBar(
-                    SnackBar(
-                      content: Text('Pickup set to $label'),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
+                  _showContactDetailsPopup(context, item, label, true);
                 },
               ),
               const Divider(height: 1, color: Color(0xFFE7E7EB)),
@@ -438,18 +870,8 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                 leading: const Icon(Icons.location_on_rounded, color: Color(0xFFB9700A)),
                 title: const Text('Set as Drop Location', style: TextStyle(fontSize: 14,color: Colors.black87,)),
                 onTap: () {
-                  setState(() {
-                    _dropController.text = item['address'] ?? '';
-                    _dropLatitude = item['lat'] is num ? (item['lat'] as num).toDouble() : null;
-                    _dropLongitude = item['lng'] is num ? (item['lng'] as num).toDouble() : null;
-                  });
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(this.context).showSnackBar(
-                    SnackBar(
-                      content: Text('Drop set to $label'),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
+                  _showContactDetailsPopup(context, item, label, false);
                 },
               ),
             ],
@@ -485,112 +907,156 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                 border: Border.all(color: const Color(0xFFE7E7EB)),
                 boxShadow: const [BoxShadow(color: Color(0x0D121214), offset: Offset(0, 1), blurRadius: 2)],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Stack(
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                  Positioned(
+                    left: 6.25,
+                    top: (_pickupContactName != null && _pickupContactName!.isNotEmpty) ? 28.0 : 12.0,
+                    bottom: 12.0,
+                    child: Container(
+                      width: 1.5,
+                      color: const Color(0xFFE7E7EB),
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFF121214), shape: BoxShape.circle)),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _pickupController,
-                          readOnly: true,
-                          style: const TextStyle(fontSize: 13, color: Color(0xFF121214), fontWeight: FontWeight.w400),
-                          onTap: () => _openSearchScreen(isPickup: true),
-                          validator: (value) => (value == null || value.trim().isEmpty) ? 'Fill the details!' : null,
-                          decoration: const InputDecoration(
-                            hintText: 'Enter pickup location',
-                            hintStyle: TextStyle(color: Color(0xFFB0B8C4)),
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(vertical: 8),
-                            errorStyle: TextStyle(height: 0.8),
+                      if (_pickupContactName != null && _pickupContactName!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 26, bottom: 0),
+                          child: Text(
+                            '$_pickupContactName${_pickupContactPhone != null && _pickupContactPhone!.isNotEmpty ? ' • $_pickupContactPhone' : ''}',
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1C9A5B)),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: () => _openSearchScreen(isPickup: true),
-                        child: const Icon(Icons.search_rounded, size: 20, color: Color(0xFFE31C2E)),
-                      ),
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: () async {
-                          final result = await Navigator.push<Map<String, dynamic>>(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => LocationPickerScreen(
-                                initialLatitude: _pickupLatitude,
-                                initialLongitude: _pickupLongitude,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.only(top: 5),
+                            width: 14, height: 14, decoration: const BoxDecoration(color: Color(0xFF121214), shape: BoxShape.circle)
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _pickupController,
+                              readOnly: true,
+                              style: const TextStyle(fontSize: 13, color: Color(0xFF121214), fontWeight: FontWeight.w400),
+                              onTap: () => _openSearchScreen(isPickup: true),
+                              validator: (value) => (value == null || value.trim().isEmpty) ? 'Fill the details!' : null,
+                              decoration: const InputDecoration(
+                                hintText: 'Enter pickup location',
+                                hintStyle: TextStyle(color: Color(0xFFB0B8C4)),
+                                border: InputBorder.none,
+                                isDense: true,
+                                contentPadding: EdgeInsets.only(top: 2, bottom: 8),
+                                errorStyle: TextStyle(height: 0.8),
                               ),
                             ),
-                          );
-                          if (result != null) {
-                            setState(() {
-                              _pickupController.text = result['address'] ?? '';
-                              _pickupLatitude = result['latitude'];
-                              _pickupLongitude = result['longitude'];
-                            });
-                          }
-                        },
-                        child: const Icon(Icons.location_on_outlined, size: 20, color: Color(0xFFE31C2E)),
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => _openSearchScreen(isPickup: true),
+                            child: const Padding(
+                              padding: EdgeInsets.only(top: 3),
+                              child: Icon(Icons.search_rounded, size: 20, color: Color(0xFFE31C2E)),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () async {
+                              final result = await Navigator.push<Map<String, dynamic>>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => LocationPickerScreen(
+                                    initialLatitude: _pickupLatitude,
+                                    initialLongitude: _pickupLongitude,
+                                  ),
+                                ),
+                              );
+                              if (result != null) {
+                                setState(() {
+                                  _pickupController.text = result['address'] ?? '';
+                                  _pickupLatitude = result['latitude'];
+                                  _pickupLongitude = result['longitude'];
+                                });
+                              }
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.only(top: 3),
+                              child: Icon(Icons.location_on_outlined, size: 20, color: Color(0xFFE31C2E)),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4.0),
-                    child: Container(width: 1.5, height: 20, color: const Color(0xFFE7E7EB)),
-                  ),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFFE31C2E), shape: BoxShape.circle)),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _dropController,
-                          readOnly: true,
-                          style: const TextStyle(fontSize: 13, color: Color(0xFF121214), fontWeight: FontWeight.w400),
-                          onTap: () => _openSearchScreen(isPickup: false),
-                          validator: (value) => (value == null || value.trim().isEmpty) ? 'Fill the details!' : null,
-                          decoration: const InputDecoration(
-                            hintText: 'Add drop location',
-                            hintStyle: TextStyle(color: Color(0xFFB0B8C4)),
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(vertical: 8),
-                            errorStyle: TextStyle(height: 0.8),
+                      const SizedBox(height: 4),
+                      if (_dropContactName != null && _dropContactName!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 26, bottom: 0, top: 0),
+                          child: Text(
+                            '$_dropContactName${_dropContactPhone != null && _dropContactPhone!.isNotEmpty ? ' • $_dropContactPhone' : ''}',
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFFB9700A)),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: () => _openSearchScreen(isPickup: false),
-                        child: const Icon(Icons.search_rounded, size: 20, color: Color(0xFFE31C2E)),
-                      ),
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: () async {
-                          final result = await Navigator.push<Map<String, dynamic>>(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => LocationPickerScreen(
-                                initialLatitude: _dropLatitude,
-                                initialLongitude: _dropLongitude,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.only(top: 5),
+                            width: 14, height: 14, decoration: const BoxDecoration(color: Color(0xFFE31C2E), shape: BoxShape.circle)
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _dropController,
+                              readOnly: true,
+                              style: const TextStyle(fontSize: 13, color: Color(0xFF121214), fontWeight: FontWeight.w400),
+                              onTap: () => _openSearchScreen(isPickup: false),
+                              validator: (value) => (value == null || value.trim().isEmpty) ? 'Fill the details!' : null,
+                              decoration: const InputDecoration(
+                                hintText: 'Add drop location',
+                                hintStyle: TextStyle(color: Color(0xFFB0B8C4)),
+                                border: InputBorder.none,
+                                isDense: true,
+                                contentPadding: EdgeInsets.only(top: 2, bottom: 8),
+                                errorStyle: TextStyle(height: 0.8),
                               ),
                             ),
-                          );
-                          if (result != null) {
-                            setState(() {
-                              _dropController.text = result['address'] ?? '';
-                              _dropLatitude = result['latitude'];
-                              _dropLongitude = result['longitude'];
-                            });
-                          }
-                        },
-                        child: const Icon(Icons.location_on_outlined, size: 20, color: Color(0xFFE31C2E)),
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => _openSearchScreen(isPickup: false),
+                            child: const Padding(
+                              padding: EdgeInsets.only(top: 3),
+                              child: Icon(Icons.search_rounded, size: 20, color: Color(0xFFE31C2E)),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () async {
+                              final result = await Navigator.push<Map<String, dynamic>>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => LocationPickerScreen(
+                                    initialLatitude: _dropLatitude,
+                                    initialLongitude: _dropLongitude,
+                                  ),
+                                ),
+                              );
+                              if (result != null) {
+                                setState(() {
+                                  _dropController.text = result['address'] ?? '';
+                                  _dropLatitude = result['latitude'];
+                                  _dropLongitude = result['longitude'];
+                                });
+                              }
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.only(top: 3),
+                              child: Icon(Icons.location_on_outlined, size: 20, color: Color(0xFFE31C2E)),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -871,23 +1337,7 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: InkWell(
                                   onTap: () {
-                                    final pickup = item['pickupAddress'] ?? {};
-                                    final drop = item['dropAddress'] ?? {};
-                                    setState(() {
-                                      _pickupController.text = pickup['address'] ?? '';
-                                      _pickupLatitude = pickup['lat'] is num ? (pickup['lat'] as num).toDouble() : null;
-                                      _pickupLongitude = pickup['lng'] is num ? (pickup['lng'] as num).toDouble() : null;
-
-                                      _dropController.text = drop['address'] ?? '';
-                                      _dropLatitude = drop['lat'] is num ? (drop['lat'] as num).toDouble() : null;
-                                      _dropLongitude = drop['lng'] is num ? (drop['lng'] as num).toDouble() : null;
-                                    });
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Route set to "$routeName"'),
-                                        duration: const Duration(seconds: 2),
-                                      ),
-                                    );
+                                    _showRouteContactDetailsPopup(context, item);
                                   },
                                   borderRadius: BorderRadius.circular(20),
                                   child: Container(

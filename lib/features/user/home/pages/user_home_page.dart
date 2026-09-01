@@ -1755,24 +1755,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFEFF6FF),
-                          shape: BoxShape.circle,
-                        ),
-                        alignment: Alignment.center,
-                        child: vehicle.iconUrl != null && vehicle.iconUrl!.isNotEmpty
-                            ? Image.network(
-                                vehicle.iconUrl!,
-                                width: 22,
-                                height: 22,
-                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.local_shipping_outlined, color: Colors.blue, size: 18),
-                              )
-                            : const Icon(Icons.local_shipping_outlined, color: Colors.blue, size: 18),
-                      ),
-                      const SizedBox(width: 12),
+
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1824,26 +1807,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFFF2DC),
-                          shape: BoxShape.circle,
-                        ),
-                        alignment: Alignment.center,
-                        child: vehicle.iconUrl != null && vehicle.iconUrl!.isNotEmpty
-                            ? Image.network(
-                                vehicle.iconUrl!,
-                                width: 22,
-                                height: 22,
-                                color: Colors.orange.shade700,
-                                colorBlendMode: BlendMode.srcIn,
-                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 18),
-                              )
-                            : const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 18),
-                      ),
-                      const SizedBox(width: 12),
+
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
