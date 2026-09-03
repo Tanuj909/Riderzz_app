@@ -496,6 +496,8 @@ class LocationPickerScreen extends StatefulWidget {
                                           'latitude': latitude,
                                           'longitude': longitude,
                                           'address': fullAddrString,
+                                          'contactPersonName': contactPersonNameController.text.trim(),
+                                          'contactPersonPhone': contactPersonPhoneController.text.trim(),
                                         });
                                       }
                                     } else {

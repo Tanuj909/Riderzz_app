@@ -9,6 +9,7 @@ import 'package:riderzz_app/features/user/saved_routes/providers/saved_route_pro
 import 'package:riderzz_app/screens/search_location_screen.dart';
 import 'package:riderzz_app/models/google_place.dart';
 import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 
 class PickupDetailsView extends StatefulWidget {
@@ -159,6 +160,91 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
     }
   }
 
+  bool _isDuplicateLocation({
+    required double? lat1,
+    required double? lng1,
+    required String text1,
+    required double? lat2,
+    required double? lng2,
+    required String text2,
+  }) {
+    final t1 = text1.trim().toLowerCase();
+    final t2 = text2.trim().toLowerCase();
+    if (t1.isNotEmpty && t2.isNotEmpty && t1 == t2) {
+      return true;
+    }
+    if (lat1 != null && lng1 != null && lat2 != null && lng2 != null) {
+      // Coordinate distance check (0.0005 deg is ~55m)
+      if ((lat1 - lat2).abs() < 0.0005 && (lng1 - lng2).abs() < 0.0005) {
+        return true;
+      }
+      try {
+        final distanceMeters = Geolocator.distanceBetween(lat1, lng1, lat2, lng2);
+        if (distanceMeters < 50) {
+          return true;
+        }
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  bool _validateAndApplyLocation({
+    required bool isPickup,
+    required String address,
+    required double? lat,
+    required double? lng,
+    String? contactName,
+    String? contactPhone,
+  }) {
+    final otherText = isPickup ? _dropController.text : _pickupController.text;
+    final otherLat = isPickup ? _dropLatitude : _pickupLatitude;
+    final otherLng = isPickup ? _dropLongitude : _pickupLongitude;
+
+    if (otherText.trim().isNotEmpty || (otherLat != null && otherLng != null)) {
+      final isSame = _isDuplicateLocation(
+        lat1: lat,
+        lng1: lng,
+        text1: address,
+        lat2: otherLat,
+        lng2: otherLng,
+        text2: otherText,
+      );
+
+      if (isSame) {
+        final message = isPickup
+            ? 'Please choose a different pickup location. It cannot be the same as the drop location.'
+            : 'Please choose a different drop location. It cannot be the same as the pickup location.';
+        _showValidationErrorDialog('Same Location', message);
+        return false;
+      }
+    }
+
+    setState(() {
+      if (isPickup) {
+        _pickupController.text = address;
+        _pickupLatitude = lat;
+        _pickupLongitude = lng;
+        if (contactName != null && contactName.trim().isNotEmpty) {
+          _pickupContactName = contactName.trim();
+        }
+        if (contactPhone != null && contactPhone.trim().isNotEmpty) {
+          _pickupContactPhone = contactPhone.trim();
+        }
+      } else {
+        _dropController.text = address;
+        _dropLatitude = lat;
+        _dropLongitude = lng;
+        if (contactName != null && contactName.trim().isNotEmpty) {
+          _dropContactName = contactName.trim();
+        }
+        if (contactPhone != null && contactPhone.trim().isNotEmpty) {
+          _dropContactPhone = contactPhone.trim();
+        }
+      }
+    });
+    return true;
+  }
+
   Future<void> _openSearchScreen({required bool isPickup}) async {
     final place = await Navigator.push<GooglePlace>(
       context,
@@ -169,17 +255,14 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
       ),
     );
     if (place != null && mounted) {
-      setState(() {
-        if (isPickup) {
-          _pickupController.text = place.displayName;
-          _pickupLatitude = place.latitude;
-          _pickupLongitude = place.longitude;
-        } else {
-          _dropController.text = place.displayName;
-          _dropLatitude = place.latitude;
-          _dropLongitude = place.longitude;
-        }
-      });
+      _validateAndApplyLocation(
+        isPickup: isPickup,
+        address: place.displayName,
+        lat: place.latitude,
+        lng: place.longitude,
+        contactName: place.contactPersonName,
+        contactPhone: place.contactPersonPhone,
+      );
     }
   }
 
@@ -327,21 +410,17 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
       return;
     }
 
-    if (pickupText.toLowerCase() == dropText.toLowerCase()) {
+    if (_isDuplicateLocation(
+      lat1: _pickupLatitude,
+      lng1: _pickupLongitude,
+      text1: pickupText,
+      lat2: _dropLatitude,
+      lng2: _dropLongitude,
+      text2: dropText,
+    )) {
       _showValidationErrorDialog(
         'Same Location',
-        'Pickup and drop-off locations cannot be the same. Please select different locations.',
-      );
-      return;
-    }
-
-    if (_pickupLatitude != null &&
-        _dropLatitude != null &&
-        _pickupLatitude == _dropLatitude &&
-        _pickupLongitude == _dropLongitude) {
-      _showValidationErrorDialog(
-        'Same Location',
-        'Pickup and drop-off coordinates cannot be the same. Please select different locations.',
+        'Please choose a different drop location. It cannot be the same as the pickup location.',
       );
       return;
     }
@@ -416,6 +495,33 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
   }
 
   void _showContactDetailsPopup(BuildContext context, Map<String, dynamic> item, String label, bool isPickup) {
+    final itemAddress = item['address'] ?? '';
+    final itemLat = item['lat'] is num ? (item['lat'] as num).toDouble() : null;
+    final itemLng = item['lng'] is num ? (item['lng'] as num).toDouble() : null;
+
+    final otherText = isPickup ? _dropController.text : _pickupController.text;
+    final otherLat = isPickup ? _dropLatitude : _pickupLatitude;
+    final otherLng = isPickup ? _dropLongitude : _pickupLongitude;
+
+    if (otherText.trim().isNotEmpty || (otherLat != null && otherLng != null)) {
+      final isSame = _isDuplicateLocation(
+        lat1: itemLat,
+        lng1: itemLng,
+        text1: itemAddress,
+        lat2: otherLat,
+        lng2: otherLng,
+        text2: otherText,
+      );
+
+      if (isSame) {
+        final message = isPickup
+            ? 'Please choose a different pickup location. It cannot be the same as the drop location.'
+            : 'Please choose a different drop location. It cannot be the same as the pickup location.';
+        _showValidationErrorDialog('Same Location', message);
+        return;
+      }
+    }
+
     final nameController = TextEditingController(text: item['contactPersonName'] ?? '');
     final phoneController = TextEditingController(text: item['contactPersonPhone'] ?? '');
     final formKey = GlobalKey<FormState>();
@@ -552,23 +658,18 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                             }
                             
                             // Set location
-                            setState(() {
-                              if (isPickup) {
-                                _pickupController.text = item['address'] ?? '';
-                                _pickupLatitude = item['lat'] is num ? (item['lat'] as num).toDouble() : null;
-                                _pickupLongitude = item['lng'] is num ? (item['lng'] as num).toDouble() : null;
-                                _pickupContactName = nameController.text.trim();
-                                _pickupContactPhone = phoneController.text.trim();
-                              } else {
-                                _dropController.text = item['address'] ?? '';
-                                _dropLatitude = item['lat'] is num ? (item['lat'] as num).toDouble() : null;
-                                _dropLongitude = item['lng'] is num ? (item['lng'] as num).toDouble() : null;
-                                _dropContactName = nameController.text.trim();
-                                _dropContactPhone = phoneController.text.trim();
-                              }
-                            });
-                            
+                            final applied = _validateAndApplyLocation(
+                              isPickup: isPickup,
+                              address: item['address'] ?? '',
+                              lat: item['lat'] is num ? (item['lat'] as num).toDouble() : null,
+                              lng: item['lng'] is num ? (item['lng'] as num).toDouble() : null,
+                              contactName: nameController.text.trim(),
+                              contactPhone: phoneController.text.trim(),
+                            );
+
                             Navigator.pop(dialogContext); // close dialog
+
+                            if (!applied) return;
                             
                             ScaffoldMessenger.of(this.context).showSnackBar(
                               SnackBar(
@@ -598,6 +699,28 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
     final routeName = item['routeName'] ?? '';
     final pickup = item['pickupAddress'] ?? {};
     final drop = item['dropAddress'] ?? {};
+
+    final pLat = pickup['lat'] is num ? (pickup['lat'] as num).toDouble() : null;
+    final pLng = pickup['lng'] is num ? (pickup['lng'] as num).toDouble() : null;
+    final pAddr = pickup['address'] ?? '';
+    final dLat = drop['lat'] is num ? (drop['lat'] as num).toDouble() : null;
+    final dLng = drop['lng'] is num ? (drop['lng'] as num).toDouble() : null;
+    final dAddr = drop['address'] ?? '';
+
+    if (_isDuplicateLocation(
+      lat1: pLat,
+      lng1: pLng,
+      text1: pAddr,
+      lat2: dLat,
+      lng2: dLng,
+      text2: dAddr,
+    )) {
+      _showValidationErrorDialog(
+        'Invalid Route',
+        'Pickup and drop locations in this route are the same. Please choose different locations.',
+      );
+      return;
+    }
 
     final pickupNameController = TextEditingController(text: pickup['contactPersonName'] ?? '');
     final pickupPhoneController = TextEditingController(text: pickup['contactPersonPhone'] ?? '');
@@ -820,16 +943,39 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                               await provider.updateAddressContact(id: drop['id'], userId: userId, data: updatedData);
                             }
                             
+                            final pLat = pickup['lat'] is num ? (pickup['lat'] as num).toDouble() : null;
+                            final pLng = pickup['lng'] is num ? (pickup['lng'] as num).toDouble() : null;
+                            final pAddr = pickup['address'] ?? '';
+                            final dLat = drop['lat'] is num ? (drop['lat'] as num).toDouble() : null;
+                            final dLng = drop['lng'] is num ? (drop['lng'] as num).toDouble() : null;
+                            final dAddr = drop['address'] ?? '';
+
+                            if (_isDuplicateLocation(
+                              lat1: pLat,
+                              lng1: pLng,
+                              text1: pAddr,
+                              lat2: dLat,
+                              lng2: dLng,
+                              text2: dAddr,
+                            )) {
+                              Navigator.pop(dialogContext);
+                              _showValidationErrorDialog(
+                                'Invalid Route',
+                                'Pickup and drop locations in this route are the same. Please choose different locations.',
+                              );
+                              return;
+                            }
+
                             setState(() {
-                              _pickupController.text = pickup['address'] ?? '';
-                              _pickupLatitude = pickup['lat'] is num ? (pickup['lat'] as num).toDouble() : null;
-                              _pickupLongitude = pickup['lng'] is num ? (pickup['lng'] as num).toDouble() : null;
+                              _pickupController.text = pAddr;
+                              _pickupLatitude = pLat;
+                              _pickupLongitude = pLng;
                               _pickupContactName = pickupNameController.text.trim();
                               _pickupContactPhone = pickupPhoneController.text.trim();
 
-                              _dropController.text = drop['address'] ?? '';
-                              _dropLatitude = drop['lat'] is num ? (drop['lat'] as num).toDouble() : null;
-                              _dropLongitude = drop['lng'] is num ? (drop['lng'] as num).toDouble() : null;
+                              _dropController.text = dAddr;
+                              _dropLatitude = dLat;
+                              _dropLongitude = dLng;
                               _dropContactName = dropNameController.text.trim();
                               _dropContactPhone = dropPhoneController.text.trim();
                             });
@@ -1001,11 +1147,14 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                                 ),
                               );
                               if (result != null) {
-                                setState(() {
-                                  _pickupController.text = result['address'] ?? '';
-                                  _pickupLatitude = result['latitude'];
-                                  _pickupLongitude = result['longitude'];
-                                });
+                                _validateAndApplyLocation(
+                                  isPickup: true,
+                                  address: result['address'] ?? '',
+                                  lat: result['latitude'],
+                                  lng: result['longitude'],
+                                  contactName: result['contactPersonName'],
+                                  contactPhone: result['contactPersonPhone'],
+                                );
                               }
                             },
                             child: const Padding(
@@ -1070,11 +1219,14 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                                 ),
                               );
                               if (result != null) {
-                                setState(() {
-                                  _dropController.text = result['address'] ?? '';
-                                  _dropLatitude = result['latitude'];
-                                  _dropLongitude = result['longitude'];
-                                });
+                                _validateAndApplyLocation(
+                                  isPickup: false,
+                                  address: result['address'] ?? '',
+                                  lat: result['latitude'],
+                                  lng: result['longitude'],
+                                  contactName: result['contactPersonName'],
+                                  contactPhone: result['contactPersonPhone'],
+                                );
                               }
                             },
                             child: const Padding(

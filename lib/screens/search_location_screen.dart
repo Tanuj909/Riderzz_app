@@ -349,6 +349,8 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
             name: result['address'] ?? details.displayName,
             latitude: result['latitude'] ?? details.latitude,
             longitude: result['longitude'] ?? details.longitude,
+            contactPersonName: result['contactPersonName'],
+            contactPersonPhone: result['contactPersonPhone'],
           );
           Navigator.pop(context, place);
         } else {
@@ -401,6 +403,8 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
             name: 'Current Location',
             latitude: result['latitude'] ?? lat,
             longitude: result['longitude'] ?? lng,
+            contactPersonName: result['contactPersonName'],
+            contactPersonPhone: result['contactPersonPhone'],
           );
           Navigator.pop(context, currentPlace);
         } else {
@@ -599,6 +603,8 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
                   displayName: addressString,
                   latitude: address['latitude'],
                   longitude: address['longitude'],
+                  contactPersonName: address['contactPersonName'],
+                  contactPersonPhone: address['contactPersonPhone'],
                 );
                 Navigator.pop(context, place);
               },

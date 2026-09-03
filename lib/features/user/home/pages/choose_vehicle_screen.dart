@@ -33,19 +33,15 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
   void initState() {
     super.initState();
     _fastDeliverySelected = widget.bookingData['fastDelivery'] == true;
+    _selectedVehicleId = widget.bookingData['vehicleId'] as int?;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchVehicles().then((_) {
         if (mounted) {
-          final vehiclesProvider = Provider.of<AdminVehiclesProvider>(context, listen: false);
-          final vehicleTypes = vehiclesProvider.vehicleTypes;
           final preSelectedId = widget.bookingData['vehicleId'] as int?;
           if (preSelectedId != null) {
-            final idx = vehicleTypes.indexWhere((v) => v.id == preSelectedId);
-            if (idx >= 0) {
-              setState(() {
-                _selectedVehicleId = preSelectedId;
-              });
-            }
+            setState(() {
+              _selectedVehicleId = preSelectedId;
+            });
           }
         }
       });
@@ -163,6 +159,281 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
     return idx >= 0 ? idx : null;
   }
 
+  String _normalizeCategory(String? category) {
+    if (category == null || category.isEmpty) return 'OTHER';
+    return category.toUpperCase().replaceAll('-', '_').replaceAll(' ', '_').trim();
+  }
+
+  String _getCategoryDisplayName(String categoryKey) {
+    switch (categoryKey) {
+      case 'TWO_WHEELER':
+        return '2 Wheeler';
+      case 'THREE_WHEELER':
+        return '3 Wheeler';
+      case 'FOUR_WHEELER':
+        return '4 Wheeler';
+      case 'TRUCK':
+        return 'Truck';
+      default:
+        return categoryKey
+            .replaceAll('_', ' ')
+            .split(' ')
+            .map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}' : '')
+            .join(' ');
+    }
+  }
+
+  Widget _buildCategoryHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 14, bottom: 8, left: 2, right: 2),
+      child: Row(
+        children: [
+          Container(
+            width: 3.5,
+            height: 15,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE31C2E),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: GoogleFonts.outfit(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF121214),
+              letterSpacing: 0.1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotDeliverableHeader(int count) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 8, left: 2, right: 2),
+      child: Row(
+        children: [
+          Container(
+            width: 3.5,
+            height: 15,
+            decoration: BoxDecoration(
+              color: const Color(0xFF8C8F9A),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Not Deliverable for this route ($count)',
+            style: GoogleFonts.outfit(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF6C6F79),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVehicleCard(VehicleTypeModel vehicle, {required bool isDeliverable, bool isRecommended = false}) {
+    final isSelected = _selectedVehicleId == vehicle.id;
+    final etaString = _getVehicleEta(vehicle.name);
+
+    final cardWidget = Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? (isDeliverable ? const Color(0xFFFDEBEC) : const Color(0xFFFFF4F4))
+            : (isDeliverable ? Colors.white : const Color(0xFFFAFAFA)),
+        border: Border.all(
+          color: isSelected
+              ? const Color(0xFFE31C2E)
+              : (isDeliverable ? const Color(0xFFE7E7EB) : const Color(0xFFEEEEF2)),
+          width: isSelected ? 1.5 : 1.0,
+        ),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: const BoxDecoration(
+              color: Colors.transparent,
+            ),
+            alignment: Alignment.center,
+            child: vehicle.iconUrl != null && vehicle.iconUrl!.isNotEmpty
+                ? Image.network(
+                    vehicle.iconUrl!,
+                    width: 34,
+                    height: 34,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.local_shipping_rounded,
+                      size: 28,
+                      color: Color(0xFFE31C2E),
+                    ),
+                  )
+                : const Icon(Icons.local_shipping_rounded, size: 28, color: Color(0xFFE31C2E)),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    Text(
+                      vehicle.name,
+                      style: GoogleFonts.outfit(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF121214),
+                      ),
+                    ),
+                    if (isRecommended && isDeliverable)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1C9A5B),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          'Recommended',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      'Up to ${vehicle.maxWeightKg} kg',
+                      style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79)),
+                    ),
+                    if (isDeliverable) ...[
+                      const SizedBox(width: 4),
+                      const Text('·', style: TextStyle(fontSize: 12, color: Color(0xFF6C6F79))),
+                      const SizedBox(width: 4),
+                      Text(
+                        etaString,
+                        style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79)),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (isDeliverable)
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFF7F8FA),
+                border: Border.all(
+                  color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFDCDCE0),
+                  width: 1.5,
+                ),
+              ),
+              child: isSelected
+                  ? const Icon(Icons.check_rounded, size: 15, color: Colors.white)
+                  : null,
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFDEBEC),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                "Not Deliverable",
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFFE31C2E),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+
+    Widget childWidget = cardWidget;
+
+    if (vehicle.isFastDelivery == true && isDeliverable) {
+      childWidget = Stack(
+        clipBehavior: Clip.none,
+        children: [
+          ShiningContainer(
+            isSelected: isSelected,
+            child: cardWidget,
+          ),
+          Positioned(
+            top: -6,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+              decoration: BoxDecoration(
+                color: Colors.orange,
+                borderRadius: BorderRadius.circular(99),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1.5),
+                  )
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(Icons.flash_on_rounded, color: Colors.white, size: 11),
+                  SizedBox(width: 3),
+                  Text(
+                    'Fast Delivery',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedVehicleId = vehicle.id;
+          if (vehicle.isFastDelivery != true) {
+            _fastDeliverySelected = false;
+          }
+        });
+      },
+      child: childWidget,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<AdminVehiclesProvider>(
@@ -186,270 +457,127 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
           );
         }
 
-        // Sort vehicleTypes: fast delivery enabled first, then others
-        final sortedVehicleTypes = List<VehicleTypeModel>.from(vehicleTypes);
-        sortedVehicleTypes.sort((a, b) {
-          final hasFastA = a.isFastDelivery == true ? 1 : 0;
-          final hasFastB = b.isFastDelivery == true ? 1 : 0;
-          return hasFastB.compareTo(hasFastA);
+        final preSelectedId = widget.bookingData['vehicleId'] as int?;
+
+        // 1. Separate Deliverable and Not Deliverable
+        final deliverableVehicles = <VehicleTypeModel>[];
+        final notDeliverableVehicles = <VehicleTypeModel>[];
+
+        for (final v in vehicleTypes) {
+          if (_applicablePrices.containsKey(v.id)) {
+            deliverableVehicles.add(v);
+          } else {
+            notDeliverableVehicles.add(v);
+          }
+        }
+
+        // 2. Group Deliverable Vehicles by Category
+        final categoryOrder = ['TWO_WHEELER', 'THREE_WHEELER', 'FOUR_WHEELER', 'TRUCK'];
+
+        VehicleTypeModel? preSelectedVehicle;
+        if (preSelectedId != null) {
+          for (final v in vehicleTypes) {
+            if (v.id == preSelectedId) {
+              preSelectedVehicle = v;
+              break;
+            }
+          }
+        }
+
+        final preSelectedCategoryKey = preSelectedVehicle != null ? _normalizeCategory(preSelectedVehicle.category) : null;
+
+        final Map<String, List<VehicleTypeModel>> deliverableByCategory = {};
+        for (final v in deliverableVehicles) {
+          final catKey = _normalizeCategory(v.category);
+          deliverableByCategory.putIfAbsent(catKey, () => []).add(v);
+        }
+
+        // Sort vehicles inside each category:
+        // Preselected vehicle first, then fast delivery, then max weight
+        for (final list in deliverableByCategory.values) {
+          list.sort((a, b) {
+            if (preSelectedId != null) {
+              if (a.id == preSelectedId) return -1;
+              if (b.id == preSelectedId) return 1;
+            }
+            final hasFastA = a.isFastDelivery == true ? 1 : 0;
+            final hasFastB = b.isFastDelivery == true ? 1 : 0;
+            if (hasFastA != hasFastB) return hasFastB.compareTo(hasFastA);
+            return a.maxWeightKg.compareTo(b.maxWeightKg);
+          });
+        }
+
+        // Ordered Category keys (pre-selected vehicle's category at top)
+        final orderedCategoryKeys = <String>[];
+        if (preSelectedCategoryKey != null && deliverableByCategory.containsKey(preSelectedCategoryKey)) {
+          orderedCategoryKeys.add(preSelectedCategoryKey);
+        }
+        for (final cat in categoryOrder) {
+          if (!orderedCategoryKeys.contains(cat) && deliverableByCategory.containsKey(cat)) {
+            orderedCategoryKeys.add(cat);
+          }
+        }
+        for (final cat in deliverableByCategory.keys) {
+          if (!orderedCategoryKeys.contains(cat)) {
+            orderedCategoryKeys.add(cat);
+          }
+        }
+
+        // Sort not-deliverable vehicles: preselected first if any, then by weight
+        notDeliverableVehicles.sort((a, b) {
+          if (preSelectedId != null) {
+            if (a.id == preSelectedId) return -1;
+            if (b.id == preSelectedId) return 1;
+          }
+          return a.maxWeightKg.compareTo(b.maxWeightKg);
         });
 
-        final recommendedIndex = _getRecommendedVehicleIndex(sortedVehicleTypes);
+        final recommendedIndex = _getRecommendedVehicleIndex(deliverableVehicles);
+        final recommendedVehicle = (recommendedIndex != null && recommendedIndex >= 0 && recommendedIndex < deliverableVehicles.length)
+            ? deliverableVehicles[recommendedIndex]
+            : null;
 
         return Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Pricing shown is Estimated!',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF6C6F79),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          backgroundColor: Colors.white,
-                          surfaceTintColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          title: Text(
-                            'Estimated Fare',
-                            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF121214)),
-                          ),
-                          content: Text(
-                            'The fare shown on screen is not final, it is estimated. Final fare will be shown on the next screen!',
-                            style: GoogleFonts.poppins(fontSize: 14, color: const Color(0xFF6C6F79), height: 1.4),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: Text('OK', style: GoogleFonts.poppins(color: const Color(0xFFE31C2E), fontWeight: FontWeight.bold)),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                    child: const Icon(Icons.info_outline, color: Color(0xFFE31C2E), size: 20),
-                  ),
-                ],
-              ),
-            ),
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: sortedVehicleTypes.length,
-                itemBuilder: (context, index) {
-                  final vehicle = sortedVehicleTypes[index];
-                  final isDeliverable = _applicablePrices.containsKey(vehicle.id);
-                  final isSelected = _selectedVehicleId == vehicle.id && isDeliverable;
-                  final isRecommended = recommendedIndex == index;
-                  final etaString = _getVehicleEta(vehicle.name);
-
-                  double displayBaseFare = _applicablePrices[vehicle.id]?.baseFare ?? vehicle.baseFare;
-                  double commission = _applicablePrices[vehicle.id]?.commission ?? (vehicle.baseFare * (vehicle.commissionPct / 100));
-                  displayBaseFare += commission;
-                  if (isSelected && _fastDeliverySelected && vehicle.isFastDelivery == true) {
-                    displayBaseFare += _applicablePrices[vehicle.id]?.fastDeliveryCharge ?? 0.0;
-                  }
-
-                  final cardWidget = Container(
-                    margin: const EdgeInsets.only(bottom: 10, top: 4),
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFFFDEBEC) : (isDeliverable ? Colors.white : const Color(0xFFFAFAFA)),
-                      border: Border.all(
-                        color: isSelected ? const Color(0xFFE31C2E) : (isDeliverable ? const Color(0xFFE7E7EB) : const Color(0xFFF1F1F4)),
-                        width: 1.5,
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                children: [
+                  // Categories of Deliverable Vehicles
+                  for (final catKey in orderedCategoryKeys) ...[
+                    _buildCategoryHeader(_getCategoryDisplayName(catKey)),
+                    for (final vehicle in deliverableByCategory[catKey]!)
+                      _buildVehicleCard(
+                        vehicle,
+                        isDeliverable: true,
+                        isRecommended: recommendedVehicle?.id == vehicle.id,
                       ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 50,
-                          height: 50,
-                          decoration: const BoxDecoration(
-                            color: Colors.transparent,
-                          ),
-                          alignment: Alignment.center,
-                          child: vehicle.iconUrl != null && vehicle.iconUrl!.isNotEmpty
-                              ? Image.network(
-                                  vehicle.iconUrl!,
-                                  width: 34,
-                                  height: 34,
-                                  errorBuilder: (context, error, stackTrace) => const Icon(
-                                    Icons.local_shipping_rounded,
-                                    size: 28,
-                                    color: Color(0xFFE31C2E),
-                                  ),
-                                )
-                              : const Icon(Icons.local_shipping_rounded, size: 28, color: Color(0xFFE31C2E)),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Wrap(
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                spacing: 6,
-                                runSpacing: 4,
-                                children: [
-                                  Text(
-                                    vehicle.name,
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF121214),
-                                    ),
-                                  ),
-                                  if (isRecommended)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF1C9A5B),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: const Text(
-                                        'Recommended',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              Wrap(
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: [
-                                  Text(
-                                    'Up to ${vehicle.maxWeightKg} kg',
-                                    style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79)),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  const Text('·', style: TextStyle(fontSize: 12, color: Color(0xFF6C6F79))),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    etaString,
-                                    style: const TextStyle(fontSize: 12, color: Color(0xFF6C6F79)),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        isDeliverable
-                            ? Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    '₹${displayBaseFare.toStringAsFixed(0)}',
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF121214),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  const Text(
-                                    '',
-                                    style: TextStyle(fontSize: 11, color: Color(0xFF6C6F79)),
-                                  ),
-                                ],
-                              )
-                            : const Text(
-                                "Not Deliverable!",
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFFE31C2E),
-                                ),
-                              ),
-                      ],
-                    ),
-                  );
+                  ],
 
-                  Widget childWidget = cardWidget;
-
-                  if (vehicle.isFastDelivery == true) {
-                    childWidget = Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        ShiningContainer(
-                          isSelected: isSelected,
-                          child: cardWidget,
-                        ),
-                        Positioned(
-                          top: -6,
-                          right: 16,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
-                            decoration: BoxDecoration(
-                              color: Colors.orange,
-                              borderRadius: BorderRadius.circular(99),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.08),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 1.5),
-                                )
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                Icon(Icons.flash_on_rounded, color: Colors.white, size: 12),
-                                SizedBox(width: 3),
-                                Text(
-                                  'Fast Delivery',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  }
-
-                  return GestureDetector(
-                    onTap: isDeliverable ? () {
-                      setState(() {
-                        _selectedVehicleId = vehicle.id;
-                        if (vehicle.isFastDelivery != true) {
-                          _fastDeliverySelected = false;
-                        }
-                      });
-                    } : null,
-                    child: childWidget,
-                  );
-                },
+                  // Not Deliverable Section (Outside of all categories, at the very bottom)
+                  if (notDeliverableVehicles.isNotEmpty) ...[
+                    _buildNotDeliverableHeader(notDeliverableVehicles.length),
+                    for (final vehicle in notDeliverableVehicles)
+                      _buildVehicleCard(
+                        vehicle,
+                        isDeliverable: false,
+                        isRecommended: false,
+                      ),
+                  ],
+                ],
               ),
             ),
             // Fast Delivery Toggle Selector
             Builder(
               builder: (context) {
                 if (_selectedVehicleId == null) return const SizedBox.shrink();
-                final vehicle = sortedVehicleTypes.firstWhere((v) => v.id == _selectedVehicleId, orElse: () => sortedVehicleTypes.first);
-                if (vehicle.isFastDelivery != true) return const SizedBox.shrink();
+                final vehicle = vehicleTypes.firstWhere(
+                  (v) => v.id == _selectedVehicleId,
+                  orElse: () => vehicleTypes.first,
+                );
+                if (vehicle.isFastDelivery != true || !_applicablePrices.containsKey(_selectedVehicleId)) {
+                  return const SizedBox.shrink();
+                }
 
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
@@ -459,7 +587,7 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                         _fastDeliverySelected 
                             ? 'Fast Delivery Charges will be added!' 
                             : 'Choose Fast Delivery!',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
                           color: Color(0xFFE31C2E),
                           fontWeight: FontWeight.w600,
@@ -480,12 +608,12 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Row(
-                              children: [
-                                const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 20),
-                                const SizedBox(width: 8),
+                              children: const [
+                                Icon(Icons.flash_on_rounded, color: Colors.orange, size: 20),
+                                SizedBox(width: 8),
                                 Text(
                                   'Fast Delivery',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                     color: Color(0xFF121214),
@@ -547,7 +675,7 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                         onPressed: _selectedVehicleId == null || !_applicablePrices.containsKey(_selectedVehicleId)
                             ? null
                             : () {
-                                final selectedVehicle = sortedVehicleTypes.firstWhere((v) => v.id == _selectedVehicleId);
+                                final selectedVehicle = vehicleTypes.firstWhere((v) => v.id == _selectedVehicleId);
                                 final updatedBookingData = Map<String, dynamic>.from(widget.bookingData);
                                 updatedBookingData['vehicleId'] = selectedVehicle.id;
                                 updatedBookingData['vehicleType'] = selectedVehicle;

@@ -38,6 +38,18 @@ class AdminVehiclesProvider extends ChangeNotifier {
     }
   }
 
+  final Map<String, List<VehicleTypeModel>> _categoryVehiclesCache = {};
+  Map<String, List<VehicleTypeModel>> get categoryVehiclesCache => _categoryVehiclesCache;
+
+  Future<List<VehicleTypeModel>> fetchVehiclesByCategory(String category, {bool forceRefresh = false}) async {
+    if (!forceRefresh && _categoryVehiclesCache.containsKey(category) && _categoryVehiclesCache[category]!.isNotEmpty) {
+      return _categoryVehiclesCache[category]!;
+    }
+    final list = await _repository.getVehicleTypesByCategory(category);
+    _categoryVehiclesCache[category] = list;
+    return list;
+  }
+
   Future<bool> createVehicleType({
     required String name,
     File? icon,

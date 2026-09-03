@@ -11,6 +11,10 @@ class AdminVehiclesRepository {
     return await _remoteDataSource.getAllVehicleTypes();
   }
 
+  Future<List<VehicleTypeModel>> getVehicleTypesByCategory(String category) async {
+    return await _remoteDataSource.getVehicleTypesByCategory(category);
+  }
+
   Future<VehicleTypeModel> createVehicleType({
     required String name,
     File? icon,

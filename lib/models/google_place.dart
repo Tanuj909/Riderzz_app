@@ -11,6 +11,8 @@ class GooglePlace {
   final String? state;
   final String? country;
   final String? street;
+  final String? contactPersonName;
+  final String? contactPersonPhone;
 
   GooglePlace({
     required this.placeId,
@@ -24,6 +26,8 @@ class GooglePlace {
     this.state,
     this.country,
     this.street,
+    this.contactPersonName,
+    this.contactPersonPhone,
   });
 
   /// Create a GooglePlace from an autocomplete suggestion JSON.

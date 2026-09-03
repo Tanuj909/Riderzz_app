@@ -768,6 +768,109 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
     super.dispose();
   }
 
+  Future<void> _showCancelConfirmationDialog() async {
+    final shouldCancel = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFDEBEC),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.warning_amber_rounded,
+                color: Color(0xFFE31C2E),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Cancel Booking?',
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF121214),
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to cancel this booking search?',
+          style: GoogleFonts.outfit(
+            fontSize: 14,
+            color: const Color(0xFF6C6F79),
+            height: 1.4,
+          ),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    side: const BorderSide(color: Color(0xFFE7E7EB)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Text(
+                    'No, Keep It',
+                    style: GoogleFonts.outfit(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF121214),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(dialogContext, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE31C2E),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Text(
+                    'Yes, Cancel',
+                    style: GoogleFonts.outfit(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    if (shouldCancel == true) {
+      await _handleCancelBooking();
+    }
+  }
+
   Future<void> _handleCancelBooking() async {
     setState(() {
       _isCancelling = true;
@@ -1799,12 +1902,20 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                                         '${_currentBooking.estimatedDistanceKm!.toStringAsFixed(1)} km',
                                       ),
                                     ],
-                                    const SizedBox(height: 12),
-                                    _buildDetailRow(
-                                      'Est. Fare',
-                                      '₹${_currentBooking.totalFare.toStringAsFixed(2)}',
-                                      isMono: true,
-                                    ),
+                                    if (_currentBooking.fastDelivery == true) ...[
+                                      const SizedBox(height: 12),
+                                      _buildDetailRow(
+                                        'Fast Delivery',
+                                        (_currentBooking.fastDeliveryCharge != null &&
+                                                _currentBooking.fastDeliveryCharge! > 0)
+                                            ? '₹${_currentBooking.fastDeliveryCharge!.toStringAsFixed(2)}'
+                                            : 'Included',
+                                        valueColor: const Color(0xFFE67E22),
+                                        isBoldValue: true,
+                                        isMono: (_currentBooking.fastDeliveryCharge != null &&
+                                            _currentBooking.fastDeliveryCharge! > 0),
+                                      ),
+                                    ],
                                     if (_currentBooking.tollAmount != null && _currentBooking.tollAmount! > 0) ...[
                                       const SizedBox(height: 12),
                                       _buildDetailRow(
@@ -1838,6 +1949,64 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                                         }
                                         return const SizedBox.shrink();
                                       },
+                                    ),
+                                    const SizedBox(height: 14),
+                                    const Divider(height: 1, color: Color(0xFFEEEEF2)),
+                                    const SizedBox(height: 14),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Total Final Fare',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w800,
+                                            color: const Color(0xFF121214),
+                                          ),
+                                        ),
+                                        Text(
+                                          '₹${_currentBooking.totalFare.toStringAsFixed(2)}',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w900,
+                                            color: const Color(0xFFE31C2E),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+
+                              // Informational Note Box
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF7F8FA),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: const Color(0xFFEEEEF2)),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(
+                                      Icons.info_outline_rounded,
+                                      size: 16,
+                                      color: Color(0xFF6C6F79),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Fast Delivery and Toll charges (if applicable) are already included in the final fare.',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w500,
+                                          color: Color(0xFF6C6F79),
+                                          height: 1.35,
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -1881,7 +2050,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                                     width: double.infinity,
                                     height: 50,
                                     child: OutlinedButton(
-                                      onPressed: _handleCancelBooking,
+                                      onPressed: _showCancelConfirmationDialog,
                                       style: OutlinedButton.styleFrom(
                                         foregroundColor: const Color(
                                           0xFFE31C2E,
@@ -2120,7 +2289,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                           width: double.infinity,
                           height: 50,
                           child: OutlinedButton(
-                            onPressed: _handleCancelBooking,
+                            onPressed: _showCancelConfirmationDialog,
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFFE31C2E),
                               side: const BorderSide(color: Color(0xFFE31C2E)),
@@ -2166,6 +2335,9 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                             ),
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        // Pickup & Drop Route Section outside View Details
+                        _buildRouteAddressesCard(_currentBooking),
                       ],
                       const SizedBox(height: 20),
                     ],
@@ -2235,6 +2407,20 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                           'Booking ID',
                           _currentBooking.bookingId,
                         ),
+                        if (_currentBooking.vehicleNumber != null &&
+                            _currentBooking.vehicleNumber!.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          _buildDetailRow(
+                            'Vehicle',
+                            _currentBooking.vehicleNumber!,
+                          ),
+                        ] else if (widget.vehicleName.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          _buildDetailRow(
+                            'Vehicle Type',
+                            widget.vehicleName,
+                          ),
+                        ],
                         if (_currentBooking.estimatedDistanceKm != null) ...[
                           const SizedBox(height: 12),
                           _buildDetailRow(
@@ -2242,13 +2428,22 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                             '${_currentBooking.estimatedDistanceKm!.toStringAsFixed(1)} km',
                           ),
                         ],
-                        const SizedBox(height: 12),
-                        _buildDetailRow(
-                          'Est. Fare',
-                          '₹${_currentBooking.totalFare.toStringAsFixed(2)}',
-                          isMono: true,
-                        ),
-                        if (_currentBooking.tollAmount != null && _currentBooking.tollAmount! > 0) ...[
+                        if (_currentBooking.fastDelivery == true) ...[
+                          const SizedBox(height: 12),
+                          _buildDetailRow(
+                            'Fast Delivery',
+                            (_currentBooking.fastDeliveryCharge != null &&
+                                    _currentBooking.fastDeliveryCharge! > 0)
+                                ? '₹${_currentBooking.fastDeliveryCharge!.toStringAsFixed(2)}'
+                                : 'Included',
+                            valueColor: const Color(0xFFE67E22),
+                            isBoldValue: true,
+                            isMono: (_currentBooking.fastDeliveryCharge != null &&
+                                _currentBooking.fastDeliveryCharge! > 0),
+                          ),
+                        ],
+                        if (_currentBooking.tollAmount != null &&
+                            _currentBooking.tollAmount! > 0) ...[
                           const SizedBox(height: 12),
                           _buildDetailRow(
                             'Toll Charge',
@@ -2256,6 +2451,64 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                             isMono: true,
                           ),
                         ],
+                        const SizedBox(height: 14),
+                        const Divider(height: 1, color: Color(0xFFEEEEF2)),
+                        const SizedBox(height: 14),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Total Final Fare',
+                              style: GoogleFonts.outfit(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF121214),
+                              ),
+                            ),
+                            Text(
+                              '₹${_currentBooking.totalFare.toStringAsFixed(2)}',
+                              style: GoogleFonts.outfit(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: const Color(0xFFE31C2E),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Informational Note Box
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF7F8FA),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFEEEEF2)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.info_outline_rounded,
+                          size: 16,
+                          color: Color(0xFF6C6F79),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Fast Delivery and Toll charges (if applicable) are already included in the final fare.',
+                            style: GoogleFonts.outfit(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF6C6F79),
+                              height: 1.35,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),

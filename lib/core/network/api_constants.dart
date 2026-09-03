@@ -21,6 +21,7 @@ class ApiConstants {
   static const String uploadProfileImage = '/profile/image';
   static const String adminLogin = '/auth/login/password';
   static const String vehicleTypes = '/vehicle-types';
+  static String vehicleTypesByCategory(String category) => '/vehicle-types/category/$category';
   static const String adminDrivers = '/drivers';
   static const String adminDriverList = '/driver/admin/list';
   static const String adminVehicles = '/admin/vehicles';

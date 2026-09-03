@@ -42,6 +42,19 @@ class AdminVehiclesRemoteDataSource {
     }
   }
 
+  Future<List<VehicleTypeModel>> getVehicleTypesByCategory(String category) async {
+    final response = await _apiClient.get(ApiConstants.vehicleTypesByCategory(category));
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final dynamic rawData = resBody['data'];
+    List<dynamic> list = [];
+    if (rawData is List) {
+      list = rawData;
+    } else if (rawData is Map && rawData['content'] is List) {
+      list = rawData['content'] as List;
+    }
+    return list.map((json) => VehicleTypeModel.fromJson(Map<String, dynamic>.from(json))).toList();
+  }
+
   Future<VehicleTypeModel> createVehicleType({
     required String name,
     File? icon,
