@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/core/models/vehicle_type_model.dart';
 import 'package:riderzz_app/core/models/pricing_tier_model.dart';
@@ -51,6 +52,8 @@ class _FareEstimateViewState extends State<FareEstimateView> {
   _RefundStats? _stats;
   bool _isLoading = true;
   bool _fastDeliverySelected = false;
+  bool _isNotDeliverable = false;
+  double _notDeliverableDistance = 0.0;
   String? _errorMessage;
 
   @override
@@ -243,6 +246,15 @@ class _FareEstimateViewState extends State<FareEstimateView> {
       debugPrint('Error fetching tier in fare estimate: $e');
     }
 
+    if (tier == null) {
+      setState(() {
+        _isNotDeliverable = true;
+        _notDeliverableDistance = distance;
+        _isLoading = false;
+      });
+      return;
+    }
+
     Map<String, dynamic>? timeBasedPricing;
     final now = DateTime.now();
     final timeString = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
@@ -255,8 +267,9 @@ class _FareEstimateViewState extends State<FareEstimateView> {
       debugPrint('Error fetching time based pricing: $e');
     }
 
-    final double baseFare = tier?.baseFare ?? vehicle.baseFare;
-    final double perKmRate = tier?.perKmRate ?? vehicle.perKmRate;
+    final activeTier = tier;
+    final double baseFare = activeTier.baseFare;
+    final double perKmRate = activeTier.perKmRate;
     final double distanceFare = (distance * perKmRate).roundToDouble();
     final double timeBasedExtraCharge = (timeBasedPricing?['extraCharge'] as num?)?.toDouble() ?? 0.0;
 
@@ -268,12 +281,12 @@ class _FareEstimateViewState extends State<FareEstimateView> {
         distanceFare: distanceFare,
         timeBasedExtraCharge: timeBasedExtraCharge,
         encodedPolyline: encodedPolyline,
-        tier: tier,
+        tier: activeTier,
         timeBasedPricing: timeBasedPricing,
         tollExists: fetchedTollExists,
       );
       
-      if (tier?.fastDeliveryEnabled != true) {
+      if (activeTier.fastDeliveryEnabled != true) {
         _fastDeliverySelected = false;
       }
       
@@ -302,6 +315,88 @@ class _FareEstimateViewState extends State<FareEstimateView> {
       finalFare = _stats!.baseFare + _stats!.distanceFare + _stats!.timeBasedExtraCharge + commissionAmount;
       if (tollAmount > 0) finalFare += tollAmount;
       if (_fastDeliverySelected && canFastDelivery) finalFare += fastDeliveryCharge;
+    }
+
+    if (_isNotDeliverable) {
+      return Container(
+        color: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFDEBEC),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.no_crash_rounded,
+                color: Color(0xFFE31C2E),
+                size: 36,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Not Deliverable for this distance',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF121214),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F1F4),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'Route Distance: ${_notDeliverableDistance.toStringAsFixed(1)} km',
+                style: GoogleFonts.outfit(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF6C6F79),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '${vehicle.name} is not available for this route. Please select another vehicle for this route.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
+                fontSize: 13.5,
+                color: const Color(0xFF6C6F79),
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: widget.onBack,
+                icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                label: const Text(
+                  'Please choose different vehicle',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE31C2E),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     if (_errorMessage != null) {
@@ -546,7 +641,7 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                                         borderRadius: BorderRadius.circular(99),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withOpacity(0.08),
+                                            color: Colors.black.withValues(alpha: 0.08),
                                             blurRadius: 4,
                                             offset: const Offset(0, 1.5),
                                           )
@@ -588,7 +683,7 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                           _fastDeliverySelected 
                               ? 'Fast Delivery amount added to the final fare!' 
                               : 'Choose Fast Delivery!',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFFE31C2E),
                             fontWeight: FontWeight.w600,
@@ -601,7 +696,7 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                             color: _fastDeliverySelected ? const Color(0xFFFFF2DC) : const Color(0xFFFFF8EC),
                             borderRadius: BorderRadius.circular(100),
                             border: Border.all(
-                              color: _fastDeliverySelected ? Colors.orange : Colors.orange.withOpacity(0.3),
+                              color: _fastDeliverySelected ? Colors.orange : Colors.orange.withValues(alpha: 0.3),
                               width: _fastDeliverySelected ? 1.5 : 1.0,
                             ),
                           ),
@@ -624,7 +719,7 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                               ),
                               Switch(
                                 value: _fastDeliverySelected,
-                                activeColor: Colors.white,
+                                activeThumbColor: Colors.white,
                                 activeTrackColor: Colors.orange,
                                 inactiveThumbColor: const Color(0xFFA2A5AE),
                                 inactiveTrackColor: const Color(0xFFF1F1F4),
@@ -638,6 +733,55 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                           ),
                         ),
                       ],
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF7F7F8),
+                        borderRadius: BorderRadius.circular(100),
+                        border: Border.all(
+                          color: const Color(0xFFE2E4E8),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: const [
+                              Icon(Icons.flash_off_rounded, color: Color(0xFFA2A5AE), size: 20),
+                              SizedBox(width: 8),
+                              Text(
+                                'Fast Delivery',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: Color(0xFF71757F),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEBECEF),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text(
+                              'Currently not available',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF71757F),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 Padding(
@@ -712,29 +856,5 @@ class _FareEstimateViewState extends State<FareEstimateView> {
                 ),
               ],
             );
-  }
-
-  Widget _buildFareRow(String label, double amount, {bool isHighlighted = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
-            color: isHighlighted ? const Color(0xFFE67E22) : const Color(0xFF6C6F79),
-          ),
-        ),
-        Text(
-          '₹${amount.toStringAsFixed(2)}',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: isHighlighted ? FontWeight.bold : FontWeight.w500,
-            color: isHighlighted ? const Color(0xFFE67E22) : const Color(0xFF121214),
-          ),
-        ),
-      ],
-    );
   }
 }

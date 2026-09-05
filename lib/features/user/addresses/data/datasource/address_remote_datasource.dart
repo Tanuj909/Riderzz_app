@@ -46,6 +46,8 @@ class AddressRemoteDataSource {
             'address': fullAddress,
             'lat': map['latitude'] is num ? (map['latitude'] as num).toDouble() : 0.0,
             'lng': map['longitude'] is num ? (map['longitude'] as num).toDouble() : 0.0,
+            'latitude': map['latitude'] is num ? (map['latitude'] as num).toDouble() : 0.0,
+            'longitude': map['longitude'] is num ? (map['longitude'] as num).toDouble() : 0.0,
             'addressType': map['addressType'],
             'addressLine1': map['addressLine1'],
             'addressLine2': map['addressLine2'],

@@ -212,14 +212,14 @@
 //   }
 // }
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/core/providers/location_provider.dart';
+import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/user/addresses/location_picker_screen.dart';
 import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
-import 'package:riderzz_app/features/user/saved_routes/providers/saved_route_provider.dart';
 import 'package:riderzz_app/models/google_place.dart';
 import 'package:riderzz_app/repositories/location_repository.dart';
 import 'package:riderzz_app/utils/debounce.dart';
@@ -566,7 +566,7 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
           separatorBuilder: (context, index) => const Divider(height: 1, thickness: 0.5, color: Color(0xFFE7E7EB)),
           itemBuilder: (context, index) {
             final address = addresses[index];
-            final label = address['label'] ?? 'Saved Address';
+            final label = address['label'] ?? address['addressType'] ?? 'Saved Address';
             
             // Construct a meaningful subtitle
             final parts = <String>[];
@@ -579,7 +579,17 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
             if (address['city'] != null && address['city'].toString().isNotEmpty) {
               parts.add(address['city']);
             }
-            final addressString = parts.join(', ');
+            final addressString = (address['address'] != null && address['address'].toString().trim().isNotEmpty)
+                ? address['address'].toString().trim()
+                : parts.join(', ');
+
+            final lowerLabel = label.toString().toLowerCase();
+            IconData iconData = Icons.location_on_rounded;
+            if (lowerLabel == 'home') {
+              iconData = Icons.home_rounded;
+            } else if (lowerLabel == 'office') {
+              iconData = Icons.business_rounded;
+            }
 
             return ListTile(
               leading: Container(
@@ -588,31 +598,221 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
                   color: Color(0xFFF1F1F4),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.location_on_rounded, color: Color(0xFF121214), size: 20),
+                child: Icon(iconData, color: const Color(0xFF121214), size: 20),
               ),
               title: Text(
-                addressString,
-                style: GoogleFonts.outfit(fontWeight: FontWeight.w500, fontSize: 14, color: const Color(0xFF121214)),
-                maxLines: 2,
+                label.toString().isNotEmpty ? label.toString() : addressString,
+                style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 14, color: const Color(0xFF121214)),
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              onTap: () {
-                final place = GooglePlace(
-                  placeId: 'saved_address_${address['id']}',
-                  name: label,
-                  displayName: addressString,
-                  latitude: address['latitude'],
-                  longitude: address['longitude'],
-                  contactPersonName: address['contactPersonName'],
-                  contactPersonPhone: address['contactPersonPhone'],
-                );
-                Navigator.pop(context, place);
-              },
+              subtitle: label.toString().isNotEmpty && addressString.isNotEmpty
+                  ? Text(
+                      addressString,
+                      style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79)),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    )
+                  : null,
+              onTap: () => _onSavedAddressSelected(address),
             );
           },
         );
       },
     );
+  }
+
+  Future<void> _onSavedAddressSelected(Map<String, dynamic> address) async {
+    final double? lat = address['lat'] is num
+        ? (address['lat'] as num).toDouble()
+        : (address['latitude'] is num ? (address['latitude'] as num).toDouble() : null);
+    final double? lng = address['lng'] is num
+        ? (address['lng'] as num).toDouble()
+        : (address['longitude'] is num ? (address['longitude'] as num).toDouble() : null);
+
+    final label = address['label'] ?? address['addressType'] ?? 'Saved Address';
+
+    String addressString = (address['address'] != null && address['address'].toString().trim().isNotEmpty)
+        ? address['address'].toString().trim()
+        : '';
+
+    if (addressString.isEmpty) {
+      final parts = <String>[];
+      if (address['addressLine1'] != null && address['addressLine1'].toString().isNotEmpty) {
+        parts.add(address['addressLine1']);
+      }
+      if (address['addressLine2'] != null && address['addressLine2'].toString().isNotEmpty) {
+        parts.add(address['addressLine2']);
+      }
+      if (address['city'] != null && address['city'].toString().isNotEmpty) {
+        parts.add(address['city']);
+      }
+      addressString = parts.join(', ');
+    }
+
+    final nameController = TextEditingController(text: address['contactPersonName'] ?? '');
+    final phoneController = TextEditingController(text: address['contactPersonPhone'] ?? '');
+    final formKey = GlobalKey<FormState>();
+    bool isUpdating = false;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              title: Text(
+                'Confirm Contact Person',
+                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 12, bottom: 4),
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () async {
+                          try {
+                            final FlutterNativeContactPicker picker = FlutterNativeContactPicker();
+                            final contact = await picker.selectPhoneNumber();
+                            if (contact != null) {
+                              if (contact.fullName != null && contact.fullName!.isNotEmpty) {
+                                nameController.text = contact.fullName!;
+                              }
+                              if (contact.phoneNumbers != null && contact.phoneNumbers!.isNotEmpty) {
+                                String? rawNumber = contact.selectedPhoneNumber;
+                                if (rawNumber != null) {
+                                  String sanitized = rawNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+                                  phoneController.text = sanitized;
+                                }
+                              }
+                            }
+                          } catch (e) {
+                            debugPrint('Error picking contact: $e');
+                          }
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.contacts_rounded, color: Color(0xFFE31C2E), size: 14),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Choose from contacts',
+                              style: TextStyle(fontSize: 12, color: Color(0xFFE31C2E), fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: nameController,
+                      style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
+                      decoration: InputDecoration(
+                        labelText: 'Contact Person Name',
+                        labelStyle: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFFE7E7EB))),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFFE7E7EB))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFF121214))),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
+                      decoration: InputDecoration(
+                        labelText: 'Contact Person Phone',
+                        labelStyle: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFFE7E7EB))),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFFE7E7EB))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: Color(0xFF121214))),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isUpdating ? null : () => Navigator.pop(dialogContext, false),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                ),
+                ElevatedButton(
+                  onPressed: isUpdating
+                      ? null
+                      : () async {
+                          if (formKey.currentState!.validate()) {
+                            setDialogState(() => isUpdating = true);
+                            final provider = Provider.of<AddressProvider>(context, listen: false);
+                            
+                            // Check if changed
+                            if (nameController.text.trim() != (address['contactPersonName'] ?? '') ||
+                                phoneController.text.trim() != (address['contactPersonPhone'] ?? '')) {
+                              
+                              final authProvider = Provider.of<AuthProvider>(dialogContext, listen: false);
+                              final userId = authProvider.currentUser?.userId;
+                              if (userId != null && address['id'] != null) {
+                                final updatedData = {
+                                  'contactPersonName': nameController.text.trim(),
+                                  'contactPersonPhone': phoneController.text.trim(),
+                                };
+                                final int addressId = address['id'] is int
+                                    ? address['id'] as int
+                                    : (int.tryParse(address['id'].toString()) ?? 0);
+                                if (addressId != 0) {
+                                  await provider.updateAddressContact(
+                                    id: addressId,
+                                    userId: userId,
+                                    data: updatedData,
+                                  );
+                                }
+                              }
+                            }
+                            
+                            if (dialogContext.mounted) {
+                              Navigator.pop(dialogContext, true);
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE31C2E),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: isUpdating
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('Confirm', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      final place = GooglePlace(
+        placeId: 'saved_address_${address['id']}',
+        name: label.toString(),
+        displayName: addressString,
+        latitude: lat,
+        longitude: lng,
+        contactPersonName: nameController.text.trim(),
+        contactPersonPhone: phoneController.text.trim(),
+      );
+      Navigator.pop(context, place);
+    }
   }
 
   Widget _buildBody() {

@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:math' as math;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_provider.dart';
-import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
 import 'package:riderzz_app/core/models/vehicle_type_model.dart';
-import 'package:riderzz_app/core/models/pricing_tier_model.dart';
 
 class ChooseVehicleView extends StatefulWidget {
   final Map<String, dynamic> bookingData;
@@ -26,13 +23,12 @@ class ChooseVehicleView extends StatefulWidget {
 class _ChooseVehicleViewState extends State<ChooseVehicleView> {
   int? _selectedVehicleId;
   bool _isLoading = true;
-  bool _fastDeliverySelected = false;
-  final Map<int, PricingTierModel> _applicablePrices = {};
+  // bool _fastDeliverySelected = false;
 
   @override
   void initState() {
     super.initState();
-    _fastDeliverySelected = widget.bookingData['fastDelivery'] == true;
+    // _fastDeliverySelected = widget.bookingData['fastDelivery'] == true;
     _selectedVehicleId = widget.bookingData['vehicleId'] as int?;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchVehicles().then((_) {
@@ -48,16 +44,6 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
     });
   }
 
-  double _calculateHaversineDistance(double lat1, double lon1, double lat2, double lon2) {
-    const p = 0.017453292519943295; // Math.PI / 180
-    final a = 0.5 - math.cos((lat2 - lat1) * p) / 2 +
-        math.cos(lat1 * p) * math.cos(lat2 * p) *
-        (1 - math.cos((lon2 - lon1) * p)) / 2;
-    double dist = 12742 * math.asin(math.sqrt(a)) * 1.25; // Scale to estimate road distance
-    if (dist < 1.0) dist = 1.0;
-    return dist;
-  }
-
   Future<void> _fetchVehicles() async {
     try {
       final vehiclesProvider = Provider.of<AdminVehiclesProvider>(context, listen: false);
@@ -66,38 +52,12 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
       }
     } catch (e) {
       debugPrint('Error fetching vehicle types: $e');
-    }
-
-    final pickupLat = widget.bookingData['pickupLatitude'] as double?;
-    final pickupLng = widget.bookingData['pickupLongitude'] as double?;
-    final dropLat = widget.bookingData['dropLatitude'] as double?;
-    final dropLng = widget.bookingData['dropLongitude'] as double?;
-
-    double distance = 8.4;
-    if (pickupLat != null && pickupLng != null && dropLat != null && dropLng != null) {
-      distance = _calculateHaversineDistance(pickupLat, pickupLng, dropLat, dropLng);
-    }
-
-    if (mounted) {
-      final vehiclesProvider = Provider.of<AdminVehiclesProvider>(context, listen: false);
-      final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
-      
-      final futures = vehiclesProvider.vehicleTypes.map((vehicle) async {
-        try {
-          final tier = await bookingProvider.getApplicablePricingTier(vehicle.id, distance);
-          if (tier != null) {
-            _applicablePrices[vehicle.id] = tier;
-          }
-        } catch (e) {
-          debugPrint('Error fetching applicable pricing tier for vehicle ${vehicle.id}: $e');
-        }
-      }).toList();
-
-      await Future.wait(futures);
-
-      setState(() {
-        _isLoading = false;
-      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -211,34 +171,7 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
     );
   }
 
-  Widget _buildNotDeliverableHeader(int count) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 8, left: 2, right: 2),
-      child: Row(
-        children: [
-          Container(
-            width: 3.5,
-            height: 15,
-            decoration: BoxDecoration(
-              color: const Color(0xFF8C8F9A),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'Not Deliverable for this route ($count)',
-            style: GoogleFonts.outfit(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF6C6F79),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVehicleCard(VehicleTypeModel vehicle, {required bool isDeliverable, bool isRecommended = false}) {
+  Widget _buildVehicleCard(VehicleTypeModel vehicle, {bool isRecommended = false}) {
     final isSelected = _selectedVehicleId == vehicle.id;
     final etaString = _getVehicleEta(vehicle.name);
 
@@ -246,13 +179,9 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: isSelected
-            ? (isDeliverable ? const Color(0xFFFDEBEC) : const Color(0xFFFFF4F4))
-            : (isDeliverable ? Colors.white : const Color(0xFFFAFAFA)),
+        color: isSelected ? const Color(0xFFFDEBEC) : Colors.white,
         border: Border.all(
-          color: isSelected
-              ? const Color(0xFFE31C2E)
-              : (isDeliverable ? const Color(0xFFE7E7EB) : const Color(0xFFEEEEF2)),
+          color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
           width: isSelected ? 1.5 : 1.0,
         ),
         borderRadius: BorderRadius.circular(18),
@@ -298,7 +227,7 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                         color: const Color(0xFF121214),
                       ),
                     ),
-                    if (isRecommended && isDeliverable)
+                    if (isRecommended)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
@@ -324,59 +253,40 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                       'Up to ${vehicle.maxWeightKg} kg',
                       style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79)),
                     ),
-                    if (isDeliverable) ...[
-                      const SizedBox(width: 4),
-                      const Text('·', style: TextStyle(fontSize: 12, color: Color(0xFF6C6F79))),
-                      const SizedBox(width: 4),
-                      Text(
-                        etaString,
-                        style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79)),
-                      ),
-                    ],
+                    const SizedBox(width: 4),
+                    const Text('·', style: TextStyle(fontSize: 12, color: Color(0xFF6C6F79))),
+                    const SizedBox(width: 4),
+                    Text(
+                      etaString,
+                      style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79)),
+                    ),
                   ],
                 ),
               ],
             ),
           ),
-          if (isDeliverable)
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFF7F8FA),
-                border: Border.all(
-                  color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFDCDCE0),
-                  width: 1.5,
-                ),
-              ),
-              child: isSelected
-                  ? const Icon(Icons.check_rounded, size: 15, color: Colors.white)
-                  : null,
-            )
-          else
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFDEBEC),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                "Not Deliverable",
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFFE31C2E),
-                ),
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFF7F8FA),
+              border: Border.all(
+                color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFDCDCE0),
+                width: 1.5,
               ),
             ),
+            child: isSelected
+                ? const Icon(Icons.check_rounded, size: 15, color: Colors.white)
+                : null,
+          ),
         ],
       ),
     );
 
     Widget childWidget = cardWidget;
 
-    if (vehicle.isFastDelivery == true && isDeliverable) {
+    if (vehicle.isFastDelivery == true) {
       childWidget = Stack(
         clipBehavior: Clip.none,
         children: [
@@ -425,9 +335,6 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
       onTap: () {
         setState(() {
           _selectedVehicleId = vehicle.id;
-          if (vehicle.isFastDelivery != true) {
-            _fastDeliverySelected = false;
-          }
         });
       },
       child: childWidget,
@@ -459,19 +366,7 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
 
         final preSelectedId = widget.bookingData['vehicleId'] as int?;
 
-        // 1. Separate Deliverable and Not Deliverable
-        final deliverableVehicles = <VehicleTypeModel>[];
-        final notDeliverableVehicles = <VehicleTypeModel>[];
-
-        for (final v in vehicleTypes) {
-          if (_applicablePrices.containsKey(v.id)) {
-            deliverableVehicles.add(v);
-          } else {
-            notDeliverableVehicles.add(v);
-          }
-        }
-
-        // 2. Group Deliverable Vehicles by Category
+        // Group Vehicles by Category
         final categoryOrder = ['TWO_WHEELER', 'THREE_WHEELER', 'FOUR_WHEELER', 'TRUCK'];
 
         VehicleTypeModel? preSelectedVehicle;
@@ -486,15 +381,15 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
 
         final preSelectedCategoryKey = preSelectedVehicle != null ? _normalizeCategory(preSelectedVehicle.category) : null;
 
-        final Map<String, List<VehicleTypeModel>> deliverableByCategory = {};
-        for (final v in deliverableVehicles) {
+        final Map<String, List<VehicleTypeModel>> vehiclesByCategory = {};
+        for (final v in vehicleTypes) {
           final catKey = _normalizeCategory(v.category);
-          deliverableByCategory.putIfAbsent(catKey, () => []).add(v);
+          vehiclesByCategory.putIfAbsent(catKey, () => []).add(v);
         }
 
         // Sort vehicles inside each category:
         // Preselected vehicle first, then fast delivery, then max weight
-        for (final list in deliverableByCategory.values) {
+        for (final list in vehiclesByCategory.values) {
           list.sort((a, b) {
             if (preSelectedId != null) {
               if (a.id == preSelectedId) return -1;
@@ -509,32 +404,23 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
 
         // Ordered Category keys (pre-selected vehicle's category at top)
         final orderedCategoryKeys = <String>[];
-        if (preSelectedCategoryKey != null && deliverableByCategory.containsKey(preSelectedCategoryKey)) {
+        if (preSelectedCategoryKey != null && vehiclesByCategory.containsKey(preSelectedCategoryKey)) {
           orderedCategoryKeys.add(preSelectedCategoryKey);
         }
         for (final cat in categoryOrder) {
-          if (!orderedCategoryKeys.contains(cat) && deliverableByCategory.containsKey(cat)) {
+          if (!orderedCategoryKeys.contains(cat) && vehiclesByCategory.containsKey(cat)) {
             orderedCategoryKeys.add(cat);
           }
         }
-        for (final cat in deliverableByCategory.keys) {
+        for (final cat in vehiclesByCategory.keys) {
           if (!orderedCategoryKeys.contains(cat)) {
             orderedCategoryKeys.add(cat);
           }
         }
 
-        // Sort not-deliverable vehicles: preselected first if any, then by weight
-        notDeliverableVehicles.sort((a, b) {
-          if (preSelectedId != null) {
-            if (a.id == preSelectedId) return -1;
-            if (b.id == preSelectedId) return 1;
-          }
-          return a.maxWeightKg.compareTo(b.maxWeightKg);
-        });
-
-        final recommendedIndex = _getRecommendedVehicleIndex(deliverableVehicles);
-        final recommendedVehicle = (recommendedIndex != null && recommendedIndex >= 0 && recommendedIndex < deliverableVehicles.length)
-            ? deliverableVehicles[recommendedIndex]
+        final recommendedIndex = _getRecommendedVehicleIndex(vehicleTypes);
+        final recommendedVehicle = (recommendedIndex != null && recommendedIndex >= 0 && recommendedIndex < vehicleTypes.length)
+            ? vehicleTypes[recommendedIndex]
             : null;
 
         return Column(
@@ -543,39 +429,28 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 children: [
-                  // Categories of Deliverable Vehicles
                   for (final catKey in orderedCategoryKeys) ...[
                     _buildCategoryHeader(_getCategoryDisplayName(catKey)),
-                    for (final vehicle in deliverableByCategory[catKey]!)
+                    for (final vehicle in vehiclesByCategory[catKey]!)
                       _buildVehicleCard(
                         vehicle,
-                        isDeliverable: true,
                         isRecommended: recommendedVehicle?.id == vehicle.id,
-                      ),
-                  ],
-
-                  // Not Deliverable Section (Outside of all categories, at the very bottom)
-                  if (notDeliverableVehicles.isNotEmpty) ...[
-                    _buildNotDeliverableHeader(notDeliverableVehicles.length),
-                    for (final vehicle in notDeliverableVehicles)
-                      _buildVehicleCard(
-                        vehicle,
-                        isDeliverable: false,
-                        isRecommended: false,
                       ),
                   ],
                 ],
               ),
             ),
-            // Fast Delivery Toggle Selector
+            // Fast Delivery Toggle Selector (Commented out - moved to fare estimate screen)
             Builder(
               builder: (context) {
+                return const SizedBox.shrink();
+                /*
                 if (_selectedVehicleId == null) return const SizedBox.shrink();
                 final vehicle = vehicleTypes.firstWhere(
                   (v) => v.id == _selectedVehicleId,
                   orElse: () => vehicleTypes.first,
                 );
-                if (vehicle.isFastDelivery != true || !_applicablePrices.containsKey(_selectedVehicleId)) {
+                if (vehicle.isFastDelivery != true) {
                   return const SizedBox.shrink();
                 }
 
@@ -600,7 +475,7 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                           color: _fastDeliverySelected ? const Color(0xFFFFF2DC) : const Color(0xFFFFF8EC),
                           borderRadius: BorderRadius.circular(100),
                           border: Border.all(
-                            color: _fastDeliverySelected ? Colors.orange : Colors.orange.withOpacity(0.3),
+                            color: _fastDeliverySelected ? Colors.orange : Colors.orange.withValues(alpha: 0.3),
                             width: _fastDeliverySelected ? 1.5 : 1.0,
                           ),
                         ),
@@ -623,7 +498,7 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                             ),
                             Switch(
                               value: _fastDeliverySelected,
-                              activeColor: Colors.white,
+                              activeThumbColor: Colors.white,
                               activeTrackColor: Colors.orange,
                               inactiveThumbColor: const Color(0xFFA2A5AE),
                               inactiveTrackColor: const Color(0xFFF1F1F4),
@@ -639,6 +514,7 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                     ],
                   ),
                 );
+                */
               },
             ),
             Padding(
@@ -672,14 +548,14 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        onPressed: _selectedVehicleId == null || !_applicablePrices.containsKey(_selectedVehicleId)
+                        onPressed: _selectedVehicleId == null
                             ? null
                             : () {
                                 final selectedVehicle = vehicleTypes.firstWhere((v) => v.id == _selectedVehicleId);
                                 final updatedBookingData = Map<String, dynamic>.from(widget.bookingData);
                                 updatedBookingData['vehicleId'] = selectedVehicle.id;
                                 updatedBookingData['vehicleType'] = selectedVehicle;
-                                updatedBookingData['fastDelivery'] = _fastDeliverySelected && selectedVehicle.isFastDelivery == true;
+                                updatedBookingData['fastDelivery'] = false;
 
                                 widget.onNext(updatedBookingData);
                               },
