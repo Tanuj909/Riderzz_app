@@ -200,17 +200,17 @@ debugPrint(
             if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
               final id = response.notificationId;
               debugPrint('[DEDUP] WS Broadcast notificationId: $id');
-              
-              final shouldShow = NotificationDeduplicator.shouldShow(
-                notificationId: id,
-                title: 'New Booking',
-                body: 'Booking ID: ${response.booking.id}',
-              );
 
-              if (shouldShow) {
-                debugPrint('[DEDUP] Showing notificationId: $id');
-                _storageService.getRole().then((role) {
-                  if (role == 'DRIVER' && response.type == 'BOOKING_BROADCAST') {
+              _storageService.getRole().then((role) {
+                if (role == 'DRIVER') {
+                  final shouldShow = NotificationDeduplicator.shouldShow(
+                    notificationId: id,
+                    title: 'New Booking',
+                    body: 'Booking ID: ${response.booking.id}',
+                  );
+
+                  if (shouldShow) {
+                    debugPrint('[DEDUP] Showing notificationId: $id');
                     unawaited(
                       LocalNotificationService.showBookingNotification(
                         booking: response.booking,
@@ -218,12 +218,12 @@ debugPrint(
                       ),
                     );
                   } else {
-                    debugPrint('[WS] Skipped booking alert for role: $role, type: ${response.type}');
+                    debugPrint('[DEDUP] Suppressed duplicate notificationId: $id');
                   }
-                });
-              } else {
-                debugPrint('[DEDUP] Suppressed duplicate notificationId: $id');
-              }
+                } else {
+                  debugPrint('[WS] Skipped booking alert for role: $role');
+                }
+              });
             } else {
               debugPrint('[WS] Ignored broadcast notification display (App is not in foreground)');
             }
