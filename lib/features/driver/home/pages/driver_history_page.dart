@@ -288,7 +288,7 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                                     border: Border.all(color: const Color(0xFFF1F5F9)),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.02),
+                                        color: Colors.black.withValues(alpha: 0.02),
                                         blurRadius: 12,
                                         offset: const Offset(0, 4),
                                       ),
@@ -412,60 +412,9 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                                         child: TextButton.icon(
                                           onPressed: () async {
                                             final statusUpper = booking.status.toUpperCase();
-                                            if (statusUpper == 'CANCELLED' || statusUpper == 'FAILED') {
+                                            if (statusUpper == 'CANCELLED' || statusUpper == 'FAILED' || statusUpper == 'DELIVERED' || statusUpper == 'COMPLETED') {
                                               if (context.mounted) {
-                                                showDialog(
-                                                  context: context,
-                                                  builder: (dialogContext) => AlertDialog(
-                                                    shape: RoundedRectangleBorder(
-                                                      borderRadius: BorderRadius.circular(20),
-                                                    ),
-                                                    title: Row(
-                                                      children: [
-                                                        const Icon(
-                                                          Icons.cancel_rounded,
-                                                          color: Color(0xFFDC2626),
-                                                          size: 24,
-                                                        ),
-                                                        const SizedBox(width: 10),
-                                                        Text(
-                                                          'Booking Canceled',
-                                                          style: GoogleFonts.outfit(
-                                                            fontWeight: FontWeight.bold,
-                                                            fontSize: 18,
-                                                            color: const Color(0xFF1E293B),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    content: Text(
-                                                      'Booking was canceled!',
-                                                      style: GoogleFonts.outfit(
-                                                        fontSize: 14,
-                                                        color: const Color(0xFF475569),
-                                                      ),
-                                                    ),
-                                                    actions: [
-                                                      TextButton(
-                                                        onPressed: () => Navigator.pop(dialogContext),
-                                                        child: Text(
-                                                          'OK',
-                                                          style: GoogleFonts.outfit(
-                                                            fontWeight: FontWeight.bold,
-                                                            color: const Color(0xFFE31C2E),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                );
-                                              }
-                                              return;
-                                            }
-
-                                            if (statusUpper == 'DELIVERED' || statusUpper == 'COMPLETED') {
-                                              if (context.mounted) {
-                                                _showCompletedRideDetailsModal(context, booking);
+                                                _showRideDetailsModal(context, booking);
                                               }
                                               return;
                                             }
@@ -551,9 +500,18 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
     );
   }
 
-  void _showCompletedRideDetailsModal(BuildContext context, BookingModel booking) {
-    final statusColor = const Color(0xFF16A34A);
-    final statusBg = const Color(0xFFF0FDF4);
+  void _showRideDetailsModal(BuildContext context, BookingModel booking) {
+    final statusUpper = booking.status.toUpperCase();
+    final isCompleted = statusUpper == 'DELIVERED' || statusUpper == 'COMPLETED';
+    final isCancelled = statusUpper == 'CANCELLED' || statusUpper == 'FAILED';
+
+    final Color statusColor = isCompleted
+        ? const Color(0xFF16A34A)
+        : (isCancelled ? const Color(0xFFDC2626) : const Color(0xFF2563EB));
+    final Color statusBg = isCompleted
+        ? const Color(0xFFF0FDF4)
+        : (isCancelled ? const Color(0xFFFEF2F2) : const Color(0xFFEFF6FF));
+    final String statusLabel = _getStatusLabel(booking.status);
 
     showModalBottomSheet(
       context: context,
@@ -563,19 +521,19 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
         return Container(
           decoration: const BoxDecoration(
             color: Color(0xFFF6F6F8),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(dialogContext).padding.bottom + 20,
+            bottom: MediaQuery.of(dialogContext).padding.bottom + 12,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               // Handle Bar
               Container(
-                margin: const EdgeInsets.symmetric(vertical: 14),
-                width: 40,
-                height: 5,
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                width: 36,
+                height: 4,
                 decoration: BoxDecoration(
                   color: const Color(0xFFE2E8F0),
                   borderRadius: BorderRadius.circular(10),
@@ -594,7 +552,7 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                         Text(
                           'Ride Summary',
                           style: GoogleFonts.outfit(
-                            fontSize: 18,
+                            fontSize: 17,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF1E293B),
                           ),
@@ -603,7 +561,7 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                         Text(
                           booking.bookingId,
                           style: GoogleFonts.ibmPlexMono(
-                            fontSize: 12,
+                            fontSize: 11.5,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF64748B),
                           ),
@@ -611,13 +569,14 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: statusBg,
                         borderRadius: BorderRadius.circular(100),
+                        border: Border.all(color: statusColor.withValues(alpha: 0.2)),
                       ),
                       child: Text(
-                        'Completed',
+                        statusLabel,
                         style: GoogleFonts.outfit(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
@@ -629,7 +588,7 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
 
               // Scrollable Details
               Flexible(
@@ -638,12 +597,66 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Earnings Card
+                      // Cancelled Reason Banner (if cancelled)
+                      if (isCancelled) ...[
+                        Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF2F2),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFFEE2E2)),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.only(top: 2),
+                                child: Icon(
+                                  Icons.cancel_outlined,
+                                  color: Color(0xFFDC2626),
+                                  size: 18,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Ride Cancelled',
+                                      style: GoogleFonts.outfit(
+                                        color: const Color(0xFF991B1B),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    if (booking.goodsDescription.isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Reason: ${booking.goodsDescription}',
+                                        style: GoogleFonts.outfit(
+                                          color: const Color(0xFFB91C1C),
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      // Earnings / Fare Card
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: const Color(0xFFE2E8F0)),
                         ),
                         child: Row(
@@ -653,21 +666,22 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'EARNINGS',
+                                  isCompleted ? 'EARNINGS' : 'ESTIMATED FARE',
                                   style: GoogleFonts.outfit(
                                     color: const Color(0xFF64748B),
-                                    fontSize: 11,
+                                    fontSize: 10.5,
                                     fontWeight: FontWeight.w700,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 2),
                                 Text(
                                   '₹${booking.totalFare.toStringAsFixed(2)}',
                                   style: GoogleFonts.ibmPlexMono(
                                     fontWeight: FontWeight.w800,
-                                    fontSize: 24,
-                                    color: const Color(0xFF1E293B),
+                                    fontSize: 22,
+                                    color: isCancelled ? const Color(0xFF64748B) : const Color(0xFF1E293B),
+                                    decoration: isCancelled ? TextDecoration.lineThrough : null,
                                   ),
                                 ),
                               ],
@@ -680,17 +694,17 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                                     'DISTANCE',
                                     style: GoogleFonts.outfit(
                                       color: const Color(0xFF64748B),
-                                      fontSize: 11,
+                                      fontSize: 10.5,
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: 0.5,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
+                                  const SizedBox(height: 2),
                                   Text(
                                     '${booking.estimatedDistanceKm!.toStringAsFixed(1)} km',
                                     style: GoogleFonts.outfit(
                                       fontWeight: FontWeight.w800,
-                                      fontSize: 18,
+                                      fontSize: 16,
                                       color: const Color(0xFF1E293B),
                                     ),
                                   ),
@@ -700,12 +714,12 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                         ),
                       ),
 
-                      // Commission banner
-                      if (booking.commissionAmount != null) ...[
-                        const SizedBox(height: 14),
+                      // Commission banner (Completed only)
+                      if (isCompleted && booking.commissionAmount != null && booking.commissionAmount! > 0) ...[
+                        const SizedBox(height: 10),
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFFF9F3),
                             borderRadius: BorderRadius.circular(12),
@@ -714,7 +728,7 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                           child: Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(8),
+                                padding: const EdgeInsets.all(6),
                                 decoration: const BoxDecoration(
                                   color: Color(0xFFFFEAD2),
                                   shape: BoxShape.circle,
@@ -722,42 +736,28 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                                 child: const Icon(
                                   Icons.account_balance_wallet_rounded,
                                   color: Color(0xFFE2A03F),
-                                  size: 16,
+                                  size: 14,
                                 ),
                               ),
-                              const SizedBox(width: 10),
+                              const SizedBox(width: 8),
                               Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          'Commission Deducted',
-                                          style: GoogleFonts.outfit(
-                                            color: const Color(0xFF4A4B50),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                        Text(
-                                          '- ₹${booking.commissionAmount!.toStringAsFixed(2)}',
-                                          style: GoogleFonts.ibmPlexMono(
-                                            color: const Color(0xFFCC2D3B),
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 2),
                                     Text(
-                                      'This amount will be deducted from your wallet.',
+                                      'Commission Deducted',
                                       style: GoogleFonts.outfit(
-                                        color: const Color(0xFF8E9098),
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
+                                        color: const Color(0xFF4A4B50),
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    Text(
+                                      '- ₹${booking.commissionAmount!.toStringAsFixed(2)}',
+                                      style: GoogleFonts.ibmPlexMono(
+                                        color: const Color(0xFFCC2D3B),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w800,
                                       ),
                                     ),
                                   ],
@@ -768,102 +768,137 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                         ),
                       ],
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 10),
 
                       // Addresses Card
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: const Color(0xFFE2E8F0)),
                         ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Column(
                           children: [
-                            Column(
-                              children: [
-                                const SizedBox(height: 5),
-                                Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFF16A34A),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                Container(
-                                  width: 1.5,
-                                  height: 44,
-                                  color: const Color(0xFFE2E8F0),
-                                ),
-                                Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFEA580C),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
+                            // Pickup Section
+                            IntrinsicHeight(
+                              child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'PICKUP ADDRESS',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w800,
-                                      color: const Color(0xFF64748B),
-                                      letterSpacing: 0.5,
+                                  SizedBox(
+                                    width: 14,
+                                    child: Column(
+                                      children: [
+                                        const SizedBox(height: 3),
+                                        Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFF16A34A),
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Container(
+                                            width: 1.5,
+                                            color: const Color(0xFFE2E8F0),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    booking.pickupAddressName,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 13,
-                                      color: const Color(0xFF1E293B),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  Text(
-                                    'DROP ADDRESS',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w800,
-                                      color: const Color(0xFF64748B),
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    booking.dropAddressName,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 13,
-                                      color: const Color(0xFF1E293B),
-                                      fontWeight: FontWeight.w600,
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(bottom: 12),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'PICKUP ADDRESS',
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.w800,
+                                              color: const Color(0xFF64748B),
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            booking.pickupAddressName,
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 12.5,
+                                              color: const Color(0xFF1E293B),
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
+                            // Drop Section
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(
+                                  width: 14,
+                                  child: Column(
+                                    children: [
+                                      const SizedBox(height: 3),
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFFEA580C),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'DROP ADDRESS',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: const Color(0xFF64748B),
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        booking.dropAddressName,
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 12.5,
+                                          color: const Color(0xFF1E293B),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 10),
 
                       // Shipment Details
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: const Color(0xFFE2E8F0)),
                         ),
                         child: Column(
@@ -872,13 +907,13 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                             Text(
                               'SHIPMENT DETAILS',
                               style: GoogleFonts.outfit(
-                                fontSize: 10,
+                                fontSize: 9.5,
                                 fontWeight: FontWeight.w800,
                                 color: const Color(0xFF64748B),
                                 letterSpacing: 0.5,
                               ),
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 8),
                             Row(
                               children: [
                                 Expanded(
@@ -895,9 +930,9 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        booking.parcelType,
+                                        booking.parcelType.isNotEmpty ? booking.parcelType : 'Standard',
                                         style: GoogleFonts.outfit(
-                                          fontSize: 13,
+                                          fontSize: 12.5,
                                           fontWeight: FontWeight.w700,
                                           color: const Color(0xFF1E293B),
                                         ),
@@ -921,7 +956,7 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                                       Text(
                                         '${booking.weightKg.toStringAsFixed(1)} kg',
                                         style: GoogleFonts.outfit(
-                                          fontSize: 13,
+                                          fontSize: 12.5,
                                           fontWeight: FontWeight.w700,
                                           color: const Color(0xFF1E293B),
                                         ),
@@ -931,8 +966,8 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                                 ),
                               ],
                             ),
-                            if (booking.goodsDescription.isNotEmpty) ...[
-                              const SizedBox(height: 12),
+                            if (!isCancelled && booking.goodsDescription.isNotEmpty) ...[
+                              const SizedBox(height: 8),
                               Text(
                                 'Description',
                                 style: GoogleFonts.outfit(
@@ -945,7 +980,7 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                               Text(
                                 booking.goodsDescription,
                                 style: GoogleFonts.outfit(
-                                  fontSize: 13,
+                                  fontSize: 12.5,
                                   color: const Color(0xFF1E293B),
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -955,14 +990,14 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                         ),
                       ),
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 10),
 
                       // Metadata & Transaction Card
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: const Color(0xFFE2E8F0)),
                         ),
                         child: Column(
@@ -973,13 +1008,13 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                                 Text(
                                   'Payment Mode',
                                   style: GoogleFonts.outfit(
-                                    fontSize: 13,
+                                    fontSize: 12,
                                     color: const Color(0xFF64748B),
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFEFF6FF),
                                     borderRadius: BorderRadius.circular(100),
@@ -987,7 +1022,7 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                                   child: Text(
                                     booking.paymentMode,
                                     style: GoogleFonts.outfit(
-                                      fontSize: 11,
+                                      fontSize: 10.5,
                                       fontWeight: FontWeight.w800,
                                       color: const Color(0xFF2563EB),
                                     ),
@@ -995,14 +1030,14 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 8),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
                                   'Created At',
                                   style: GoogleFonts.outfit(
-                                    fontSize: 13,
+                                    fontSize: 12,
                                     color: const Color(0xFF64748B),
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -1010,22 +1045,22 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                                 Text(
                                   _formatDate(booking.createdAt),
                                   style: GoogleFonts.outfit(
-                                    fontSize: 12,
+                                    fontSize: 11.5,
                                     fontWeight: FontWeight.w600,
                                     color: const Color(0xFF1E293B),
                                   ),
                                 ),
                               ],
                             ),
-                            if (booking.vehicleNumber != null) ...[
-                              const SizedBox(height: 12),
+                            if (booking.vehicleNumber != null && booking.vehicleNumber!.isNotEmpty) ...[
+                              const SizedBox(height: 8),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     'Vehicle Number',
                                     style: GoogleFonts.outfit(
-                                      fontSize: 13,
+                                      fontSize: 12,
                                       color: const Color(0xFF64748B),
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -1033,7 +1068,7 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                                   Text(
                                     booking.vehicleNumber!,
                                     style: GoogleFonts.ibmPlexMono(
-                                      fontSize: 12,
+                                      fontSize: 11.5,
                                       fontWeight: FontWeight.w700,
                                       color: const Color(0xFF1E293B),
                                     ),
@@ -1044,7 +1079,7 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
                     ],
                   ),
                 ),
@@ -1052,18 +1087,19 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
 
               // Close Button
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding: const EdgeInsets.fromLTRB(20, 6, 20, 8),
                 child: SizedBox(
                   width: double.infinity,
+                  height: 48,
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(dialogContext),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF121214),
+                      backgroundColor: const Color(0xFFE31C2E),
                       foregroundColor: Colors.white,
+                      elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(100),
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     child: Text(
                       'Close Details',
