@@ -1,9 +1,0 @@
-00:04:47  Acquired tunnel connection to device.
-00:04:47  Enabling developer disk image services.
-00:04:47  Acquired usage assertion.
-Launched application with com.example.riderzzApp bundle identifier.
-Waiting for the application to terminate…
-2026-08-31 00:04:47.893 Runner[1742:64093] StandaardCheckout Library loaded — registering StandardCheckoutImplementation
-"[RazorpayCore] Registered checkout flavor: CheckoutFlavor(rawValue: 0)"
-Please register the registerPlugins function using the SwiftFlutterForegroundTaskPlugin.setPluginRegistrantCallback.
-App terminated due to signal 15.

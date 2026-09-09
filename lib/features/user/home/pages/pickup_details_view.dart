@@ -97,6 +97,8 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
           _pickupController.text = _formatAddress(pickup);
           _pickupLatitude = pickup['latitude'];
           _pickupLongitude = pickup['longitude'];
+          _pickupContactName = pickup['contactPersonName'] ?? pickup['contactName'] ?? pickup['pickupContactName'];
+          _pickupContactPhone = pickup['contactPersonPhone'] ?? pickup['contactPhone'] ?? pickup['pickupContactPhone'];
         } else {
           _setCurrentLocationAsPickup();
         }
@@ -104,6 +106,8 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
           _dropController.text = _formatAddress(drop);
           _dropLatitude = drop['latitude'];
           _dropLongitude = drop['longitude'];
+          _dropContactName = drop['contactPersonName'] ?? drop['contactName'] ?? drop['dropContactName'];
+          _dropContactPhone = drop['contactPersonPhone'] ?? drop['contactPhone'] ?? drop['dropContactPhone'];
         }
         setState(() {});
       } else {

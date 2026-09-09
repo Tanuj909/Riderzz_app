@@ -22,6 +22,7 @@ import 'package:riderzz_app/features/driver/profile/become_driver_screen.dart';
 import 'package:riderzz_app/features/driver/profile/widgets/driver_terms_popup.dart';
 import 'package:riderzz_app/core/services/broadcast_socket_service.dart';
 import 'package:riderzz_app/features/notification/data/models/notification_model.dart';
+import 'package:riderzz_app/core/services/shared_location_service.dart';
 import 'dart:ui';
 import 'dart:math';
 
@@ -42,7 +43,9 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
   Map<String, dynamic>? _selectedRoute;
 
   StreamSubscription<NotificationModel>? _notificationSubscription;
+  StreamSubscription<LatLngCoordinates>? _sharedLocationSubscription;
   bool _isFetchingFromWebSocket = false;
+  bool _isLocationPickerActive = false;
 
   String _formatBookingDate(String isoString) {
     try {
@@ -67,8 +70,15 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
       duration: const Duration(milliseconds: 12600),
     )..repeat();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    _sharedLocationSubscription =
+        SharedLocationService.instance.onLocationStream.listen(_handleIncomingSharedLocation);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       Provider.of<BookingProvider>(context, listen: false).fetchCurrentBookings();
+      final initialCoords = await SharedLocationService.instance.consumeInitialLocation();
+      if (initialCoords != null && mounted) {
+        _handleIncomingSharedLocation(initialCoords);
+      }
     });
 
     final socketService = context.read<BroadcastSocketService>();
@@ -109,6 +119,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
 
   @override
   void dispose() {
+    _sharedLocationSubscription?.cancel();
     _notificationSubscription?.cancel();
     _animController.dispose();
     super.dispose();
@@ -1789,6 +1800,245 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
               );
             }
           },
+        );
+      },
+    );
+  }
+
+  Future<void> _handleIncomingSharedLocation(LatLngCoordinates coords) async {
+    if (!mounted) return;
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (authProvider.currentUser?.role != 'CUSTOMER') {
+      debugPrint('[UserHomePage] Ignored shared location: user role is not CUSTOMER.');
+      SharedLocationService.instance.clearPendingLocation();
+      return;
+    }
+
+    SharedLocationService.instance.clearPendingLocation();
+
+    if (_isLocationPickerActive) return;
+    _isLocationPickerActive = true;
+
+    try {
+      final result = await Navigator.push<Map<String, dynamic>>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LocationPickerScreen(
+            initialLatitude: coords.latitude,
+            initialLongitude: coords.longitude,
+            showSaveOption: true,
+          ),
+        ),
+      );
+
+      if (result != null && mounted) {
+        final target = await _showChooseLocationAsSheet(result);
+        if (target != null && mounted) {
+          final addressText = result['address'] ?? result['addressLine1'] ?? '';
+          final lat = result['latitude'];
+          final lng = result['longitude'];
+          final contactName = result['contactPersonName'];
+          final contactPhone = result['contactPersonPhone'];
+
+          Map<String, dynamic> route;
+          if (target == 'PICKUP') {
+            route = {
+              'pickupAddress': {
+                'address': addressText,
+                'latitude': lat,
+                'longitude': lng,
+                if (contactName != null && contactName.toString().isNotEmpty) 'contactPersonName': contactName,
+                if (contactPhone != null && contactPhone.toString().isNotEmpty) 'contactPersonPhone': contactPhone,
+              },
+            };
+          } else {
+            route = {
+              'dropAddress': {
+                'address': addressText,
+                'latitude': lat,
+                'longitude': lng,
+                if (contactName != null && contactName.toString().isNotEmpty) 'contactPersonName': contactName,
+                if (contactPhone != null && contactPhone.toString().isNotEmpty) 'contactPersonPhone': contactPhone,
+              },
+            };
+          }
+
+          _showNewBookingModal(route: route);
+        }
+      }
+    } finally {
+      _isLocationPickerActive = false;
+    }
+  }
+
+  Future<String?> _showChooseLocationAsSheet(Map<String, dynamic> locationData) {
+    final address = (locationData['address'] ?? locationData['addressLine1'] ?? 'Selected Location').toString();
+
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetCtx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE7E7EB),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Choose Location as',
+                  style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF121214),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  address,
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    color: const Color(0xFF6C6F79),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 20),
+                InkWell(
+                  onTap: () => Navigator.pop(sheetCtx, 'PICKUP'),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF6F6F8),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE7E7EB)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.trip_origin_rounded,
+                            color: Color(0xFF10B981),
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Pickup Location',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF121214),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Set this location where driver will collect the goods',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  color: const Color(0xFF6C6F79),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          color: Color(0xFF6C6F79),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () => Navigator.pop(sheetCtx, 'DROP'),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFDEBEC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE31C2E).withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE31C2E).withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.place_rounded,
+                            color: Color(0xFFE31C2E),
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Drop Location',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF121214),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Set this location where driver will deliver the goods',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  color: const Color(0xFF6C6F79),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          color: Color(0xFFE31C2E),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
         );
       },
     );
