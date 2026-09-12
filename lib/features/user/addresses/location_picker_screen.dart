@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
@@ -208,6 +209,7 @@ class LocationPickerScreen extends StatefulWidget {
 
                           // Label Input
                           _buildStaticInputField(
+                            context: context,
                             label: 'Address Label',
                             hint: 'e.g. Friend\'s House, Gym, Factory',
                             controller: labelController,
@@ -223,6 +225,7 @@ class LocationPickerScreen extends StatefulWidget {
 
                           // Address Line 1
                           _buildStaticInputField(
+                            context: context,
                             label: 'Address Line 1',
                             hint: 'Flat/House No., Building, Street',
                             controller: addressLine1Controller,
@@ -238,6 +241,7 @@ class LocationPickerScreen extends StatefulWidget {
 
                           // Landmark
                           _buildStaticInputField(
+                            context: context,
                             label: 'Landmark (Optional)',
                             hint: 'Opposite, Near by reference point',
                             controller: landmarkController,
@@ -251,6 +255,7 @@ class LocationPickerScreen extends StatefulWidget {
                             children: [
                               Expanded(
                                 child: _buildStaticInputField(
+                                  context: context,
                                   label: 'City',
                                   hint: 'City name',
                                   controller: cityController,
@@ -266,6 +271,7 @@ class LocationPickerScreen extends StatefulWidget {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: _buildStaticInputField(
+                                  context: context,
                                   label: 'Postal Code',
                                   hint: 'Pin code',
                                   controller: postalCodeController,
@@ -319,6 +325,7 @@ class LocationPickerScreen extends StatefulWidget {
                           if (showAdvanced) ...[
                             const SizedBox(height: 8),
                             _buildStaticInputField(
+                              context: context,
                               label: 'Address Line 2 (Optional)',
                               hint: 'Locality, Sector, Area',
                               controller: addressLine2Controller,
@@ -326,6 +333,7 @@ class LocationPickerScreen extends StatefulWidget {
                             ),
                             const SizedBox(height: 8),
                             _buildStaticInputField(
+                              context: context,
                               label: 'State (Optional)',
                               hint: 'State name',
                               controller: stateController,
@@ -373,6 +381,7 @@ class LocationPickerScreen extends StatefulWidget {
                             ),
                           ),
                           _buildStaticInputField(
+                            context: context,
                             label: 'Contact Person Name (Optional)',
                             hint: 'Name of the contact person',
                             controller: contactPersonNameController,
@@ -381,6 +390,7 @@ class LocationPickerScreen extends StatefulWidget {
                           ),
                           const SizedBox(height: 8),
                           _buildStaticInputField(
+                            context: context,
                             label: 'Contact Person Phone (Optional)',
                             hint: '10-digit mobile number',
                             controller: contactPersonPhoneController,
@@ -575,7 +585,104 @@ class LocationPickerScreen extends StatefulWidget {
     );
   }
 
+  static DateTime? _lastEmojiAlertTime;
+
+  static bool _containsEmoji(String? text) {
+    if (text == null || text.isEmpty) return false;
+    final emojiRegex = RegExp(
+      r'[\u{1F600}-\u{1F64F}'
+      r'|\u{1F300}-\u{1F5FF}'
+      r'|\u{1F680}-\u{1F6FF}'
+      r'|\u{1F700}-\u{1F77F}'
+      r'|\u{1F780}-\u{1F7FF}'
+      r'|\u{1F800}-\u{1F8FF}'
+      r'|\u{1F900}-\u{1F9FF}'
+      r'|\u{1FA00}-\u{1FA6F}'
+      r'|\u{1FA70}-\u{1FAFF}'
+      r'|\u{2600}-\u{26FF}'
+      r'|\u{2700}-\u{27BF}'
+      r'|\u{2300}-\u{23FF}'
+      r'|\u{2B50}'
+      r'|\u{200D}'
+      r'|\u{FE0E}-\u{FE0F}'
+      r'|\u{203C}\u{2049}\u{2122}\u{2139}\u{2194}-\u{2199}\u{21A9}-\u{21AA}\u{231A}-\u{231B}\u{2328}\u{23CF}\u{23E9}-\u{23F3}\u{23F8}-\u{23FA}\u{24C2}\u{25AA}-\u{25AB}\u{25B6}\u{25C0}\u{25FB}-\u{25FE}\u{2934}-\u{2935}\u{2B05}-\u{2B07}\u{2B1B}-\u{2B1C}\u{2B55}\u{3030}\u{303D}\u{3297}\u{3299}]',
+      unicode: true,
+    );
+    return emojiRegex.hasMatch(text);
+  }
+
+  static String _removeEmojis(String text) {
+    final emojiRegex = RegExp(
+      r'[\u{1F600}-\u{1F64F}'
+      r'|\u{1F300}-\u{1F5FF}'
+      r'|\u{1F680}-\u{1F6FF}'
+      r'|\u{1F700}-\u{1F77F}'
+      r'|\u{1F780}-\u{1F7FF}'
+      r'|\u{1F800}-\u{1F8FF}'
+      r'|\u{1F900}-\u{1F9FF}'
+      r'|\u{1FA00}-\u{1FA6F}'
+      r'|\u{1FA70}-\u{1FAFF}'
+      r'|\u{2600}-\u{26FF}'
+      r'|\u{2700}-\u{27BF}'
+      r'|\u{2300}-\u{23FF}'
+      r'|\u{2B50}'
+      r'|\u{200D}'
+      r'|\u{FE0E}-\u{FE0F}'
+      r'|\u{203C}\u{2049}\u{2122}\u{2139}\u{2194}-\u{2199}\u{21A9}-\u{21AA}\u{231A}-\u{231B}\u{2328}\u{23CF}\u{23E9}-\u{23F3}\u{23F8}-\u{23FA}\u{24C2}\u{25AA}-\u{25AB}\u{25B6}\u{25C0}\u{25FB}-\u{25FE}\u{2934}-\u{2935}\u{2B05}-\u{2B07}\u{2B1B}-\u{2B1C}\u{2B55}\u{3030}\u{303D}\u{3297}\u{3299}]',
+      unicode: true,
+    );
+    return text.replaceAll(emojiRegex, '');
+  }
+
+  static void _showEmojiAlert(BuildContext context) {
+    final now = DateTime.now();
+    if (_lastEmojiAlertTime != null &&
+        now.difference(_lastEmojiAlertTime!).inMilliseconds < 1500) {
+      return;
+    }
+    _lastEmojiAlertTime = now;
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: const Color(0xFF1E1E24),
+        duration: const Duration(seconds: 2),
+        content: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE31C2E).withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.warning_amber_rounded,
+                color: Color(0xFFE31C2E),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Emojis are not allowed!',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   static Widget _buildStaticInputField({
+    BuildContext? context,
     required String label,
     required String hint,
     required TextEditingController controller,
@@ -584,6 +691,7 @@ class LocationPickerScreen extends StatefulWidget {
     FormFieldValidator<String>? validator,
     Widget? suffixIcon,
     bool isHighlighted = false,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -601,7 +709,35 @@ class LocationPickerScreen extends StatefulWidget {
           controller: controller,
           style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
           keyboardType: keyboardType,
-          validator: validator,
+          inputFormatters: [
+            TextInputFormatter.withFunction((oldValue, newValue) {
+              if (_containsEmoji(newValue.text)) {
+                if (context != null) {
+                  _showEmojiAlert(context);
+                }
+                final clean = _removeEmojis(newValue.text);
+                return TextEditingValue(
+                  text: clean,
+                  selection: TextSelection.collapsed(
+                    offset: clean.length >= newValue.selection.end
+                        ? newValue.selection.end - (newValue.text.length - clean.length)
+                        : clean.length,
+                  ),
+                );
+              }
+              return newValue;
+            }),
+            ...?inputFormatters,
+          ],
+          validator: (val) {
+            if (_containsEmoji(val)) {
+              return "Emojis are not allowed!";
+            }
+            if (validator != null) {
+              return validator(val);
+            }
+            return null;
+          },
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white,
@@ -623,6 +759,19 @@ class LocationPickerScreen extends StatefulWidget {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(24),
               borderSide: const BorderSide(color: Color(0xFF121214)),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: const BorderSide(color: Color(0xFFE31C2E)),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: const BorderSide(color: Color(0xFFE31C2E), width: 1.5),
+            ),
+            errorStyle: GoogleFonts.poppins(
+              color: const Color(0xFFE31C2E),
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),

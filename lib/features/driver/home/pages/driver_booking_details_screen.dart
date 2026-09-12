@@ -141,6 +141,33 @@ class _DriverBookingDetailsScreenState
       }
     } catch (e) {
       debugPrint('Error loading fresh booking details: $e');
+      final errStr = e.toString();
+      if (errStr.toLowerCase().contains('no longer available') ||
+          errStr.toLowerCase().contains('not found')) {
+        if (mounted) {
+          final msg = errStr
+              .replaceAll('Exception: ', '')
+              .replaceAll('ApiException: ', '')
+              .trim();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                msg.isNotEmpty ? msg : 'Booking is no longer available',
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          context.read<DriverHomeProvider>().fetchHomeBookings();
+          Navigator.of(context).pop();
+        }
+      }
     }
   }
 
@@ -224,6 +251,7 @@ class _DriverBookingDetailsScreenState
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(dialogContext); // close dialog
+                      context.read<DriverHomeProvider>().fetchHomeBookings();
                       Navigator.pop(context); // pop details screen
                     },
                     style: ElevatedButton.styleFrom(
@@ -1775,6 +1803,7 @@ class _DriverBookingDetailsScreenState
                                         await _loadFreshBookingDetails(
                                           force: true,
                                         );
+                                        if (!mounted) return true;
                                         ScaffoldMessenger.of(
                                           context,
                                         ).showSnackBar(
@@ -1784,19 +1813,47 @@ class _DriverBookingDetailsScreenState
                                         );
                                         return true;
                                       } else if (!success && mounted) {
-                                        final errorMsg = driverProvider.bookingsError ?? '';
-                                        final isLowBalance = errorMsg.toLowerCase().contains('wallet') ||
-                                                             errorMsg.toLowerCase().contains('balance') ||
-                                                             errorMsg.toLowerCase().contains('insufficient');
+                                        final errorMsg =
+                                            driverProvider.bookingsError ?? '';
+                                        final isLowBalance =
+                                            errorMsg
+                                                .toLowerCase()
+                                                .contains('wallet') ||
+                                            errorMsg
+                                                .toLowerCase()
+                                                .contains('balance') ||
+                                            errorMsg
+                                                .toLowerCase()
+                                                .contains('insufficient');
                                         if (isLowBalance) {
                                           _showLowBalanceDialog(context);
                                         } else {
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                          final messenger =
+                                              ScaffoldMessenger.of(context);
+                                          final displayMsg =
+                                              errorMsg.isNotEmpty
+                                                  ? errorMsg
+                                                  : 'Booking is no longer available';
+                                          messenger.showSnackBar(
                                             SnackBar(
-                                              content: Text(errorMsg.isEmpty ? 'Failed to accept booking' : errorMsg),
+                                              content: Text(
+                                                displayMsg,
+                                                style: GoogleFonts.outfit(
+                                                  color: Colors.white,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
                                               backgroundColor: Colors.redAccent,
+                                              behavior:
+                                                  SnackBarBehavior.floating,
+                                              duration: const Duration(
+                                                seconds: 4,
+                                              ),
                                             ),
                                           );
+                                          driverProvider.fetchHomeBookings();
+                                          Navigator.of(context).pop();
                                         }
                                         return false;
                                       }
