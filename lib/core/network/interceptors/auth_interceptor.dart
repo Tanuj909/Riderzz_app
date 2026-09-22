@@ -5,6 +5,7 @@ import 'package:riderzz_app/app/routes/app_routes.dart';
 import 'package:riderzz_app/core/storage/secure_storage_service.dart';
 import 'package:riderzz_app/core/network/api_constants.dart';
 import 'package:riderzz_app/core/utils/jwt_helper.dart';
+import 'package:riderzz_app/core/services/native_overlay_controller.dart';
 
 class AuthInterceptor extends Interceptor {
   final SecureStorageService _storageService;
@@ -213,6 +214,10 @@ class AuthInterceptor extends Interceptor {
   }
 
   Future<void> _handleLogout() async {
+    try {
+      await NativeOverlayController.hideOverlay();
+    } catch (_) {}
+
     try {
       await FlutterForegroundTask.stopService();
     } catch (_) {}

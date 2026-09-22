@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:riderzz_app/app/routes/app_routes.dart';
+import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 
 /// Thin Flutter facade for the Android-native floating overlay.
 ///
@@ -17,9 +19,22 @@ class NativeOverlayController {
   static const _debounce = Duration(milliseconds: 350);
 
   static Timer? _backgroundTimer;
+  static Timer? _delayedPromptTimer;
   static bool _initialized = false;
-  static bool _permissionPromptPending = false;
   static bool _permissionPromptVisible = false;
+  static bool _sessionPromptShown = false;
+
+  /// Helper to verify whether current logged-in user has the DRIVER role.
+  static bool _isDriverActive() {
+    final context = AppRoutes.navigatorKey.currentContext;
+    if (context == null) return false;
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      return authProvider.currentUser?.role == 'DRIVER';
+    } catch (_) {
+      return false;
+    }
+  }
 
   static void initialize() {
     if (!Platform.isAndroid || _initialized) return;
@@ -30,8 +45,47 @@ class NativeOverlayController {
   static void dispose() {
     _backgroundTimer?.cancel();
     _backgroundTimer = null;
+    _delayedPromptTimer?.cancel();
+    _delayedPromptTimer = null;
     if (_initialized) _channel.setMethodCallHandler(null);
     _initialized = false;
+  }
+
+  /// Checks whether Android overlay permission is already granted.
+  static Future<bool> isPermissionGranted() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      final granted = await _channel.invokeMethod<bool>('isOverlayPermissionGranted');
+      return granted ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Explicitly hides and dismisses any active native overlay.
+  static Future<void> hideOverlay() async {
+    if (!Platform.isAndroid) return;
+    _backgroundTimer?.cancel();
+    _backgroundTimer = null;
+    await _invoke('hideOverlay');
+  }
+
+  /// Schedules the 'Stay connected' permission prompt 20 seconds after app open
+  /// for drivers, showing at most once per app launch session.
+  static void scheduleDriverPermissionPrompt({
+    Duration delay = const Duration(seconds: 20),
+  }) {
+    if (!Platform.isAndroid || _sessionPromptShown) return;
+    _delayedPromptTimer?.cancel();
+    _delayedPromptTimer = Timer(delay, () async {
+      if (!_isDriverActive() || _sessionPromptShown || _permissionPromptVisible) return;
+      final granted = await isPermissionGranted();
+      if (granted) {
+        _sessionPromptShown = true;
+        return;
+      }
+      _showPermissionRationale();
+    });
   }
 
   /// Debounces Flutter's duplicate paused/hidden notifications. Native code
@@ -39,8 +93,18 @@ class NativeOverlayController {
   static void onAppMovedToBackground() {
     if (!Platform.isAndroid) return;
     _backgroundTimer?.cancel();
+    _backgroundTimer = null;
+
+    if (!_isDriverActive()) {
+      // Ensure overlay is never shown/persisted for non-drivers
+      hideOverlay();
+      return;
+    }
+
     _backgroundTimer = Timer(_debounce, () {
-      _invoke('onAppLifecycle', {'state': 'background'});
+      if (_isDriverActive()) {
+        _invoke('onAppLifecycle', {'state': 'background'});
+      }
     });
   }
 
@@ -49,13 +113,20 @@ class NativeOverlayController {
     _backgroundTimer?.cancel();
     _backgroundTimer = null;
     _invoke('onAppLifecycle', {'state': 'foreground'});
-    _showPermissionRationaleIfNeeded();
+
+    if (_isDriverActive()) {
+      if (!_sessionPromptShown) {
+        scheduleDriverPermissionPrompt();
+      }
+    }
   }
 
   static Future<dynamic> _onNativeEvent(MethodCall call) async {
     switch (call.method) {
       case 'permissionRequired':
-        _permissionPromptPending = true;
+        if (_isDriverActive() && !_sessionPromptShown) {
+          scheduleDriverPermissionPrompt(delay: const Duration(seconds: 20));
+        }
         return null;
       case 'overlayError':
         debugPrint('[NativeOverlay] ${call.arguments}');
@@ -65,14 +136,15 @@ class NativeOverlayController {
     }
   }
 
-  static void _showPermissionRationaleIfNeeded() {
-    if (!_permissionPromptPending || _permissionPromptVisible) return;
+  static void _showPermissionRationale() {
+    if (_permissionPromptVisible || !_isDriverActive()) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!_permissionPromptPending || _permissionPromptVisible) return;
+      if (_permissionPromptVisible || !_isDriverActive()) return;
       final context = AppRoutes.navigatorKey.currentContext;
       if (context == null || !context.mounted) return;
 
+      _sessionPromptShown = true;
       _permissionPromptVisible = true;
       final approved = await showDialog<bool>(
         context: context,
@@ -105,12 +177,9 @@ class NativeOverlayController {
         ),
       );
       _permissionPromptVisible = false;
-      _permissionPromptPending = false;
-      await _invoke(
-        approved == true
-            ? 'requestOverlayPermission'
-            : 'suppressOverlayPermissionPrompt',
-      );
+      if (approved == true) {
+        await _invoke('requestOverlayPermission');
+      }
     });
   }
 
@@ -124,3 +193,5 @@ class NativeOverlayController {
     }
   }
 }
+
+

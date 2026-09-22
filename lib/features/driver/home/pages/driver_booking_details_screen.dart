@@ -402,7 +402,7 @@ class _DriverBookingDetailsScreenState
             Polyline(
               polylineId: const PolylineId('route'),
               points: _polylineCoordinates,
-              color: const Color(0xFF8A0000),
+              color: Colors.blue,
               width: 5,
               jointType: JointType.round,
               startCap: Cap.roundCap,
@@ -423,7 +423,7 @@ class _DriverBookingDetailsScreenState
                   LatLng(pickupLat, pickupLng),
                   _polylineCoordinates.first,
                 ],
-                color: const Color(0xFF8A0000),
+                color: Colors.blue,
                 width: 4,
                 patterns: <PatternItem>[
                   PatternItem.dash(10),
@@ -438,7 +438,7 @@ class _DriverBookingDetailsScreenState
               Polyline(
                 polylineId: const PolylineId('drop_conn'),
                 points: [_polylineCoordinates.last, LatLng(dropLat, dropLng)],
-                color: const Color(0xFF8A0000),
+                color: Colors.blue,
                 width: 4,
                 patterns: <PatternItem>[
                   PatternItem.dash(10),
@@ -497,7 +497,7 @@ class _DriverBookingDetailsScreenState
             Polyline(
               polylineId: const PolylineId('route'),
               points: _polylineCoordinates,
-              color: const Color(0xFF8A0000),
+              color: Colors.blue,
               width: 5,
               jointType: JointType.round,
               startCap: Cap.roundCap,
@@ -522,7 +522,7 @@ class _DriverBookingDetailsScreenState
                   LatLng(pickupLat, pickupLng),
                   _polylineCoordinates.first,
                 ],
-                color: const Color(0xFF8A0000),
+                color: Colors.blue,
                 width: 4,
                 patterns: <PatternItem>[
                   PatternItem.dash(10),
@@ -537,7 +537,7 @@ class _DriverBookingDetailsScreenState
               Polyline(
                 polylineId: const PolylineId('drop_conn'),
                 points: [_polylineCoordinates.last, LatLng(dropLat, dropLng)],
-                color: const Color(0xFF8A0000),
+                color: Colors.blue,
                 width: 4,
                 patterns: <PatternItem>[
                   PatternItem.dash(10),

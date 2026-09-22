@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:riderzz_app/core/services/native_overlay_controller.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 import 'package:riderzz_app/core/services/location_tracking_service.dart';
@@ -42,6 +43,7 @@ class DriverHomeScreenState extends State<DriverHomeScreen> {
   @override
   void initState() {
     super.initState();
+    NativeOverlayController.scheduleDriverPermissionPrompt();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       _driverHomeProvider = context.read<DriverHomeProvider>();
       _driverHomeProvider?.addListener(_onDriverHomeProviderChanged);

@@ -79,21 +79,17 @@ class OverlayChannelHandler(
     }
 }
 
-/** Owns Android's special overlay permission and the one-time-denial policy. */
+/** Owns Android's special overlay permission checks. */
 object OverlayPermissionManager {
     private var waitingForSettingsResult = false
 
     fun isGranted(context: Context): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(context)
 
-    fun mayPrompt(context: Context): Boolean =
-        !context.getSharedPreferences(OVERLAY_PREFS, Context.MODE_PRIVATE)
-            .getBoolean(PREF_PERMISSION_SUPPRESSED, false)
+    fun mayPrompt(context: Context): Boolean = true
 
     fun suppressFuturePrompts(context: Context) {
-        context.getSharedPreferences(OVERLAY_PREFS, Context.MODE_PRIVATE)
-            .edit().putBoolean(PREF_PERMISSION_SUPPRESSED, true).apply()
-        Log.i(LOG_TAG, "Overlay permission prompt suppressed by user")
+        Log.i(LOG_TAG, "Overlay permission prompt dismissed by user for this session")
     }
 
     /** Opens the system's per-app overlay settings page; no runtime dialog exists for this permission. */
@@ -118,7 +114,6 @@ object OverlayPermissionManager {
     fun onHostActivityResumed(activity: MainActivity) {
         if (!waitingForSettingsResult) return
         waitingForSettingsResult = false
-        if (!isGranted(activity)) suppressFuturePrompts(activity)
         Log.i(LOG_TAG, "Overlay permission settings returned: granted=${isGranted(activity)}")
     }
 }

@@ -7,6 +7,7 @@ import 'package:riderzz_app/core/models/customer_profile_model.dart';
 import 'package:riderzz_app/core/storage/secure_storage_service.dart';
 import 'package:riderzz_app/core/utils/jwt_helper.dart';
 import 'package:riderzz_app/core/services/firebase_notification_service.dart';
+import 'package:riderzz_app/core/services/native_overlay_controller.dart';
 import 'package:riderzz_app/features/auth/data/repositories/auth_repository.dart';
 import 'package:riderzz_app/features/notification/data/repositories/notification_repository.dart';
 
@@ -295,6 +296,11 @@ class AuthProvider extends ChangeNotifier {
 
   /// Sign out
   Future<void> logout() async {
+    // Hide and clear native floating overlay
+    try {
+      await NativeOverlayController.hideOverlay();
+    } catch (_) {}
+
     // Stop foreground location service on logout
     try {
       await FlutterForegroundTask.stopService();

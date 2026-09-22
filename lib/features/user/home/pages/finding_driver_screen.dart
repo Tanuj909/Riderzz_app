@@ -1106,7 +1106,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
             Polyline(
               polylineId: const PolylineId('route'),
               points: _polylineCoordinates,
-              color: const Color(0xFF8A0000),
+              color: Colors.blue,
               width: 5,
               jointType: JointType.round,
               startCap: Cap.roundCap,
@@ -1127,7 +1127,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                   LatLng(pickupLat, pickupLng),
                   _polylineCoordinates.first,
                 ],
-                color: const Color(0xFF8A0000),
+                color: Colors.blue,
                 width: 4,
                 patterns: <PatternItem>[
                   PatternItem.dash(10),
@@ -1142,7 +1142,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
               Polyline(
                 polylineId: const PolylineId('drop_conn'),
                 points: [_polylineCoordinates.last, LatLng(dropLat, dropLng)],
-                color: const Color(0xFF8A0000),
+                color: Colors.blue,
                 width: 4,
                 patterns: <PatternItem>[
                   PatternItem.dash(10),
