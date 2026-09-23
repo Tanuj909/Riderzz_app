@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -9,6 +7,47 @@ import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.
 import 'package:riderzz_app/core/models/driver_profile_model.dart';
 import 'package:riderzz_app/core/models/vehicle_type_model.dart';
 import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_provider.dart';
+
+class _DriverVehicleCategoryItem {
+  final String key;
+  final String title;
+  final String subtitle;
+  final String assetPath;
+
+  const _DriverVehicleCategoryItem({
+    required this.key,
+    required this.title,
+    required this.subtitle,
+    required this.assetPath,
+  });
+}
+
+const List<_DriverVehicleCategoryItem> _kDriverVehicleCategories = [
+  _DriverVehicleCategoryItem(
+    key: 'TWO_WHEELER',
+    title: '2 Wheeler',
+    subtitle: 'Bike & Scooter',
+    assetPath: 'assets/category/two_wheeler.png',
+  ),
+  _DriverVehicleCategoryItem(
+    key: 'THREE_WHEELER',
+    title: '3 Wheeler',
+    subtitle: 'Auto & 3-Wheeler',
+    assetPath: 'assets/category/three_wheeler.png',
+  ),
+  _DriverVehicleCategoryItem(
+    key: 'FOUR_WHEELER',
+    title: '4 Wheeler',
+    subtitle: 'Cab & Mini Van',
+    assetPath: 'assets/category/four_wheeler.png',
+  ),
+  _DriverVehicleCategoryItem(
+    key: 'TRUCK',
+    title: 'Truck',
+    subtitle: 'Mini & Heavy Truck',
+    assetPath: 'assets/category/truck.png',
+  ),
+];
 
 class BecomeDriverScreen extends StatefulWidget {
   const BecomeDriverScreen({super.key});
@@ -42,6 +81,9 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
   final _insuranceController = TextEditingController();
 
   VehicleTypeModel? _selectedVehicle;
+  String _selectedCategoryKey = 'TWO_WHEELER';
+  bool _isLoadingCategoryVehicles = false;
+  List<VehicleTypeModel> _categoryVehicles = [];
 
   // Image picker and picked file references
   final ImagePicker _picker = ImagePicker();
@@ -59,7 +101,54 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = Provider.of<DriverHomeProvider>(context, listen: false);
       provider.fetchDriverProfile(force: true);
-      Provider.of<AdminVehiclesProvider>(context, listen: false).fetchVehicleTypes();
+      Provider.of<AdminVehiclesProvider>(context, listen: false).fetchVehicleTypes().then((_) {
+        _onCategorySelected(_selectedCategoryKey);
+      });
+    });
+  }
+
+  void _onCategorySelected(String categoryKey) async {
+    setState(() {
+      _selectedCategoryKey = categoryKey;
+      _isLoadingCategoryVehicles = true;
+    });
+
+    final provider = Provider.of<AdminVehiclesProvider>(context, listen: false);
+    List<VehicleTypeModel> list = [];
+    try {
+      list = await provider.fetchVehiclesByCategory(categoryKey);
+    } catch (e) {
+      debugPrint('fetchVehiclesByCategory error: $e');
+    }
+
+    if (list.isEmpty) {
+      list = provider.vehicleTypes.where((v) {
+        final cat = (v.category ?? '').toUpperCase().replaceAll('-', '_').replaceAll(' ', '_').trim();
+        final name = v.name.toUpperCase();
+        if (categoryKey == 'TWO_WHEELER') {
+          return cat.contains('TWO') || cat.contains('2_WHEEL') || name.contains('BIKE') || name.contains('SCOOT') || name.contains('2W');
+        } else if (categoryKey == 'THREE_WHEELER') {
+          return cat.contains('THREE') || cat.contains('3_WHEEL') || name.contains('AUTO') || name.contains('RICKSHAW') || name.contains('3W');
+        } else if (categoryKey == 'FOUR_WHEELER') {
+          return cat.contains('FOUR') || cat.contains('4_WHEEL') || name.contains('CAR') || name.contains('CAB') || name.contains('SEDAN') || name.contains('SUV') || name.contains('MINI') || name.contains('4W');
+        } else if (categoryKey == 'TRUCK') {
+          return cat.contains('TRUCK') || cat.contains('COMMERCIAL') || name.contains('TRUCK') || name.contains('ACE') || name.contains('GOODS') || name.contains('PICKUP');
+        }
+        return false;
+      }).toList();
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _categoryVehicles = list;
+      _isLoadingCategoryVehicles = false;
+      if (_selectedVehicle == null || !_categoryVehicles.any((v) => v.id == _selectedVehicle!.id)) {
+        if (_categoryVehicles.isNotEmpty) {
+          _selectedVehicle = _categoryVehicles.first;
+        } else {
+          _selectedVehicle = null;
+        }
+      }
     });
   }
 
@@ -82,13 +171,115 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
     super.dispose();
   }
 
+  void _showCustomSnackBar({
+    required String title,
+    String? message,
+    required Color primaryColor,
+    required IconData icon,
+  }) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.transparent,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        padding: EdgeInsets.zero,
+        duration: const Duration(seconds: 4),
+        content: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E293B),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+            border: Border.all(
+              color: primaryColor.withOpacity(0.4),
+              width: 1.2,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: primaryColor.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: primaryColor, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    if (message != null && message.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        message,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String title, [String? message]) {
+    _showCustomSnackBar(
+      title: title,
+      message: message,
+      primaryColor: const Color(0xFF10B981),
+      icon: Icons.check_circle_rounded,
+    );
+  }
+
+  void _showErrorSnackBar(String title, [String? message]) {
+    _showCustomSnackBar(
+      title: title,
+      message: message,
+      primaryColor: const Color(0xFFEF4444),
+      icon: Icons.error_outline_rounded,
+    );
+  }
+
+  void _showWarningSnackBar(String title, [String? message]) {
+    _showCustomSnackBar(
+      title: title,
+      message: message,
+      primaryColor: const Color(0xFFF59E0B),
+      icon: Icons.warning_amber_rounded,
+    );
+  }
+
   void _submitApplication(DriverHomeProvider provider) async {
     if (_selectedVehicle == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a vehicle category first.'),
-          backgroundColor: Colors.orangeAccent,
-        ),
+      _showWarningSnackBar(
+        'Vehicle Required',
+        'Please select a vehicle category first.',
       );
       return;
     }
@@ -125,11 +316,9 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
         insurancePath: insurancePath,
       );
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Application submitted successfully!'),
-            backgroundColor: Color(0xFF1C9A5B),
-          ),
+        _showSuccessSnackBar(
+          'Registered Successfully!',
+          'Your driver application has been submitted for review.',
         );
         setState(() {
           _forceShowForm = false;
@@ -150,11 +339,9 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
           _insuranceController.clear();
         });
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(provider.errorMessage ?? 'Submission failed. Please try again.'),
-            backgroundColor: Colors.redAccent,
-          ),
+        _showErrorSnackBar(
+          'Submission Failed',
+          provider.errorMessage ?? 'Please try again.',
         );
       }
     }
@@ -167,11 +354,9 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
     if (success && mounted) {
       Navigator.pushNamedAndRemoveUntil(context, '/role_redirect', (route) => false);
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Failed to activate Driver Mode. Try again.'),
-          backgroundColor: Colors.redAccent,
-        ),
+      _showErrorSnackBar(
+        'Action Failed',
+        authProvider.errorMessage ?? 'Failed to activate Driver Mode. Try again.',
       );
     }
   }
@@ -213,29 +398,23 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
         if (provider.profile != null) {
           final uploadSuccess = await provider.uploadDocument(type, image.path);
           if (uploadSuccess && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('$type uploaded successfully!'),
-                backgroundColor: const Color(0xFF1C9A5B),
-              ),
+            _showSuccessSnackBar(
+              'Document Uploaded',
+              '$type uploaded successfully!',
             );
           } else if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(provider.errorMessage ?? 'Failed to upload $type. Please try again.'),
-                backgroundColor: Colors.redAccent,
-              ),
+            _showErrorSnackBar(
+              'Upload Failed',
+              provider.errorMessage ?? 'Failed to upload $type. Please try again.',
             );
           }
         }
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to select document: $e'),
-          backgroundColor: Colors.redAccent,
-        ),
+      _showErrorSnackBar(
+        'Document Selection Failed',
+        e.toString(),
       );
     }
   }
@@ -806,9 +985,6 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
   }
 
   Widget _buildStep2Form(String? name, String? phone, DriverHomeProvider driverProvider) {
-    final vehiclesProvider = Provider.of<AdminVehiclesProvider>(context);
-    final vehicleTypes = vehiclesProvider.vehicleTypes;
-
     return Form(
       key: _formKey,
       child: Column(
@@ -868,74 +1044,169 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
           ),
           SizedBox(height: 20),
 
-          // Select Available Vehicle Type
+          // Select Available Vehicle Category
           Text(
-            'Select Vehicle Type',
+            'Select Vehicle Category',
             style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 12, fontWeight: FontWeight.w500),
           ),
-          SizedBox(height: 10),
-          
-          if (vehiclesProvider.isLoading && vehicleTypes.isEmpty) ...[
-            Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 20.0),
-                child: SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
+          const SizedBox(height: 10),
+
+          // 4 Category Cards in sequence (TWO_WHEELER, THREE_WHEELER, FOUR_WHEELER, TRUCK)
+          SizedBox(
+            height: 106,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _kDriverVehicleCategories.length,
+              itemBuilder: (context, index) {
+                final cat = _kDriverVehicleCategories[index];
+                final isSelected = _selectedCategoryKey == cat.key;
+
+                return GestureDetector(
+                  onTap: () => _onCategorySelected(cat.key),
+                  child: Container(
+                    width: 86,
+                    margin: const EdgeInsets.only(right: 12),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 86,
+                          height: 66,
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? const Color(0xFFFDEBEC) : const Color(0xFFF6F6F8),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
+                              width: isSelected ? 2.0 : 1.2,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: const Color(0xFFE31C2E).withValues(alpha: 0.15),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Center(
+                            child: Image.asset(
+                              cat.assetPath,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) => const Icon(
+                                Icons.local_shipping_rounded,
+                                size: 32,
+                                color: Color(0xFFE31C2E),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          cat.title,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(
+                            color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFF121214),
+                            fontSize: 11,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Sub-section: Select Specific Vehicle of chosen category
+          Text(
+            'Select Vehicle Model',
+            style: GoogleFonts.poppins(color: Color(0xFF6C6F79), fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 8),
+
+          if (_isLoadingCategoryVehicles) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14.0),
+              child: Row(
+                children: [
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Loading available vehicles...',
+                    style: GoogleFonts.poppins(color: const Color(0xFF6C6F79), fontSize: 12),
+                  ),
+                ],
               ),
-            )
-          ] else if (vehicleTypes.isEmpty) ...[
+            ),
+          ] else if (_categoryVehicles.isEmpty) ...[
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF2F2),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.redAccent.withOpacity(0.2)),
+                color: const Color(0xFFFFF7ED),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFED7AA)),
               ),
               child: Text(
-                'No available vehicle types found. Please contact admin.',
-                style: GoogleFonts.poppins(color: Colors.redAccent, fontSize: 13),
+                'No vehicle models available for this category.',
+                style: GoogleFonts.poppins(color: const Color(0xFFC2410C), fontSize: 12),
               ),
             ),
           ] else ...[
             SizedBox(
-              height: 80,
+              height: 106,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: vehicleTypes.length,
+                itemCount: _categoryVehicles.length,
                 itemBuilder: (context, index) {
-                  final vt = vehicleTypes[index];
+                  final vt = _categoryVehicles[index];
                   final isSelected = _selectedVehicle?.id == vt.id;
-                  
-                  Widget vehicleIcon;
+
+                  final categoryAsset = _kDriverVehicleCategories
+                      .firstWhere(
+                        (c) => c.key == _selectedCategoryKey,
+                        orElse: () => _kDriverVehicleCategories.first,
+                      )
+                      .assetPath;
+
+                  Widget vehicleImageWidget;
                   if (vt.iconUrl != null && vt.iconUrl!.isNotEmpty) {
-                    vehicleIcon = Image.network(
+                    vehicleImageWidget = Image.network(
                       vt.iconUrl!,
-                      width: 20,
-                      height: 20,
                       fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => Icon(
-                        Icons.local_shipping_rounded,
-                        color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFF6C6F79),
-                        size: 18,
+                      errorBuilder: (context, error, stackTrace) => Image.asset(
+                        categoryAsset,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => const Icon(
+                          Icons.local_shipping_rounded,
+                          color: Color(0xFFE31C2E),
+                          size: 30,
+                        ),
                       ),
                     );
                   } else {
-                    IconData typeIcon = Icons.directions_car_rounded;
-                    if (vt.name.toLowerCase().contains('bike') || vt.name.toLowerCase().contains('scoot')) {
-                      typeIcon = Icons.directions_bike_rounded;
-                    } else if (vt.name.toLowerCase().contains('cart') || vt.name.toLowerCase().contains('truck')) {
-                      typeIcon = Icons.local_shipping_rounded;
-                    }
-                    vehicleIcon = Icon(
-                      typeIcon,
-                      color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFF6C6F79),
-                      size: 20,
+                    vehicleImageWidget = Image.asset(
+                      categoryAsset,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.local_shipping_rounded,
+                        color: Color(0xFFE31C2E),
+                        size: 30,
+                      ),
                     );
                   }
 
@@ -943,32 +1214,49 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                     onTap: () {
                       setState(() => _selectedVehicle = vt);
                     },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 90,
+                    child: Container(
+                      width: 86,
                       margin: const EdgeInsets.only(right: 12),
-                      decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFFFDEBEC) : const Color(0xFFF6F6F8),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
-                          width: 1.5,
-                        ),
-                      ),
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          vehicleIcon,
-                          SizedBox(height: 4),
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: 86,
+                            height: 66,
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isSelected ? const Color(0xFFFDEBEC) : const Color(0xFFF6F6F8),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFFE7E7EB),
+                                width: isSelected ? 2.0 : 1.2,
+                              ),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: const Color(0xFFE31C2E).withValues(alpha: 0.15),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Center(
+                              child: vehicleImageWidget,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
                           Text(
                             vt.name,
                             textAlign: TextAlign.center,
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.poppins(
                               color: isSelected ? const Color(0xFFE31C2E) : const Color(0xFF121214),
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                              height: 1.2,
                             ),
                           ),
                         ],
@@ -1513,28 +1801,6 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
               style: GoogleFonts.poppins(color: Color(0xFFE31C2E), fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ),
-          SizedBox(height: 12),
-
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE31C2E),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              elevation: 0,
-            ),
-            onPressed: () => driverProvider.fetchDriverProfile(),
-            child: driverProvider.isLoading
-                ? SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
-                  )
-                : Text(
-                    'Refresh Application Status',
-                    style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w500),
-                  ),
-          ),
         ],
       ),
     );
@@ -1828,12 +2094,11 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
                                 });
                                 if (context.mounted) {
                                   Navigator.pop(context);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(success ? 'Profile updated successfully!' : (provider.errorMessage ?? 'Update failed.')),
-                                      backgroundColor: success ? const Color(0xFF1C9A5B) : Colors.redAccent,
-                                    ),
-                                  );
+                                  if (success) {
+                                    _showSuccessSnackBar('Profile Updated', 'Your profile details have been saved successfully.');
+                                  } else {
+                                    _showErrorSnackBar('Update Failed', provider.errorMessage ?? 'Please try again.');
+                                  }
                                 }
                               },
                               child: isSaving

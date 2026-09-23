@@ -6,6 +6,7 @@ import 'package:riderzz_app/features/driver/home/data/datasource/driver_remote_d
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/core/models/driver_earnings_model.dart';
 import 'package:riderzz_app/core/models/driver_message_model.dart';
+import 'package:riderzz_app/core/models/driver_registration_check_model.dart';
 
 
 class DriverRepository {
@@ -67,6 +68,10 @@ class DriverRepository {
 
   Future<void> applyDriver(Map<String, dynamic> data) async {
     await _remoteDataSource.applyDriver(data);
+  }
+
+  Future<DriverRegistrationCheckModel> checkDriverRegistrationStatus() async {
+    return await _remoteDataSource.checkDriverRegistrationStatus();
   }
 
   Future<void> uploadDriverDocument(String docType, String filePath) async {

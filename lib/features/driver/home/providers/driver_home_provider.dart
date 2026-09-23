@@ -10,6 +10,7 @@ import 'package:riderzz_app/features/driver/home/data/repositories/driver_reposi
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/core/models/driver_earnings_model.dart';
 import 'package:riderzz_app/core/models/driver_message_model.dart';
+import 'package:riderzz_app/core/models/driver_registration_check_model.dart';
 import 'package:riderzz_app/features/notification/data/models/notification_model.dart';
 
 
@@ -47,6 +48,11 @@ class DriverHomeProvider extends ChangeNotifier {
   List<DriverMessageModel> _messages = [];
   bool _isMessagesLoading = false;
   String? _messagesError;
+
+  // Registration & Terms Check properties
+  DriverRegistrationCheckModel? _registrationCheck;
+  bool _isRegistrationCheckLoading = false;
+  String? _registrationCheckError;
 
 
   final BroadcastSocketService _socketService;
@@ -153,6 +159,11 @@ class DriverHomeProvider extends ChangeNotifier {
   bool get isMessagesLoading => _isMessagesLoading;
   String? get messagesError => _messagesError;
 
+  // Registration & Terms Check getters
+  DriverRegistrationCheckModel? get registrationCheck => _registrationCheck;
+  bool get isRegistrationCheckLoading => _isRegistrationCheckLoading;
+  String? get registrationCheckError => _registrationCheckError;
+
 
   void clearData() {
     _socketService.disconnect();
@@ -177,6 +188,9 @@ class DriverHomeProvider extends ChangeNotifier {
     _messages = [];
     _isMessagesLoading = false;
     _messagesError = null;
+    _registrationCheck = null;
+    _isRegistrationCheckLoading = false;
+    _registrationCheckError = null;
     notifyListeners();
   }
 
@@ -470,8 +484,9 @@ class DriverHomeProvider extends ChangeNotifier {
         }
       }
 
-      // 3. Re-fetch profile to load state immediately
+      // 3. Re-fetch profile and registration check to load state immediately
       await fetchDriverProfile(force: true);
+      await checkRegistrationStatus(force: true);
 
       _isLoading = false;
       notifyListeners();
@@ -764,6 +779,27 @@ class DriverHomeProvider extends ChangeNotifier {
     } catch (e) {
       _isMessagesLoading = false;
       _messagesError = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+    }
+  }
+
+  Future<DriverRegistrationCheckModel?> checkRegistrationStatus({bool force = false}) async {
+    if (!force && _registrationCheck != null) {
+      return _registrationCheck;
+    }
+    _isRegistrationCheckLoading = true;
+    _registrationCheckError = null;
+    notifyListeners();
+
+    try {
+      final result = await _driverRepository.checkDriverRegistrationStatus();
+      _registrationCheck = result;
+      return result;
+    } catch (e) {
+      _registrationCheckError = e.toString().replaceFirst('Exception: ', '');
+      return null;
+    } finally {
+      _isRegistrationCheckLoading = false;
       notifyListeners();
     }
   }

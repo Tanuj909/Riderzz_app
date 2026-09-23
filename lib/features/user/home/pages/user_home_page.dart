@@ -18,6 +18,7 @@ import 'package:riderzz_app/features/user/home/widgets/booking_details_bottom_sh
 import 'package:riderzz_app/features/user/profile/screens/customer_profile_screen.dart';
 import 'package:riderzz_app/features/user/saved_routes/screens/saved_route_list_screen.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
+import 'package:riderzz_app/core/models/driver_registration_check_model.dart';
 import 'package:riderzz_app/features/driver/profile/become_driver_screen.dart';
 import 'package:riderzz_app/features/driver/profile/widgets/driver_terms_popup.dart';
 import 'package:riderzz_app/core/services/broadcast_socket_service.dart';
@@ -75,6 +76,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       Provider.of<BookingProvider>(context, listen: false).fetchCurrentBookings();
+      Provider.of<DriverHomeProvider>(context, listen: false).checkRegistrationStatus();
       final initialCoords = await SharedLocationService.instance.consumeInitialLocation();
       if (initialCoords != null && mounted) {
         _handleIncomingSharedLocation(initialCoords);
@@ -394,7 +396,10 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
 
     return RefreshIndicator(
       onRefresh: () async {
-        await Provider.of<BookingProvider>(context, listen: false).fetchCurrentBookings();
+        await Future.wait([
+          Provider.of<BookingProvider>(context, listen: false).fetchCurrentBookings(),
+          Provider.of<DriverHomeProvider>(context, listen: false).checkRegistrationStatus(force: true),
+        ]);
       },
       color: const Color(0xFFE31C2E),
       child: SingleChildScrollView(
@@ -528,211 +533,18 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
           ),
           const SizedBox(height: 20),
 
-          // Map Hero
-          GestureDetector(
-            onTap: () => _showNewBookingModal(),
-            child: Container(
-              height: 172,
-              margin: const EdgeInsets.only(bottom: 18),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: const Color(0xFFE7E7EB)),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFF9F9FA), Color(0xFFE8E8ED)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-              clipBehavior: Clip.hardEdge,
-              child: Stack(
-                children: [
-                  // Animated Route and Map Pins
-                  AnimatedBuilder(
-                    animation: _animController,
-                    builder: (context, child) {
-                      return LayoutBuilder(
-                        builder: (context, constraints) {
-                          final double t = _animController.value;
-                          final double T = t * 12600;
-                          
-                          double cameraX = 60.0;
-                          double cameraY = 70.0;
-                          double cameraScale = 1.0;
-                          
-                          double pickupReveal = 0.0;
-                          double dropReveal = 0.0;
-                          double drawProgress = 0.0;
-                          
-                          // Continuous pulse for revealed markers
-                          final double pulseT = (T % 2000) / 2000;
-                          double pulseScale = 0.5;
-                          double pulseOpacity = 0.0;
-                          if (pulseT <= 0.7) {
-                            final pt = pulseT / 0.7;
-                            pulseScale = 0.5 + (2.0 * pt);
-                            pulseOpacity = 0.6 * (1.0 - pt);
-                          }
-                          
-                          if (T < 1400) {
-                            cameraX = 60; cameraY = 70; cameraScale = 1.6;
-                            pickupReveal = T > 400 ? ((T - 400) / 400).clamp(0.0, 1.0) : 0.0;
-                            drawProgress = 0.0;
-                            dropReveal = 0.0;
-                          } else if (T < 4900) {
-                            pickupReveal = 1.0;
-                            dropReveal = 0.0;
-                            final progress = (T - 1400) / 3500;
-                            final easeProgress = -(cos(pi * progress) - 1) / 2;
-                            drawProgress = easeProgress;
-                            cameraX = 60 + (320 - 60) * easeProgress;
-                            
-                            // Accurately track the HTML bezier Y
-                            if (easeProgress < 0.5) {
-                              final rt = easeProgress * 2;
-                              cameraY = (pow(1 - rt, 2) * 70 + 2 * (1 - rt) * rt * 130 + pow(rt, 2) * 86).toDouble();
-                            } else {
-                              final rt = (easeProgress - 0.5) * 2;
-                              cameraY = (pow(1 - rt, 2) * 86 + 2 * (1 - rt) * rt * 42 + pow(rt, 2) * 60).toDouble();
-                            }
-                            cameraScale = 1.6;
-                          } else if (T < 6100) {
-                            drawProgress = 1.0;
-                            cameraX = 320; cameraY = 60; cameraScale = 1.6;
-                            pickupReveal = 1.0;
-                            dropReveal = ((T - 4900) / 400).clamp(0.0, 1.0);
-                          } else if (T < 7100) {
-                            drawProgress = 1.0;
-                            pickupReveal = 1.0;
-                            dropReveal = 1.0;
-                            final zoomProgress = (T - 6100) / 1000;
-                            final easeZoom = sin(zoomProgress * pi / 2);
-                            final midX = 190.0;
-                            final midY = 65.0; 
-                            cameraX = 320 + (midX - 320) * easeZoom;
-                            cameraY = 60 + (midY - 60) * easeZoom;
-                            cameraScale = 1.6 + (1.0 - 1.6) * easeZoom;
-                          } else {
-                            drawProgress = 1.0;
-                            pickupReveal = 1.0;
-                            dropReveal = 1.0;
-                            cameraX = 190.0; cameraY = 65.0; cameraScale = 1.0;
-                          }
-                          
-                          final routeFlowValue = drawProgress >= 1.0 ? ((T % 1000) / 1000) : 0.0;
-                          
-                          final centerX = constraints.maxWidth / 2;
-                          // Shift the visual center slightly up (-10) so the deep curve doesn't clip behind the button
-                          final centerY = (constraints.maxHeight / 2) - 10; 
-                          final transform = Matrix4.identity()
-                            ..translate(centerX - cameraX * cameraScale, centerY - cameraY * cameraScale)
-                            ..scale(cameraScale);
-
-                          return Transform(
-                            transform: transform,
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                Positioned.fill(
-                                  child: CustomPaint(
-                                    painter: _RoutePainter(
-                                      animationValue: routeFlowValue,
-                                      drawProgress: drawProgress,
-                                    ),
-                                  ),
-                                ),
-                                // Pickup Marker
-                                Positioned(
-                                  left: 60 - 24, top: 70 - 38,
-                                  child: Transform.scale(
-                                    scale: pickupReveal,
-                                    child: SizedBox(
-                                      width: 48, height: 48,
-                                      child: Stack(
-                                        alignment: Alignment.center,
-                                        clipBehavior: Clip.none,
-                                        children: [
-                                          Positioned(top: 31, child: Transform.scale(scale: pulseScale, child: Opacity(opacity: pulseOpacity, child: Container(width: 14, height: 14, decoration: const BoxDecoration(color: Color(0xFF121214), shape: BoxShape.circle))))),
-                                          const Positioned(top: 10, child: Icon(Icons.location_on, color: Color(0xFF121214), size: 28)),
-                                          Positioned(bottom: 42, child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: const Color(0xFF121214), borderRadius: BorderRadius.circular(6), boxShadow: const [BoxShadow(color: Color(0x26000000), blurRadius: 10, offset: Offset(0, 4))]), child: const Text('Pickup', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)))),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                // Drop Marker
-                                Positioned(
-                                  left: 320 - 24, top: 60 - 38,
-                                  child: Transform.scale(
-                                    scale: dropReveal,
-                                    child: SizedBox(
-                                      width: 48, height: 48,
-                                      child: Stack(
-                                        alignment: Alignment.center,
-                                        clipBehavior: Clip.none,
-                                        children: [
-                                          Positioned(top: 31, child: Transform.scale(scale: pulseScale, child: Opacity(opacity: pulseOpacity, child: Container(width: 14, height: 14, decoration: const BoxDecoration(color: Color(0xFFE31C2E), shape: BoxShape.circle))))),
-                                          const Positioned(top: 10, child: Icon(Icons.location_on, color: Color(0xFFE31C2E), size: 28)),
-                                          Positioned(bottom: 42, child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: const Color(0xFFE31C2E), borderRadius: BorderRadius.circular(6), boxShadow: const [BoxShadow(color: Color(0x26000000), blurRadius: 10, offset: Offset(0, 4))]), child: const Text('Drop', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)))),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    }
-                  ),
-
-                  // New booking button
-                  Positioned(
-                    bottom: 14,
-                    left: 14,
-                    right: 14,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x2E121214),
-                            offset: Offset(0, 10),
-                            blurRadius: 26,
-                            spreadRadius: -10,
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'New booking',
-                            style: TextStyle(
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF121214),
-                            ),
-                          ),
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFE31C2E),
-                              shape: BoxShape.circle,
-                            ),
-                            alignment: Alignment.center,
-                            child: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 16),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          // Map Hero or Driver Application Status Card
+          Consumer<DriverHomeProvider>(
+            builder: (context, driverProvider, child) {
+              final registrationCheck = driverProvider.registrationCheck;
+              if (registrationCheck != null &&
+                  registrationCheck.formSubmitted &&
+                  registrationCheck.status != null &&
+                  registrationCheck.status != 'SUSPENDED') {
+                return _buildDriverStatusHero(context, registrationCheck);
+              }
+              return _buildMapHero();
+            },
           ),
 
           /*
@@ -2044,6 +1856,483 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
     );
   }
 
+  Widget _buildDriverStatusHero(BuildContext context, DriverRegistrationCheckModel check) {
+    final status = check.status?.toUpperCase() ?? 'PENDING';
+
+    final bool isApproved = status == 'APPROVED';
+    final bool isRejected = status == 'REJECTED';
+
+    final Color badgeColor = isApproved
+        ? const Color(0xFF22C55E)
+        : (isRejected ? const Color(0xFFEF4444) : const Color(0xFFE31C2E));
+
+    final String badgeText = isApproved
+        ? 'Approved'
+        : (isRejected ? 'Rejected' : 'Pending');
+
+    final String subtitleText = isApproved
+        ? 'Your registration is approved. You can now switch to Driver Mode.'
+        : (isRejected
+            ? 'Your application was rejected. Please review details and re-apply.'
+            : 'Your registration form and documents are being verified by our team.');
+
+    final String buttonText = isApproved
+        ? 'Switch to Driver Mode!'
+        : (isRejected ? 'Review Details & Re-apply' : 'View Application Details');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF18181B), Color(0xFF101014)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: const Color(0xFF27272A), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header Row: Application Status Title + Status Pill Badge
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'Application Status',
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: badgeColor.withValues(alpha: 0.35)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!isApproved && !isRejected) ...[
+                      SizedBox(
+                        width: 11,
+                        height: 11,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(badgeColor),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                    ] else ...[
+                      Icon(
+                        isApproved ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                        color: badgeColor,
+                        size: 13,
+                      ),
+                      const SizedBox(width: 5),
+                    ],
+                    Text(
+                      badgeText,
+                      style: GoogleFonts.outfit(
+                        color: badgeColor,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Subtitle (multi-line supported)
+          Text(
+            subtitleText,
+            style: GoogleFonts.outfit(
+              color: const Color(0xFFD4D4D8),
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+              height: 1.38,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 16),
+          // Bottom Action Button
+          GestureDetector(
+            onTap: () async {
+              if (isApproved) {
+                final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                final success = await authProvider.updateUserRole('ROLE_DRIVER');
+                if (success && context.mounted) {
+                  Navigator.pushNamedAndRemoveUntil(context, '/role_redirect', (route) => false);
+                } else if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(authProvider.errorMessage ?? 'Failed to switch to Driver Mode.'),
+                      backgroundColor: Colors.redAccent,
+                    ),
+                  );
+                }
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const BecomeDriverScreen()),
+                );
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9.5),
+              decoration: BoxDecoration(
+                color: isApproved ? const Color(0xFFE31C2E) : Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: isApproved
+                        ? const Color(0xFFE31C2E).withValues(alpha: 0.3)
+                        : Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    buttonText,
+                    style: GoogleFonts.outfit(
+                      color: isApproved ? Colors.white : const Color(0xFF121214),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: isApproved ? Colors.white : const Color(0xFFE31C2E),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_rounded,
+                      color: isApproved ? const Color(0xFFE31C2E) : Colors.white,
+                      size: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMapHero() {
+    return GestureDetector(
+      onTap: () => _showNewBookingModal(),
+      child: Container(
+        height: 172,
+        margin: const EdgeInsets.only(bottom: 18),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: const Color(0xFFE7E7EB)),
+          gradient: const LinearGradient(
+            colors: [Color(0xFFF9F9FA), Color(0xFFE8E8ED)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        clipBehavior: Clip.hardEdge,
+        child: Stack(
+          children: [
+            // Animated Route and Map Pins
+            AnimatedBuilder(
+              animation: _animController,
+              builder: (context, child) {
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final double t = _animController.value;
+                    final double T = t * 12600;
+
+                    double cameraX = 60.0;
+                    double cameraY = 70.0;
+                    double cameraScale = 1.0;
+
+                    double pickupReveal = 0.0;
+                    double dropReveal = 0.0;
+                    double drawProgress = 0.0;
+
+                    // Continuous pulse for revealed markers
+                    final double pulseT = (T % 2000) / 2000;
+                    double pulseScale = 0.5;
+                    double pulseOpacity = 0.0;
+                    if (pulseT <= 0.7) {
+                      final pt = pulseT / 0.7;
+                      pulseScale = 0.5 + (2.0 * pt);
+                      pulseOpacity = 0.6 * (1.0 - pt);
+                    }
+
+                    if (T < 1400) {
+                      cameraX = 60;
+                      cameraY = 70;
+                      cameraScale = 1.6;
+                      pickupReveal = T > 400 ? ((T - 400) / 400).clamp(0.0, 1.0) : 0.0;
+                      drawProgress = 0.0;
+                      dropReveal = 0.0;
+                    } else if (T < 4900) {
+                      pickupReveal = 1.0;
+                      dropReveal = 0.0;
+                      final progress = (T - 1400) / 3500;
+                      final easeProgress = -(cos(pi * progress) - 1) / 2;
+                      drawProgress = easeProgress;
+                      cameraX = 60 + (320 - 60) * easeProgress;
+
+                      // Accurately track the HTML bezier Y
+                      if (easeProgress < 0.5) {
+                        final rt = easeProgress * 2;
+                        cameraY = (pow(1 - rt, 2) * 70 +
+                                2 * (1 - rt) * rt * 130 +
+                                pow(rt, 2) * 86)
+                            .toDouble();
+                      } else {
+                        final rt = (easeProgress - 0.5) * 2;
+                        cameraY = (pow(1 - rt, 2) * 86 +
+                                2 * (1 - rt) * rt * 42 +
+                                pow(rt, 2) * 60)
+                            .toDouble();
+                      }
+                      cameraScale = 1.6;
+                    } else if (T < 6100) {
+                      drawProgress = 1.0;
+                      cameraX = 320;
+                      cameraY = 60;
+                      cameraScale = 1.6;
+                      pickupReveal = 1.0;
+                      dropReveal = ((T - 4900) / 400).clamp(0.0, 1.0);
+                    } else if (T < 7100) {
+                      drawProgress = 1.0;
+                      pickupReveal = 1.0;
+                      dropReveal = 1.0;
+                      final zoomProgress = (T - 6100) / 1000;
+                      final easeZoom = sin(zoomProgress * pi / 2);
+                      final midX = 190.0;
+                      final midY = 65.0;
+                      cameraX = 320 + (midX - 320) * easeZoom;
+                      cameraY = 60 + (midY - 60) * easeZoom;
+                      cameraScale = 1.6 + (1.0 - 1.6) * easeZoom;
+                    } else {
+                      drawProgress = 1.0;
+                      pickupReveal = 1.0;
+                      dropReveal = 1.0;
+                      cameraX = 190.0;
+                      cameraY = 65.0;
+                      cameraScale = 1.0;
+                    }
+
+                    final routeFlowValue =
+                        drawProgress >= 1.0 ? ((T % 1000) / 1000) : 0.0;
+
+                    final centerX = constraints.maxWidth / 2;
+                    final centerY = (constraints.maxHeight / 2) - 10;
+                    final transform = Matrix4.identity()
+                      ..translate(
+                          centerX - cameraX * cameraScale, centerY - cameraY * cameraScale)
+                      ..scale(cameraScale);
+
+                    return Transform(
+                      transform: transform,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Positioned.fill(
+                            child: CustomPaint(
+                              painter: _RoutePainter(
+                                animationValue: routeFlowValue,
+                                drawProgress: drawProgress,
+                              ),
+                            ),
+                          ),
+                          // Pickup Marker
+                          Positioned(
+                            left: 60 - 24,
+                            top: 70 - 38,
+                            child: Transform.scale(
+                              scale: pickupReveal,
+                              child: SizedBox(
+                                width: 48,
+                                height: 48,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    Positioned(
+                                        top: 31,
+                                        child: Transform.scale(
+                                            scale: pulseScale,
+                                            child: Opacity(
+                                                opacity: pulseOpacity,
+                                                child: Container(
+                                                    width: 14,
+                                                    height: 14,
+                                                    decoration: const BoxDecoration(
+                                                        color: Color(0xFF121214),
+                                                        shape: BoxShape.circle))))),
+                                    const Positioned(
+                                        top: 10,
+                                        child: Icon(Icons.location_on,
+                                            color: Color(0xFF121214), size: 28)),
+                                    Positioned(
+                                        bottom: 42,
+                                        child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 10, vertical: 4),
+                                            decoration: BoxDecoration(
+                                                color: const Color(0xFF121214),
+                                                borderRadius: BorderRadius.circular(6),
+                                                boxShadow: const [
+                                                  BoxShadow(
+                                                      color: Color(0x26000000),
+                                                      blurRadius: 10,
+                                                      offset: Offset(0, 4))
+                                                ]),
+                                            child: const Text('Pickup',
+                                                style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold)))),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Drop Marker
+                          Positioned(
+                            left: 320 - 24,
+                            top: 60 - 38,
+                            child: Transform.scale(
+                              scale: dropReveal,
+                              child: SizedBox(
+                                width: 48,
+                                height: 48,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    Positioned(
+                                        top: 31,
+                                        child: Transform.scale(
+                                            scale: pulseScale,
+                                            child: Opacity(
+                                                opacity: pulseOpacity,
+                                                child: Container(
+                                                    width: 14,
+                                                    height: 14,
+                                                    decoration: const BoxDecoration(
+                                                        color: Color(0xFFE31C2E),
+                                                        shape: BoxShape.circle))))),
+                                    const Positioned(
+                                        top: 10,
+                                        child: Icon(Icons.location_on,
+                                            color: Color(0xFFE31C2E), size: 28)),
+                                    Positioned(
+                                        bottom: 42,
+                                        child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 10, vertical: 4),
+                                            decoration: BoxDecoration(
+                                                color: const Color(0xFFE31C2E),
+                                                borderRadius: BorderRadius.circular(6),
+                                                boxShadow: const [
+                                                  BoxShadow(
+                                                      color: Color(0x26000000),
+                                                      blurRadius: 10,
+                                                      offset: Offset(0, 4))
+                                                ]),
+                                            child: const Text('Drop',
+                                                style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold)))),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+
+            // New booking button
+            Positioned(
+              bottom: 14,
+              left: 14,
+              right: 14,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x2E121214),
+                      offset: Offset(0, 10),
+                      blurRadius: 26,
+                      spreadRadius: -10,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'New booking',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF121214),
+                      ),
+                    ),
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE31C2E),
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: const Icon(Icons.arrow_forward_rounded,
+                          color: Colors.white, size: 16),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 

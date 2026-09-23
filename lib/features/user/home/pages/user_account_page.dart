@@ -34,6 +34,7 @@ class _UserAccountPageState extends State<UserAccountPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AuthProvider>().fetchCustomerProfile();
+      context.read<DriverHomeProvider>().checkRegistrationStatus();
     });
   }
 
@@ -363,94 +364,122 @@ class _UserAccountPageState extends State<UserAccountPage> {
           const SizedBox(height: 20),
 
           // ── Become Driver Card ──
-          GestureDetector(
-            onTap: () {
-              showDriverTermsAndConditionsPopup(context, () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const BecomeDriverScreen()),
-                );
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFC62E42), Color(0xFFA31E30)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFC62E42).withOpacity(0.35),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                    spreadRadius: -6,
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
+          Consumer<DriverHomeProvider>(
+            builder: (context, driverProvider, child) {
+              final registrationCheck = driverProvider.registrationCheck;
+              final bool isTermsAccepted = registrationCheck?.termsAccepted == true;
+              final String? status = registrationCheck?.status?.toUpperCase();
+
+              String badgeText = 'NEW';
+              if (isTermsAccepted) {
+                if (status == 'PENDING') {
+                  badgeText = 'PENDING';
+                } else if (status == 'APPROVED') {
+                  badgeText = 'APPROVED';
+                } else if (status == 'REJECTED') {
+                  badgeText = 'REJECTED';
+                } else {
+                  badgeText = 'VIEW';
+                }
+              }
+
+              return GestureDetector(
+                onTap: () {
+                  if (isTermsAccepted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const BecomeDriverScreen()),
+                    );
+                  } else {
+                    showDriverTermsAndConditionsPopup(context, () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const BecomeDriverScreen()),
+                      );
+                    });
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFC62E42), Color(0xFFA31E30)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    child: const Icon(Icons.directions_car_filled_outlined, color: Colors.white, size: 20),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFC62E42).withOpacity(0.35),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                        spreadRadius: -6,
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.directions_car_filled_outlined, color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Become a Driver',
-                              style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                'NEW',
-                                style: GoogleFonts.outfit(
-                                  color: Colors.white,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.5,
+                            Row(
+                              children: [
+                                Text(
+                                  isTermsAccepted ? 'Driver Application' : 'Become a Driver',
+                                  style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
                                 ),
-                              ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    badgeText,
+                                    style: GoogleFonts.outfit(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              isTermsAccepted ? 'Check application status & details' : 'Earn on your own schedule',
+                              style: GoogleFonts.outfit(fontSize: 12, color: Colors.white70),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          'Earn on your own schedule',
-                          style: GoogleFonts.outfit(fontSize: 12, color: Colors.white70),
+                      ),
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                      ],
-                    ),
+                        child: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 14),
+                      ),
+                    ],
                   ),
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 14),
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 24),
 

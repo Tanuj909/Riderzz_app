@@ -9,6 +9,7 @@ import 'package:riderzz_app/core/models/bank_account_model.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/core/models/driver_earnings_model.dart';
 import 'package:riderzz_app/core/models/driver_message_model.dart';
+import 'package:riderzz_app/core/models/driver_registration_check_model.dart';
 
 
 class DriverRemoteDataSource {
@@ -152,6 +153,12 @@ class DriverRemoteDataSource {
 
   Future<void> applyDriver(Map<String, dynamic> data) async {
     await _apiClient.post(ApiConstants.driverApply, data: data);
+  }
+
+  Future<DriverRegistrationCheckModel> checkDriverRegistrationStatus() async {
+    final response = await _apiClient.get(ApiConstants.driverRegistrationCheck);
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    return DriverRegistrationCheckModel.fromJson(resBody);
   }
 
   Future<void> uploadDriverDocument(String docType, String filePath) async {
