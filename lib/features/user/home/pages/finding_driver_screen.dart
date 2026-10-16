@@ -76,6 +76,10 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
   BitmapDescriptor? _pickupIconDescriptor;
   BitmapDescriptor? _dropIconDescriptor;
   BitmapDescriptor? _fallbackDriverIconDescriptor;
+  BitmapDescriptor? _threeWheelerIconDescriptor;
+  BitmapDescriptor? _fourWheelerIconDescriptor;
+  BitmapDescriptor? _truckIconDescriptor;
+  Set<Marker> _dummyVehicleMarkers = {};
   Marker? _pickupMarker;
   Marker? _dropMarker;
   late final Dio _dio;
@@ -92,7 +96,7 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
     _dio = Dio();
 
     // Cache static BitmapDescriptors
-    _pickupIconDescriptor = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
+    _pickupIconDescriptor = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
     _dropIconDescriptor = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
     _fallbackDriverIconDescriptor = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
 
@@ -244,30 +248,92 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
   }
 
   Future<void> _loadCustomMarkerIcon() async {
-    try {
-      final ByteData data = await rootBundle.load(
-        'assets/icons/driver_icon.png',
-      );
-      final ui.Codec codec = await ui.instantiateImageCodec(
-        data.buffer.asUint8List(),
-        targetWidth: 60,
-        targetHeight: 60,
-      );
-      final ui.FrameInfo fi = await codec.getNextFrame();
-      final ByteData? byteData = await fi.image.toByteData(
-        format: ui.ImageByteFormat.png,
-      );
-      if (byteData != null && mounted) {
-        setState(() {
-          _driverIconDescriptor = BitmapDescriptor.bytes(
-            byteData.buffer.asUint8List(),
-          );
-        });
+    Future<BitmapDescriptor?> loadIcon(String path) async {
+      try {
+        final ByteData data = await rootBundle.load(path);
+        final ui.Codec codec = await ui.instantiateImageCodec(
+          data.buffer.asUint8List(),
+          targetWidth: 60,
+          targetHeight: 60,
+        );
+        final ui.FrameInfo fi = await codec.getNextFrame();
+        final ByteData? byteData = await fi.image.toByteData(
+          format: ui.ImageByteFormat.png,
+        );
+        if (byteData != null) {
+          return BitmapDescriptor.bytes(byteData.buffer.asUint8List());
+        }
+      } catch (e) {
+        debugPrint('Failed to load custom icon $path: $e');
       }
-    } catch (e) {
-      debugPrint('Failed to load custom driver icon: $e');
+      return null;
+    }
+
+    final driverIcon = await loadIcon('assets/icons/driver_icon.png');
+    final threeWheelerIcon = await loadIcon('assets/icons/3_wheeler_icon.png');
+    final fourWheelerIcon = await loadIcon('assets/icons/4_wheeler_icon.png');
+    final truckIcon = await loadIcon('assets/icons/truck_icon.png');
+
+    if (mounted) {
+      setState(() {
+        _driverIconDescriptor = driverIcon;
+        _threeWheelerIconDescriptor = threeWheelerIcon;
+        _fourWheelerIconDescriptor = fourWheelerIcon;
+        _truckIconDescriptor = truckIcon;
+      });
+      _generateDummyVehicles();
     }
   }
+
+  void _generateDummyVehicles() {
+    if (_currentBooking.pickupLatitude == null ||
+        _currentBooking.pickupLongitude == null) return;
+    final center = LatLng(
+      _currentBooking.pickupLatitude!,
+      _currentBooking.pickupLongitude!,
+    );
+    final random = math.Random();
+
+    void addMarkers(int count, BitmapDescriptor? icon, String idPrefix) {
+      for (int i = 0; i < count; i++) {
+        // First 2 icons of each type should be very close (300m - 500m range)
+        // 0.5km max radius for them, 4km max radius for the rest.
+        final radiusInDegrees = (i < 2) ? (0.5 / 111.0) : (4.0 / 111.0);
+        
+        // For close ones, bias them outwards slightly so they aren't exactly on top of the pin
+        final u = (i < 2) ? (0.3 + 0.7 * random.nextDouble()) : random.nextDouble();
+        final v = random.nextDouble();
+        final w = radiusInDegrees * math.sqrt(u);
+        final t = 2 * math.pi * v;
+        final x = w * math.cos(t);
+        final y = w * math.sin(t);
+
+        final newX = x / math.cos(center.latitude * math.pi / 180);
+        final lat = center.latitude + y;
+        final lng = center.longitude + newX;
+
+        _dummyVehicleMarkers.add(
+          Marker(
+            markerId: MarkerId('${idPrefix}_$i'),
+            position: LatLng(lat, lng),
+            icon: icon ?? BitmapDescriptor.defaultMarker,
+            anchor: const Offset(0.5, 0.5),
+          ),
+        );
+      }
+    }
+
+    // frequencies: driver_icon > 3_wheeler > 4_wheeler > truck
+    addMarkers(8, _driverIconDescriptor, 'driver');
+    addMarkers(5, _threeWheelerIconDescriptor, '3wheeler');
+    addMarkers(3, _fourWheelerIconDescriptor, '4wheeler');
+    addMarkers(1, _truckIconDescriptor, 'truck');
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
 
   void _showRatingDialog() {
     int selectedStars = 5;
@@ -2159,191 +2225,205 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
                   ),
               ],
             )
-          : SafeArea(
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24.0,
-                    vertical: 16.0,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+          : Column(
+              children: [
+                Expanded(
+                  flex: 7,
+                  child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      const SizedBox(height: 20),
-                      // Pulsing Animation Circle (Radar)
-                      SizedBox(
-                        height: 180,
-                        child: Center(
-                          child: AnimatedBuilder(
-                            animation: _animationController,
-                            builder: (context, child) {
-                              final val = _animationController.value;
-                              return Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Container(
-                                    width: 120 + (60 * val),
-                                    height: 120 + (60 * val),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: const Color(
-                                          0xFFE31C2E,
-                                        ).withOpacity(0.04 * (1.0 - val)),
-                                        width: 1,
-                                      ),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  Container(
-                                    width: 90 + (40 * val),
-                                    height: 90 + (40 * val),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: const Color(
-                                          0xFFE31C2E,
-                                        ).withOpacity(0.08 * (1.0 - val)),
-                                        width: 1,
-                                      ),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  Container(
-                                    width: 70 + (20 * val),
-                                    height: 70 + (20 * val),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: const Color(
-                                          0xFFE31C2E,
-                                        ).withOpacity(0.15 * (1.0 - val)),
-                                        width: 1,
-                                      ),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  Container(
-                                    width: 60,
-                                    height: 60,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF121214),
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Color(0x33121214),
-                                          offset: Offset(0, 4),
-                                          blurRadius: 12,
-                                        ),
-                                      ],
-                                    ),
-                                    child: const Icon(
-                                      Icons.local_shipping_rounded,
-                                      color: Colors.white,
-                                      size: 28,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
+                      GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                          target: LatLng(_currentBooking.pickupLatitude ?? 28.6139, _currentBooking.pickupLongitude ?? 77.2090),
+                          zoom: 15.0, // Closer zoom as requested
                         ),
+                        onMapCreated: (controller) {
+                          _mapController = controller;
+                        },
+                        onCameraIdle: () {
+                          if (!isDriverAssigned && _mapController != null && _currentBooking.pickupLatitude != null) {
+                            // Automatically snap back to pickup location if the user zoomed/drifted
+                            _mapController!.animateCamera(
+                              CameraUpdate.newLatLng(
+                                LatLng(_currentBooking.pickupLatitude!, _currentBooking.pickupLongitude!),
+                              ),
+                            );
+                          }
+                        },
+                        markers: {
+                          if (_pickupMarker != null) _pickupMarker!,
+                          ..._dummyVehicleMarkers,
+                        },
+                        myLocationButtonEnabled: false,
+                        zoomControlsEnabled: false,
+                        mapToolbarEnabled: false,
+                        scrollGesturesEnabled: false,
+                        zoomGesturesEnabled: true,
+                        minMaxZoomPreference: const MinMaxZoomPreference(11.5, 18.0), // Limits zoom out to approx 10km radius
                       ),
-                      const SizedBox(height: 32),
-                      const Text(
-                        'Finding nearby drivers…',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF121214),
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Matching you with the best ${widget.vehicleName} driver nearby',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF6C6F79),
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-                      if (_isCancelling)
-                        const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(14.0),
-                            child: SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Color(0xFFE31C2E),
+                      IgnorePointer(
+                        child: AnimatedBuilder(
+                          animation: _animationController,
+                          builder: (context, child) {
+                            final val = _animationController.value;
+                            return Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Container(
+                                  width: 120 + (100 * val),
+                                  height: 120 + (100 * val),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: const Color(0xFFE31C2E).withOpacity(0.1 * (1.0 - val)),
+                                      width: 2,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ),
-                        )
-                      else ...[
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: OutlinedButton(
-                            onPressed: _showCancelConfirmationDialog,
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFE31C2E),
-                              side: const BorderSide(color: Color(0xFFE31C2E)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: const Text(
-                              'Cancel booking',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
+                                Container(
+                                  width: 80 + (60 * val),
+                                  height: 80 + (60 * val),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: const Color(0xFFE31C2E).withOpacity(0.3 * (1.0 - val)),
+                                      width: 2,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                Container(
+                                  width: 40 + (30 * val),
+                                  height: 40 + (30 * val),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE31C2E).withOpacity(0.2 * (1.0 - val)),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton.icon(
-                            onPressed: _showBookingDetailsBottomSheet,
-                            icon: const Icon(
-                              Icons.info_outline,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                            label: const Text(
-                              'View Details',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF121214),
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Pickup & Drop Route Section outside View Details
-                        _buildRouteAddressesCard(_currentBooking),
-                      ],
-                      const SizedBox(height: 20),
+                      ),
                     ],
                   ),
                 ),
-              ),
+                Expanded(
+                  flex: 3,
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0x1A000000),
+                          blurRadius: 16,
+                          offset: Offset(0, -4),
+                        ),
+                      ],
+                    ),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                'Finding nearby drivers',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF121214),
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              SizedBox(
+                                width: 24, // Fix width to prevent movement
+                                child: AnimatedBuilder(
+                                  animation: _animationController,
+                                  builder: (context, child) {
+                                    // Slower animation: 1 full cycle per 2 seconds
+                                    final dotCount = ((_animationController.value * 4).floor()) % 4;
+                                    final dots = List.filled(dotCount, '.').join('');
+                                    return Text(
+                                      dots,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFFE31C2E), // Red color
+                                        letterSpacing: -0.5,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          _buildRouteAddressesCard(_currentBooking),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: _showBookingDetailsBottomSheet,
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    foregroundColor: const Color(0xFF121214),
+                                    side: const BorderSide(color: Color(0xFFE2E8F0)),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'View Details',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: _isCancelling ? null : _showCancelConfirmationDialog,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFE31C2E),
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                  child: _isCancelling
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        )
+                                      : const Text(
+                                          'Cancel Booking',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
     );
   }
