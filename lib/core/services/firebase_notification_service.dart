@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:riderzz_app/core/services/reward_notification_coordinator.dart';
 import 'package:riderzz_app/features/notification/data/repositories/notification_repository.dart';
 import 'package:riderzz_app/services/notification/local_notification_service.dart';
 import 'package:riderzz_app/core/services/notification_deduplicator.dart';
@@ -54,20 +56,21 @@ class FirebaseNotificationService {
       // 1. Request permission
       await _requestPermission();
 
-      // 2. Get the initial FCM token
-      await _getFcmToken();
-
-      // 3. Listen for token refresh events
-      _listenTokenRefresh();
-
-      // 4. Configure foreground notification presentation (iOS)
+      // 2. Configure foreground notification presentation (iOS)
       await _configureForegroundPresentation();
 
-      // 5. Setup message listeners
+      // 3. Setup message listeners first so messages are never dropped
       _setupMessageListeners();
-
       _isInitialized = true;
-      debugPrint('[FCM] ✅ FirebaseNotificationService initialized.');
+      debugPrint('[FCM] ✅ FirebaseNotificationService listeners initialized.');
+
+      // 4. Get initial FCM token and listen for token refresh (with resilience)
+      try {
+        await _getFcmToken();
+        _listenTokenRefresh();
+      } catch (tokenErr) {
+        debugPrint('[FCM] ⚠️ FCM token retrieval delayed: $tokenErr');
+      }
     } catch (e) {
       debugPrint('[FCM] ❌ Initialization failed: $e');
     }
@@ -130,9 +133,9 @@ class FirebaseNotificationService {
     if (!Platform.isIOS) return;
 
     await _messaging.setForegroundNotificationPresentationOptions(
-      alert: false, // Disabled so we can manually handle and deduplicate in foreground
+      alert: true,
       badge: true,
-      sound: false,
+      sound: true,
     );
     debugPrint('[FCM] iOS foreground presentation options set.');
   }
@@ -149,14 +152,25 @@ class FirebaseNotificationService {
       debugPrint('Title      : ${message.notification?.title}');
       debugPrint('Body       : ${message.notification?.body}');
       debugPrint('Data       : ${message.data}');
-        debugPrint(
-    "🟢 FCM notificationId: ${message.data['notificationId']}",
-  );
+      debugPrint(
+        "🟢 FCM notificationId: ${message.data['notificationId']}",
+      );
       debugPrint('=============================================');
 
-      if (message.notification != null) {
-        final title = message.notification!.title ?? 'New Notification';
-        final body = message.notification!.body ?? '';
+      // Check if this is a reward notification and trigger in-app popup coordinator
+      if (message.data['type'] == 'REWARD_RECEIVED') {
+        RewardNotificationCoordinator.instance.handleRewardFromFcm(
+          message.data,
+          notificationTitle: message.notification?.title,
+          notificationBody: message.notification?.body,
+          isTap: false,
+        );
+      }
+
+      final title = message.notification?.title ?? message.data['title']?.toString();
+      final body = message.notification?.body ?? message.data['body']?.toString() ?? '';
+
+      if (title != null && title.isNotEmpty) {
         final id = message.data['notificationId']?.toString();
 
         debugPrint('[DEDUP] FCM notificationId: $id');
@@ -178,11 +192,25 @@ class FirebaseNotificationService {
           final role = await SecureStorageService().getRole();
           final isBookingAlert = role == 'DRIVER' && message.data['type'] == 'BOOKING_BROADCAST';
           
+          String encodedPayload;
+          try {
+            encodedPayload = jsonEncode({
+              'type': message.data['type'],
+              'notificationId': id,
+              'title': title,
+              'body': body,
+              'actionUrl': message.data['actionUrl'],
+              ...message.data,
+            });
+          } catch (_) {
+            encodedPayload = message.data.toString();
+          }
+
           LocalNotificationService.showGenericNotification(
             id: localId,
             title: title,
             body: body,
-            payload: message.data.toString(),
+            payload: encodedPayload,
             isBookingAlert: isBookingAlert,
           );
         } else {
@@ -198,7 +226,18 @@ class FirebaseNotificationService {
       debugPrint('Data       : ${message.data}');
       debugPrint('================================================');
 
-      // TODO (Phase 3): Navigate to appropriate screen based on data
+      final type = message.data['type']?.toString();
+      final actionUrl = message.data['actionUrl']?.toString();
+      if (type == 'REWARD_RECEIVED' ||
+          actionUrl == '/customer/coupons' ||
+          actionUrl == '/rewards/customer/coupons') {
+        RewardNotificationCoordinator.instance.handleRewardFromFcm(
+          message.data,
+          notificationTitle: message.notification?.title,
+          notificationBody: message.notification?.body,
+          isTap: true,
+        );
+      }
     });
 
     // ── Notification tap – app was terminated ────────────────────────────
@@ -215,7 +254,19 @@ class FirebaseNotificationService {
       debugPrint('Data       : ${initialMessage.data}');
       debugPrint('======================================================');
 
-      // TODO (Phase 3): Navigate to appropriate screen based on data
+      final type = initialMessage.data['type']?.toString();
+      final actionUrl = initialMessage.data['actionUrl']?.toString();
+      if (type == 'REWARD_RECEIVED' ||
+          actionUrl == '/customer/coupons' ||
+          actionUrl == '/rewards/customer/coupons') {
+        RewardNotificationCoordinator.instance.handleRewardFromFcm(
+          initialMessage.data,
+          notificationTitle: initialMessage.notification?.title,
+          notificationBody: initialMessage.notification?.body,
+          isTap: true,
+        );
+      }
     }
   }
 }
+

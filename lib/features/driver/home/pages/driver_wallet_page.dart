@@ -5,6 +5,10 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_reward_congrats_page.dart';
+import 'package:riderzz_app/features/driver/home/pages/driver_bank_accounts_page.dart';
+import 'package:riderzz_app/features/user/coupons/providers/customer_coupon_provider.dart';
+import 'package:riderzz_app/features/user/coupons/widgets/customer_coupons_bottom_sheet.dart';
+import 'package:riderzz_app/features/driver/home/driver_home_screen.dart';
 
 
 class DriverWalletPage extends StatefulWidget {
@@ -16,6 +20,7 @@ class DriverWalletPage extends StatefulWidget {
 
 class _DriverWalletPageState extends State<DriverWalletPage> {
   final _rechargeController = TextEditingController();
+  final _withdrawController = TextEditingController();
   late Razorpay _razorpay;
   int? _currentRechargeId;
   String? _currentOrderId;
@@ -30,12 +35,15 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DriverHomeProvider>().fetchDriverWallet();
+      context.read<DriverHomeProvider>().fetchBankAccounts();
+      context.read<CustomerCouponProvider>().fetchCoupons();
     });
   }
 
   @override
   void dispose() {
     _rechargeController.dispose();
+    _withdrawController.dispose();
     _razorpay.clear();
     super.dispose();
   }
@@ -474,6 +482,570 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
     );
   }
 
+  void _showWithdrawDialog(BuildContext context, DriverHomeProvider provider) {
+    final balance = provider.wallet?.balance ?? 0.0;
+    if (balance <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You have no withdrawable balance (₹0.00)'),
+          backgroundColor: Color(0xFFEF4444),
+        ),
+      );
+      return;
+    }
+
+    final primaryBank = provider.primaryBankAccount ??
+        (provider.bankAccounts.isNotEmpty ? provider.bankAccounts.first : null);
+
+    if (primaryBank == null) {
+      showDialog(
+        context: context,
+        builder: (dialogContext) {
+          return Dialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFEF3C7),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.account_balance_rounded,
+                      color: Color(0xFFD97706),
+                      size: 32,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No Bank Account Linked',
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF121214),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Please link a primary bank account to receive withdrawals directly into your account.',
+                    style: GoogleFonts.outfit(
+                      fontSize: 13,
+                      color: const Color(0xFF6B7280),
+                      height: 1.4,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            side: const BorderSide(color: Color(0xFFD1D5DB)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(100),
+                            ),
+                          ),
+                          child: Text(
+                            'Cancel',
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF4B5563),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(dialogContext);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const DriverBankAccountsPage(),
+                              ),
+                            ).then((_) {
+                              if (context.mounted) {
+                                context.read<DriverHomeProvider>().fetchBankAccounts();
+                              }
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFCC2D3B),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(100),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            'Add Account',
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+      return;
+    }
+
+    _withdrawController.text = balance >= 500 ? '500' : balance.toInt().toString();
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Header
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEEF2FF),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.arrow_upward_rounded,
+                            color: Color(0xFF4F46E5),
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Withdraw Money',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              color: const Color(0xFF121214),
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: isSubmitting
+                              ? null
+                              : () => Navigator.pop(dialogContext),
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            color: Color(0xFF6C6F79),
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Destination Bank Account Card
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF9FAFB),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFE5E7EB)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFFE5E7EB)),
+                            ),
+                            child: const Icon(
+                              Icons.account_balance_rounded,
+                              color: Color(0xFF1E293B),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  primaryBank.bankName.isNotEmpty
+                                      ? primaryBank.bankName
+                                      : 'Bank Account',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                    color: const Color(0xFF121214),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'A/C •••• ${primaryBank.accountNumber.length > 4 ? primaryBank.accountNumber.substring(primaryBank.accountNumber.length - 4) : primaryBank.accountNumber} • ${primaryBank.ifscCode}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 11,
+                                    color: const Color(0xFF6B7280),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          InkWell(
+                            onTap: isSubmitting
+                                ? null
+                                : () {
+                                    Navigator.pop(dialogContext);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const DriverBankAccountsPage(),
+                                      ),
+                                    ).then((_) {
+                                      if (context.mounted) {
+                                        context.read<DriverHomeProvider>().fetchBankAccounts();
+                                      }
+                                    });
+                                  },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                              child: Text(
+                                'Change',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFFCC2D3B),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Label Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Enter Amount',
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFF4B5563),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                        Text(
+                          'Available: ₹${balance.toStringAsFixed(2)}',
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFF16A34A),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Amount Text Field
+                    TextField(
+                      controller: _withdrawController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      enabled: !isSubmitting,
+                      onChanged: (val) {
+                        setState(() {});
+                      },
+                      style: GoogleFonts.outfit(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF121214),
+                        letterSpacing: 0.5,
+                      ),
+                      decoration: InputDecoration(
+                        prefixText: '₹ ',
+                        prefixStyle: GoogleFonts.outfit(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF121214),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF9FAFB),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFE5E7EB),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFCC2D3B),
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Quick select chips
+                    Row(
+                      children: [
+                        ...[100, 500, 1000].map((amt) {
+                          final isSelected =
+                              _withdrawController.text == amt.toString();
+                          return Expanded(
+                            child: GestureDetector(
+                              onTap: isSubmitting
+                                  ? null
+                                  : () {
+                                      setState(() {
+                                        _withdrawController.text = amt.toString();
+                                      });
+                                    },
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(horizontal: 3),
+                                padding: const EdgeInsets.symmetric(vertical: 9),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color(0xFFFDEBEC)
+                                      : const Color(0xFFF9FAFB),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? const Color(0xFFCC2D3B)
+                                        : const Color(0xFFE5E7EB),
+                                    width: isSelected ? 1.5 : 1,
+                                  ),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  '₹$amt',
+                                  style: GoogleFonts.outfit(
+                                    color: isSelected
+                                        ? const Color(0xFFCC2D3B)
+                                        : const Color(0xFF4B5563),
+                                    fontWeight: isSelected
+                                        ? FontWeight.w800
+                                        : FontWeight.w600,
+                                    fontSize: 12.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: isSubmitting
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _withdrawController.text = balance.truncateToDouble() == balance
+                                          ? balance.toInt().toString()
+                                          : balance.toStringAsFixed(2);
+                                    });
+                                  },
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 3),
+                              padding: const EdgeInsets.symmetric(vertical: 9),
+                              decoration: BoxDecoration(
+                                color: _withdrawController.text == balance.toString()
+                                    ? const Color(0xFFFDEBEC)
+                                    : const Color(0xFFF9FAFB),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: const Color(0xFFE5E7EB),
+                                  width: 1,
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'All',
+                                style: GoogleFonts.outfit(
+                                  color: const Color(0xFF1E293B),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 22),
+
+                    // Dialog Actions Row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              side: const BorderSide(color: Color(0xFFD1D5DB)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                            ),
+                            onPressed: isSubmitting
+                                ? null
+                                : () => Navigator.pop(dialogContext),
+                            child: Text(
+                              'Cancel',
+                              style: GoogleFonts.outfit(
+                                color: const Color(0xFF4B5563),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFCC2D3B),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                            ),
+                            onPressed: isSubmitting
+                                ? null
+                                : () async {
+                                    final amtStr = _withdrawController.text.trim();
+                                    final amt = double.tryParse(amtStr);
+                                    if (amt == null || amt <= 0) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Please enter a valid amount'),
+                                          backgroundColor: Color(0xFFEF4444),
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    if (amt > balance) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Amount cannot exceed available balance (₹${balance.toStringAsFixed(2)})',
+                                          ),
+                                          backgroundColor: const Color(0xFFEF4444),
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    setState(() {
+                                      isSubmitting = true;
+                                    });
+
+                                    final success = await provider.requestWithdrawal(amt);
+
+                                    if (context.mounted) {
+                                      setState(() {
+                                        isSubmitting = false;
+                                      });
+
+                                      if (success) {
+                                        Navigator.pop(dialogContext);
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Withdrawal request for ₹${amt.toStringAsFixed(2)} submitted successfully! 🎉',
+                                            ),
+                                            backgroundColor: const Color(0xFF16A34A),
+                                          ),
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              provider.walletError ?? 'Withdrawal failed. Please try again.',
+                                            ),
+                                            backgroundColor: const Color(0xFFEF4444),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
+                            child: isSubmitting
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : Text(
+                                    'Withdraw',
+                                    style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14.5,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final driverProvider = Provider.of<DriverHomeProvider>(context);
@@ -631,7 +1203,13 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
-          onRefresh: () => context.read<DriverHomeProvider>().fetchDriverWallet(force: true),
+          onRefresh: () async {
+            await Future.wait([
+              context.read<DriverHomeProvider>().fetchDriverWallet(force: true),
+              context.read<DriverHomeProvider>().fetchBankAccounts(),
+              context.read<CustomerCouponProvider>().fetchCoupons(force: true),
+            ]);
+          },
           color: const Color(0xFFD90429),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -641,13 +1219,49 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0, bottom: 20.0),
-                  child: Text(
-                    'My Wallet',
-                    style: GoogleFonts.outfit(
-                      color: const Color(0xFF121214),
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          if (Navigator.canPop(context)) {
+                            Navigator.pop(context);
+                          } else {
+                            final driverHomeState =
+                                context.findAncestorStateOfType<DriverHomeScreenState>();
+                            driverHomeState?.setIndex(0);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          margin: const EdgeInsets.only(right: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xFFE5E7EB)),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x08121214),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.arrow_back_rounded,
+                            size: 20,
+                            color: Color(0xFF121214),
+                          ),
+                        ),
+                      ),
+                      Text(
+                        'My Wallet',
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFF121214),
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 
@@ -725,7 +1339,128 @@ class _DriverWalletPageState extends State<DriverWalletPage> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                
+                // Driver Coupons & Rewards Banner
+                Consumer<CustomerCouponProvider>(
+                  builder: (context, couponProvider, _) {
+                    final availableCount = couponProvider.availableCoupons.length;
+                    return Container(
+                      margin: const EdgeInsets.only(top: 16),
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                        child: InkWell(
+                          onTap: () {
+                            couponProvider.fetchCoupons(force: true);
+                            showCustomerCouponsBottomSheet(context);
+                          },
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFFF1F2), Color(0xFFFFE4E6)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: const Color(0xFFFECDD3), width: 1),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x0AE11D48),
+                                  blurRadius: 10,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE31C2E).withOpacity(0.12),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Image.asset(
+                                      'assets/icons/coupon.png',
+                                      width: 24,
+                                      height: 24,
+                                      errorBuilder: (_, __, ___) => const Icon(
+                                        Icons.card_giftcard_rounded,
+                                        color: Color(0xFFE31C2E),
+                                        size: 24,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            'Driver Coupons & Rewards',
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 14.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color(0xFF1E293B),
+                                            ),
+                                          ),
+                                          if (availableCount > 0) ...[
+                                            const SizedBox(width: 8),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 2,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFE31C2E),
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                              child: Text(
+                                                '$availableCount New',
+                                                style: GoogleFonts.outfit(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        availableCount > 0
+                                            ? 'Tap to claim your bonuses to wallet'
+                                            : 'View claimed and available bonuses',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: const Color(0xFF64748B),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  size: 14,
+                                  color: Color(0xFF94A3B8),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 20),
 
                 // Low Balance Warning
                 if (isLowBalance) ...[

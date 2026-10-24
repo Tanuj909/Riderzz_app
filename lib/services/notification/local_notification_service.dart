@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:riderzz_app/core/services/reward_notification_coordinator.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 
 class LocalNotificationService {
@@ -37,7 +39,28 @@ class LocalNotificationService {
           requestSoundPermission: false,
         ),
       );
-      await _notifications.initialize(settings: initializationSettings);
+      await _notifications.initialize(
+        settings: initializationSettings,
+        onDidReceiveNotificationResponse: (NotificationResponse response) {
+          final payload = response.payload;
+          if (payload != null && payload.isNotEmpty) {
+            try {
+              final Map<String, dynamic> data =
+                  jsonDecode(payload) as Map<String, dynamic>;
+              final type = data['type']?.toString();
+              final actionUrl = data['actionUrl']?.toString();
+              if (type == 'REWARD_RECEIVED' ||
+                  actionUrl == '/customer/coupons' ||
+                  actionUrl == '/rewards/customer/coupons') {
+                RewardNotificationCoordinator.instance
+                    .handleRewardFromLocalPayload(data);
+              }
+            } catch (e) {
+              debugPrint('[LocalNotificationService] Non-JSON payload on tap: $payload');
+            }
+          }
+        },
+      );
 
       final androidPlugin = _notifications
           .resolvePlatformSpecificImplementation<

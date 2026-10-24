@@ -122,9 +122,164 @@ class _CustomerWalletScreenState extends State<CustomerWalletScreen> {
                   valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
                 ),
               )
-            : errorMessage != null && wallet == null
-                ? _buildErrorView(errorMessage)
+            : wallet == null
+                ? (walletProvider.isWalletNotFound
+                    ? _buildRequestWalletView()
+                    : _buildErrorView(errorMessage ?? 'No wallet found'))
                 : _buildWalletContent(wallet),
+      ),
+    );
+  }
+
+  Widget _buildRequestWalletView() {
+    final walletProvider = context.watch<CustomerWalletProvider>();
+    final isCreating = walletProvider.isCreatingWallet;
+
+    return Center(
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF0F0),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFFFFD5D5),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFE31C2E).withOpacity(0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.account_balance_wallet_outlined,
+                color: Color(0xFFE31C2E),
+                size: 44,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'No Wallet Found',
+              style: GoogleFonts.outfit(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF121214),
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Your customer wallet has not been created yet. Tap below to request and set up your wallet to claim coupon rewards and manage your balance.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
+                fontSize: 14,
+                height: 1.45,
+                color: const Color(0xFF6C6F79),
+              ),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE31C2E),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 0,
+                ),
+                onPressed: isCreating
+                    ? null
+                    : () async {
+                        final success = await context
+                            .read<CustomerWalletProvider>()
+                            .createCustomerWallet();
+                        if (mounted) {
+                          if (success) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Customer wallet created successfully!',
+                                  style: GoogleFonts.outfit(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                backgroundColor: const Color(0xFF15803D),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            );
+                          } else {
+                            final err = context
+                                    .read<CustomerWalletProvider>()
+                                    .errorMessage ??
+                                'Failed to create wallet';
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  err,
+                                  style: GoogleFonts.outfit(color: Colors.white),
+                                ),
+                                backgroundColor: const Color(0xFFDC2626),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                icon: isCreating
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Icon(Icons.add_card_rounded, size: 20),
+                label: Text(
+                  isCreating ? 'Creating Wallet...' : 'Request Wallet',
+                  style: GoogleFonts.outfit(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextButton.icon(
+              onPressed: () => context
+                  .read<CustomerWalletProvider>()
+                  .fetchCustomerWallet(force: true),
+              icon: const Icon(Icons.refresh_rounded, size: 16, color: Color(0xFF6C6F79)),
+              label: Text(
+                'Check Again',
+                style: GoogleFonts.outfit(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF6C6F79),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -139,8 +294,8 @@ class _CustomerWalletScreenState extends State<CustomerWalletScreen> {
           children: [
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF0F0),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFF0F0),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -168,20 +323,42 @@ class _CustomerWalletScreenState extends State<CustomerWalletScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE31C2E),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-                elevation: 0,
-              ),
-              onPressed: () => context.read<CustomerWalletProvider>().fetchCustomerWallet(force: true),
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: Text(
-                'Retry',
-                style: GoogleFonts.outfit(fontWeight: FontWeight.w700),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF121214),
+                    side: const BorderSide(color: Color(0xFFE2E8F0)),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+                  ),
+                  onPressed: () => context.read<CustomerWalletProvider>().fetchCustomerWallet(force: true),
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: Text(
+                    'Retry',
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE31C2E),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+                    elevation: 0,
+                  ),
+                  onPressed: () async {
+                    await context.read<CustomerWalletProvider>().createCustomerWallet();
+                  },
+                  icon: const Icon(Icons.add_card_rounded, size: 18),
+                  label: Text(
+                    'Request Wallet',
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

@@ -2,6 +2,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:riderzz_app/core/storage/secure_storage_service.dart';
+import 'package:riderzz_app/features/driver/home/driver_home_screen.dart';
+import 'package:riderzz_app/features/driver/home/pages/driver_wallet_page.dart';
+import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 import 'package:riderzz_app/features/user/coupons/data/models/customer_coupon_model.dart';
 import 'package:riderzz_app/features/user/coupons/providers/customer_coupon_provider.dart';
 import 'package:riderzz_app/features/user/wallet/providers/customer_wallet_provider.dart';
@@ -109,6 +113,10 @@ class _CustomerCouponsBottomSheetState extends State<CustomerCouponsBottomSheet>
         walletProvider: walletProvider,
       );
 
+      try {
+        context.read<DriverHomeProvider>().fetchDriverWallet(force: true);
+      } catch (_) {}
+
       final double amount = (result?['amount'] as num?)?.toDouble() ??
           (coupon.rewardAmount > 0 ? coupon.rewardAmount : 0.0);
       final String msg = result?['message']?.toString() ??
@@ -124,16 +132,195 @@ class _CustomerCouponsBottomSheetState extends State<CustomerCouponsBottomSheet>
     } catch (e) {
       if (!mounted) return;
       final msg = e.toString().replaceFirst('Exception: ', '');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(msg, style: GoogleFonts.outfit(color: Colors.white)),
-          backgroundColor: const Color(0xFFDC2626),
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
+      _showClaimErrorDialog(
+        context,
+        errorMsg: msg,
+        coupon: coupon,
       );
     }
+  }
+
+  void _showClaimErrorDialog(
+    BuildContext context, {
+    required String errorMsg,
+    required CustomerCouponModel coupon,
+  }) {
+    final lower = errorMsg.toLowerCase();
+    final bool isWalletMissing = lower.contains('wallet') ||
+        lower.contains('not found') ||
+        lower.contains('exist') ||
+        lower.contains('not exist');
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: isWalletMissing
+                        ? const Color(0xFFFEF3C7)
+                        : const Color(0xFFFEE2E2),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isWalletMissing
+                          ? const Color(0xFFFDE68A)
+                          : const Color(0xFFFECDD3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Center(
+                    child: isWalletMissing
+                        ? Image.asset(
+                            'assets/wallet_icon/wallet.png',
+                            width: 28,
+                            height: 28,
+                            fit: BoxFit.contain,
+                          )
+                        : const Icon(
+                            Icons.error_outline_rounded,
+                            color: Color(0xFFDC2626),
+                            size: 28,
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  isWalletMissing ? 'Wallet Required' : 'Claim Failed',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF0F172A),
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  errorMsg,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    height: 1.35,
+                    color: const Color(0xFF64748B),
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                if (isWalletMissing) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                            side: const BorderSide(color: Color(0xFFCBD5E1)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Cancel',
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF64748B),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            Navigator.pop(dialogContext);
+                            final role = await SecureStorageService().getRole();
+                            if (role == 'DRIVER') {
+                              Navigator.pop(context);
+                              final driverHomeState = context
+                                  .findAncestorStateOfType<DriverHomeScreenState>();
+                              if (driverHomeState != null) {
+                                driverHomeState.setIndex(2);
+                              } else {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const DriverWalletPage(),
+                                  ),
+                                );
+                              }
+                            } else {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const CustomerWalletScreen(),
+                                ),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _primaryRed,
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Request Wallet',
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1E293B),
+                        padding: const EdgeInsets.symmetric(vertical: 11),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Close',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _showSuccessRewardDialog(
@@ -149,110 +336,136 @@ class _CustomerCouponsBottomSheetState extends State<CustomerCouponsBottomSheet>
         return Dialog(
           backgroundColor: Colors.white,
           surfaceTintColor: Colors.white,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 26),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Celebration Icon
+                // Celebration Icon Badge
                 Container(
-                  width: 72,
-                  height: 72,
+                  width: 56,
+                  height: 56,
                   decoration: BoxDecoration(
                     color: const Color(0xFFFEF2F2),
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFFFE4E6),
+                      width: 1.5,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: _primaryRed.withOpacity(0.15),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
+                        color: _primaryRed.withOpacity(0.12),
+                        blurRadius: 12,
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
                   child: Center(
                     child: Image.asset(
                       'assets/icons/coupon.png',
-                      width: 38,
-                      height: 38,
+                      width: 30,
+                      height: 30,
                       fit: BoxFit.contain,
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 Text(
                   'Congratulations! 🎉',
                   style: GoogleFonts.outfit(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF1E293B),
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF0F172A),
+                    letterSpacing: -0.3,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   serverMessage != null && serverMessage.isNotEmpty
                       ? '$serverMessage (${_formatRewardTitle(code)})'
                       : 'Reward credited for ${_formatRewardTitle(code)}',
                   textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.outfit(
                     fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     color: const Color(0xFF64748B),
+                    height: 1.3,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
 
-                // Amount Won Box
+                // Amount Credited Box
                 Container(
+                  width: double.infinity,
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 26, vertical: 12),
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFFDF2F4), Color(0xFFFCE7EB)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFFFF7F7), Color(0xFFFEE2E2)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
                     ),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: _primaryRed.withOpacity(0.25)),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFFECDD3)),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  child: Column(
                     children: [
-                      Text(
-                        '₹',
-                        style: GoogleFonts.outfit(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w700,
-                          color: _primaryRed,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            '₹',
+                            style: GoogleFonts.outfit(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: _primaryRed,
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            amount.truncateToDouble() == amount
+                                ? amount.toInt().toString()
+                                : amount.toStringAsFixed(2),
+                            style: GoogleFonts.outfit(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w800,
+                              color: _primaryRed,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        amount.truncateToDouble() == amount
-                            ? amount.toInt().toString()
-                            : amount.toStringAsFixed(2),
-                        style: GoogleFonts.outfit(
-                          fontSize: 34,
-                          fontWeight: FontWeight.w900,
-                          color: _primaryRed,
-                          letterSpacing: -0.5,
-                        ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.check_circle_rounded,
+                            color: Color(0xFF16A34A),
+                            size: 14,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Added directly to your wallet',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF16A34A),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  'Amount has been added directly to your wallet!',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.outfit(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF16A34A),
-                  ),
-                ),
-                const SizedBox(height: 22),
+                const SizedBox(height: 16),
 
                 // Action Buttons
                 Row(
@@ -261,48 +474,76 @@ class _CustomerCouponsBottomSheetState extends State<CustomerCouponsBottomSheet>
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(dialogContext),
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding: const EdgeInsets.symmetric(vertical: 11),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          side: const BorderSide(color: Color(0xFFE2E8F0)),
+                          side: const BorderSide(color: Color(0xFFCBD5E1)),
                         ),
                         child: Text(
                           'Awesome!',
                           style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                             color: const Color(0xFF475569),
-                            fontSize: 14,
+                            fontSize: 13,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           Navigator.pop(dialogContext);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const CustomerWalletScreen()),
-                          );
+                          final role = await SecureStorageService().getRole();
+                          if (role == 'DRIVER') {
+                            Navigator.pop(context);
+                            final driverHomeState = context
+                                .findAncestorStateOfType<DriverHomeScreenState>();
+                            if (driverHomeState != null) {
+                              driverHomeState.setIndex(2);
+                            } else {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const DriverWalletPage(),
+                                ),
+                              );
+                            }
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const CustomerWalletScreen()),
+                            );
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _primaryRed,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding: const EdgeInsets.symmetric(vertical: 11),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: Text(
-                          'View Wallet',
-                          style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'View Wallet',
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 14,
+                              color: Colors.white,
+                            ),
+                          ],
                         ),
                       ),
                     ),

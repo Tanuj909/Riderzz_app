@@ -148,4 +148,8 @@ class DriverRepository {
   Future<void> markMessagesAsRead() async {
     await _remoteDataSource.markMessagesAsRead();
   }
+
+  Future<Map<String, dynamic>> requestWithdrawal(double amount) async {
+    return await _remoteDataSource.requestWithdrawal(amount);
+  }
 }

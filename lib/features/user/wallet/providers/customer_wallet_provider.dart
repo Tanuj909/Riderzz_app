@@ -11,6 +11,7 @@ class CustomerWalletProvider extends ChangeNotifier {
 
   CustomerWalletModel? _wallet;
   bool _isLoading = false;
+  bool _isCreatingWallet = false;
   bool _isWithdrawing = false;
   String? _errorMessage;
 
@@ -21,8 +22,21 @@ class CustomerWalletProvider extends ChangeNotifier {
 
   CustomerWalletModel? get wallet => _wallet;
   bool get isLoading => _isLoading;
+  bool get isCreatingWallet => _isCreatingWallet;
   bool get isWithdrawing => _isWithdrawing;
   String? get errorMessage => _errorMessage;
+
+  bool get isWalletNotFound {
+    if (_wallet != null) return false;
+    if (_errorMessage == null) return false;
+    final lower = _errorMessage!.toLowerCase();
+    return lower.contains('not found') ||
+        lower.contains('not exist') ||
+        lower.contains('no wallet') ||
+        lower.contains('does not exist') ||
+        lower.contains('wallet not created') ||
+        lower.contains('404');
+  }
 
   CustomerBankAccountModel? get bankAccount => _bankAccount;
   bool get isBankAccountLoading => _isBankAccountLoading;
@@ -47,9 +61,38 @@ class CustomerWalletProvider extends ChangeNotifier {
             : 'Failed to fetch wallet';
       }
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
     } finally {
       _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> createCustomerWallet() async {
+    _isCreatingWallet = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _repository.createCustomerWallet();
+      if (response.data != null) {
+        _wallet = response.data;
+        _errorMessage = null;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response.message.isNotEmpty
+            ? response.message
+            : 'Failed to create wallet';
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    } finally {
+      _isCreatingWallet = false;
       notifyListeners();
     }
   }
@@ -194,6 +237,7 @@ class CustomerWalletProvider extends ChangeNotifier {
     _wallet = null;
     _bankAccount = null;
     _isLoading = false;
+    _isCreatingWallet = false;
     _isWithdrawing = false;
     _isBankAccountLoading = false;
     _isSavingBankAccount = false;

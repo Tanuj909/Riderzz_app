@@ -11,6 +11,7 @@ import 'package:riderzz_app/core/providers/location_provider.dart';
 import 'package:riderzz_app/core/services/location_service.dart';
 import 'package:riderzz_app/core/storage/secure_storage_service.dart';
 import 'package:riderzz_app/core/services/broadcast_socket_service.dart';
+import 'package:riderzz_app/core/services/reward_notification_coordinator.dart';
 
 import 'package:riderzz_app/features/auth/data/datasource/auth_remote_datasource.dart';
 import 'package:riderzz_app/features/auth/data/repositories/auth_repository.dart';
@@ -119,6 +120,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     NativeOverlayController.initialize();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      RewardNotificationCoordinator.instance.checkAndShowPendingReward();
+    });
   }
 
   @override
@@ -139,6 +143,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         break;
       case AppLifecycleState.resumed:
         NativeOverlayController.onAppReturnedToForeground();
+        RewardNotificationCoordinator.instance.checkAndShowPendingReward();
         break;
       default:
         break;
@@ -427,6 +432,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       child: MaterialApp(
         title: 'Riderzz',
         navigatorKey: AppRoutes.navigatorKey,
+        navigatorObservers: [
+          RewardNotificationCoordinator.instance.routeObserver,
+        ],
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           textTheme: GoogleFonts.interTextTheme(),

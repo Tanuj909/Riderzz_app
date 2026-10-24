@@ -28,6 +28,7 @@ import 'package:riderzz_app/features/driver/profile/widgets/driver_terms_popup.d
 import 'package:riderzz_app/core/services/broadcast_socket_service.dart';
 import 'package:riderzz_app/features/notification/data/models/notification_model.dart';
 import 'package:riderzz_app/core/services/shared_location_service.dart';
+import 'package:riderzz_app/core/services/reward_notification_coordinator.dart';
 import 'dart:ui';
 import 'dart:math';
 
@@ -87,6 +88,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
       if (initialCoords != null && mounted) {
         _handleIncomingSharedLocation(initialCoords);
       }
+      RewardNotificationCoordinator.instance.onHomeScreenReady();
     });
 
     final socketService = context.read<BroadcastSocketService>();

@@ -354,4 +354,32 @@ class DriverRemoteDataSource {
   Future<void> markMessagesAsRead() async {
     await _apiClient.put(ApiConstants.driverMessagesRead);
   }
+
+  Future<Map<String, dynamic>> requestWithdrawal(double amount) async {
+    try {
+      final response = await _apiClient.post(
+        ApiConstants.driverWalletWithdraw,
+        data: {'amount': amount},
+      );
+      if (response.data is Map) {
+        return Map<String, dynamic>.from(response.data as Map);
+      }
+      return {'message': 'Withdrawal requested successfully'};
+    } on ApiException catch (e) {
+      if (e.statusCode == 404) {
+        try {
+          final fallback = await _apiClient.post(
+            '/driver/wallet/withdraw',
+            data: {'amount': amount},
+          );
+          if (fallback.data is Map) {
+            return Map<String, dynamic>.from(fallback.data as Map);
+          }
+        } catch (_) {}
+      }
+      rethrow;
+    } catch (e) {
+      throw ApiException(e.toString());
+    }
+  }
 }

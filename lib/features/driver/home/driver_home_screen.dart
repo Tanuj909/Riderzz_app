@@ -11,6 +11,7 @@ import 'package:riderzz_app/features/driver/home/pages/driver_wallet_page.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_messages_page.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_bank_accounts_page.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_profile_page.dart';
+import 'package:riderzz_app/core/services/reward_notification_coordinator.dart';
 
 
 class DriverHomeScreen extends StatefulWidget {
@@ -60,6 +61,7 @@ class DriverHomeScreenState extends State<DriverHomeScreen> {
         } else if (profile != null && !profile.isOnline) {
           _showGoOnlineDialog(context, provider, trackingService);
         }
+        RewardNotificationCoordinator.instance.onHomeScreenReady();
       }
     });
   }

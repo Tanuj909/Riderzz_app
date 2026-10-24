@@ -12,6 +12,9 @@ import 'package:riderzz_app/features/driver/home/driver_home_screen.dart';
 import 'package:riderzz_app/features/driver/profile/driver_profile_screen.dart';
 import 'package:riderzz_app/core/models/driver_profile_model.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:riderzz_app/features/driver/home/pages/driver_wallet_page.dart';
+import 'package:riderzz_app/features/user/coupons/providers/customer_coupon_provider.dart';
+import 'package:riderzz_app/features/user/coupons/widgets/customer_coupons_bottom_sheet.dart';
 
 class DriverHomePage extends StatefulWidget {
   const DriverHomePage({super.key});
@@ -76,6 +79,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
       context.read<DriverHomeProvider>().fetchHomeBookings();
       context.read<DriverHomeProvider>().fetchDriverEarnings();
       context.read<DriverHomeProvider>().fetchDriverWallet();
+      context.read<CustomerCouponProvider>().fetchCoupons();
     });
   }
 
@@ -233,160 +237,277 @@ class _DriverHomePageState extends State<DriverHomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-          // Header row: Status, Title, Toggle, Avatar
+          // Header row: Wallet Balance (Left), Online/Offline Toggle with embedded text (Middle), Coupon + Profile Avatar (Right)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+              // 1. Wallet Balance (Far Left Corner)
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const DriverWalletPage()),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(100),
+                    border: Border.all(color: const Color(0xFFEBEBEF), width: 1.2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: isOnline ? const Color(0xFF1C9A5B) : const Color(0xFFB0B8C4),
-                          shape: BoxShape.circle,
+                      Image.asset(
+                        'assets/wallet_icon/wallet.png',
+                        width: 20,
+                        height: 20,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.account_balance_wallet_rounded,
+                          size: 18,
+                          color: Color(0xFFCC2D3B),
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        isOnline ? 'Online' : 'Offline',
-                        style: GoogleFonts.outfit(
-                          color: isOnline ? const Color(0xFF1C9A5B) : const Color(0xFF6C6F79),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
+                      const SizedBox(width: 6),
+                      Consumer<DriverHomeProvider>(
+                        builder: (context, provider, _) {
+                          final balance = provider.wallet?.balance ?? 0.0;
+                          final formatted = balance.truncateToDouble() == balance
+                              ? balance.toInt().toString()
+                              : balance.toStringAsFixed(2);
+                          return Text(
+                            '₹$formatted',
+                            style: GoogleFonts.outfit(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF121214),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 2. Online / Offline Toggle (Middle, text embedded inside toggle button)
+              GestureDetector(
+                onTap: () async {
+                  if (isOnline) {
+                    final bool? confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        backgroundColor: Colors.white,
+                        surfaceTintColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        title: Text(
+                          'Go Offline?',
+                          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF121214)),
+                        ),
+                        content: Text(
+                          'Are you sure you want to go offline? You will stop receiving ride bookings.',
+                          style: GoogleFonts.outfit(color: const Color(0xFF6C6F79), fontSize: 14, height: 1.5),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogContext, false),
+                            child: Text('Cancel', style: GoogleFonts.outfit(color: const Color(0xFF6C6F79))),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD90429),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              elevation: 0,
+                            ),
+                            onPressed: () => Navigator.pop(dialogContext, true),
+                            child: const Text('Go Offline'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm != true) return;
+                  } else {
+                    if (profile?.approvalStatus != 'APPROVED') {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Your account is still under review.'),
+                          backgroundColor: Colors.orangeAccent,
+                        ),
+                      );
+                      return;
+                    }
+                  }
+
+                  final success = await driverProvider.toggleOnlineOffline();
+                  if (success && context.mounted) {
+                    final trackingService = context.read<LocationTrackingService>();
+                    if (driverProvider.profile?.isOnline == true) {
+                      trackingService.start();
+                    } else {
+                      trackingService.stop();
+                    }
+                  }
+                  if (!success && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(driverProvider.errorMessage ?? 'Failed to update status'),
+                        backgroundColor: Colors.redAccent,
+                      ),
+                    );
+                  }
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  width: 96,
+                  height: 34,
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(
+                    color: isOnline ? const Color(0xFF16A34A) : const Color(0xFF475569),
+                    borderRadius: BorderRadius.circular(100),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isOnline ? const Color(0xFF16A34A) : const Color(0xFF475569)).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Text inside the toggle: ONLINE or OFFLINE
+                      Align(
+                        alignment: isOnline ? const Alignment(-0.65, 0.0) : const Alignment(0.65, 0.0),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: Text(
+                            isOnline ? 'ONLINE' : 'OFFLINE',
+                            key: ValueKey<bool>(isOnline),
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Sliding circular knob
+                      AnimatedAlign(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOut,
+                        alignment: isOnline ? Alignment.centerRight : Alignment.centerLeft,
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: isOnline ? const Color(0xFF16A34A) : const Color(0xFF94A3B8),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Ready for rides',
-                    style: GoogleFonts.outfit(
-                      color: const Color(0xFF121214),
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
+                ),
               ),
+
+              // 3. Right: Coupons Button + Profile Avatar
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Toggle Switch
-                  GestureDetector(
-                    onTap: () async {
-                      if (isOnline) {
-                        final bool? confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (dialogContext) => AlertDialog(
-                            backgroundColor: Colors.white,
-                            surfaceTintColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            title: Text(
-                              'Go Offline?',
-                              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF121214)),
-                            ),
-                            content: Text(
-                              'Are you sure you want to go offline? You will stop receiving ride bookings.',
-                              style: GoogleFonts.outfit(color: const Color(0xFF6C6F79), fontSize: 14, height: 1.5),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(dialogContext, false),
-                                child: Text('Cancel', style: GoogleFonts.outfit(color: const Color(0xFF6C6F79))),
-                              ),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFD90429),
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                  elevation: 0,
-                                ),
-                                onPressed: () => Navigator.pop(dialogContext, true),
-                                child: const Text('Go Offline'),
+                  // Coupon Button (with available count badge)
+                  Consumer<CustomerCouponProvider>(
+                    builder: (context, couponProvider, _) {
+                      final count = couponProvider.availableCoupons.length;
+                      return GestureDetector(
+                        onTap: () {
+                          couponProvider.fetchCoupons(force: true);
+                          showCustomerCouponsBottomSheet(context);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(100),
+                            border: Border.all(color: const Color(0xFFEBEBEF), width: 1.2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
                               ),
                             ],
                           ),
-                        );
-                        if (confirm != true) return;
-                      } else {
-                        if (profile?.approvalStatus != 'APPROVED') {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Your account is still under review.'),
-                              backgroundColor: Colors.orangeAccent,
-                            ),
-                          );
-                          return;
-                        }
-                      }
-
-                      final success = await driverProvider.toggleOnlineOffline();
-                      if (success && context.mounted) {
-                        final trackingService = context.read<LocationTrackingService>();
-                        if (driverProvider.profile?.isOnline == true) {
-                          trackingService.start();
-                        } else {
-                          trackingService.stop();
-                        }
-                      }
-                      if (!success && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(driverProvider.errorMessage ?? 'Failed to update status'),
-                            backgroundColor: Colors.redAccent,
-                          ),
-                        );
-                      }
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      width: 48,
-                      height: 26,
-                      decoration: BoxDecoration(
-                        color: isOnline ? const Color(0xFF1C9A5B) : const Color(0xFFE7E7EB),
-                        borderRadius: BorderRadius.circular(99),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x1A000000),
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Stack(
-                        children: [
-                          AnimatedPositioned(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            top: 3,
-                            left: isOnline ? 25 : 3,
-                            child: Container(
-                              width: 20,
-                              height: 20,
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Color(0x33000000),
-                                    blurRadius: 3,
-                                    offset: Offset(0, 1),
-                                  ),
-                                ],
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Image.asset(
+                                'assets/icons/coupon.png',
+                                width: 20,
+                                height: 20,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.card_giftcard_rounded,
+                                  size: 18,
+                                  color: Color(0xFFE31C2E),
+                                ),
                               ),
-                            ),
+                              if (count > 0) ...[
+                                const SizedBox(width: 5),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFC62E42),
+                                    borderRadius: BorderRadius.circular(100),
+                                  ),
+                                  child: Text(
+                                    '$count',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    },
                   ),
-                  const SizedBox(width: 12),
-                  // Avatar Profile Button
+                  const SizedBox(width: 8),
+
+                  // Profile Avatar Button
                   GestureDetector(
                     onTap: () {
                       Navigator.push(
@@ -397,8 +518,8 @@ class _DriverHomePageState extends State<DriverHomePage> {
                       );
                     },
                     child: Container(
-                      width: 42,
-                      height: 42,
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: const LinearGradient(
@@ -419,7 +540,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                         _getInitials(driverName),
                         style: GoogleFonts.outfit(
                           color: Colors.white,
-                          fontSize: 14,
+                          fontSize: 13,
                           fontWeight: FontWeight.w800,
                         ),
                       ),

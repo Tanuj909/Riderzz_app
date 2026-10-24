@@ -18,6 +18,17 @@ class CustomerWalletRemoteDataSource {
     );
   }
 
+  Future<ApiResponse<CustomerWalletModel>> createCustomerWallet() async {
+    final response = await _apiClient.post(
+      ApiConstants.customerWalletCreate,
+      data: {},
+    );
+    return ApiResponse.fromJson(
+      Map<String, dynamic>.from(response.data),
+      (data) => CustomerWalletModel.fromJson(Map<String, dynamic>.from(data as Map)),
+    );
+  }
+
   Future<ApiResponse<CustomerWalletWithdrawalModel>> requestWithdrawal({
     required double amount,
   }) async {

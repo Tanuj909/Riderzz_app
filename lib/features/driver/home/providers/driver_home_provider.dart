@@ -24,6 +24,7 @@ class DriverHomeProvider extends ChangeNotifier {
   // Wallet properties
   DriverWalletModel? _wallet;
   bool _isWalletLoading = false;
+  bool _isWithdrawing = false;
   String? _walletError;
   bool _isWalletNotCreated = false;
 
@@ -134,6 +135,7 @@ class DriverHomeProvider extends ChangeNotifier {
   // Wallet getters
   DriverWalletModel? get wallet => _wallet;
   bool get isWalletLoading => _isWalletLoading;
+  bool get isWithdrawing => _isWithdrawing;
   String? get walletError => _walletError;
   bool get isWalletNotCreated => _isWalletNotCreated;
 
@@ -323,6 +325,25 @@ class DriverHomeProvider extends ChangeNotifier {
       _walletError = e.toString().replaceFirst('Exception: ', '');
       notifyListeners();
       return false;
+    }
+  }
+
+  Future<bool> requestWithdrawal(double amount) async {
+    _isWithdrawing = true;
+    _walletError = null;
+    notifyListeners();
+
+    try {
+      await _driverRepository.requestWithdrawal(amount);
+      await fetchDriverWallet(force: true);
+      return true;
+    } catch (e) {
+      _walletError = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    } finally {
+      _isWithdrawing = false;
+      notifyListeners();
     }
   }
 

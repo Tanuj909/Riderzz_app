@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:riderzz_app/core/network/api_constants.dart';
 import 'package:riderzz_app/core/services/notification_deduplicator.dart';
+import 'package:riderzz_app/core/services/reward_notification_coordinator.dart';
 import 'package:riderzz_app/core/storage/secure_storage_service.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/notification/data/models/notification_model.dart';
@@ -249,6 +250,11 @@ debugPrint(
             final notification = NotificationModel.fromJson(jsonMap);
             debugPrint("Notification ID: ${notification.id}");
             _notificationController.add(notification);
+
+            // Forward reward notification to centralized in-app popup coordinator
+            if (notification.type == 'REWARD_RECEIVED') {
+              RewardNotificationCoordinator.instance.handleRewardFromWebSocket(notification);
+            }
             
             if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
               final id = notification.notificationId;
@@ -270,12 +276,25 @@ debugPrint(
                   debugPrint('[LOCAL_ID] localNotificationId: $localId');
                 }
                 
+                String encodedPayload;
+                try {
+                  encodedPayload = jsonEncode({
+                    'type': notification.type,
+                    'notificationId': id,
+                    'title': notification.title,
+                    'body': notification.message,
+                    'actionUrl': notification.actionUrl,
+                  });
+                } catch (_) {
+                  encodedPayload = notification.actionUrl ?? '';
+                }
+
                 unawaited(
                   LocalNotificationService.showGenericNotification(
                     id: localId,
                     title: notification.title,
                     body: notification.message,
-                    payload: notification.actionUrl,
+                    payload: encodedPayload,
                   ),
                 );
               } else {

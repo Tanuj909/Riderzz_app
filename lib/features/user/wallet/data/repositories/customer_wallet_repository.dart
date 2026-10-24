@@ -13,6 +13,10 @@ class CustomerWalletRepository {
     return _remoteDataSource.fetchCustomerWallet();
   }
 
+  Future<ApiResponse<CustomerWalletModel>> createCustomerWallet() {
+    return _remoteDataSource.createCustomerWallet();
+  }
+
   Future<ApiResponse<CustomerWalletWithdrawalModel>> requestWithdrawal({
     required double amount,
   }) {
