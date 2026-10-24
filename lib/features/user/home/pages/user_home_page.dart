@@ -16,6 +16,10 @@ import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/user/home/widgets/booking_details_bottom_sheet.dart';
 import 'package:riderzz_app/features/user/profile/screens/customer_profile_screen.dart';
+import 'package:riderzz_app/features/user/wallet/screens/customer_wallet_screen.dart';
+import 'package:riderzz_app/features/user/wallet/providers/customer_wallet_provider.dart';
+import 'package:riderzz_app/features/user/coupons/providers/customer_coupon_provider.dart';
+import 'package:riderzz_app/features/user/coupons/screens/customer_coupons_screen.dart';
 import 'package:riderzz_app/features/user/saved_routes/screens/saved_route_list_screen.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 import 'package:riderzz_app/core/models/driver_registration_check_model.dart';
@@ -77,6 +81,8 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       Provider.of<BookingProvider>(context, listen: false).fetchCurrentBookings();
       Provider.of<DriverHomeProvider>(context, listen: false).checkRegistrationStatus();
+      Provider.of<CustomerWalletProvider>(context, listen: false).fetchCustomerWallet();
+      Provider.of<CustomerCouponProvider>(context, listen: false).fetchCoupons();
       final initialCoords = await SharedLocationService.instance.consumeInitialLocation();
       if (initialCoords != null && mounted) {
         _handleIncomingSharedLocation(initialCoords);
@@ -393,12 +399,19 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
+    final customerProfile = authProvider.customerProfile;
+    final profileImage = customerProfile?.profileImage ?? user?.profileImage;
+    final displayName = (customerProfile?.fullName != null && customerProfile!.fullName.trim().isNotEmpty)
+        ? customerProfile.fullName.trim()
+        : (user?.name != null && user!.name!.trim().isNotEmpty ? user.name!.trim() : '');
 
     return RefreshIndicator(
       onRefresh: () async {
         await Future.wait([
           Provider.of<BookingProvider>(context, listen: false).fetchCurrentBookings(),
           Provider.of<DriverHomeProvider>(context, listen: false).checkRegistrationStatus(force: true),
+          Provider.of<CustomerWalletProvider>(context, listen: false).fetchCustomerWallet(force: true),
+          Provider.of<CustomerCouponProvider>(context, listen: false).fetchCoupons(force: true),
         ]);
       },
       color: const Color(0xFFE31C2E),
@@ -408,126 +421,248 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          // Header
+          // Header Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'GOOD AFTERNOON',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.1,
-                      color: Color(0xFFA2A5AE),
-                    ),
+              // Wallet Pill (Icon + Amount)
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CustomerWalletScreen()),
+                  ).then((_) {
+                    if (mounted) {
+                      context.read<CustomerWalletProvider>().fetchCustomerWallet(force: true);
+                    }
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(100),
+                    border: Border.all(color: const Color(0xFFEBEBEF), width: 1.2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 2),
-                  const Text(
-                    "Where's it going?",
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                      height: 1.18,
-                      color: Color(0xFF121214),
-                    ),
-                  ),
-                ],
-              ),
-              PopupMenuButton<String>(
-                color: Colors.white,
-                surfaceTintColor: Colors.white,
-                offset: const Offset(0, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                onSelected: (value) async {
-                  if (value == 'profile') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const CustomerProfileScreen()),
-                    );
-                  } else if (value == 'logout') {
-                    showDialog(
-                      context: context,
-                      builder: (dialogContext) => AlertDialog(
-                        backgroundColor: Colors.white,
-                        surfaceTintColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        title: const Text('Confirm Logout', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                        content: const Text('Are you sure you want to log out of your account?', style: TextStyle(fontSize: 14)),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(dialogContext),
-                            child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-                          ),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFCC2D3B),
-                              foregroundColor: Colors.white,
-                              elevation: 0,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'assets/wallet_icon/wallet.png',
+                        width: 24,
+                        height: 24,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(width: 8),
+                      Consumer<CustomerWalletProvider>(
+                        builder: (context, walletProvider, _) {
+                          final balance = walletProvider.wallet?.balance ?? 0.0;
+                          final formatted = balance.truncateToDouble() == balance
+                              ? balance.toInt().toString()
+                              : balance.toStringAsFixed(2);
+                          return Text(
+                            '₹$formatted',
+                            style: GoogleFonts.outfit(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF121214),
                             ),
-                            onPressed: () async {
-                              final navigator = Navigator.of(context, rootNavigator: true);
-                              Navigator.pop(dialogContext);
-                              context.read<DriverHomeProvider>().clearData();
-                              final auth = context.read<AuthProvider>();
-                              await auth.logout();
-                              navigator.pushNamedAndRemoveUntil('/login', (route) => false);
-                            },
-                            child: const Text('Logout', style: TextStyle(fontWeight: FontWeight.bold)),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Right Actions: Coupon Button + Profile Avatar
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Coupon Button with available count
+                  Consumer<CustomerCouponProvider>(
+                    builder: (context, couponProvider, _) {
+                      final count = couponProvider.availableCouponsCount;
+                      return GestureDetector(
+                        onTap: () {
+                          showCustomerCouponsBottomSheet(context).then((_) {
+                            if (mounted) {
+                              context.read<CustomerCouponProvider>().fetchCoupons(force: true);
+                              context.read<CustomerWalletProvider>().fetchCustomerWallet(force: true);
+                            }
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(100),
+                            border: Border.all(color: const Color(0xFFEBEBEF), width: 1.2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Image.asset(
+                                'assets/icons/coupon.png',
+                                width: 24,
+                                height: 24,
+                                fit: BoxFit.contain,
+                              ),
+                              const SizedBox(width: 7),
+                              Text(
+                                'Coupons',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF121214),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: count > 0 ? const Color(0xFFC62E42) : const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(100),
+                                ),
+                                child: Text(
+                                  '$count',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    color: count > 0 ? Colors.white : const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 10),
+
+                  // Profile Button
+                  PopupMenuButton<String>(
+                    color: Colors.white,
+                    surfaceTintColor: Colors.white,
+                    offset: const Offset(0, 50),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    onSelected: (value) async {
+                      if (value == 'profile') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const CustomerProfileScreen()),
+                        );
+                      } else if (value == 'logout') {
+                        showDialog(
+                          context: context,
+                          builder: (dialogContext) => AlertDialog(
+                            backgroundColor: Colors.white,
+                            surfaceTintColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            title: const Text('Confirm Logout', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                            content: const Text('Are you sure you want to log out of your account?', style: TextStyle(fontSize: 14)),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(dialogContext),
+                                child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFCC2D3B),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                ),
+                                onPressed: () async {
+                                  final navigator = Navigator.of(context, rootNavigator: true);
+                                  Navigator.pop(dialogContext);
+                                  context.read<DriverHomeProvider>().clearData();
+                                  final auth = context.read<AuthProvider>();
+                                  await auth.logout();
+                                  navigator.pushNamedAndRemoveUntil('/login', (route) => false);
+                                },
+                                child: const Text('Logout', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'profile',
+                        child: Row(
+                          children: [
+                            Icon(Icons.person_outline_rounded, color: Color(0xFF121214), size: 20),
+                            SizedBox(width: 12),
+                            Text('My Profile', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'logout',
+                        child: Row(
+                          children: [
+                            Icon(Icons.logout_rounded, color: Color(0xFFE31C2E), size: 20),
+                            SizedBox(width: 12),
+                            Text('Log Out', style: TextStyle(color: Color(0xFFE31C2E), fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                    ],
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFE31C2E), Color(0xFFA31E30)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        image: (profileImage != null && profileImage.isNotEmpty)
+                            ? DecorationImage(
+                                image: NetworkImage(profileImage),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFE31C2E).withOpacity(0.25),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
                           ),
                         ],
                       ),
-                    );
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'profile',
-                    child: Row(
-                      children: [
-                        Icon(Icons.person_outline_rounded, color: Color(0xFF121214), size: 20),
-                        SizedBox(width: 12),
-                        Text('My Profile', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'logout',
-                    child: Row(
-                      children: [
-                        Icon(Icons.logout_rounded, color: Color(0xFFE31C2E), size: 20),
-                        SizedBox(width: 12),
-                        Text('Log Out', style: TextStyle(color: Color(0xFFE31C2E), fontWeight: FontWeight.w600)),
-                      ],
+                      alignment: Alignment.center,
+                      child: (profileImage == null || profileImage.isEmpty)
+                          ? Text(
+                              _getInitials(displayName),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                              ),
+                            )
+                          : null,
                     ),
                   ),
                 ],
-                child: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [Color(0xFFE31C2E), Color(0xFFAE1220)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    _getInitials(user?.name),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
               ),
             ],
           ),
@@ -1086,7 +1221,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                         crossAxisCount: 2,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
-                        childAspectRatio: 1.18,
+                        childAspectRatio: 1.34,
                       ),
                       itemCount: _kVehicleCategories.length,
                       itemBuilder: (context, idx) {
@@ -1107,25 +1242,25 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                               ],
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   SizedBox(
-                                    height: 64,
-                                    width: 64,
+                                    height: 72,
+                                    width: 72,
                                     child: Image.asset(
                                       cat.assetPath,
                                       fit: BoxFit.contain,
                                       errorBuilder: (context, error, stackTrace) => const Icon(
                                         Icons.local_shipping_rounded,
-                                        size: 46,
+                                        size: 48,
                                         color: Color(0xFFE31C2E),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 6),
+                                  const SizedBox(height: 4),
                                   Text(
                                     cat.title,
                                     style: GoogleFonts.outfit(
@@ -1145,7 +1280,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                       },
                     ),
                             // What's New News Section
-                            const SizedBox(height: 28),
+                            const SizedBox(height: 18),
                             Text(
                               "WHAT'S NEW",
                               style: TextStyle(
@@ -1155,9 +1290,9 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                 color: const Color(0xFFA2A5AE),
                               ),
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 8),
                             SizedBox(
-                              height: 110,
+                              height: 78,
                               child: ListView(
                                 scrollDirection: Axis.horizontal,
                                 physics: const BouncingScrollPhysics(),
@@ -1174,15 +1309,15 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                     },
                                     child: Container(
                                       width: MediaQuery.of(context).size.width * 0.8,
-                                      margin: const EdgeInsets.only(right: 14),
-                                      padding: const EdgeInsets.all(16),
+                                      margin: const EdgeInsets.only(right: 12),
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                       decoration: BoxDecoration(
                                         gradient: const LinearGradient(
                                           colors: [Color(0xFFFDF2F4), Color(0xFFFCE7EB)],
                                           begin: Alignment.topLeft,
                                           end: Alignment.bottomRight,
                                         ),
-                                        borderRadius: BorderRadius.circular(20),
+                                        borderRadius: BorderRadius.circular(16),
                                         border: Border.all(color: const Color(0xFFC62E42).withOpacity(0.2), width: 1.2),
                                         boxShadow: const [
                                           BoxShadow(
@@ -1202,18 +1337,18 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                                 Text(
                                                   'Become a Partner',
                                                   style: GoogleFonts.outfit(
-                                                    fontSize: 14,
+                                                    fontSize: 13.5,
                                                     fontWeight: FontWeight.bold,
                                                     color: const Color(0xFF881337),
                                                   ),
                                                 ),
-                                                const SizedBox(height: 4),
+                                                const SizedBox(height: 3),
                                                 Text(
                                                   'Register as a driver and start earning on your own schedule.',
                                                   style: GoogleFonts.outfit(
                                                     fontSize: 10.5,
                                                     color: const Color(0xFF9F1239),
-                                                    height: 1.3,
+                                                    height: 1.25,
                                                   ),
                                                   maxLines: 2,
                                                   overflow: TextOverflow.ellipsis,
@@ -1221,21 +1356,26 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                               ],
                                             ),
                                           ),
-                                          const SizedBox(width: 12),
+                                          const SizedBox(width: 10),
                                           Container(
-                                            padding: const EdgeInsets.all(10),
+                                            width: 40,
+                                            height: 40,
+                                            padding: const EdgeInsets.all(7),
                                             decoration: BoxDecoration(
                                               color: Colors.white,
                                               shape: BoxShape.circle,
                                               boxShadow: [
                                                 BoxShadow(
-                                                  color: const Color(0xFFC62E42).withOpacity(0.1),
+                                                  color: const Color(0xFFC62E42).withOpacity(0.12),
                                                   blurRadius: 8,
                                                   offset: const Offset(0, 2),
                                                 )
                                               ],
                                             ),
-                                            child: const Icon(Icons.stars_rounded, color: Color(0xFFC62E42), size: 24),
+                                            child: Image.asset(
+                                              'assets/icons/business_partner.png',
+                                              fit: BoxFit.contain,
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -1260,12 +1400,17 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                                 Row(
                                                   children: [
                                                     Container(
-                                                      padding: const EdgeInsets.all(8),
+                                                      width: 38,
+                                                      height: 38,
+                                                      padding: const EdgeInsets.all(6),
                                                       decoration: BoxDecoration(
                                                         color: Colors.orange.shade50,
                                                         shape: BoxShape.circle,
                                                       ),
-                                                      child: const Icon(Icons.flash_on_rounded, color: Colors.orange, size: 22),
+                                                      child: Image.asset(
+                                                        'assets/icons/fast_delivery.png',
+                                                        fit: BoxFit.contain,
+                                                      ),
                                                     ),
                                                     const SizedBox(width: 12),
                                                     Expanded(
@@ -1291,17 +1436,20 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                                 ),
                                                 const SizedBox(height: 24),
                                                 ElevatedButton(
-                                                  onPressed: () => Navigator.pop(context),
+                                                  onPressed: () {
+                                                    Navigator.pop(context);
+                                                    _showNewBookingModal(preSelectedFastDelivery: true);
+                                                  },
                                                   style: ElevatedButton.styleFrom(
                                                     backgroundColor: const Color(0xFFE31C2E),
                                                     shape: RoundedRectangleBorder(
-                                                      borderRadius: BorderRadius.circular(12),
+                                                      borderRadius: BorderRadius.circular(100),
                                                     ),
-                                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                                    padding: const EdgeInsets.symmetric(vertical: 14),
                                                     elevation: 0,
                                                   ),
                                                   child: Text(
-                                                    'Got it',
+                                                    'Book Now',
                                                     style: GoogleFonts.outfit(
                                                       color: Colors.white,
                                                       fontWeight: FontWeight.bold,
@@ -1317,15 +1465,15 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                     },
                                     child: Container(
                                       width: MediaQuery.of(context).size.width * 0.8,
-                                      margin: const EdgeInsets.only(right: 14),
-                                      padding: const EdgeInsets.all(16),
+                                      margin: const EdgeInsets.only(right: 12),
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                       decoration: BoxDecoration(
                                         gradient: const LinearGradient(
                                           colors: [Color(0xFFFFF7ED), Color(0xFFFFF2E2)],
                                           begin: Alignment.topLeft,
                                           end: Alignment.bottomRight,
                                         ),
-                                        borderRadius: BorderRadius.circular(20),
+                                        borderRadius: BorderRadius.circular(16),
                                         border: Border.all(color: Colors.orange.withOpacity(0.3), width: 1.2),
                                         boxShadow: const [
                                           BoxShadow(
@@ -1345,18 +1493,18 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                                 Text(
                                                   'Introducing Fast Delivery',
                                                   style: GoogleFonts.outfit(
-                                                    fontSize: 14,
+                                                    fontSize: 13.5,
                                                     fontWeight: FontWeight.bold,
                                                     color: const Color(0xFF7C2D12),
                                                   ),
                                                 ),
-                                                const SizedBox(height: 4),
+                                                const SizedBox(height: 3),
                                                 Text(
                                                   'Get your parcels priority-matched and delivered at lightning speed.',
                                                   style: GoogleFonts.outfit(
                                                     fontSize: 10.5,
                                                     color: const Color(0xFF9A3412),
-                                                    height: 1.3,
+                                                    height: 1.25,
                                                   ),
                                                   maxLines: 2,
                                                   overflow: TextOverflow.ellipsis,
@@ -1364,21 +1512,26 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                               ],
                                             ),
                                           ),
-                                          const SizedBox(width: 12),
+                                          const SizedBox(width: 10),
                                           Container(
-                                            padding: const EdgeInsets.all(10),
+                                            width: 40,
+                                            height: 40,
+                                            padding: const EdgeInsets.all(7),
                                             decoration: BoxDecoration(
                                               color: Colors.white,
                                               shape: BoxShape.circle,
                                               boxShadow: [
                                                 BoxShadow(
-                                                  color: Colors.orange.withOpacity(0.1),
+                                                  color: Colors.orange.withOpacity(0.15),
                                                   blurRadius: 8,
                                                   offset: const Offset(0, 2),
                                                 )
                                               ],
                                             ),
-                                            child: const Icon(Icons.bolt_rounded, color: Colors.orange, size: 24),
+                                            child: Image.asset(
+                                              'assets/icons/fast_delivery.png',
+                                              fit: BoxFit.contain,
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -1387,6 +1540,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                 ],
                               ),
                             ),
+                            const SizedBox(height: 14),
                 ],
               );
             },

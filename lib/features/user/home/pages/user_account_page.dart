@@ -9,6 +9,9 @@ import 'package:riderzz_app/features/driver/profile/widgets/driver_terms_popup.d
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 import 'package:riderzz_app/features/user/profile/screens/customer_profile_screen.dart';
 import 'package:riderzz_app/features/support/screens/support_tickets_screen.dart';
+import 'package:riderzz_app/features/user/wallet/screens/customer_wallet_screen.dart';
+import 'package:riderzz_app/features/user/coupons/providers/customer_coupon_provider.dart';
+import 'package:riderzz_app/features/user/coupons/screens/customer_coupons_screen.dart';
 
 class UserAccountPage extends StatefulWidget {
   final VoidCallback onNavigateToHistory;
@@ -34,13 +37,15 @@ class _UserAccountPageState extends State<UserAccountPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AuthProvider>().fetchCustomerProfile();
+      context.read<AuthProvider>().fetchUserProfile();
       context.read<DriverHomeProvider>().checkRegistrationStatus();
+      context.read<CustomerCouponProvider>().fetchCoupons();
     });
   }
 
   String _getInitials(String? name) {
-    if (name == null || name.isEmpty) return 'RK';
-    final parts = name.trim().split(' ');
+    if (name == null || name.trim().isEmpty) return '';
+    final parts = name.trim().split(RegExp(r'\s+'));
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
@@ -147,6 +152,24 @@ class _UserAccountPageState extends State<UserAccountPage> {
     final customerProfile = authProvider.customerProfile;
     final profileImage = customerProfile?.profileImage ?? user?.profileImage;
 
+    final String displayName = (customerProfile?.fullName != null && customerProfile!.fullName.trim().isNotEmpty)
+        ? customerProfile.fullName.trim()
+        : (user?.name != null && user!.name!.trim().isNotEmpty
+            ? user.name!.trim()
+            : '');
+
+    final String displayPhone = (customerProfile?.phone != null && customerProfile!.phone.trim().isNotEmpty)
+        ? customerProfile.phone.trim()
+        : (user?.phone != null && user!.phone!.trim().isNotEmpty
+            ? user.phone!.trim()
+            : '');
+
+    final String formattedPhone = displayPhone.startsWith('+')
+        ? displayPhone
+        : (displayPhone.length == 10 ? '+91 $displayPhone' : displayPhone);
+
+    final String initials = _getInitials(displayName);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Column(
@@ -154,7 +177,6 @@ class _UserAccountPageState extends State<UserAccountPage> {
         children: [
           // ── Profile Header ──
           Container(
-            padding: const EdgeInsets.all(20),
             margin: const EdgeInsets.only(bottom: 24),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -168,12 +190,13 @@ class _UserAccountPageState extends State<UserAccountPage> {
                 ),
               ],
             ),
+            padding: const EdgeInsets.fromLTRB(18, 18, 16, 18),
             child: Row(
               children: [
                 // Avatar
                 Container(
-                  width: 60,
-                  height: 60,
+                  width: 58,
+                  height: 58,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: const LinearGradient(
@@ -183,9 +206,9 @@ class _UserAccountPageState extends State<UserAccountPage> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFC62E42).withOpacity(0.3),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
+                        color: const Color(0xFFC62E42).withOpacity(0.25),
+                        blurRadius: 14,
+                        offset: const Offset(0, 5),
                       ),
                     ],
                     image: (profileImage != null && profileImage.isNotEmpty)
@@ -197,94 +220,56 @@ class _UserAccountPageState extends State<UserAccountPage> {
                   ),
                   alignment: Alignment.center,
                   child: (profileImage == null || profileImage.isEmpty)
-                      ? Text(
-                          _getInitials(user?.name),
-                          style: GoogleFonts.outfit(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        )
+                      ? (initials.isNotEmpty
+                          ? Text(
+                              initials,
+                              style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.person_rounded,
+                              color: Colors.white,
+                              size: 28,
+                            ))
                       : null,
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
+
+                // Name & Phone
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              user?.name ?? 'Rahul Kumar',
-                              style: GoogleFonts.outfit(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF121214),
-                                letterSpacing: -0.3,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                      if (displayName.isNotEmpty)
+                        Text(
+                          displayName,
+                          style: GoogleFonts.outfit(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF121214),
+                            letterSpacing: -0.3,
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(6),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.orange.withOpacity(0.25),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Text(
-                              'PRO',
-                              style: GoogleFonts.outfit(
-                                color: const Color(0xFF664200),
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      if (formattedPhone.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          formattedPhone,
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            color: const Color(0xFF6C6F79),
+                            fontWeight: FontWeight.w500,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Text(
-                            user?.phone ?? '+91 98765 43210',
-                            style: GoogleFonts.outfit(
-                              fontSize: 13,
-                              color: const Color(0xFF6C6F79),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(width: 4, height: 4, decoration: const BoxDecoration(color: Color(0xFFD5D5DB), shape: BoxShape.circle)),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.verified_rounded, size: 14, color: Color(0xFF1C9A5B)),
-                          const SizedBox(width: 3),
-                          Text(
-                            'Verified',
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              color: const Color(0xFF1C9A5B),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
+
                 // Edit button
                 GestureDetector(
                   onTap: () {
@@ -297,13 +282,13 @@ class _UserAccountPageState extends State<UserAccountPage> {
                     });
                   },
                   child: Container(
-                    width: 40,
-                    height: 40,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
                       color: const Color(0xFFF5F5F8),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF3A3A42)),
+                    child: const Icon(Icons.edit_outlined, size: 16, color: Color(0xFF3A3A42)),
                   ),
                 ),
               ],
@@ -339,12 +324,55 @@ class _UserAccountPageState extends State<UserAccountPage> {
                 },
               ),
               _buildListItem(
+                icon: Icons.account_balance_wallet_outlined,
+                label: 'Wallet',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CustomerWalletScreen()),
+                  );
+                },
+              ),
+              Consumer<CustomerCouponProvider>(
+                builder: (context, couponProvider, _) {
+                  final count = couponProvider.availableCouponsCount;
+                  return _buildListItem(
+                    icon: Icons.confirmation_number_outlined,
+                    label: 'Coupons & Rewards',
+                    trailing: count > 0
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFC62E42),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '$count',
+                              style: GoogleFonts.outfit(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                          )
+                        : null,
+                    onTap: () {
+                      showCustomerCouponsBottomSheet(context).then((_) {
+                        if (context.mounted) {
+                          context.read<CustomerCouponProvider>().fetchCoupons(force: true);
+                        }
+                      });
+                    },
+                  );
+                },
+              ),
+              _buildListItem(
                 icon: Icons.home_outlined,
                 label: 'Saved Addresses',
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const AddressListScreen()),
+                    MaterialPageRoute(builder: (context) => const AddressListScreen(initialTabIndex: 0)),
                   );
                 },
               ),
@@ -355,7 +383,7 @@ class _UserAccountPageState extends State<UserAccountPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const SavedRouteListScreen()),
+                    MaterialPageRoute(builder: (context) => const AddressListScreen(initialTabIndex: 1)),
                   );
                 },
               ),
@@ -606,6 +634,7 @@ class _UserAccountPageState extends State<UserAccountPage> {
     required VoidCallback onTap,
     bool isDestructive = false,
     bool showBorder = true,
+    Widget? trailing,
   }) {
     return Material(
       color: Colors.transparent,
@@ -641,15 +670,16 @@ class _UserAccountPageState extends State<UserAccountPage> {
                 ),
               ),
               if (!isDestructive)
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F8),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.chevron_right_rounded, color: Color(0xFFB0B5BF), size: 18),
-                ),
+                trailing ??
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F5F8),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.chevron_right_rounded, color: Color(0xFFB0B5BF), size: 18),
+                    ),
             ],
           ),
         ),

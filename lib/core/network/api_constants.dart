@@ -31,6 +31,9 @@ class ApiConstants {
   static const String addresses = '/addresses';
   static const String savedRoutes = '/saved-routes';
   static const String bookings = '/bookings';
+  static const String customerWallet = '/customer/wallet';
+  static const String customerWalletWithdraw = '/customer/wallet/withdraw';
+  static const String customerBankAccount = '/customer/bank-account';
 
   // Driver Endpoints
   static const String driverProfile = '/driver/profile';
@@ -69,6 +72,10 @@ class ApiConstants {
 
   // Support Endpoints
   static const String supportTickets = '/support/tickets';
+
+  // Rewards & Coupons
+  static const String customerCoupons = '/rewards/customer/coupons';
+  static String customerCouponClaim(int id) => '/rewards/customer/coupons/$id/claim';
 
   // Notification Endpoints
   static const String registerDeviceToken = '/notifications/device-token';

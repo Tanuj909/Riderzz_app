@@ -555,18 +555,8 @@ class _UserBookingsPageState extends State<UserBookingsPage> {
               ),
             ),
             // Pagination Controls
-            Container(
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x08000000), // Very subtle shadow
-                    blurRadius: 10,
-                    offset: Offset(0, -4),
-                  )
-                ],
-              ),
               child: SafeArea(
                 top: false,
                 child: Row(
@@ -579,23 +569,25 @@ class _UserBookingsPageState extends State<UserBookingsPage> {
                             }
                           : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFF1F5F9),
+                        backgroundColor: Colors.white,
                         foregroundColor: const Color(0xFF475569),
                         disabledBackgroundColor: const Color(0xFFF8FAFC),
                         disabledForegroundColor: const Color(0xFFCBD5E1),
                         elevation: 0,
+                        side: const BorderSide(color: Color(0xFFE2E8F0)),
                         padding: EdgeInsets.zero,
                         minimumSize: const Size(40, 40),
                         shape: const CircleBorder(),
                       ),
                       child: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
                     ),
-                    const SizedBox(width: 24),
+                    const SizedBox(width: 20),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
                       ),
                       child: Text(
                         'Page ${provider.currentPage + 1}',
@@ -606,7 +598,7 @@ class _UserBookingsPageState extends State<UserBookingsPage> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 24),
+                    const SizedBox(width: 20),
                     ElevatedButton(
                       onPressed: provider.hasMore
                           ? () {

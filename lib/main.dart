@@ -57,6 +57,12 @@ import 'package:riderzz_app/features/support/providers/support_provider.dart';
 
 import 'package:riderzz_app/features/notification/data/datasource/notification_remote_datasource.dart';
 import 'package:riderzz_app/features/notification/data/repositories/notification_repository.dart';
+import 'package:riderzz_app/features/user/wallet/data/datasource/customer_wallet_remote_datasource.dart';
+import 'package:riderzz_app/features/user/wallet/data/repositories/customer_wallet_repository.dart';
+import 'package:riderzz_app/features/user/wallet/providers/customer_wallet_provider.dart';
+import 'package:riderzz_app/features/user/coupons/data/datasource/customer_coupon_remote_datasource.dart';
+import 'package:riderzz_app/features/user/coupons/data/repositories/customer_coupon_repository.dart';
+import 'package:riderzz_app/features/user/coupons/providers/customer_coupon_provider.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -205,6 +211,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           update: (_, apiClient, previous) =>
               AdminUsersRemoteDataSource(apiClient),
         ),
+        ProxyProvider<ApiClient, CustomerWalletRemoteDataSource>(
+          update: (_, apiClient, previous) =>
+              CustomerWalletRemoteDataSource(apiClient),
+        ),
+        ProxyProvider<ApiClient, CustomerCouponRemoteDataSource>(
+          update: (_, apiClient, previous) =>
+              CustomerCouponRemoteDataSource(apiClient),
+        ),
 
         // 3. Repositories
         ProxyProvider<AuthRemoteDataSource, AuthRepository>(
@@ -258,6 +272,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ProxyProvider<AdminUsersRemoteDataSource, AdminUsersRepository>(
           update: (_, dataSource, previous) =>
               AdminUsersRepository(dataSource),
+        ),
+        ProxyProvider<CustomerWalletRemoteDataSource, CustomerWalletRepository>(
+          update: (_, dataSource, previous) =>
+              CustomerWalletRepository(dataSource),
+        ),
+        ProxyProvider<CustomerCouponRemoteDataSource, CustomerCouponRepository>(
+          update: (_, dataSource, previous) =>
+              CustomerCouponRepository(dataSource),
         ),
 
         // 4. State Management (Providers)
@@ -388,6 +410,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               AdminUsersProvider(context.read<AdminUsersRepository>()),
           update: (_, repository, previous) =>
               previous ?? AdminUsersProvider(repository),
+        ),
+        ChangeNotifierProxyProvider<CustomerWalletRepository, CustomerWalletProvider>(
+          create: (context) =>
+              CustomerWalletProvider(context.read<CustomerWalletRepository>()),
+          update: (_, repository, previous) =>
+              previous ?? CustomerWalletProvider(repository),
+        ),
+        ChangeNotifierProxyProvider<CustomerCouponRepository, CustomerCouponProvider>(
+          create: (context) =>
+              CustomerCouponProvider(context.read<CustomerCouponRepository>()),
+          update: (_, repository, previous) =>
+              previous ?? CustomerCouponProvider(repository),
         ),
       ],
       child: MaterialApp(

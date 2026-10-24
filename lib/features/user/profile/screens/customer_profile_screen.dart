@@ -165,8 +165,8 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
   }
 
   String _getInitials(String? name) {
-    if (name == null || name.isEmpty) return 'RK';
-    final parts = name.trim().split(' ');
+    if (name == null || name.trim().isEmpty) return '';
+    final parts = name.trim().split(RegExp(r'\s+'));
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
@@ -252,14 +252,20 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                                         ),
                                         alignment: Alignment.center,
                                         child: (profileImageUrl == null || profileImageUrl.isEmpty)
-                                            ? Text(
-                                                _getInitials(user?.name),
-                                                style: GoogleFonts.outfit(
-                                                  color: Colors.white,
-                                                  fontSize: 24,
-                                                  fontWeight: FontWeight.w800,
-                                                ),
-                                              )
+                                            ? (_getInitials(profile?.fullName ?? user?.name).isNotEmpty
+                                                ? Text(
+                                                    _getInitials(profile?.fullName ?? user?.name),
+                                                    style: GoogleFonts.outfit(
+                                                      color: Colors.white,
+                                                      fontSize: 24,
+                                                      fontWeight: FontWeight.w800,
+                                                    ),
+                                                  )
+                                                : const Icon(
+                                                    Icons.person_rounded,
+                                                    color: Colors.white,
+                                                    size: 32,
+                                                  ))
                                             : null,
                                       ),
                                       Positioned(

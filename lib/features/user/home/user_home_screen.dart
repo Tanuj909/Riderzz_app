@@ -7,7 +7,8 @@ import 'package:riderzz_app/features/user/home/pages/user_bookings_page.dart';
 import 'package:riderzz_app/features/user/addresses/address_list_screen.dart';
 import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
 import 'package:riderzz_app/features/user/home/pages/user_account_page.dart';
-import 'package:riderzz_app/features/user/saved_routes/screens/saved_route_list_screen.dart';
+import 'package:riderzz_app/features/user/wallet/screens/customer_wallet_screen.dart';
+import 'package:riderzz_app/features/user/wallet/providers/customer_wallet_provider.dart';
 
 class UserHomeScreen extends StatefulWidget {
   const UserHomeScreen({super.key});
@@ -83,8 +84,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     },
                   ),
                   _visitedTabs[1] ? const UserBookingsPage() : const SizedBox.shrink(),
-                  _visitedTabs[2] ? const AddressListScreen(showBackButton: false) : const SizedBox.shrink(),
-                  _visitedTabs[3] ? const SavedRouteListScreen(showBackButton: false) : const SizedBox.shrink(),
+                  _visitedTabs[2] ? const CustomerWalletScreen(showBackButton: false) : const SizedBox.shrink(),
+                  _visitedTabs[3] ? const AddressListScreen(showBackButton: false) : const SizedBox.shrink(),
                   _visitedTabs[4]
                       ? UserAccountPage(
                           onNavigateToHistory: () {
@@ -101,9 +102,83 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
+      bottomNavigationBar: _buildBottomNav(context),
+    );
+  }
+
+  Widget _buildBottomNav(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    // 30% reduction from bottom space (keeping 70% of original space)
+    final double bottomPadding = bottomInset > 0 ? (bottomInset * 0.70) : 10.0;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: const Border(
+          top: BorderSide(color: Color(0xFFF1F1F4), width: 1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.only(
+        top: 6,
+        bottom: bottomPadding,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildNavItem(
+            index: 0,
+            icon: Icons.home_rounded,
+            activeIcon: Icons.home_rounded,
+            label: 'Home',
+          ),
+          _buildNavItem(
+            index: 1,
+            icon: Icons.assignment_outlined,
+            activeIcon: Icons.assignment_rounded,
+            label: 'Bookings',
+          ),
+          _buildNavItem(
+            index: 2,
+            icon: Icons.account_balance_wallet_outlined,
+            activeIcon: Icons.account_balance_wallet_rounded,
+            label: 'Wallet',
+          ),
+          _buildNavItem(
+            index: 3,
+            icon: Icons.location_on_outlined,
+            activeIcon: Icons.location_on_rounded,
+            label: 'Address',
+          ),
+          _buildNavItem(
+            index: 4,
+            icon: Icons.person_outline_rounded,
+            activeIcon: Icons.person_rounded,
+            label: 'Account',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required int index,
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+  }) {
+    final isSelected = _currentIndex == index;
+    final color = isSelected ? const Color(0xFFE31C2E) : const Color(0xFFA2A5AE);
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
           setState(() {
             _currentIndex = index;
             _visitedTabs[index] = true;
@@ -112,42 +187,30 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             context.read<BookingProvider>().fetchCurrentBookings();
           } else if (index == 1) {
             context.read<BookingProvider>().fetchBookings(page: 0);
+          } else if (index == 2) {
+            context.read<CustomerWalletProvider>().fetchCustomerWallet();
           }
         },
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFFE31C2E), // var(--red)
-        unselectedItemColor: const Color(0xFFA2A5AE), // var(--ink-faint)
-        selectedFontSize: 11,
-        unselectedFontSize: 11,
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
-        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assignment_outlined),
-            activeIcon: Icon(Icons.assignment_rounded),
-            label: 'Bookings',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.location_on_outlined),
-            activeIcon: Icon(Icons.location_on_rounded),
-            label: 'Address',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.route_outlined),
-            activeIcon: Icon(Icons.route_rounded),
-            label: 'Routes',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline_rounded),
-            activeIcon: Icon(Icons.person_rounded),
-            label: 'Account',
-          ),
-        ],
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isSelected ? activeIcon : icon,
+              color: color,
+              size: 22,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

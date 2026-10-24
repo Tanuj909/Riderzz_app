@@ -528,6 +528,18 @@ class AuthProvider extends ChangeNotifier {
     try {
       final profile = await _authRepository.getCustomerProfile();
       _customerProfile = profile;
+      if (_currentUser != null) {
+        _currentUser = UserModel(
+          userId: _currentUser!.userId,
+          role: _currentUser!.role,
+          token: _currentUser!.token,
+          refreshToken: _currentUser!.refreshToken,
+          name: profile.fullName.isNotEmpty ? profile.fullName : _currentUser!.name,
+          phone: profile.phone.isNotEmpty ? profile.phone : _currentUser!.phone,
+          status: _currentUser!.status,
+          profileImage: profile.profileImage ?? _currentUser!.profileImage,
+        );
+      }
       _isLoading = false;
       notifyListeners();
       return true;
@@ -560,6 +572,18 @@ class AuthProvider extends ChangeNotifier {
         emergencyContactPhone: emergencyContactPhone,
       );
       _customerProfile = updatedProfile;
+      if (_currentUser != null) {
+        _currentUser = UserModel(
+          userId: _currentUser!.userId,
+          role: _currentUser!.role,
+          token: _currentUser!.token,
+          refreshToken: _currentUser!.refreshToken,
+          name: updatedProfile.fullName.isNotEmpty ? updatedProfile.fullName : _currentUser!.name,
+          phone: updatedProfile.phone.isNotEmpty ? updatedProfile.phone : _currentUser!.phone,
+          status: _currentUser!.status,
+          profileImage: updatedProfile.profileImage ?? _currentUser!.profileImage,
+        );
+      }
       _isLoading = false;
       notifyListeners();
       return true;

@@ -8,6 +8,7 @@ import 'package:riderzz_app/features/auth/screens/admin_login_screen.dart';
 import 'package:riderzz_app/features/admin/dashboard/admin_dashboard_screen.dart';
 import 'package:riderzz_app/features/auth/screens/forgot_password_screen.dart';
 import 'package:riderzz_app/features/admin/users/all_users_screen.dart';
+import 'package:riderzz_app/features/user/wallet/screens/customer_wallet_screen.dart';
 
 class AppRoutes {
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -22,6 +23,7 @@ class AppRoutes {
   static const String adminDashboard = '/admin_dashboard';
   static const String forgotPassword = '/forgot_password';
   static const String adminAllUsers = '/admin_all_users';
+  static const String userWallet = '/user_wallet';
 
   static Map<String, WidgetBuilder> get routes => {
         initial: (context) => const RoleRedirectScreen(),
@@ -34,5 +36,6 @@ class AppRoutes {
         adminDashboard: (context) => const AdminDashboardScreen(),
         forgotPassword: (context) => const ForgotPasswordScreen(),
         adminAllUsers: (context) => const AllUsersScreen(),
+        userWallet: (context) => const CustomerWalletScreen(),
       };
 }

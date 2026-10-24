@@ -8,22 +8,52 @@ import 'package:riderzz_app/features/user/addresses/location_picker_screen.dart'
 import 'package:riderzz_app/models/google_place.dart';
 import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
 import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
+import 'package:riderzz_app/features/user/saved_routes/providers/saved_route_provider.dart';
 
 class AddressListScreen extends StatefulWidget {
   final bool showBackButton;
-  const AddressListScreen({super.key, this.showBackButton = true});
+  final int initialTabIndex;
+  const AddressListScreen({
+    super.key,
+    this.showBackButton = true,
+    this.initialTabIndex = 0,
+  });
 
   @override
   State<AddressListScreen> createState() => _AddressListScreenState();
 }
 
 class _AddressListScreenState extends State<AddressListScreen> {
+  late int _selectedTab;
+  late final PageController _pageController;
+
   @override
   void initState() {
     super.initState();
+    _selectedTab = widget.initialTabIndex.clamp(0, 1);
+    _pageController = PageController(initialPage: _selectedTab);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AddressProvider>().fetchAddresses();
+      context.read<SavedRouteProvider>().fetchSavedRoutes();
     });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onTabChanged(int index) {
+    if (_selectedTab == index) return;
+    setState(() {
+      _selectedTab = index;
+    });
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+    );
   }
 
   void _deleteAddress(int id) async {
@@ -1024,11 +1054,1021 @@ class _AddressListScreenState extends State<AddressListScreen> {
     );
   }
 
+  void _deleteRoute(int id) async {
+    final provider = context.read<SavedRouteProvider>();
+    final success = await provider.deleteSavedRoute(id);
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Saved route deleted successfully')),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(provider.errorMessage ?? 'Failed to delete saved route')),
+      );
+    }
+  }
+
+  void _saveRoute({
+    int? id,
+    required String routeName,
+    required int pickupAddressId,
+    required int dropAddressId,
+  }) async {
+    final provider = context.read<SavedRouteProvider>();
+    bool success;
+    if (id != null) {
+      success = await provider.updateSavedRoute(
+        id: id,
+        routeName: routeName,
+        pickupAddressId: pickupAddressId,
+        dropAddressId: dropAddressId,
+      );
+    } else {
+      success = await provider.createSavedRoute(
+        routeName: routeName,
+        pickupAddressId: pickupAddressId,
+        dropAddressId: dropAddressId,
+      );
+    }
+
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(id != null ? 'Route updated successfully' : 'Route saved successfully')),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(provider.errorMessage ?? 'Failed to save route')),
+      );
+    }
+  }
+
+  void _showRouteBottomSheet(BuildContext context, {Map<String, dynamic>? routeToEdit}) {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController(text: routeToEdit?['routeName'] ?? '');
+
+    final addressProvider = context.read<AddressProvider>();
+    final addresses = addressProvider.addresses;
+
+    if (addresses.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('No Saved Addresses', style: TextStyle(fontWeight: FontWeight.bold)),
+          content: const Text('You need to add at least one saved address before creating saved routes.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel', style: TextStyle(color: Color(0xFF6C6F79))),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE31C2E),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _onTabChanged(0);
+                _showAddressBottomSheet(context);
+              },
+              child: const Text('Add Address', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    int? selectedPickupId = routeToEdit != null ? (routeToEdit['pickupAddress']['id'] as num).toInt() : null;
+    int? selectedDropId = routeToEdit != null ? (routeToEdit['dropAddress']['id'] as num).toInt() : null;
+
+    if (selectedPickupId != null && !addresses.any((e) => e['id'] == selectedPickupId)) {
+      selectedPickupId = null;
+    }
+    if (selectedDropId != null && !addresses.any((e) => e['id'] == selectedDropId)) {
+      selectedDropId = null;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final double keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+            final double maxHeight = keyboardHeight > 0
+                ? (MediaQuery.of(context).size.height - keyboardHeight - 50)
+                : (MediaQuery.of(context).size.height * 0.50);
+
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                20,
+                20,
+                keyboardHeight + 24,
+              ),
+              child: GestureDetector(
+                onTap: () => FocusScope.of(context).unfocus(),
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  constraints: BoxConstraints(maxHeight: maxHeight),
+                  child: Form(
+                    key: formKey,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                routeToEdit != null ? 'Edit Route' : 'Add New Route',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF121214),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () => Navigator.pop(context),
+                                icon: const Icon(Icons.close_rounded, color: Color(0xFF6C6F79)),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Route Name
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(left: 12),
+                                child: Text(
+                                  'Route Name',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 11,
+                                    color: const Color(0xFF6C6F79),
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF6F6F8),
+                                  border: Border.all(color: const Color(0xFFE7E7EB), width: 1.0),
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: TextFormField(
+                                  controller: nameController,
+                                  style: GoogleFonts.poppins(fontSize: 14, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
+                                  decoration: InputDecoration(
+                                    prefixIcon: const Icon(Icons.route_outlined, size: 18, color: Color(0xFF6C6F79)),
+                                    prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 20),
+                                    hintText: 'e.g. Home to Warehouse',
+                                    hintStyle: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13),
+                                    border: InputBorder.none,
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                                  ),
+                                  validator: (val) {
+                                    if (val == null || val.trim().isEmpty) {
+                                      return 'Route Name is required';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Pickup Address Dropdown
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(left: 12),
+                                child: Text(
+                                  'Pickup Address',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 11,
+                                    color: const Color(0xFF6C6F79),
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF6F6F8),
+                                  border: Border.all(color: const Color(0xFFE7E7EB), width: 1.0),
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: DropdownButtonFormField<int>(
+                                  value: selectedPickupId,
+                                  isExpanded: true,
+                                  dropdownColor: Colors.white,
+                                  icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6C6F79), size: 20),
+                                  borderRadius: BorderRadius.circular(16),
+                                  style: GoogleFonts.poppins(fontSize: 14, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
+                                  decoration: const InputDecoration(
+                                    prefixIcon: Icon(Icons.my_location_rounded, size: 16, color: Color(0xFF1C9A5B)),
+                                    prefixIconConstraints: BoxConstraints(minWidth: 32, minHeight: 20),
+                                    border: InputBorder.none,
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.symmetric(vertical: 8),
+                                  ),
+                                  hint: Text('Select Pickup Location', style: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13)),
+                                  items: addresses.map((addr) {
+                                    final id = (addr['id'] as num).toInt();
+                                    final label = addr['label'] ?? '';
+                                    final details = addr['addressLine1'] ?? '';
+                                    return DropdownMenuItem<int>(
+                                      value: id,
+                                      child: Text(
+                                        label.isNotEmpty ? '$label ($details)' : details,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.poppins(
+                                          color: const Color(0xFF121214),
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (val) {
+                                    setModalState(() {
+                                      selectedPickupId = val;
+                                    });
+                                  },
+                                  validator: (val) {
+                                    if (val == null) return 'Pickup Location is required';
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Drop Address Dropdown
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(left: 12),
+                                child: Text(
+                                  'Drop Address',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 11,
+                                    color: const Color(0xFF6C6F79),
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF6F6F8),
+                                  border: Border.all(color: const Color(0xFFE7E7EB), width: 1.0),
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: DropdownButtonFormField<int>(
+                                  value: selectedDropId,
+                                  isExpanded: true,
+                                  dropdownColor: Colors.white,
+                                  icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6C6F79), size: 20),
+                                  borderRadius: BorderRadius.circular(16),
+                                  style: GoogleFonts.poppins(fontSize: 14, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
+                                  decoration: const InputDecoration(
+                                    prefixIcon: Icon(Icons.location_on_rounded, size: 16, color: Color(0xFFE31C2E)),
+                                    prefixIconConstraints: BoxConstraints(minWidth: 32, minHeight: 20),
+                                    border: InputBorder.none,
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.symmetric(vertical: 8),
+                                  ),
+                                  hint: Text('Select Drop Location', style: GoogleFonts.poppins(color: const Color(0xFFB0B8C4), fontSize: 13)),
+                                  items: addresses.map((addr) {
+                                    final id = (addr['id'] as num).toInt();
+                                    final label = addr['label'] ?? '';
+                                    final details = addr['addressLine1'] ?? '';
+                                    return DropdownMenuItem<int>(
+                                      value: id,
+                                      child: Text(
+                                        label.isNotEmpty ? '$label ($details)' : details,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.poppins(
+                                          color: const Color(0xFF121214),
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (val) {
+                                    setModalState(() {
+                                      selectedDropId = val;
+                                    });
+                                  },
+                                  validator: (val) {
+                                    if (val == null) return 'Drop Location is required';
+                                    if (val == selectedPickupId) return 'Pickup & Drop cannot be identical';
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Save Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFE31C2E),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                              ),
+                              onPressed: () {
+                                if (!formKey.currentState!.validate()) return;
+
+                                _saveRoute(
+                                  id: routeToEdit?['id'],
+                                  routeName: nameController.text.trim(),
+                                  pickupAddressId: selectedPickupId!,
+                                  dropAddressId: selectedDropId!,
+                                );
+                                Navigator.pop(context);
+                              },
+                              child: Text(
+                                routeToEdit != null ? 'Update Route' : 'Save Route',
+                                style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildTabBar(int addressCount, int routeCount) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEDEDF1),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          // Addresses Tab (Left)
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _onTabChanged(0),
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                padding: const EdgeInsets.symmetric(vertical: 9),
+                decoration: BoxDecoration(
+                  color: _selectedTab == 0 ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: _selectedTab == 0
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.location_on_rounded,
+                      size: 16,
+                      color: _selectedTab == 0 ? const Color(0xFFE31C2E) : const Color(0xFF6C6F79),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Addresses',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: _selectedTab == 0 ? FontWeight.w600 : FontWeight.w500,
+                        color: _selectedTab == 0 ? const Color(0xFF121214) : const Color(0xFF6C6F79),
+                      ),
+                    ),
+                    if (addressCount > 0) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _selectedTab == 0
+                              ? const Color(0xFFE31C2E).withOpacity(0.12)
+                              : const Color(0xFFDDDEE4),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '$addressCount',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: _selectedTab == 0 ? const Color(0xFFE31C2E) : const Color(0xFF6C6F79),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 4),
+
+          // Routes Tab (Right)
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _onTabChanged(1),
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                padding: const EdgeInsets.symmetric(vertical: 9),
+                decoration: BoxDecoration(
+                  color: _selectedTab == 1 ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: _selectedTab == 1
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.alt_route_rounded,
+                      size: 16,
+                      color: _selectedTab == 1 ? const Color(0xFFE31C2E) : const Color(0xFF6C6F79),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Routes',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: _selectedTab == 1 ? FontWeight.w600 : FontWeight.w500,
+                        color: _selectedTab == 1 ? const Color(0xFF121214) : const Color(0xFF6C6F79),
+                      ),
+                    ),
+                    if (routeCount > 0) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _selectedTab == 1
+                              ? const Color(0xFFE31C2E).withOpacity(0.12)
+                              : const Color(0xFFDDDEE4),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '$routeCount',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: _selectedTab == 1 ? const Color(0xFFE31C2E) : const Color(0xFF6C6F79),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddressList(AddressProvider addressProvider, List<dynamic> addresses) {
+    final isLoading = addressProvider.isLoading;
+
+    if (isLoading && addresses.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
+        ),
+      );
+    }
+
+    if (addresses.isEmpty) {
+      return Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.location_off_rounded,
+                  size: 64,
+                  color: Color(0xFFD0D5DD),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'No Saved Addresses',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF121214),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Save your locations for instant booking.',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: const Color(0xFF6C6F79),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF121214),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => _showAddressBottomSheet(context),
+                icon: const Icon(Icons.add_location_alt_rounded, size: 20),
+                label: Text(
+                  'Add New Address',
+                  style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+      itemCount: addresses.length,
+      itemBuilder: (context, index) {
+        final item = addresses[index];
+        final label = item['label'] ?? '';
+        final address = item['address'] ?? '';
+
+        IconData leadIcon = Icons.location_on_rounded;
+        Color leadBg = const Color(0xFFF1F1F4);
+        Color leadIconColor = const Color(0xFF121214);
+
+        final lowerLabel = label.toLowerCase();
+        if (lowerLabel == 'home') {
+          leadIcon = Icons.home_rounded;
+          leadBg = const Color(0xFFE7F7EF);
+          leadIconColor = const Color(0xFF1C9A5B);
+        } else if (lowerLabel == 'office') {
+          leadIcon = Icons.business_rounded;
+          leadBg = const Color(0xFFFDEBEC);
+          leadIconColor = const Color(0xFFE31C2E);
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+            border: Border.all(color: const Color(0xFFF1F1F4)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: leadBg,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(leadIcon, color: leadIconColor, size: 20),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            label,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF121214),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            address,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: const Color(0xFF6C6F79),
+                              fontWeight: FontWeight.w500,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: Color(0xFFF1F1F4)),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => _showAddressBottomSheet(context, addressToEdit: item),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        'Edit',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF121214),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    TextButton(
+                      onPressed: () => _deleteAddress(item['id']),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        'Delete',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFFE31C2E),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRoutesList(SavedRouteProvider routeProvider, List<dynamic> routes) {
+    final isLoading = routeProvider.isLoading;
+
+    if (isLoading && routes.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
+        ),
+      );
+    }
+
+    if (routes.isEmpty) {
+      return Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.alt_route_rounded,
+                  size: 64,
+                  color: Color(0xFFD0D5DD),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'No Saved Routes',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF121214),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Combine pickup and drop addresses into shortcuts.',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: const Color(0xFF6C6F79),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF121214),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => _showRouteBottomSheet(context),
+                icon: const Icon(Icons.add_rounded, size: 20),
+                label: Text(
+                  'Create New Route',
+                  style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+      itemCount: routes.length,
+      itemBuilder: (context, index) {
+        final item = routes[index];
+        final name = item['routeName'] ?? '';
+        final pickup = item['pickupAddress']?['address'] ?? '';
+        final drop = item['dropAddress']?['address'] ?? '';
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+            border: Border.all(color: const Color(0xFFF1F1F4)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFDEBEC),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.alt_route_rounded, color: Color(0xFFE31C2E), size: 18),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          name,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF121214),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        TextButton(
+                          onPressed: () => _showRouteBottomSheet(context, routeToEdit: item),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            'Edit',
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFF121214),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: () => _deleteRoute(item['id']),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            'Delete',
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFFE31C2E),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: Color(0xFFF1F1F4)),
+                const SizedBox(height: 12),
+                // Pickup Info
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 22,
+                      height: 22,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE7F7EF),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.circle, color: Color(0xFF1C9A5B), size: 8),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'PICKUP',
+                            style: GoogleFonts.poppins(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF6C6F79),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          Text(
+                            pickup,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: const Color(0xFF121214),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Drop Info
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 22,
+                      height: 22,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFDEBEC),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.location_on_rounded, color: Color(0xFFE31C2E), size: 12),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'DROP',
+                            style: GoogleFonts.poppins(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF6C6F79),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          Text(
+                            drop,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: const Color(0xFF121214),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final addressProvider = Provider.of<AddressProvider>(context);
+    final routeProvider = Provider.of<SavedRouteProvider>(context);
     final addresses = addressProvider.addresses;
-    final isLoading = addressProvider.isLoading;
+    final routes = routeProvider.savedRoutes;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F8),
@@ -1045,7 +2085,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
               )
             : null,
         title: Text(
-          'Saved Addresses',
+          _selectedTab == 0 ? 'Saved Addresses' : 'Saved Routes',
           style: GoogleFonts.poppins(
             color: const Color(0xFF121214),
             fontSize: 18,
@@ -1058,7 +2098,13 @@ class _AddressListScreenState extends State<AddressListScreen> {
             padding: const EdgeInsets.only(right: 16.0),
             child: Center(
               child: ElevatedButton.icon(
-                onPressed: () => _showAddressBottomSheet(context),
+                onPressed: () {
+                  if (_selectedTab == 0) {
+                    _showAddressBottomSheet(context);
+                  } else {
+                    _showRouteBottomSheet(context);
+                  }
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFE31C2E),
                   foregroundColor: Colors.white,
@@ -1075,205 +2121,26 @@ class _AddressListScreenState extends State<AddressListScreen> {
         ],
         systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
-      body: isLoading && addresses.isEmpty
-          ? const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
-              ),
-            )
-          : addresses.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.location_off_rounded,
-                          size: 64,
-                          color: Color(0xFFD0D5DD),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'No Saved Addresses',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF121214),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Save your locations for instant booking.',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: const Color(0xFF6C6F79),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF121214),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () => _showAddressBottomSheet(context),
-                        icon: const Icon(Icons.add_location_alt_rounded, size: 20),
-                        label: Text(
-                          'Add New Address',
-                          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: addresses.length,
-                  itemBuilder: (context, index) {
-                    final item = addresses[index];
-                    final label = item['label'] ?? '';
-                    final address = item['address'] ?? '';
-
-                    IconData leadIcon = Icons.location_on_rounded;
-                    Color leadBg = const Color(0xFFF1F1F4);
-                    Color leadIconColor = const Color(0xFF121214);
-
-                    final lowerLabel = label.toLowerCase();
-                    if (lowerLabel == 'home') {
-                      leadIcon = Icons.home_rounded;
-                      leadBg = const Color(0xFFE7F7EF);
-                      leadIconColor = const Color(0xFF1C9A5B);
-                    } else if (lowerLabel == 'office') {
-                      leadIcon = Icons.business_rounded;
-                      leadBg = const Color(0xFFFDEBEC);
-                      leadIconColor = const Color(0xFFE31C2E);
-                    }
-
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                        border: Border.all(color: const Color(0xFFF1F1F4)),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: leadBg,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Icon(leadIcon, color: leadIconColor, size: 20),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        label,
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: const Color(0xFF121214),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        address,
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 12,
-                                          color: const Color(0xFF6C6F79),
-                                          fontWeight: FontWeight.w500,
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            const Divider(height: 1, color: Color(0xFFF1F1F4)),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                TextButton(
-                                  onPressed: () => _showAddressBottomSheet(context, addressToEdit: item),
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    minimumSize: Size.zero,
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  ),
-                                  child: Text(
-                                    'Edit',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: const Color(0xFF121214),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                TextButton(
-                                  onPressed: () => _deleteAddress(item['id']),
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    minimumSize: Size.zero,
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  ),
-                                  child: Text(
-                                    'Delete',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: const Color(0xFFE31C2E),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
+      body: Column(
+        children: [
+          _buildTabBar(addresses.length, routes.length),
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() {
+                  _selectedTab = index;
+                });
+              },
+              children: [
+                _buildAddressList(addressProvider, addresses),
+                _buildRoutesList(routeProvider, routes),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
+
