@@ -8,6 +8,7 @@ import 'package:riderzz_app/core/storage/secure_storage_service.dart';
 import 'package:riderzz_app/core/utils/jwt_helper.dart';
 import 'package:riderzz_app/core/services/firebase_notification_service.dart';
 import 'package:riderzz_app/core/services/native_overlay_controller.dart';
+import 'package:riderzz_app/core/services/campaign_banner_service.dart';
 import 'package:riderzz_app/features/auth/data/repositories/auth_repository.dart';
 import 'package:riderzz_app/features/notification/data/repositories/notification_repository.dart';
 
@@ -318,6 +319,7 @@ class AuthProvider extends ChangeNotifier {
     }
 
     await _storageService.clearAuthData();
+    CampaignBannerService.resetSession();
     _currentUser = null;
     resetState();
   }

@@ -12,6 +12,7 @@ import 'package:riderzz_app/features/driver/home/pages/driver_messages_page.dart
 import 'package:riderzz_app/features/driver/home/pages/driver_bank_accounts_page.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_profile_page.dart';
 import 'package:riderzz_app/core/services/reward_notification_coordinator.dart';
+import 'package:riderzz_app/core/services/campaign_banner_service.dart';
 
 
 class DriverHomeScreen extends StatefulWidget {
@@ -54,6 +55,9 @@ class DriverHomeScreenState extends State<DriverHomeScreen> {
 
       await provider.fetchDriverProfile();
       if (mounted) {
+        await CampaignBannerService.showCampaignBannerIfNeeded(context);
+        if (!mounted) return;
+
         final profile = provider.profile;
         if (profile != null && profile.isOnline) {
           // Driver is already online — start tracking immediately

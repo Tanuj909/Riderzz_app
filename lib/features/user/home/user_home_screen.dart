@@ -9,6 +9,7 @@ import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
 import 'package:riderzz_app/features/user/home/pages/user_account_page.dart';
 import 'package:riderzz_app/features/user/wallet/screens/customer_wallet_screen.dart';
 import 'package:riderzz_app/features/user/wallet/providers/customer_wallet_provider.dart';
+import 'package:riderzz_app/core/services/campaign_banner_service.dart';
 
 class UserHomeScreen extends StatefulWidget {
   const UserHomeScreen({super.key});
@@ -20,6 +21,18 @@ class UserHomeScreen extends StatefulWidget {
 class _UserHomeScreenState extends State<UserHomeScreen> {
   int _currentIndex = 0;
   final List<bool> _visitedTabs = [true, false, false, false, false];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (mounted) {
+          CampaignBannerService.showCampaignBannerIfNeeded(context);
+        }
+      });
+    });
+  }
 
 
   String _getInitials(String? name) {
