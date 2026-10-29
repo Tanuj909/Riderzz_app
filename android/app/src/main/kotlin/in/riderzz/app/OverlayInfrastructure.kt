@@ -1,4 +1,4 @@
-package com.example.riderzz_app
+package `in`.riderzz.app
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -216,7 +216,7 @@ object OverlayManager {
 /** Foreground service which owns exactly one native [WindowManager] overlay view. */
 class OverlayService : Service() {
     companion object {
-        const val ACTION_SHOW = "com.example.riderzz_app.overlay.SHOW"
+        const val ACTION_SHOW = "in.riderzz.app.overlay.SHOW"
         private const val NOTIFICATION_CHANNEL = "riderzz_overlay"
         private const val NOTIFICATION_ID = 1042
 

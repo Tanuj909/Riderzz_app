@@ -1,4 +1,4 @@
-package com.example.riderzz_app
+package `in`.riderzz.app
 
 import android.app.NotificationChannel
 import android.app.NotificationManager

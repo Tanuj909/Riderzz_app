@@ -1,4 +1,4 @@
-package com.example.riderzz_app
+package `in`.riderzz.app
 
 import android.content.Intent
 import android.os.Build
