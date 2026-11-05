@@ -1864,6 +1864,8 @@ class _DriverBookingDetailsScreenState
                               ),
                             ] else ...[
                               if (statusUpper == 'DRIVER_ARRIVED_DROP') ...[
+                                _buildMessageCallButtons(),
+                                const SizedBox(height: 16),
                                 // Arrived at drop payment selection or QR
                                 if (_selectedPaymentMethod == null) ...[
                                   Column(
@@ -2970,6 +2972,8 @@ class _DriverBookingDetailsScreenState
         ? booking.dropContactPhone!
         : (customerPhone ?? '');
 
+    final statusUpper = booking.status.toUpperCase();
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -2983,10 +2987,11 @@ class _DriverBookingDetailsScreenState
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
+          key: ValueKey('contact_details_${booking.id}_$statusUpper'),
           tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
           dense: true,
           visualDensity: const VisualDensity(horizontal: 0, vertical: -4),
-          initiallyExpanded: _isContactDetailsExpanded,
+          initiallyExpanded: _isContactDetailsExpanded || statusUpper == 'DRIVER_ARRIVED_DROP',
           onExpansionChanged: (val) {
             setState(() {
               _isContactDetailsExpanded = val;
@@ -3175,8 +3180,6 @@ class _DriverBookingDetailsScreenState
                   _buildAddressCard(booking),
                   const SizedBox(height: 16),
                   _buildShipmentDetailsCard(booking),
-                  const SizedBox(height: 16),
-                  _buildMessageCallButtons(),
                 ],
               ),
             ),
