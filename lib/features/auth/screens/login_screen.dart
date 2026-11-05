@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
+import 'package:riderzz_app/features/auth/widgets/animated_speed_logo.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -74,29 +75,17 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
-          child: Center(
+          child: Align(
+            alignment: const Alignment(0, -0.3),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 28.0),
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 14.0),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Logo
-                  Container(
-                    height: 130,
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.asset(
-                        'assets/logo/logo.png',
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+                  const AnimatedSpeedLogo(height: 110),
+                  const SizedBox(height: 18),
 
                   // Welcome Text
                   Text(
@@ -116,7 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       height: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 18),
 
                   // Phone input field label
                   Text(
@@ -127,62 +116,44 @@ class _LoginScreenState extends State<LoginScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 5),
 
                   // Input Row - Phone
                   Container(
+                    height: 40,
                     decoration: BoxDecoration(
                       color: const Color(0xFFF6F6F8),
                       border: Border.all(color: const Color(0xFFE2E8F0)),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    child: Row(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFDEBEC),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          child: Text(
-                            '🇮🇳 +91',
-                            style: GoogleFonts.outfit(
-                              color: const Color(0xFFE31C2E),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: Center(
+                      child: TextFormField(
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFF121214),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _phoneController,
-                            keyboardType: TextInputType.phone,
-                            style: GoogleFonts.outfit(
-                              color: const Color(0xFF121214),
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Enter mobile number',
-                              hintStyle: GoogleFonts.outfit(
-                                color: const Color(0xFFA0AEC0),
-                                fontSize: 14.5,
-                              ),
-                              border: InputBorder.none,
-                              isDense: true,
-                            ),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                              LengthLimitingTextInputFormatter(10),
-                            ],
+                        decoration: InputDecoration(
+                          hintText: 'Enter mobile number',
+                          hintStyle: GoogleFonts.outfit(
+                            color: const Color(0xFFA0AEC0),
+                            fontSize: 14,
                           ),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
                         ),
-                      ],
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(10),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
                   // Password input field label
                   Text(
@@ -193,41 +164,37 @@ class _LoginScreenState extends State<LoginScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 5),
 
                   // Input Row - Password
                   Container(
+                    height: 40,
                     decoration: BoxDecoration(
                       color: const Color(0xFFF6F6F8),
                       border: Border.all(color: const Color(0xFFE2E8F0)),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.lock_outline_rounded,
-                          size: 20,
-                          color: Color(0xFFA0AEC0),
-                        ),
-                        const SizedBox(width: 12),
                         Expanded(
                           child: TextFormField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
                             style: GoogleFonts.outfit(
                               color: const Color(0xFF121214),
-                              fontSize: 14.5,
+                              fontSize: 14,
                               fontWeight: FontWeight.w500,
                             ),
                             decoration: InputDecoration(
                               hintText: 'Enter your password',
                               hintStyle: GoogleFonts.outfit(
                                 color: const Color(0xFFA0AEC0),
-                                fontSize: 14.5,
+                                fontSize: 14,
                               ),
                               border: InputBorder.none,
                               isDense: true,
+                              contentPadding: EdgeInsets.zero,
                             ),
                           ),
                         ),
@@ -239,7 +206,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                           child: Icon(
                             _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                            size: 20,
+                            size: 18,
                             color: const Color(0xFFA0AEC0),
                           ),
                         ),
@@ -266,20 +233,36 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 18),
 
                   // Continue Button / Loader
                   authProvider.isLoading
                       ? const Center(
                           child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFC62E42)),
                           ),
                         )
-                      : SizedBox(
-                          height: 54,
+                      : Container(
+                          height: 44,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFC62E42), Color(0xFFA31E30)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(100),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFC62E42).withOpacity(0.35),
+                                blurRadius: 16,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFE31C2E),
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
@@ -290,12 +273,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.login_rounded, size: 18),
+                                const Icon(Icons.login_rounded, size: 17),
                                 const SizedBox(width: 8),
                                 Text(
                                   'Login',
                                   style: GoogleFonts.outfit(
-                                    fontSize: 16,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),

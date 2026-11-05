@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
+import 'package:riderzz_app/features/auth/widgets/animated_speed_logo.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -116,6 +118,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  const AnimatedSpeedLogo(height: 100),
+                  const SizedBox(height: 20),
                   const Text(
                     'Reset your password 🔒',
                     style: TextStyle(
@@ -303,18 +307,34 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   authProvider.isLoading
                       ? const Center(
                           child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31C2E)),
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFC62E42)),
                           ),
                         )
-                      : SizedBox(
-                          height: 56,
+                      : Container(
+                          height: 44,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFC62E42), Color(0xFFA31E30)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(100),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFC62E42).withOpacity(0.35),
+                                blurRadius: 16,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFE31C2E),
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(100),
                               ),
                             ),
                             onPressed: () {
@@ -326,9 +346,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             },
                             child: Text(
                               !isOtpSent ? 'Get OTP' : 'Reset Password',
-                              style: const TextStyle(
+                              style: GoogleFonts.outfit(
                                 fontSize: 15,
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
