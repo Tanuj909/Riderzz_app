@@ -6,7 +6,7 @@ import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 import 'package:riderzz_app/core/models/driver_profile_model.dart';
 import 'package:riderzz_app/core/models/vehicle_type_model.dart';
-import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_provider.dart';
+import 'package:riderzz_app/features/vehicle/providers/vehicle_provider.dart';
 
 class _DriverVehicleCategoryItem {
   final String key;
@@ -101,7 +101,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = Provider.of<DriverHomeProvider>(context, listen: false);
       provider.fetchDriverProfile(force: true);
-      Provider.of<AdminVehiclesProvider>(context, listen: false).fetchVehicleTypes().then((_) {
+      Provider.of<VehicleProvider>(context, listen: false).fetchVehicleTypes().then((_) {
         _onCategorySelected(_selectedCategoryKey);
       });
     });
@@ -113,7 +113,7 @@ class _BecomeDriverScreenState extends State<BecomeDriverScreen> {
       _isLoadingCategoryVehicles = true;
     });
 
-    final provider = Provider.of<AdminVehiclesProvider>(context, listen: false);
+    final provider = Provider.of<VehicleProvider>(context, listen: false);
     List<VehicleTypeModel> list = [];
     try {
       list = await provider.fetchVehiclesByCategory(categoryKey);

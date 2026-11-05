@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
-import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_provider.dart';
+import 'package:riderzz_app/features/vehicle/providers/vehicle_provider.dart';
 import 'package:riderzz_app/features/user/home/pages/finding_driver_screen.dart';
 import 'package:riderzz_app/features/user/home/widgets/booking_details_bottom_sheet.dart';
 
@@ -462,7 +462,7 @@ class _UserBookingsPageState extends State<UserBookingsPage> {
                                     onPressed: () {
                                       String vehicleName = 'Vehicle';
                                       try {
-                                        final vehiclesProvider = context.read<AdminVehiclesProvider>();
+                                        final vehiclesProvider = context.read<VehicleProvider>();
                                         final matchingVehicle = vehiclesProvider.vehicleTypes.firstWhere(
                                           (v) => v.id == booking.vehicleTypeId,
                                         );

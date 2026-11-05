@@ -363,24 +363,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: TextButton(
-                      onPressed: () {
-                        authProvider.resetState();
-                        Navigator.pushNamed(context, '/admin_login');
-                      },
-                      child: Text(
-                        "Administrator Login",
-                        style: GoogleFonts.outfit(
-                          color: const Color(0xFFE31C2E),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),

@@ -4,10 +4,7 @@ import 'package:riderzz_app/features/auth/screens/login_screen.dart';
 import 'package:riderzz_app/features/auth/screens/role_redirect_screen.dart';
 import 'package:riderzz_app/features/user/home/user_home_screen.dart';
 import 'package:riderzz_app/features/driver/home/driver_home_screen.dart';
-import 'package:riderzz_app/features/auth/screens/admin_login_screen.dart';
-import 'package:riderzz_app/features/admin/dashboard/admin_dashboard_screen.dart';
 import 'package:riderzz_app/features/auth/screens/forgot_password_screen.dart';
-import 'package:riderzz_app/features/admin/users/all_users_screen.dart';
 import 'package:riderzz_app/features/user/wallet/screens/customer_wallet_screen.dart';
 
 class AppRoutes {
@@ -19,10 +16,7 @@ class AppRoutes {
   static const String roleRedirect = '/role_redirect';
   static const String userHome = '/user_home';
   static const String driverHome = '/driver_home';
-  static const String adminLogin = '/admin_login';
-  static const String adminDashboard = '/admin_dashboard';
   static const String forgotPassword = '/forgot_password';
-  static const String adminAllUsers = '/admin_all_users';
   static const String userWallet = '/user_wallet';
 
   static Map<String, WidgetBuilder> get routes => {
@@ -32,10 +26,7 @@ class AppRoutes {
         roleRedirect: (context) => const RoleRedirectScreen(),
         userHome: (context) => const UserHomeScreen(),
         driverHome: (context) => const DriverHomeScreen(),
-        adminLogin: (context) => const AdminLoginScreen(),
-        adminDashboard: (context) => const AdminDashboardScreen(),
         forgotPassword: (context) => const ForgotPasswordScreen(),
-        adminAllUsers: (context) => const AllUsersScreen(),
         userWallet: (context) => const CustomerWalletScreen(),
       };
 }

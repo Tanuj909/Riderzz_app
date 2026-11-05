@@ -125,28 +125,6 @@ class AuthRemoteDataSource {
     return UserModel.fromJson(data);
   }
 
-  Future<UserModel> adminLogin({
-    required String phone,
-    required String password,
-  }) async {
-    final response = await _apiClient.post(
-      ApiConstants.adminLogin,
-      data: {
-        'phone': phone,
-        'password': password,
-      },
-    );
-    final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
-    final nestedData = data['data'] != null && data['data'] is Map
-        ? Map<String, dynamic>.from(data['data'] as Map)
-        : data;
-    return UserModel.fromJson(
-      data,
-      phone: phone,
-      token: nestedData['accessToken'] as String?,
-    );
-  }
-
   Future<CustomerProfileModel> getCustomerProfile() async {
     final response = await _apiClient.get(ApiConstants.customerProfileMe);
     final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);

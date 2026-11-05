@@ -447,43 +447,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Admin Login
-  Future<bool> adminLogin({
-    required String phone,
-    required String password,
-  }) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      final user = await _authRepository.adminLogin(
-        phone: phone,
-        password: password,
-      );
-
-      _currentUser = user;
-      await _storageService.saveAuthData(
-        token: user.token ?? '',
-        refreshToken: user.refreshToken,
-        role: user.role,
-        userId: user.userId,
-      );
-
-      // Phase 2: Upload FCM token after admin login
-      await _uploadFcmTokenAfterLogin();
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _isLoading = false;
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
-      notifyListeners();
-      return false;
-    }
-  }
-
   /// Update current user's role and save to secure storage
   Future<bool> updateUserRole(String newRole) async {
     if (_currentUser == null) return false;

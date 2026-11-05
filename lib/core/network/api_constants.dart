@@ -19,13 +19,8 @@ class ApiConstants {
   static const String customerProfileMe = '/profile/me';
   static const String customerProfileUpdate = '/profile/customer';
   static const String uploadProfileImage = '/profile/image';
-  static const String adminLogin = '/auth/login/password';
   static const String vehicleTypes = '/vehicle-types';
   static String vehicleTypesByCategory(String category) => '/vehicle-types/category/$category';
-  static const String adminDrivers = '/drivers';
-  static const String adminDriverList = '/driver/admin/list';
-  static const String adminVehicles = '/admin/vehicles';
-  static const String adminCommissionConfigs = '/admin/commission-configs';
 
   // User Endpoints
   static const String addresses = '/addresses';
@@ -60,17 +55,6 @@ class ApiConstants {
   static const String driverEarnings = '/driver/earnings';
   static const String driverMessages = '/driver/messages';
   static const String driverMessagesRead = '/driver/messages/read';
-
-  // Admin Wallet Endpoints
-  static const String adminWallets = '/admin/wallet/wallets';
-  static String adminDriverTransactions(int driverId) => '/admin/wallet/drivers/$driverId/transactions';
-  static const String adminWithdrawalsPending = '/admin/wallet/withdrawals/pending';
-  static const String adminWithdrawalsAll = '/admin/wallet/withdrawals/all';
-  static const String adminWalletOverview = '/admin/wallet/overview';
-
-  // Admin Profile Endpoints
-  static const String adminUsers = '/profile/admin/users';
-
 
   // Support Endpoints
   static const String supportTickets = '/support/tickets';

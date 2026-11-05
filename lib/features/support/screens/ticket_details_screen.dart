@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/support/providers/support_provider.dart';
-import 'package:riderzz_app/features/support/data/models/support_ticket_model.dart';
 
 class TicketDetailsScreen extends StatefulWidget {
   final int ticketId;
@@ -141,7 +140,8 @@ class _TicketDetailsScreenState extends State<TicketDetailsScreen> {
     switch (role.toUpperCase()) {
       case 'ADMIN':
       case 'ROLE_ADMIN':
-        return const Color(0xFFD90429); // Premium Red
+      case 'SUPPORT':
+        return const Color(0xFFD90429); // Support / Agent Red
       case 'DRIVER':
       case 'ROLE_DRIVER':
         return const Color(0xFF10B981); // Emerald Green

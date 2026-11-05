@@ -22,7 +22,6 @@ class AuthInterceptor extends Interceptor {
       ApiConstants.sendOtp,
       ApiConstants.register,
       ApiConstants.registerNoOtp,
-      ApiConstants.adminLogin,
       ApiConstants.loginWithPassword,
       ApiConstants.refreshToken,
     ];
@@ -77,7 +76,6 @@ class AuthInterceptor extends Interceptor {
       ApiConstants.sendOtp,
       ApiConstants.register,
       ApiConstants.registerNoOtp,
-      ApiConstants.adminLogin,
       ApiConstants.loginWithPassword,
       ApiConstants.refreshToken,
     ];

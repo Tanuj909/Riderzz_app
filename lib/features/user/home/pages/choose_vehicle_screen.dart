@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_provider.dart';
+import 'package:riderzz_app/features/vehicle/providers/vehicle_provider.dart';
 import 'package:riderzz_app/core/models/vehicle_type_model.dart';
 
 class ChooseVehicleView extends StatefulWidget {
@@ -46,7 +46,7 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
 
   Future<void> _fetchVehicles() async {
     try {
-      final vehiclesProvider = Provider.of<AdminVehiclesProvider>(context, listen: false);
+      final vehiclesProvider = Provider.of<VehicleProvider>(context, listen: false);
       if (vehiclesProvider.vehicleTypes.isEmpty) {
         await vehiclesProvider.fetchVehicleTypes();
       }
@@ -343,7 +343,7 @@ class _ChooseVehicleViewState extends State<ChooseVehicleView> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AdminVehiclesProvider>(
+    return Consumer<VehicleProvider>(
       builder: (context, vehiclesProvider, child) {
         final vehicleTypes = vehiclesProvider.vehicleTypes.where((v) => v.isActive).toList();
 

@@ -23,33 +23,17 @@ import 'package:riderzz_app/features/user/addresses/providers/address_provider.d
 import 'package:riderzz_app/features/user/saved_routes/data/datasource/saved_route_remote_datasource.dart';
 import 'package:riderzz_app/features/user/saved_routes/data/repositories/saved_route_repository.dart';
 import 'package:riderzz_app/features/user/saved_routes/providers/saved_route_provider.dart';
-import 'package:riderzz_app/features/admin/vehicles/data/datasource/admin_vehicles_remote_datasource.dart';
-import 'package:riderzz_app/features/admin/vehicles/data/repositories/admin_vehicles_repository.dart';
-import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_provider.dart';
-import 'package:riderzz_app/features/admin/vehicles/data/datasource/admin_vehicles_list_remote_datasource.dart';
-import 'package:riderzz_app/features/admin/vehicles/data/repositories/admin_vehicles_list_repository.dart';
-import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_list_provider.dart';
-import 'package:riderzz_app/features/admin/rider_verification/data/datasource/rider_verification_datasource.dart';
-import 'package:riderzz_app/features/admin/rider_verification/data/repositories/rider_verification_repository.dart';
-import 'package:riderzz_app/features/admin/rider_verification/providers/rider_verification_provider.dart';
-import 'package:riderzz_app/features/admin/wallets/providers/admin_wallets_provider.dart';
-import 'package:riderzz_app/features/admin/users/data/datasource/admin_users_remote_datasource.dart';
-import 'package:riderzz_app/features/admin/users/data/repositories/admin_users_repository.dart';
-import 'package:riderzz_app/features/admin/users/providers/admin_users_provider.dart';
+import 'package:riderzz_app/features/vehicle/data/datasource/vehicle_remote_datasource.dart';
+import 'package:riderzz_app/features/vehicle/data/repositories/vehicle_repository.dart';
+import 'package:riderzz_app/features/vehicle/providers/vehicle_provider.dart';
 import 'package:riderzz_app/features/driver/home/data/datasource/driver_remote_datasource.dart';
 import 'package:riderzz_app/features/driver/home/data/repositories/driver_repository.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 import 'package:riderzz_app/core/services/location_tracking_service.dart';
 import 'package:riderzz_app/services/notification/local_notification_service.dart';
-import 'package:riderzz_app/features/admin/commission/data/datasource/commission_datasource.dart';
-import 'package:riderzz_app/features/admin/commission/data/repositories/commission_repository.dart';
-import 'package:riderzz_app/features/admin/commission/providers/commission_provider.dart';
 import 'package:riderzz_app/features/user/home/data/datasource/booking_datasource.dart';
 import 'package:riderzz_app/features/user/home/data/repositories/booking_repository.dart';
 import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
-import 'package:riderzz_app/features/admin/commission/data/datasource/pricing_datasource.dart';
-import 'package:riderzz_app/features/admin/commission/data/repositories/pricing_repository.dart';
-import 'package:riderzz_app/features/admin/commission/providers/pricing_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:riderzz_app/features/support/data/datasource/support_remote_datasource.dart';
@@ -177,32 +161,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           update: (_, apiClient, previous) =>
               SavedRouteRemoteDataSource(apiClient),
         ),
-        ProxyProvider<ApiClient, AdminVehiclesRemoteDataSource>(
+        ProxyProvider<ApiClient, VehicleRemoteDataSource>(
           update: (_, apiClient, previous) =>
-              AdminVehiclesRemoteDataSource(apiClient),
-        ),
-        ProxyProvider<ApiClient, AdminVehiclesListRemoteDataSource>(
-          update: (_, apiClient, previous) =>
-              AdminVehiclesListRemoteDataSource(apiClient),
-        ),
-        ProxyProvider<ApiClient, RiderVerificationRemoteDataSource>(
-          update: (_, apiClient, previous) =>
-              RiderVerificationRemoteDataSource(apiClient),
+              VehicleRemoteDataSource(apiClient),
         ),
         ProxyProvider<ApiClient, DriverRemoteDataSource>(
           update: (_, apiClient, previous) => DriverRemoteDataSource(apiClient),
         ),
-        ProxyProvider<ApiClient, CommissionRemoteDataSource>(
-          update: (_, apiClient, previous) =>
-              CommissionRemoteDataSource(apiClient),
-        ),
         ProxyProvider<ApiClient, BookingRemoteDataSource>(
           update: (_, apiClient, previous) =>
               BookingRemoteDataSource(apiClient),
-        ),
-        ProxyProvider<ApiClient, PricingRemoteDataSource>(
-          update: (_, apiClient, previous) =>
-              PricingRemoteDataSource(apiClient),
         ),
         ProxyProvider<ApiClient, SupportRemoteDataSource>(
           update: (_, apiClient, previous) =>
@@ -211,10 +179,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ProxyProvider<ApiClient, NotificationRemoteDataSource>(
           update: (_, apiClient, previous) =>
               NotificationRemoteDataSource(apiClient),
-        ),
-        ProxyProvider<ApiClient, AdminUsersRemoteDataSource>(
-          update: (_, apiClient, previous) =>
-              AdminUsersRemoteDataSource(apiClient),
         ),
         ProxyProvider<ApiClient, CustomerWalletRemoteDataSource>(
           update: (_, apiClient, previous) =>
@@ -237,35 +201,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ProxyProvider<SavedRouteRemoteDataSource, SavedRouteRepository>(
           update: (_, dataSource, previous) => SavedRouteRepository(dataSource),
         ),
-        ProxyProvider<AdminVehiclesRemoteDataSource, AdminVehiclesRepository>(
-          update: (_, vehiclesDataSource, previous) =>
-              AdminVehiclesRepository(vehiclesDataSource),
-        ),
-        ProxyProvider<
-          AdminVehiclesListRemoteDataSource,
-          AdminVehiclesListRepository
-        >(
-          update: (_, listDataSource, previous) =>
-              AdminVehiclesListRepository(listDataSource),
-        ),
-        ProxyProvider<
-          RiderVerificationRemoteDataSource,
-          RiderVerificationRepository
-        >(
+        ProxyProvider<VehicleRemoteDataSource, VehicleRepository>(
           update: (_, dataSource, previous) =>
-              RiderVerificationRepository(dataSource),
+              VehicleRepository(dataSource),
         ),
         ProxyProvider<DriverRemoteDataSource, DriverRepository>(
           update: (_, dataSource, previous) => DriverRepository(dataSource),
         ),
-        ProxyProvider<CommissionRemoteDataSource, CommissionRepository>(
-          update: (_, dataSource, previous) => CommissionRepository(dataSource),
-        ),
         ProxyProvider<BookingRemoteDataSource, BookingRepository>(
           update: (_, dataSource, previous) => BookingRepository(dataSource),
-        ),
-        ProxyProvider<PricingRemoteDataSource, PricingRepository>(
-          update: (_, dataSource, previous) => PricingRepository(dataSource),
         ),
         ProxyProvider<SupportRemoteDataSource, SupportRepository>(
           update: (_, dataSource, previous) => SupportRepository(dataSource),
@@ -273,10 +217,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ProxyProvider2<NotificationRemoteDataSource, SecureStorageService, NotificationRepository>(
           update: (_, dataSource, storage, previous) =>
               previous ?? NotificationRepository(dataSource, storage),
-        ),
-        ProxyProvider<AdminUsersRemoteDataSource, AdminUsersRepository>(
-          update: (_, dataSource, previous) =>
-              AdminUsersRepository(dataSource),
         ),
         ProxyProvider<CustomerWalletRemoteDataSource, CustomerWalletRepository>(
           update: (_, dataSource, previous) =>
@@ -325,42 +265,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           update: (_, repo, previous) => previous ?? SavedRouteProvider(repo),
         ),
         ChangeNotifierProxyProvider<
-          AdminVehiclesRepository,
-          AdminVehiclesProvider
+          VehicleRepository,
+          VehicleProvider
         >(
           create: (context) =>
-              AdminVehiclesProvider(context.read<AdminVehiclesRepository>()),
+              VehicleProvider(context.read<VehicleRepository>()),
           update: (_, repository, previous) =>
-              previous ?? AdminVehiclesProvider(repository),
-        ),
-        ChangeNotifierProxyProvider<
-          AdminVehiclesListRepository,
-          AdminVehiclesListProvider
-        >(
-          create: (context) => AdminVehiclesListProvider(
-            context.read<AdminVehiclesListRepository>(),
-          ),
-          update: (_, repository, previous) =>
-              previous ?? AdminVehiclesListProvider(repository),
-        ),
-        ChangeNotifierProxyProvider<
-          RiderVerificationRepository,
-          RiderVerificationProvider
-        >(
-          create: (context) => RiderVerificationProvider(
-            context.read<RiderVerificationRepository>(),
-          ),
-          update: (_, repository, previous) =>
-              previous ?? RiderVerificationProvider(repository),
-        ),
-        ChangeNotifierProxyProvider<
-          RiderVerificationRepository,
-          AdminWalletsProvider
-        >(
-          create: (context) =>
-              AdminWalletsProvider(context.read<RiderVerificationRepository>()),
-          update: (_, repository, previous) =>
-              previous ?? AdminWalletsProvider(repository),
+              previous ?? VehicleProvider(repository),
         ),
         ChangeNotifierProxyProvider2<
           DriverRepository,
@@ -381,23 +292,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               previous ?? LocationTrackingService(repository),
           dispose: (_, service) => service.dispose(),
         ),
-        ChangeNotifierProxyProvider<CommissionRepository, CommissionProvider>(
-          create: (context) =>
-              CommissionProvider(context.read<CommissionRepository>()),
-          update: (_, repository, previous) =>
-              previous ?? CommissionProvider(repository),
-        ),
         ChangeNotifierProxyProvider<BookingRepository, BookingProvider>(
           create: (context) =>
               BookingProvider(context.read<BookingRepository>()),
           update: (_, repository, previous) =>
               previous ?? BookingProvider(repository),
-        ),
-        ChangeNotifierProxyProvider<PricingRepository, PricingProvider>(
-          create: (context) =>
-              PricingProvider(context.read<PricingRepository>()),
-          update: (_, repository, previous) =>
-              previous ?? PricingProvider(repository),
         ),
 
         // LocationProvider for current device location
@@ -409,12 +308,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               SupportProvider(context.read<SupportRepository>()),
           update: (_, repository, previous) =>
               previous ?? SupportProvider(repository),
-        ),
-        ChangeNotifierProxyProvider<AdminUsersRepository, AdminUsersProvider>(
-          create: (context) =>
-              AdminUsersProvider(context.read<AdminUsersRepository>()),
-          update: (_, repository, previous) =>
-              previous ?? AdminUsersProvider(repository),
         ),
         ChangeNotifierProxyProvider<CustomerWalletRepository, CustomerWalletProvider>(
           create: (context) =>

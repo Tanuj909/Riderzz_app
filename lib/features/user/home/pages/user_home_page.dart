@@ -8,7 +8,7 @@ import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/user/addresses/location_picker_screen.dart';
 import 'package:riderzz_app/features/user/addresses/providers/address_provider.dart';
 import 'package:riderzz_app/features/user/saved_routes/providers/saved_route_provider.dart';
-import 'package:riderzz_app/features/admin/vehicles/providers/admin_vehicles_provider.dart';
+import 'package:riderzz_app/features/vehicle/providers/vehicle_provider.dart';
 import 'package:riderzz_app/features/user/home/pages/choose_vehicle_screen.dart';
 import 'package:riderzz_app/features/user/home/pages/booking_flow_bottom_sheet.dart';
 import 'package:riderzz_app/features/user/home/pages/finding_driver_screen.dart';
@@ -820,7 +820,7 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
           ],
           */
 
-          Consumer2<BookingProvider, AdminVehiclesProvider>(
+          Consumer2<BookingProvider, VehicleProvider>(
             builder: (context, bookingProvider, vehiclesProvider, child) {
               if (bookingProvider.isLoading && bookingProvider.currentBookings.isEmpty) {
                 return const Center(child: Padding(
@@ -2769,7 +2769,7 @@ class _CategoryVehiclesSheetContentState extends State<_CategoryVehiclesSheetCon
   @override
   void initState() {
     super.initState();
-    final cached = Provider.of<AdminVehiclesProvider>(context, listen: false)
+    final cached = Provider.of<VehicleProvider>(context, listen: false)
         .categoryVehiclesCache[widget.category.key];
     if (cached != null && cached.isNotEmpty) {
       _vehicles = cached;
@@ -2791,7 +2791,7 @@ class _CategoryVehiclesSheetContentState extends State<_CategoryVehiclesSheetCon
     }
 
     try {
-      final vehicles = await Provider.of<AdminVehiclesProvider>(context, listen: false)
+      final vehicles = await Provider.of<VehicleProvider>(context, listen: false)
           .fetchVehiclesByCategory(widget.category.key);
       if (mounted) {
         setState(() {

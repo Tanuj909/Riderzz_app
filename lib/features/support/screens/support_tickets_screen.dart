@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/support/providers/support_provider.dart';
-import 'package:riderzz_app/features/support/data/models/support_ticket_model.dart';
 import 'package:riderzz_app/features/support/screens/raise_ticket_screen.dart';
 import 'package:riderzz_app/features/support/screens/ticket_details_screen.dart';
 
@@ -121,10 +119,6 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> with Single
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final userRole = authProvider.currentUser?.role ?? 'CUSTOMER';
-    final isAdmin = userRole.toUpperCase() == 'ADMIN' || userRole.toUpperCase() == 'ROLE_ADMIN';
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
@@ -413,17 +407,6 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> with Single
                                   ),
                                 ],
                               ),
-                              if (isAdmin) ...[
-                                const SizedBox(height: 8),
-                                Text(
-                                  'By: ${ticket.createdByName ?? ticket.createdBy?.fullName ?? 'User'}',
-                                  style: GoogleFonts.outfit(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 11.5,
-                                    color: const Color(0xFF64748B),
-                                  ),
-                                ),
-                              ]
                             ],
                           ),
                         ),
@@ -436,29 +419,27 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> with Single
           );
         },
       ),
-      floatingActionButton: !isAdmin
-          ? FloatingActionButton.extended(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const RaiseTicketScreen()),
-                ).then((_) {
-                  _fetchTickets(); // Refresh tickets list when returned
-                });
-              },
-              backgroundColor: const Color(0xFFD90429),
-              elevation: 4,
-              icon: const Icon(Icons.add_comment_rounded, color: Colors.white, size: 20),
-              label: Text(
-                'Raise Ticket',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13.5,
-                ),
-              ),
-            )
-          : null,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const RaiseTicketScreen()),
+          ).then((_) {
+            _fetchTickets(); // Refresh tickets list when returned
+          });
+        },
+        backgroundColor: const Color(0xFFD90429),
+        elevation: 4,
+        icon: const Icon(Icons.add_comment_rounded, color: Colors.white, size: 20),
+        label: Text(
+          'Raise Ticket',
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 13.5,
+          ),
+        ),
+      ),
     );
   }
 }

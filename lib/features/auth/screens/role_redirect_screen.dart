@@ -5,13 +5,11 @@ import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/auth/screens/login_screen.dart';
 import 'package:riderzz_app/features/user/home/user_home_screen.dart';
 import 'package:riderzz_app/features/driver/home/driver_home_screen.dart';
-import 'package:riderzz_app/features/admin/dashboard/admin_dashboard_screen.dart';
 
 enum AuthResult {
   loggedOut,
   customer,
   driver,
-  admin,
 }
 
 class RoleRedirectScreen extends StatefulWidget {
@@ -138,9 +136,6 @@ class _RoleRedirectScreenState extends State<RoleRedirectScreen> with TickerProv
           case 'DRIVER':
             result = AuthResult.driver;
             break;
-          case 'ADMIN':
-            result = AuthResult.admin;
-            break;
           default:
             result = AuthResult.loggedOut;
         }
@@ -170,12 +165,7 @@ class _RoleRedirectScreenState extends State<RoleRedirectScreen> with TickerProv
         destination = const DriverHomeScreen();
         routeName = '/driver_home';
         break;
-      case AuthResult.admin:
-        destination = const AdminDashboardScreen();
-        routeName = '/admin_dashboard';
-        break;
       case AuthResult.loggedOut:
-      default:
         destination = const LoginScreen();
         routeName = '/login';
         break;
