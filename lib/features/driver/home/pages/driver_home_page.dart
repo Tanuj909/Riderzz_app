@@ -956,255 +956,73 @@ class _DriverHomePageState extends State<DriverHomePage> {
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (itemCtx, index) {
                   final booking = driverProvider.pendingBookings[index];
-                  return Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFE1E1E6)),
-                      boxShadow: const [
-                        BoxShadow(color: Color(0x0A121214), blurRadius: 12, offset: Offset(0, 4)),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // 1. Header row
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFD90429).withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                'NEW REQUEST',
-                                style: GoogleFonts.outfit(
-                                  color: const Color(0xFFD90429),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                            if (booking.fastDelivery) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFF9800).withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.flash_on_rounded,
-                                      size: 11,
-                                      color: Color(0xFFE65100),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Text(
-                                      'Fast Delivery',
-                                      style: GoogleFonts.outfit(
-                                        color: const Color(0xFFE65100),
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                            const Spacer(),
-                            if (booking.expiresInSeconds != null) ...[
-                              const Icon(
-                                  Icons.timer_outlined,
-                                size: 13,
-                                color: Color(0xFFE65100),
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                '${booking.expiresInSeconds}s left',
-                                style: GoogleFonts.outfit(
-                                  color: const Color(0xFFE65100),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        const Divider(height: 1, color: Color(0xFFE1E1E6)),
-                        const SizedBox(height: 12),
- 
-                        // 2. Price, distance and details action button
-                        Row(
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'DISTANCE',
-                                  style: GoogleFonts.outfit(
-                                    color: const Color(0xFFA2A5AE),
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  booking.estimatedDistanceKm != null
-                                      ? '${booking.estimatedDistanceKm!.toStringAsFixed(1)} km'
-                                      : 'N/A',
-                                  style: GoogleFonts.outfit(
-                                    color: const Color(0xFF121214),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(width: 24),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'EST. FARE',
-                                  style: GoogleFonts.outfit(
-                                    color: const Color(0xFFA2A5AE),
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '₹${booking.totalFare.toStringAsFixed(2)}',
-                                  style: GoogleFonts.outfit(
-                                    color: const Color(0xFF1C9A5B),
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Spacer(),
-                            GestureDetector(
-                              onTap: () async {
-                                final result = await Navigator.push(
-                                  this.context,
-                                  MaterialPageRoute(
-                                    builder: (ctx) => DriverBookingDetailsScreen(
-                                      booking: booking,
-                                    ),
-                                  ),
-                                );
-                                if (result == 'go_to_wallet' && mounted) {
-                                  final homeState = this.context.findAncestorStateOfType<DriverHomeScreenState>();
-                                  if (homeState != null) {
-                                    homeState.setIndex(2);
-                                  }
-                                }
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF1F5F9),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      'Details',
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        color: const Color(0xFF475569),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    const Icon(
-                                      Icons.chevron_right_rounded,
-                                      size: 16,
-                                      color: Color(0xFF475569),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
+                  final firstSeen = _bookingArrivalTimes.putIfAbsent(
+                    booking.id,
+                    () => DateTime.now(),
+                  );
+                  return _PendingBookingCard(
+                    key: ValueKey('pending_card_${booking.id}'),
+                    booking: booking,
+                    firstSeenTime: firstSeen,
+                    onGoToWallet: () {
+                      final homeState = this.context.findAncestorStateOfType<DriverHomeScreenState>();
+                      if (homeState != null) {
+                        homeState.setIndex(2);
+                      }
+                    },
+                    onAccept: () async {
+                      final messenger = ScaffoldMessenger.of(this.context);
+                      final driverProvider = this.context.read<DriverHomeProvider>();
+                      final success = await driverProvider.acceptBookingForDriver(booking.id);
+                      _bookingArrivalTimes.remove(booking.id);
 
-                        // Swipe to Accept Button with 5s Progress Bar Timer
-                        TimedSwipeToAcceptButton(
-                          key: ValueKey('swipe_accept_${booking.id}'),
-                          bookingId: booking.id,
-                          firstSeenTime: _bookingArrivalTimes.putIfAbsent(
-                            booking.id,
-                            () => DateTime.now(),
-                          ),
-                          onAccept: () async {
-                            final messenger = ScaffoldMessenger.of(this.context);
-                            final driverProvider = this.context.read<DriverHomeProvider>();
-                            final success = await driverProvider.acceptBookingForDriver(booking.id);
-                            _bookingArrivalTimes.remove(booking.id);
-
-                            if (success) {
-                              if (mounted) {
-                                messenger.clearSnackBars();
-                                messenger.showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Booking accepted successfully!'),
-                                    backgroundColor: Color(0xFF1C9A5B),
-                                  ),
-                                );
-                              }
-                              return true;
-                            } else {
-                              final errorMsg = driverProvider.bookingsError?.trim() ?? '';
-                              final isLowBalance = errorMsg.toLowerCase().contains('wallet') ||
-                                  errorMsg.toLowerCase().contains('balance') ||
-                                  errorMsg.toLowerCase().contains('insufficient');
-                              if (isLowBalance) {
-                                if (mounted) {
-                                  _showLowBalanceDialog(this.context);
-                                }
-                              } else {
-                                final displayMsg = errorMsg.isNotEmpty
-                                    ? errorMsg
-                                    : 'Booking is no longer available';
-                                messenger.clearSnackBars();
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      displayMsg,
-                                      style: GoogleFonts.outfit(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    backgroundColor: Colors.redAccent,
-                                    behavior: SnackBarBehavior.floating,
-                                    duration: const Duration(
-                                      seconds: 4,
-                                    ),
-                                  ),
-                                );
-                                await driverProvider.fetchHomeBookings();
-                              }
-                              return false;
-                            }
-                          },
-                        ),
-                      ],
-                    ),
+                      if (success) {
+                        if (mounted) {
+                          messenger.clearSnackBars();
+                          messenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('Booking accepted successfully!'),
+                              backgroundColor: Color(0xFF1C9A5B),
+                            ),
+                          );
+                        }
+                        return true;
+                      } else {
+                        final errorMsg = driverProvider.bookingsError?.trim() ?? '';
+                        final isLowBalance = errorMsg.toLowerCase().contains('wallet') ||
+                            errorMsg.toLowerCase().contains('balance') ||
+                            errorMsg.toLowerCase().contains('insufficient');
+                        if (isLowBalance) {
+                          if (mounted) {
+                            _showLowBalanceDialog(this.context);
+                          }
+                        } else {
+                          final displayMsg = errorMsg.isNotEmpty
+                              ? errorMsg
+                              : 'Booking is no longer available';
+                          messenger.clearSnackBars();
+                          messenger.showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                displayMsg,
+                                style: GoogleFonts.outfit(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              backgroundColor: Colors.redAccent,
+                              behavior: SnackBarBehavior.floating,
+                              duration: const Duration(
+                                seconds: 4,
+                              ),
+                            ),
+                          );
+                          await driverProvider.fetchHomeBookings();
+                        }
+                        return false;
+                      }
+                    },
                   );
                 },
               )
@@ -2671,6 +2489,395 @@ class _UpdateDriverProfileDialogState extends State<UpdateDriverProfileDialog> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PendingBookingCard extends StatefulWidget {
+  final BookingModel booking;
+  final DateTime firstSeenTime;
+  final VoidCallback onGoToWallet;
+  final Future<bool> Function() onAccept;
+
+  const _PendingBookingCard({
+    super.key,
+    required this.booking,
+    required this.firstSeenTime,
+    required this.onGoToWallet,
+    required this.onAccept,
+  });
+
+  @override
+  State<_PendingBookingCard> createState() => _PendingBookingCardState();
+}
+
+class _PendingBookingCardState extends State<_PendingBookingCard> {
+  bool _canShowDetails = false;
+  Timer? _detailsTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkDetailsAvailability();
+  }
+
+  void _checkDetailsAvailability() {
+    final elapsedMs = DateTime.now().difference(widget.firstSeenTime).inMilliseconds;
+    if (elapsedMs >= 5000) {
+      _canShowDetails = true;
+    } else {
+      _canShowDetails = false;
+      _detailsTimer?.cancel();
+      _detailsTimer = Timer(Duration(milliseconds: 5000 - elapsedMs), () {
+        if (mounted) {
+          setState(() {
+            _canShowDetails = true;
+          });
+        }
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _PendingBookingCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.booking.id != widget.booking.id ||
+        oldWidget.firstSeenTime != widget.firstSeenTime) {
+      _checkDetailsAvailability();
+    }
+  }
+
+  @override
+  void dispose() {
+    _detailsTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final booking = widget.booking;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE1E1E6)),
+        boxShadow: const [
+          BoxShadow(color: Color(0x0A121214), blurRadius: 12, offset: Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 1. Header row
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD90429).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'NEW REQUEST',
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFFD90429),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              if (booking.fastDelivery) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF9800).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.flash_on_rounded,
+                        size: 11,
+                        color: Color(0xFFE65100),
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        'Fast Delivery',
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFFE65100),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const Spacer(),
+              if (booking.expiresInSeconds != null) ...[
+                const Icon(
+                  Icons.timer_outlined,
+                  size: 13,
+                  color: Color(0xFFE65100),
+                ),
+                const SizedBox(width: 3),
+                Text(
+                  '${booking.expiresInSeconds}s left',
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFFE65100),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Divider(height: 1, color: Color(0xFFE1E1E6)),
+          const SizedBox(height: 12),
+
+          // 2. Price, distance and details action button (Details button visible only after 5s)
+          Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'DISTANCE',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFFA2A5AE),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    booking.estimatedDistanceKm != null
+                        ? '${booking.estimatedDistanceKm!.toStringAsFixed(1)} km'
+                        : 'N/A',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF121214),
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 24),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'EST. FARE',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFFA2A5AE),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '₹${booking.totalFare.toStringAsFixed(2)}',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF1C9A5B),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              // Details Button: Hidden during the first 5 seconds, fades in smoothly after 5s
+              AnimatedOpacity(
+                opacity: _canShowDetails ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                child: IgnorePointer(
+                  ignoring: !_canShowDetails,
+                  child: GestureDetector(
+                    onTap: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (ctx) => DriverBookingDetailsScreen(
+                            booking: booking,
+                          ),
+                        ),
+                      );
+                      if (result == 'go_to_wallet' && mounted) {
+                        widget.onGoToWallet();
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Details',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF475569),
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            size: 16,
+                            color: Color(0xFF475569),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // 3. Pickup and Drop Location Section
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFEDF2F7)),
+            ),
+            child: Column(
+              children: [
+                // Pickup Location
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 3.0),
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF1C9A5B),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'PICKUP',
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFFA2A5AE),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            booking.pickupAddressName.isNotEmpty
+                                ? booking.pickupAddressName
+                                : 'Pickup Location',
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFF121214),
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              height: 1.25,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Connecting Line
+                Padding(
+                  padding: const EdgeInsets.only(left: 3.0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      width: 1.5,
+                      height: 14,
+                      margin: const EdgeInsets.symmetric(vertical: 2),
+                      color: const Color(0xFFCBD5E1),
+                    ),
+                  ),
+                ),
+
+                // Drop Location
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: const EdgeInsets.only(top: 2.0),
+                      child: Icon(
+                        Icons.location_on_rounded,
+                        size: 12,
+                        color: Color(0xFFD90429),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'DROP',
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFFA2A5AE),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            booking.dropAddressName.isNotEmpty
+                                ? booking.dropAddressName
+                                : 'Drop Location',
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFF121214),
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              height: 1.25,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 4. Swipe to Accept Button with 5s Progress Bar Timer
+          TimedSwipeToAcceptButton(
+            key: ValueKey('swipe_accept_${booking.id}'),
+            bookingId: booking.id,
+            firstSeenTime: widget.firstSeenTime,
+            onAccept: widget.onAccept,
+          ),
+        ],
       ),
     );
   }
