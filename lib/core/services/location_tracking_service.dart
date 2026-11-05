@@ -65,6 +65,27 @@ class LocationTrackingService {
       permission = await Geolocator.requestPermission();
     }
 
+    // Immediately update driver location API
+    try {
+      final lastPos = await Geolocator.getLastKnownPosition();
+      if (lastPos != null) {
+        _driverRepository.updateLocation(lastPos.latitude, lastPos.longitude).catchError((_) {});
+      }
+      final currentPos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 5),
+        ),
+      );
+      await _driverRepository.updateLocation(
+        currentPos.latitude,
+        currentPos.longitude,
+      );
+      debugPrint('LocationTrackingService: Immediate location update sent: ${currentPos.latitude}, ${currentPos.longitude}');
+    } catch (e) {
+      debugPrint('LocationTrackingService: Failed immediate location update: $e');
+    }
+
     // 4. Save Api Base URL and initial booking state so background isolate can retrieve it
     await FlutterForegroundTask.saveData(
       key: 'api_base_url',

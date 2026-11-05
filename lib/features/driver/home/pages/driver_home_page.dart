@@ -15,6 +15,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_wallet_page.dart';
 import 'package:riderzz_app/features/user/coupons/providers/customer_coupon_provider.dart';
 import 'package:riderzz_app/features/user/coupons/widgets/customer_coupons_bottom_sheet.dart';
+import 'package:riderzz_app/features/driver/home/widgets/timed_swipe_to_accept_button.dart';
 
 class DriverHomePage extends StatefulWidget {
   const DriverHomePage({super.key});
@@ -30,6 +31,90 @@ class _DriverHomePageState extends State<DriverHomePage> {
   bool _isContactDropdownExpanded = false;
   bool _isVerifyingOtp = false;
   String? _selectedPaymentMethod;
+  final Map<int, DateTime> _bookingArrivalTimes = {};
+
+  void _showLowBalanceDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFDEBEC),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.account_balance_wallet_rounded,
+                    color: Color(0xFFE31C2E),
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Wallet Balance is Low',
+                  style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF121214),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Your current wallet balance is below the minimum required amount to accept bookings. Please recharge to continue.',
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    color: const Color(0xFF6C6F79),
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFC62E42),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(dialogContext);
+                      final homeState = context.findAncestorStateOfType<DriverHomeScreenState>();
+                      if (homeState != null) {
+                        homeState.setIndex(2);
+                      }
+                    },
+                    child: Text(
+                      'Go to Wallet',
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   void _handleSearchBookings() {
     if (_isManualSearching) return;
@@ -868,8 +953,8 @@ class _DriverHomePageState extends State<DriverHomePage> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: driverProvider.pendingBookings.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (itemCtx, index) {
                   final booking = driverProvider.pendingBookings[index];
                   return Container(
                     width: double.infinity,
@@ -1008,41 +1093,115 @@ class _DriverHomePageState extends State<DriverHomePage> {
                               ],
                             ),
                             const Spacer(),
-                            ElevatedButton(
-                              onPressed: () async {
+                            GestureDetector(
+                              onTap: () async {
                                 final result = await Navigator.push(
-                                  context,
+                                  this.context,
                                   MaterialPageRoute(
-                                    builder: (context) => DriverBookingDetailsScreen(
+                                    builder: (ctx) => DriverBookingDetailsScreen(
                                       booking: booking,
                                     ),
                                   ),
                                 );
-                                if (result == 'go_to_wallet' && context.mounted) {
-                                  final homeState = context.findAncestorStateOfType<DriverHomeScreenState>();
+                                if (result == 'go_to_wallet' && mounted) {
+                                  final homeState = this.context.findAncestorStateOfType<DriverHomeScreenState>();
                                   if (homeState != null) {
                                     homeState.setIndex(2);
                                   }
                                 }
                               },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFD90429),
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(100),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                              ),
-                              child: Text(
-                                'View Details',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Details',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF475569),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    const Icon(
+                                      Icons.chevron_right_rounded,
+                                      size: 16,
+                                      color: Color(0xFF475569),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Swipe to Accept Button with 5s Progress Bar Timer
+                        TimedSwipeToAcceptButton(
+                          key: ValueKey('swipe_accept_${booking.id}'),
+                          bookingId: booking.id,
+                          firstSeenTime: _bookingArrivalTimes.putIfAbsent(
+                            booking.id,
+                            () => DateTime.now(),
+                          ),
+                          onAccept: () async {
+                            final messenger = ScaffoldMessenger.of(this.context);
+                            final driverProvider = this.context.read<DriverHomeProvider>();
+                            final success = await driverProvider.acceptBookingForDriver(booking.id);
+                            _bookingArrivalTimes.remove(booking.id);
+
+                            if (success) {
+                              if (mounted) {
+                                messenger.clearSnackBars();
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Booking accepted successfully!'),
+                                    backgroundColor: Color(0xFF1C9A5B),
+                                  ),
+                                );
+                              }
+                              return true;
+                            } else {
+                              final errorMsg = driverProvider.bookingsError?.trim() ?? '';
+                              final isLowBalance = errorMsg.toLowerCase().contains('wallet') ||
+                                  errorMsg.toLowerCase().contains('balance') ||
+                                  errorMsg.toLowerCase().contains('insufficient');
+                              if (isLowBalance) {
+                                if (mounted) {
+                                  _showLowBalanceDialog(this.context);
+                                }
+                              } else {
+                                final displayMsg = errorMsg.isNotEmpty
+                                    ? errorMsg
+                                    : 'Booking is no longer available';
+                                messenger.clearSnackBars();
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      displayMsg,
+                                      style: GoogleFonts.outfit(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    backgroundColor: Colors.redAccent,
+                                    behavior: SnackBarBehavior.floating,
+                                    duration: const Duration(
+                                      seconds: 4,
+                                    ),
+                                  ),
+                                );
+                                await driverProvider.fetchHomeBookings();
+                              }
+                              return false;
+                            }
+                          },
                         ),
                       ],
                     ),

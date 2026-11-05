@@ -12,6 +12,7 @@ import 'package:riderzz_app/core/models/driver_earnings_model.dart';
 import 'package:riderzz_app/core/models/driver_message_model.dart';
 import 'package:riderzz_app/core/models/driver_registration_check_model.dart';
 import 'package:riderzz_app/features/notification/data/models/notification_model.dart';
+import 'package:geolocator/geolocator.dart';
 
 
 class DriverHomeProvider extends ChangeNotifier {
@@ -104,21 +105,34 @@ class DriverHomeProvider extends ChangeNotifier {
       return;
     }
 
-    if (_activeBooking == null) {
-      return;
+    bool changed = false;
+
+    // If a pending booking was cancelled, remove it immediately
+    if (notification.bookingId != null) {
+      final initialCount = _pendingBookings.length;
+      _pendingBookings.removeWhere((b) => b.id == notification.bookingId);
+      if (_pendingBookings.length != initialCount) {
+        changed = true;
+        debugPrint(
+          '[DriverHomeProvider] Pending booking cancelled via WebSocket: '
+          'bookingId=${notification.bookingId}',
+        );
+      }
     }
 
-    if (notification.bookingId != _activeBooking!.id) {
-      return;
+    // If the active assigned booking was cancelled, clear it
+    if (_activeBooking != null && notification.bookingId == _activeBooking!.id) {
+      debugPrint(
+        '[DriverHomeProvider] Active booking cancelled via WebSocket: '
+        'bookingId=${notification.bookingId}',
+      );
+      _activeBooking = null;
+      changed = true;
     }
 
-    debugPrint(
-      '[DriverHomeProvider] Active booking cancelled via WebSocket: '
-      'bookingId=${notification.bookingId}',
-    );
-
-    _activeBooking = null;
-    notifyListeners();
+    if (changed) {
+      notifyListeners();
+    }
   }
 
   @override
@@ -358,6 +372,41 @@ class DriverHomeProvider extends ChangeNotifier {
       final success = online
           ? await _driverRepository.goOnline()
           : await _driverRepository.goOffline();
+
+      if (online && success) {
+        // Immediately update driver location API when driver goes online
+        try {
+          LocationPermission permission = await Geolocator.checkPermission();
+          if (permission == LocationPermission.denied) {
+            permission = await Geolocator.requestPermission();
+          }
+          if (permission == LocationPermission.whileInUse ||
+              permission == LocationPermission.always) {
+            final lastPos = await Geolocator.getLastKnownPosition();
+            if (lastPos != null) {
+              _driverRepository.updateLocation(lastPos.latitude, lastPos.longitude).catchError((_) {});
+            }
+            final currentPos = await Geolocator.getCurrentPosition(
+              locationSettings: const LocationSettings(
+                accuracy: LocationAccuracy.high,
+                timeLimit: Duration(seconds: 5),
+              ),
+            );
+            await _driverRepository.updateLocation(
+              currentPos.latitude,
+              currentPos.longitude,
+            );
+            debugPrint(
+              '[DriverHomeProvider] Immediate location updated on going online: '
+              '${currentPos.latitude}, ${currentPos.longitude}',
+            );
+          }
+        } catch (locErr) {
+          debugPrint(
+            '[DriverHomeProvider] Error updating location immediately on going online: $locErr',
+          );
+        }
+      }
 
       _profile = DriverProfileModel(
         id: _profile!.id,
@@ -746,9 +795,27 @@ class DriverHomeProvider extends ChangeNotifier {
     } catch (e) {
       _bookingsError = e.toString().replaceFirst('Exception: ', '');
       _isBookingsLoading = false;
+
+      final errLower = _bookingsError?.toLowerCase() ?? '';
+      final isLowBalance = errLower.contains('recharge') ||
+          errLower.contains('insufficient') ||
+          errLower.contains('balance') ||
+          errLower.contains('wallet');
+
+      // If the error was due to booking unavailability/cancellation/already taken,
+      // remove it from the pending list immediately so the driver does not see a ghost card
+      if (!isLowBalance) {
+        _pendingBookings.removeWhere((b) => b.id == bookingId);
+      }
+
       notifyListeners();
       return false;
     }
+  }
+
+  void removePendingBooking(int bookingId) {
+    _pendingBookings.removeWhere((b) => b.id == bookingId);
+    notifyListeners();
   }
 
   Future<bool> rejectBookingForDriver(int bookingId, String reason) async {
