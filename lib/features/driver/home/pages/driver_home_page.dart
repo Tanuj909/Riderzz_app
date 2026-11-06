@@ -16,6 +16,7 @@ import 'package:riderzz_app/features/driver/home/pages/driver_wallet_page.dart';
 import 'package:riderzz_app/features/user/coupons/providers/customer_coupon_provider.dart';
 import 'package:riderzz_app/features/user/coupons/widgets/customer_coupons_bottom_sheet.dart';
 import 'package:riderzz_app/features/driver/home/widgets/timed_swipe_to_accept_button.dart';
+import 'package:riderzz_app/core/widgets/notification_permission_banner.dart';
 
 class DriverHomePage extends StatefulWidget {
   const DriverHomePage({super.key});
@@ -874,6 +875,10 @@ class _DriverHomePageState extends State<DriverHomePage> {
               ],
             ),
           ),
+
+          // Notification Permission Banner (shown below stats if permission is not granted)
+          const NotificationPermissionBanner(role: 'DRIVER'),
+
           if (driverProvider.profile != null &&
               (driverProvider.profile!.upiId == null ||
                   driverProvider.profile!.upiId!.trim().isEmpty)) ...[

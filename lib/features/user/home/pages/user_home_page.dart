@@ -29,6 +29,7 @@ import 'package:riderzz_app/core/services/broadcast_socket_service.dart';
 import 'package:riderzz_app/features/notification/data/models/notification_model.dart';
 import 'package:riderzz_app/core/services/shared_location_service.dart';
 import 'package:riderzz_app/core/services/reward_notification_coordinator.dart';
+import 'package:riderzz_app/core/widgets/notification_permission_banner.dart';
 import 'dart:ui';
 import 'dart:math';
 
@@ -1203,6 +1204,9 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                       );
                     }).toList(),
                   ],
+
+                  // Notification Permission Banner (shown above Vehicle Categories if permission is not granted)
+                  const NotificationPermissionBanner(role: 'CUSTOMER'),
 
                   // Vehicle Category Cards
                   const SizedBox(height: 22),

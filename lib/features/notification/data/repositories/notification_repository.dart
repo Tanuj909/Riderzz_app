@@ -21,7 +21,13 @@ class NotificationRepository {
   Future<bool> registerDeviceToken(String fcmToken) async {
     try {
       // ── Duplicate check ──────────────────────────────────────────────
-      final lastUploaded = await _storageService.getUploadedFcmToken();
+      String? lastUploaded;
+      try {
+        lastUploaded = await _storageService.getUploadedFcmToken();
+      } catch (e) {
+        debugPrint('[FCM] Error reading cached token, proceeding with upload: $e');
+      }
+
       if (lastUploaded == fcmToken) {
         debugPrint('[FCM] Skipping upload (token unchanged).');
         return true;
@@ -52,7 +58,11 @@ class NotificationRepository {
       );
 
       // ── Persist for duplicate prevention ─────────────────────────────
-      await _storageService.saveUploadedFcmToken(fcmToken);
+      try {
+        await _storageService.saveUploadedFcmToken(fcmToken);
+      } catch (e) {
+        debugPrint('[FCM] Could not cache uploaded token: $e');
+      }
       debugPrint('[FCM] ✅ Device token uploaded successfully.');
       return true;
     } catch (e) {
