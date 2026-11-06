@@ -2295,45 +2295,51 @@ class _UpdateDriverProfileDialogState extends State<UpdateDriverProfileDialog> {
       children: [
         Text(
           label,
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12.5, color: const Color(0xFF121214)),
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+            color: const Color(0xFF121214),
+          ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 5),
         TextFormField(
           controller: controller,
           maxLines: maxLines,
           autofocus: autofocus,
           style: GoogleFonts.outfit(
-            fontSize: 14,
+            fontSize: 13.5,
             color: const Color(0xFF1A202C),
-            fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
+            fontWeight: isHighlighted ? FontWeight.w600 : FontWeight.normal,
           ),
           decoration: InputDecoration(
+            isDense: true,
             hintText: hintText,
-            hintStyle: GoogleFonts.outfit(color: const Color(0xFFA0AEC0), fontSize: 12.5),
+            hintStyle: GoogleFonts.outfit(color: const Color(0xFFA0AEC0), fontSize: 12),
             filled: true,
             fillColor: isHighlighted ? const Color(0xFFFFF9F3) : const Color(0xFFF8FAFC),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-            prefixIcon: Icon(icon, color: isHighlighted ? const Color(0xFFE2A03F) : const Color(0xFFA2A5AE), size: 18),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            prefixIcon: Icon(icon, color: isHighlighted ? const Color(0xFFE2A03F) : const Color(0xFFA2A5AE), size: 17),
+            prefixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
                 color: isHighlighted ? const Color(0xFFFFEAD2) : const Color(0xFFE7E7EB),
-                width: isHighlighted ? 1.8 : 1.0,
+                width: isHighlighted ? 1.5 : 1.0,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
                 color: isHighlighted ? const Color(0xFFE2A03F) : const Color(0xFFD90429),
-                width: 2.0,
+                width: 1.8,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Colors.redAccent, width: 1.0),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
             ),
           ),
@@ -2346,55 +2352,45 @@ class _UpdateDriverProfileDialogState extends State<UpdateDriverProfileDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       backgroundColor: Colors.white,
       surfaceTintColor: Colors.white,
-      elevation: 12,
+      elevation: 8,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
-        constraints: const BoxConstraints(maxWidth: 450),
+        width: double.infinity,
+        constraints: const BoxConstraints(maxWidth: 520),
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.fromLTRB(18.0, 16.0, 18.0, 18.0),
             child: Form(
               key: _formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Title Area
+                  // Title Area (No left icon, clean heading)
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD90429).withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.account_box_rounded,
-                          color: Color(0xFFD90429),
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'Update Profile Details',
                           style: GoogleFonts.outfit(
-                            fontSize: 18,
+                            fontSize: 17,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF121214),
                           ),
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close_rounded, color: const Color(0xFF6C6F79)),
+                        icon: const Icon(Icons.close_rounded, color: Color(0xFF6C6F79), size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                         onPressed: () => Navigator.pop(context),
                       ),
                     ],
                   ),
-                  const Divider(height: 32, color: Color(0xFFE7E7EB)),
+                  const Divider(height: 22, color: Color(0xFFE7E7EB)),
 
                   // 1. UPI ID (At the top, highlighted, auto-focused)
                   _buildTextField(
@@ -2414,7 +2410,7 @@ class _UpdateDriverProfileDialogState extends State<UpdateDriverProfileDialog> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 12),
 
                   // 2. Date of Birth
                   Column(
@@ -2422,35 +2418,41 @@ class _UpdateDriverProfileDialogState extends State<UpdateDriverProfileDialog> {
                     children: [
                       Text(
                         'Date of Birth',
-                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12.5, color: const Color(0xFF121214)),
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: const Color(0xFF121214),
+                        ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 5),
                       TextFormField(
                         controller: _dobController,
                         readOnly: true,
-                        style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF1A202C)),
+                        style: GoogleFonts.outfit(fontSize: 13.5, color: const Color(0xFF1A202C)),
                         onTap: () => _selectDate(context),
                         decoration: InputDecoration(
+                          isDense: true,
                           hintText: 'YYYY-MM-DD',
-                          hintStyle: GoogleFonts.outfit(color: const Color(0xFFA0AEC0), fontSize: 12.5),
+                          hintStyle: GoogleFonts.outfit(color: const Color(0xFFA0AEC0), fontSize: 12),
                           filled: true,
                           fillColor: const Color(0xFFF8FAFC),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-                          prefixIcon: const Icon(Icons.calendar_today_rounded, color: Color(0xFFA2A5AE), size: 18),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          prefixIcon: const Icon(Icons.calendar_today_rounded, color: Color(0xFFA2A5AE), size: 17),
+                          prefixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(color: Color(0xFFD90429), width: 2.0),
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFFD90429), width: 1.8),
                           ),
                         ),
                         validator: (val) => val == null || val.trim().isEmpty ? 'Date of birth is required' : null,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 12),
 
                   // 3. Gender Dropdown
                   Column(
@@ -2458,24 +2460,30 @@ class _UpdateDriverProfileDialogState extends State<UpdateDriverProfileDialog> {
                     children: [
                       Text(
                         'Gender',
-                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12.5, color: const Color(0xFF121214)),
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: const Color(0xFF121214),
+                        ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 5),
                       DropdownButtonFormField<String>(
-                        initialValue: _selectedGender,
-                        style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF1A202C)),
+                        value: _selectedGender,
+                        style: GoogleFonts.outfit(fontSize: 13.5, color: const Color(0xFF1A202C)),
                         decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           filled: true,
                           fillColor: const Color(0xFFF8FAFC),
-                          prefixIcon: const Icon(Icons.people_rounded, color: Color(0xFFA2A5AE), size: 18),
+                          prefixIcon: const Icon(Icons.people_rounded, color: Color(0xFFA2A5AE), size: 17),
+                          prefixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(color: Color(0xFFE7E7EB)),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(color: Color(0xFFD90429), width: 2.0),
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFFD90429), width: 1.8),
                           ),
                         ),
                         items: ['MALE', 'FEMALE', 'OTHER'].map((g) {
@@ -2494,7 +2502,7 @@ class _UpdateDriverProfileDialogState extends State<UpdateDriverProfileDialog> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 12),
 
                   // 4. License Number
                   _buildTextField(
@@ -2504,7 +2512,7 @@ class _UpdateDriverProfileDialogState extends State<UpdateDriverProfileDialog> {
                     hintText: 'Enter your driving license number',
                     validator: (val) => val == null || val.trim().isEmpty ? 'License number is required' : null,
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 12),
 
                   // 5. Bio
                   _buildTextField(
@@ -2512,10 +2520,10 @@ class _UpdateDriverProfileDialogState extends State<UpdateDriverProfileDialog> {
                     controller: _bioController,
                     icon: Icons.info_outline_rounded,
                     hintText: 'Briefly describe your driving experience...',
-                    maxLines: 3,
+                    maxLines: 2,
                     validator: (val) => val == null || val.trim().isEmpty ? 'Bio cannot be empty' : null,
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 18),
 
                   // Actions
                   Row(
@@ -2523,14 +2531,14 @@ class _UpdateDriverProfileDialogState extends State<UpdateDriverProfileDialog> {
                       Expanded(
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             side: const BorderSide(color: Color(0xFFE7E7EB)),
                           ),
                           onPressed: _isSubmitting ? null : () => Navigator.pop(context),
                           child: Text(
                             'Cancel',
-                            style: GoogleFonts.outfit(color: const Color(0xFF4A5568), fontWeight: FontWeight.bold),
+                            style: GoogleFonts.outfit(color: const Color(0xFF4A5568), fontWeight: FontWeight.bold, fontSize: 13),
                           ),
                         ),
                       ),
@@ -2540,23 +2548,23 @@ class _UpdateDriverProfileDialogState extends State<UpdateDriverProfileDialog> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFD90429),
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             elevation: 0,
                           ),
                           onPressed: _isSubmitting ? null : _submit,
                           child: _isSubmitting
                               ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
+                                  width: 18,
+                                  height: 18,
                                   child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
+                                    strokeWidth: 2,
                                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                   ),
                                 )
                               : Text(
                                   'Update',
-                                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13),
                                 ),
                         ),
                       ),

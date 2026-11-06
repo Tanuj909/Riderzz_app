@@ -408,32 +408,7 @@ class DriverHomeProvider extends ChangeNotifier {
         }
       }
 
-      _profile = DriverProfileModel(
-        id: _profile!.id,
-        userId: _profile!.userId,
-        name: _profile!.name,
-        phone: _profile!.phone,
-        userStatus: _profile!.userStatus,
-        approvalStatus: _profile!.approvalStatus,
-        licenseNumber: _profile!.licenseNumber,
-        vehicleNumber: _profile!.vehicleNumber,
-        isOnline: success,
-        rating: _profile!.rating,
-        totalTrips: _profile!.totalTrips,
-        vehicle: _profile!.vehicle,
-        documents: _profile!.documents,
-        createdAt: _profile!.createdAt,
-        color: _profile!.color,
-        manufacturingYear: _profile!.manufacturingYear,
-        vehicleStatus: _profile!.vehicleStatus,
-        licenseExpiry: _profile!.licenseExpiry,
-        insuranceExpiry: _profile!.insuranceExpiry,
-        bio: _profile!.bio,
-        gender: _profile!.gender,
-        dob: _profile!.dob,
-        approvedAt: _profile!.approvedAt,
-        vehicleTypeName: _profile!.vehicleTypeName,
-      );
+      _profile = _profile!.copyWith(isOnline: online);
       _isLoading = false;
       notifyListeners();
       return true;
