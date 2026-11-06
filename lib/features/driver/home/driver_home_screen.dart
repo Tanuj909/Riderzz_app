@@ -13,6 +13,7 @@ import 'package:riderzz_app/features/driver/home/pages/driver_bank_accounts_page
 import 'package:riderzz_app/features/driver/home/pages/driver_profile_page.dart';
 import 'package:riderzz_app/core/services/reward_notification_coordinator.dart';
 import 'package:riderzz_app/core/services/campaign_banner_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 
 class DriverHomeScreen extends StatefulWidget {
@@ -83,64 +84,123 @@ class DriverHomeScreenState extends State<DriverHomeScreen> {
     DriverHomeProvider provider,
     LocationTrackingService trackingService,
   ) {
+    bool isGoingOnline = false;
+
     showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: const [
-            Icon(Icons.wifi_off_rounded, color: Color(0xFFB9700A)),
-            SizedBox(width: 8),
-            Text(
-              'You are Offline',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF121214)),
-            ),
-          ],
-        ),
-        content: const Text(
-          'Make yourself online to receive Bookings.',
-          style: TextStyle(color: Color(0xFF4A5568), fontSize: 14, height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Stay Offline', style: TextStyle(color: Color(0xFF6C6F79))),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1C9A5B),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              elevation: 0,
-            ),
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              final success = await provider.setOnlineStatus(true);
-              if (success && context.mounted) {
-                // Driver went online — start location tracking
-                trackingService.start(hasActiveBooking: provider.activeBooking != null);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('You are now Online! 🟢'),
-                    backgroundColor: Color(0xFF1C9A5B),
-                    duration: Duration(seconds: 2),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return Dialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18.0, 18.0, 18.0, 14.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title Row with Icon
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFEF3C7),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.wifi_off_rounded,
+                          color: Color(0xFFB45309),
+                          size: 17,
+                        ),
+                      ),
+                      const SizedBox(width: 9),
+                      Text(
+                        'You are Offline',
+                        style: GoogleFonts.outfit(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF121214),
+                        ),
+                      ),
+                    ],
                   ),
-                );
-              } else if (!success && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(provider.errorMessage ?? 'Failed to go online'),
-                    backgroundColor: Colors.redAccent,
+                  const SizedBox(height: 6),
+                  Text(
+                    'Make yourself online to receive bookings and alerts.',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF64748B),
+                      fontSize: 12.5,
+                      height: 1.3,
+                    ),
                   ),
-                );
-              }
-            },
-            child: const Text('Go Online'),
-          ),
-        ],
+                  const SizedBox(height: 14),
+
+                  // Line 1: Slider to go online
+                  _GoOnlineSlider(
+                    isLoading: isGoingOnline,
+                    onSwipeComplete: () async {
+                      setDialogState(() {
+                        isGoingOnline = true;
+                      });
+                      final success = await provider.setOnlineStatus(true);
+                      if (context.mounted) {
+                        Navigator.pop(dialogContext);
+                        if (success) {
+                          trackingService.start(hasActiveBooking: provider.activeBooking != null);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('You are now Online! 🟢'),
+                              backgroundColor: Color(0xFF1C9A5B),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(provider.errorMessage ?? 'Failed to go online'),
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                        }
+                      }
+                      return success;
+                    },
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Line 2: Stay Offline button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 42,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        foregroundColor: const Color(0xFF64748B),
+                        padding: EdgeInsets.zero,
+                      ),
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: Text(
+                        'Stay Offline',
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -293,5 +353,192 @@ class DriverHomeScreenState extends State<DriverHomeScreen> {
       ),
     );
   }
+}
 
+class _GoOnlineSlider extends StatefulWidget {
+  final Future<bool> Function() onSwipeComplete;
+  final bool isLoading;
+
+  const _GoOnlineSlider({
+    required this.onSwipeComplete,
+    this.isLoading = false,
+  });
+
+  @override
+  State<_GoOnlineSlider> createState() => _GoOnlineSliderState();
+}
+
+class _GoOnlineSliderState extends State<_GoOnlineSlider>
+    with SingleTickerProviderStateMixin {
+  double _thumbPosition = 0;
+  bool _isCompleted = false;
+
+  late final AnimationController _animController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
+  )..repeat(reverse: true);
+
+  late final Animation<double> _slideAnim = Tween<double>(
+    begin: 0.0,
+    end: 6.0,
+  ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeInOut));
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double maxDistance = constraints.maxWidth - 46;
+        final double currentPosition = widget.isLoading ? maxDistance : _thumbPosition;
+
+        return Container(
+          width: double.infinity,
+          height: 48,
+          decoration: BoxDecoration(
+            color: const Color(0xFF0A291A), // Forest dark green
+            borderRadius: BorderRadius.circular(100),
+            border: Border.all(
+              color: const Color(0xFF1B6A3D),
+              width: 1.2,
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x1A000000),
+                blurRadius: 8,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Forest green track on drag
+              if (currentPosition > 0)
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: currentPosition + 24,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF15803D), Color(0xFF166534)],
+                      ),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                  ),
+                ),
+
+              // Centered text with animated subtle rightward shift
+              Center(
+                child: AnimatedBuilder(
+                  animation: _slideAnim,
+                  builder: (context, child) {
+                    return Transform.translate(
+                      offset: Offset(_slideAnim.value, 0),
+                      child: child,
+                    );
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Swipe to Go Online',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      const Icon(
+                        Icons.keyboard_double_arrow_right_rounded,
+                        color: Color(0xFF86EFAC),
+                        size: 18,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Slider Thumb
+              Positioned(
+                left: currentPosition + 3,
+                top: 3,
+                bottom: 3,
+                child: GestureDetector(
+                  onHorizontalDragUpdate: (details) {
+                    if (_isCompleted || widget.isLoading) return;
+                    setState(() {
+                      _thumbPosition += details.delta.dx;
+                      if (_thumbPosition < 0) _thumbPosition = 0;
+                      if (_thumbPosition > maxDistance) _thumbPosition = maxDistance;
+                    });
+                  },
+                  onHorizontalDragEnd: (details) async {
+                    if (_isCompleted || widget.isLoading) return;
+                    if (_thumbPosition >= maxDistance * 0.75) {
+                      setState(() {
+                        _thumbPosition = maxDistance;
+                        _isCompleted = true;
+                      });
+                      final success = await widget.onSwipeComplete();
+                      if (success != true && mounted) {
+                        setState(() {
+                          _thumbPosition = 0;
+                          _isCompleted = false;
+                        });
+                      }
+                    } else {
+                      setState(() {
+                        _thumbPosition = 0;
+                      });
+                    }
+                  },
+                  child: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0x33000000),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: widget.isLoading
+                        ? const Center(
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Color(0xFF0A291A),
+                                ),
+                              ),
+                            ),
+                          )
+                        : const Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 19,
+                            color: Color(0xFF0A291A),
+                          ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }

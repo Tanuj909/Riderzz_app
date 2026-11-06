@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/app/routes/app_routes.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
@@ -149,31 +150,89 @@ class NativeOverlayController {
       final approved = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
-        builder: (dialogContext) => AlertDialog(
+        builder: (dialogContext) => Dialog(
           backgroundColor: Colors.white,
-          surfaceTintColor: Colors.transparent,
-          title: const Text(
-            'Stay connected',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-          ),
-          content: const Text(
-            'Allow Riderzz to display a small floating icon while the app is '
-            'in the background.',
-            style: TextStyle(color: Colors.black87),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Not now', style: TextStyle(color: Colors.black54)),
+          surfaceTintColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18.0, 18.0, 18.0, 14.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Stay Connected',
+                  style: GoogleFonts.outfit(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF121214),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Allow Riderzz to display a small floating icon while the app is in the background.',
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF64748B),
+                    fontSize: 12.5,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Button 1: Allow (Full-width rounded)
+                SizedBox(
+                  width: double.infinity,
+                  height: 42,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFE31C2E),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      padding: EdgeInsets.zero,
+                    ),
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    child: Text(
+                      'Allow',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // Button 2: Not now (Full-width outlined rounded)
+                SizedBox(
+                  width: double.infinity,
+                  height: 42,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFE2E8F0)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      foregroundColor: const Color(0xFF64748B),
+                      padding: EdgeInsets.zero,
+                    ),
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    child: Text(
+                      'Not now',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: const Color(0xFF64748B),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFE31C2E),
-              ),
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Allow', style: TextStyle(color: Colors.white)),
-            ),
-          ],
+          ),
         ),
       );
       _permissionPromptVisible = false;

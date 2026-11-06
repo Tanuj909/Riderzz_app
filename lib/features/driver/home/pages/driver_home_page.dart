@@ -116,6 +116,110 @@ class _DriverHomePageState extends State<DriverHomePage> {
     );
   }
 
+  Future<bool?> _showGoOfflineDialog(BuildContext context) {
+    bool isGoingOffline = false;
+
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return Dialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18.0, 18.0, 18.0, 14.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title Row with Icon
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFDE8EA),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.power_settings_new_rounded,
+                          color: Color(0xFFD90429),
+                          size: 17,
+                        ),
+                      ),
+                      const SizedBox(width: 9),
+                      Text(
+                        'Go Offline?',
+                        style: GoogleFonts.outfit(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF121214),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Are you sure you want to go offline? You will stop receiving ride bookings.',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF64748B),
+                      fontSize: 12.5,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Line 1: Red Swipe Slider to Go Offline
+                  _GoOfflineSlider(
+                    isLoading: isGoingOffline,
+                    onSwipeComplete: () async {
+                      setDialogState(() {
+                        isGoingOffline = true;
+                      });
+                      if (context.mounted) {
+                        Navigator.pop(dialogContext, true);
+                      }
+                      return true;
+                    },
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Line 2: Stay Online button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 42,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        foregroundColor: const Color(0xFF64748B),
+                        padding: EdgeInsets.zero,
+                      ),
+                      onPressed: () => Navigator.pop(dialogContext, false),
+                      child: Text(
+                        'Stay Online',
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   void _handleSearchBookings() {
     if (_isManualSearching) return;
 
@@ -389,38 +493,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
               GestureDetector(
                 onTap: () async {
                   if (isOnline) {
-                    final bool? confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (dialogContext) => AlertDialog(
-                        backgroundColor: Colors.white,
-                        surfaceTintColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        title: Text(
-                          'Go Offline?',
-                          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF121214)),
-                        ),
-                        content: Text(
-                          'Are you sure you want to go offline? You will stop receiving ride bookings.',
-                          style: GoogleFonts.outfit(color: const Color(0xFF6C6F79), fontSize: 14, height: 1.5),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(dialogContext, false),
-                            child: Text('Cancel', style: GoogleFonts.outfit(color: const Color(0xFF6C6F79))),
-                          ),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFD90429),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              elevation: 0,
-                            ),
-                            onPressed: () => Navigator.pop(dialogContext, true),
-                            child: const Text('Go Offline'),
-                          ),
-                        ],
-                      ),
-                    );
+                    final bool? confirm = await _showGoOfflineDialog(context);
                     if (confirm != true) return;
                   } else {
                     if (profile?.approvalStatus != 'APPROVED') {
@@ -2879,6 +2952,194 @@ class _PendingBookingCardState extends State<_PendingBookingCard> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _GoOfflineSlider extends StatefulWidget {
+  final Future<bool> Function() onSwipeComplete;
+  final bool isLoading;
+
+  const _GoOfflineSlider({
+    required this.onSwipeComplete,
+    this.isLoading = false,
+  });
+
+  @override
+  State<_GoOfflineSlider> createState() => _GoOfflineSliderState();
+}
+
+class _GoOfflineSliderState extends State<_GoOfflineSlider>
+    with SingleTickerProviderStateMixin {
+  double _thumbPosition = 0;
+  bool _isCompleted = false;
+
+  late final AnimationController _animController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
+  )..repeat(reverse: true);
+
+  late final Animation<double> _slideAnim = Tween<double>(
+    begin: 0.0,
+    end: 6.0,
+  ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeInOut));
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double maxDistance = constraints.maxWidth - 46;
+        final double currentPosition = widget.isLoading ? maxDistance : _thumbPosition;
+
+        return Container(
+          width: double.infinity,
+          height: 48,
+          decoration: BoxDecoration(
+            color: const Color(0xFF2B0A0E), // Dark crimson red
+            borderRadius: BorderRadius.circular(100),
+            border: Border.all(
+              color: const Color(0xFF8B1E28),
+              width: 1.2,
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x1A000000),
+                blurRadius: 8,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Red drag progress track
+              if (currentPosition > 0)
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: currentPosition + 24,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFDC2626), Color(0xFFB91C1C)],
+                      ),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                  ),
+                ),
+
+              // Centered text with animated subtle rightward shift
+              Center(
+                child: AnimatedBuilder(
+                  animation: _slideAnim,
+                  builder: (context, child) {
+                    return Transform.translate(
+                      offset: Offset(_slideAnim.value, 0),
+                      child: child,
+                    );
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Swipe to Go Offline',
+                        style: GoogleFonts.outfit(
+                          color: Colors.red,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      const Icon(
+                        Icons.keyboard_double_arrow_right_rounded,
+                        color: Color(0xFFFCA5A5),
+                        size: 18,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Slider Thumb
+              Positioned(
+                left: currentPosition + 3,
+                top: 3,
+                bottom: 3,
+                child: GestureDetector(
+                  onHorizontalDragUpdate: (details) {
+                    if (_isCompleted || widget.isLoading) return;
+                    setState(() {
+                      _thumbPosition += details.delta.dx;
+                      if (_thumbPosition < 0) _thumbPosition = 0;
+                      if (_thumbPosition > maxDistance) _thumbPosition = maxDistance;
+                    });
+                  },
+                  onHorizontalDragEnd: (details) async {
+                    if (_isCompleted || widget.isLoading) return;
+                    if (_thumbPosition >= maxDistance * 0.75) {
+                      setState(() {
+                        _thumbPosition = maxDistance;
+                        _isCompleted = true;
+                      });
+                      final success = await widget.onSwipeComplete();
+                      if (success != true && mounted) {
+                        setState(() {
+                          _thumbPosition = 0;
+                          _isCompleted = false;
+                        });
+                      }
+                    } else {
+                      setState(() {
+                        _thumbPosition = 0;
+                      });
+                    }
+                  },
+                  child: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0x33000000),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: widget.isLoading
+                        ? const Center(
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Color(0xFFD90429),
+                                ),
+                              ),
+                            ),
+                          )
+                        : const Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 19,
+                            color: Color(0xFFD90429),
+                          ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
