@@ -10,6 +10,7 @@ import 'package:riderzz_app/screens/search_location_screen.dart';
 import 'package:riderzz_app/models/google_place.dart';
 import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:riderzz_app/core/widgets/app_snackbar.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 
 class PickupDetailsView extends StatefulWidget {
@@ -40,6 +41,21 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
   double? _dropLatitude;
   double? _dropLongitude;
 
+  int? _pickupAddressId;
+  int? _dropAddressId;
+  String? _pickupPlaceId;
+  String? _dropPlaceId;
+
+  String? _pickupCity;
+  String? _pickupState;
+  String? _pickupCountry;
+  String? _pickupPostalCode;
+
+  String? _dropCity;
+  String? _dropState;
+  String? _dropCountry;
+  String? _dropPostalCode;
+
   String? _pickupContactName;
   String? _pickupContactPhone;
   String? _dropContactName;
@@ -65,12 +81,26 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
         final pickupLng = widget.initialData!['pickupLongitude'];
         if (pickupLat != null) _pickupLatitude = (pickupLat as num).toDouble();
         if (pickupLng != null) _pickupLongitude = (pickupLng as num).toDouble();
+        if (widget.initialData!['pickupAddressId'] is num) {
+          _pickupAddressId = (widget.initialData!['pickupAddressId'] as num).toInt();
+        }
+        _pickupCity = widget.initialData!['pickupCity']?.toString();
+        _pickupState = widget.initialData!['pickupState']?.toString();
+        _pickupCountry = widget.initialData!['pickupCountry']?.toString();
+        _pickupPostalCode = widget.initialData!['pickupPostalCode']?.toString();
 
         _dropController.text = widget.initialData!['dropAddressText'] ?? '';
         final dropLat = widget.initialData!['dropLatitude'];
         final dropLng = widget.initialData!['dropLongitude'];
         if (dropLat != null) _dropLatitude = (dropLat as num).toDouble();
         if (dropLng != null) _dropLongitude = (dropLng as num).toDouble();
+        if (widget.initialData!['dropAddressId'] is num) {
+          _dropAddressId = (widget.initialData!['dropAddressId'] as num).toInt();
+        }
+        _dropCity = widget.initialData!['dropCity']?.toString();
+        _dropState = widget.initialData!['dropState']?.toString();
+        _dropCountry = widget.initialData!['dropCountry']?.toString();
+        _dropPostalCode = widget.initialData!['dropPostalCode']?.toString();
 
         _parcelType = widget.initialData!['goodsType'];
         if (widget.initialData!['weightKg'] != null) {
@@ -97,6 +127,13 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
           _pickupController.text = _formatAddress(pickup);
           _pickupLatitude = pickup['latitude'];
           _pickupLongitude = pickup['longitude'];
+          if (pickup['id'] is num) {
+            _pickupAddressId = (pickup['id'] as num).toInt();
+          }
+          _pickupCity = pickup['city']?.toString();
+          _pickupState = pickup['state']?.toString();
+          _pickupCountry = pickup['country']?.toString();
+          _pickupPostalCode = pickup['postalCode']?.toString();
           _pickupContactName = pickup['contactPersonName'] ?? pickup['contactName'] ?? pickup['pickupContactName'];
           _pickupContactPhone = pickup['contactPersonPhone'] ?? pickup['contactPhone'] ?? pickup['pickupContactPhone'];
         } else {
@@ -106,6 +143,13 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
           _dropController.text = _formatAddress(drop);
           _dropLatitude = drop['latitude'];
           _dropLongitude = drop['longitude'];
+          if (drop['id'] is num) {
+            _dropAddressId = (drop['id'] as num).toInt();
+          }
+          _dropCity = drop['city']?.toString();
+          _dropState = drop['state']?.toString();
+          _dropCountry = drop['country']?.toString();
+          _dropPostalCode = drop['postalCode']?.toString();
           _dropContactName = drop['contactPersonName'] ?? drop['contactName'] ?? drop['dropContactName'];
           _dropContactPhone = drop['contactPersonPhone'] ?? drop['contactPhone'] ?? drop['dropContactPhone'];
         }
@@ -150,10 +194,17 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
     final locationProvider = Provider.of<LocationProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (locationProvider.hasLocation) {
+      final pm = locationProvider.currentPlacemark;
       setState(() {
         _pickupController.text = locationProvider.currentAddress ?? '';
         _pickupLatitude = locationProvider.currentLatitude;
         _pickupLongitude = locationProvider.currentLongitude;
+        _pickupAddressId = null;
+        _pickupPlaceId = null;
+        _pickupCity = pm?.locality ?? pm?.subAdministrativeArea;
+        _pickupState = pm?.administrativeArea;
+        _pickupCountry = pm?.country;
+        _pickupPostalCode = pm?.postalCode;
         
         final user = authProvider.currentUser;
         if (user != null) {
@@ -168,27 +219,67 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
     required double? lat1,
     required double? lng1,
     required String text1,
+    int? addressId1,
+    String? placeId1,
     required double? lat2,
     required double? lng2,
     required String text2,
+    int? addressId2,
+    String? placeId2,
   }) {
-    final t1 = text1.trim().toLowerCase();
-    final t2 = text2.trim().toLowerCase();
-    if (t1.isNotEmpty && t2.isNotEmpty && t1 == t2) {
-      return true;
-    }
-    if (lat1 != null && lng1 != null && lat2 != null && lng2 != null) {
-      // Coordinate distance check (0.0005 deg is ~55m)
-      if ((lat1 - lat2).abs() < 0.0005 && (lng1 - lng2).abs() < 0.0005) {
+    // 1. If both locations have valid saved address IDs:
+    if (addressId1 != null && addressId2 != null) {
+      if (addressId1 == addressId2) {
         return true;
       }
-      try {
-        final distanceMeters = Geolocator.distanceBetween(lat1, lng1, lat2, lng2);
-        if (distanceMeters < 50) {
+      return false;
+    }
+
+    final t1 = text1.trim();
+    final t2 = text2.trim();
+
+    // 2. Identity-aware normalized text comparison (including flat, unit, tower, building details)
+    if (t1.isNotEmpty && t2.isNotEmpty) {
+      final norm1 = _normalizeAddressText(t1);
+      final norm2 = _normalizeAddressText(t2);
+
+      if (norm1 == norm2) {
+        if (lat1 != null && lng1 != null && lat2 != null && lng2 != null) {
+          if ((lat1 - lat2).abs() < 0.0005 && (lng1 - lng2).abs() < 0.0005) {
+            return true;
+          }
+        } else {
           return true;
         }
-      } catch (_) {}
+      } else {
+        // Different unit, flat, tower or street details mean different locations
+        // (e.g. Pickup: Flat 101, Tower A vs Drop: Flat 205, Tower B - 20m apart)
+        return false;
+      }
     }
+
+    // 3. If Google Place IDs are available:
+    final cleanPlace1 = (placeId1 != null && placeId1 != 'current_location' && !placeId1.startsWith('saved_address_')) ? placeId1 : null;
+    final cleanPlace2 = (placeId2 != null && placeId2 != 'current_location' && !placeId2.startsWith('saved_address_')) ? placeId2 : null;
+
+    if (cleanPlace1 != null && cleanPlace2 != null) {
+      if (cleanPlace1 != cleanPlace2) {
+        return false;
+      }
+      // Same Google Place ID without distinguishing unit details on either side
+      return true;
+    }
+
+    // 4. Where reliable identity information is unavailable:
+    // Handle ambiguity safely rather than automatically declaring both locations identical.
+    // Do NOT reject two locations solely because GPS coordinates are close.
+    if (lat1 != null && lng1 != null && lat2 != null && lng2 != null) {
+      final isExactSameCoord = (lat1 - lat2).abs() < 0.00001 && (lng1 - lng2).abs() < 0.00001;
+      if (isExactSameCoord && (t1.isEmpty || t2.isEmpty || _normalizeAddressText(t1) == _normalizeAddressText(t2))) {
+        return true;
+      }
+    }
+
     return false;
   }
 
@@ -199,19 +290,31 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
     required double? lng,
     String? contactName,
     String? contactPhone,
+    int? addressId,
+    String? placeId,
+    String? city,
+    String? state,
+    String? country,
+    String? postalCode,
   }) {
     final otherText = isPickup ? _dropController.text : _pickupController.text;
     final otherLat = isPickup ? _dropLatitude : _pickupLatitude;
     final otherLng = isPickup ? _dropLongitude : _pickupLongitude;
+    final otherAddressId = isPickup ? _dropAddressId : _pickupAddressId;
+    final otherPlaceId = isPickup ? _dropPlaceId : _pickupPlaceId;
 
     if (otherText.trim().isNotEmpty || (otherLat != null && otherLng != null)) {
       final isSame = _isDuplicateLocation(
         lat1: lat,
         lng1: lng,
         text1: address,
+        addressId1: addressId,
+        placeId1: placeId,
         lat2: otherLat,
         lng2: otherLng,
         text2: otherText,
+        addressId2: otherAddressId,
+        placeId2: otherPlaceId,
       );
 
       if (isSame) {
@@ -228,6 +331,12 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
         _pickupController.text = address;
         _pickupLatitude = lat;
         _pickupLongitude = lng;
+        _pickupAddressId = addressId;
+        _pickupPlaceId = placeId;
+        _pickupCity = city;
+        _pickupState = state;
+        _pickupCountry = country;
+        _pickupPostalCode = postalCode;
         if (contactName != null && contactName.trim().isNotEmpty) {
           _pickupContactName = contactName.trim();
         }
@@ -238,6 +347,12 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
         _dropController.text = address;
         _dropLatitude = lat;
         _dropLongitude = lng;
+        _dropAddressId = addressId;
+        _dropPlaceId = placeId;
+        _dropCity = city;
+        _dropState = state;
+        _dropCountry = country;
+        _dropPostalCode = postalCode;
         if (contactName != null && contactName.trim().isNotEmpty) {
           _dropContactName = contactName.trim();
         }
@@ -259,6 +374,10 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
       ),
     );
     if (place != null && mounted) {
+      int? addressId;
+      if (place.placeId.startsWith('saved_address_')) {
+        addressId = int.tryParse(place.placeId.replaceFirst('saved_address_', ''));
+      }
       _validateAndApplyLocation(
         isPickup: isPickup,
         address: place.displayName,
@@ -266,6 +385,12 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
         lng: place.longitude,
         contactName: place.contactPersonName,
         contactPhone: place.contactPersonPhone,
+        addressId: addressId,
+        placeId: place.placeId,
+        city: place.city,
+        state: place.state,
+        country: place.country,
+        postalCode: place.postalCode,
       );
     }
   }
@@ -279,48 +404,147 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
     super.dispose();
   }
 
+  String _normalizeAddressText(String text) {
+    return text
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]'), '')
+        .trim();
+  }
+
   Future<int?> _resolveOrCreateAddressId({
     required String addressText,
     required double? lat,
     required double? lng,
     required String label,
+    int? knownAddressId,
+    String? placeId,
+    String? contactName,
+    String? contactPhone,
+    String? city,
+    String? state,
+    String? country,
+    String? postalCode,
   }) async {
-    if (addressText.isEmpty) return null;
+    final trimmedText = addressText.trim();
+    if (trimmedText.isEmpty) return null;
+
+    // Reject and abort if latitude or longitude is unavailable; do not use hardcoded coordinates
+    if (lat == null || lng == null) {
+      debugPrint('[_resolveOrCreateAddressId] Aborting: latitude or longitude is null');
+      return null;
+    }
 
     final addressProvider = Provider.of<AddressProvider>(context, listen: false);
+
+    // 1. If explicit verified address ID was provided (e.g. from saved address or route), verify it
+    if (knownAddressId != null) {
+      for (final addr in addressProvider.addresses) {
+        if (addr['id'] == knownAddressId) {
+          return knownAddressId;
+        }
+      }
+    }
+
+    // 2. If placeId references a saved address ('saved_address_<id>'), verify and return it
+    if (placeId != null && placeId.startsWith('saved_address_')) {
+      final savedId = int.tryParse(placeId.replaceFirst('saved_address_', ''));
+      if (savedId != null) {
+        for (final addr in addressProvider.addresses) {
+          if (addr['id'] == savedId) {
+            return savedId;
+          }
+        }
+      }
+    }
+
+    // 3. Safe identity matching against existing addresses:
+    // Only reuse an existing address when its identity reliably matches.
+    // Never reuse an address solely because coordinates or Google Place IDs are nearby.
+    // Considers Google Place ID, full formatted address, flat/unit details, and tower/building details.
+    // Never use Place ID alone to identify an individual flat or unit.
+    final targetNorm = _normalizeAddressText(trimmedText);
+    final cleanPlaceId = (placeId != null && placeId != 'current_location' && !placeId.startsWith('saved_address_')) ? placeId : null;
+
     for (final addr in addressProvider.addresses) {
-      if (addr['address'] == addressText || 
-          (lat != null && lng != null && 
-           ((addr['lat'] as num).toDouble() - lat).abs() < 0.005 && 
-           ((addr['lng'] as num).toDouble() - lng).abs() < 0.005)) {
-        return addr['id'] as int;
+      final addrId = addr['id'] as int?;
+      if (addrId == null) continue;
+
+      final addrLat = (addr['lat'] ?? addr['latitude'] as num?)?.toDouble();
+      final addrLng = (addr['lng'] ?? addr['longitude'] as num?)?.toDouble();
+
+      if (addrLat == null || addrLng == null) continue;
+
+      final coordsMatch = (addrLat - lat).abs() < 0.0005 && (addrLng - lng).abs() < 0.0005;
+      final fullNorm = _normalizeAddressText(addr['address']?.toString() ?? '');
+      final line1Norm = _normalizeAddressText(addr['addressLine1']?.toString() ?? '');
+
+      // Check Google Place ID if available on saved address
+      final addrPlaceId = addr['placeId']?.toString();
+      final placeIdMatches = cleanPlaceId != null && addrPlaceId != null && cleanPlaceId == addrPlaceId;
+
+      if (placeIdMatches || coordsMatch) {
+        // Unit-level details (flat number, tower, building) must reliably match.
+        // Never reuse Place ID alone to identify an individual flat or unit.
+        if (targetNorm.isNotEmpty && (targetNorm == fullNorm || targetNorm == line1Norm)) {
+          return addrId;
+        }
+      }
+    }
+
+    // 4. No reliable match found -> Create a new address via the address API.
+    // Extract metadata from available selected location details or geocoding data without fabricating fake defaults.
+    String? resolvedCity = (city != null && city.trim().isNotEmpty) ? city.trim() : null;
+    String? resolvedState = (state != null && state.trim().isNotEmpty) ? state.trim() : null;
+    String? resolvedCountry = (country != null && country.trim().isNotEmpty) ? country.trim() : null;
+    String? resolvedPostalCode = (postalCode != null && postalCode.trim().isNotEmpty) ? postalCode.trim() : null;
+
+    if (resolvedCity == null || resolvedState == null || resolvedCountry == null || resolvedPostalCode == null) {
+      final parts = trimmedText.split(',').map((p) => p.trim()).where((p) => p.isNotEmpty).toList();
+      if (resolvedPostalCode == null) {
+        final pinMatch = RegExp(r'\b\d{6}\b').firstMatch(trimmedText);
+        if (pinMatch != null) {
+          resolvedPostalCode = pinMatch.group(0);
+        }
+      }
+      if (parts.length >= 2) {
+        resolvedCountry ??= parts.last;
+        if (parts.length >= 3) {
+          final beforeCountry = parts[parts.length - 2];
+          final stateCandidate = beforeCountry.replaceAll(RegExp(r'\b\d{5,6}\b'), '').trim();
+          if (stateCandidate.isNotEmpty) {
+            resolvedState ??= stateCandidate;
+          }
+          if (parts.length >= 4) {
+            resolvedCity ??= parts[parts.length - 3];
+          } else {
+            resolvedCity ??= stateCandidate;
+          }
+        }
       }
     }
 
     final data = {
       'label': label,
-      'addressLine1': addressText,
-      'latitude': lat ?? 28.6139,
-      'longitude': lng ?? 77.2090,
-      'city': 'Delhi',
-      'state': 'Delhi',
-      'country': 'India',
-      'postalCode': '110001',
+      'addressLine1': trimmedText,
+      'latitude': lat,
+      'longitude': lng,
+      'city': resolvedCity ?? '',
+      'state': resolvedState ?? '',
+      'country': resolvedCountry ?? '',
+      'postalCode': resolvedPostalCode ?? '',
       'addressType': 'OTHER',
+      if (contactName != null && contactName.trim().isNotEmpty)
+        'contactPersonName': contactName.trim(),
+      if (contactPhone != null && contactPhone.trim().isNotEmpty)
+        'contactPersonPhone': contactPhone.trim(),
     };
 
     try {
-      final success = await addressProvider.addAddress(data);
-      if (success) {
-        final fresh = addressProvider.addresses;
-        if (fresh.isNotEmpty) {
-          final found = fresh.firstWhere(
-            (a) => a['addressLine1'] == addressText || a['label'] == label,
-            orElse: () => fresh.last,
-          );
-          return found['id'] as int;
-        }
+      final newId = await addressProvider.createAddress(data);
+      if (newId != null) {
+        return newId;
       }
+      debugPrint('Failed to create address via API: ${addressProvider.errorMessage}');
     } catch (e) {
       debugPrint('Failed to save address on-the-fly: $e');
     }
@@ -418,9 +642,13 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
       lat1: _pickupLatitude,
       lng1: _pickupLongitude,
       text1: pickupText,
+      addressId1: _pickupAddressId,
+      placeId1: _pickupPlaceId,
       lat2: _dropLatitude,
       lng2: _dropLongitude,
       text2: dropText,
+      addressId2: _dropAddressId,
+      placeId2: _dropPlaceId,
     )) {
       _showValidationErrorDialog(
         'Same Location',
@@ -444,28 +672,82 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
       _isCreatingBooking = true;
     });
 
+    // 1. Resolve pickup address first
     final pickupId = await _resolveOrCreateAddressId(
       addressText: pickupText,
       lat: _pickupLatitude,
       lng: _pickupLongitude,
       label: 'Pickup Location',
+      knownAddressId: _pickupAddressId,
+      placeId: _pickupPlaceId,
+      contactName: _pickupContactName,
+      contactPhone: _pickupContactPhone,
+      city: _pickupCity,
+      state: _pickupState,
+      country: _pickupCountry,
+      postalCode: _pickupPostalCode,
     );
 
+    // If pickup creation succeeded, preserve it immediately so retries won't duplicate it
+    if (pickupId != null) {
+      _pickupAddressId = pickupId;
+    }
+
+    if (pickupId == null) {
+      setState(() {
+        _isCreatingBooking = false;
+      });
+      if (mounted) {
+        final addressProvider = Provider.of<AddressProvider>(context, listen: false);
+        final errorMsg = (_pickupLatitude == null || _pickupLongitude == null)
+            ? 'Pickup coordinates are missing. Please re-select the pickup location.'
+            : (addressProvider.errorMessage ?? 'Failed to resolve pickup address. Please try again.');
+        AppSnackBar.showError(context, errorMsg);
+      }
+      return;
+    }
+
+    // 2. Resolve drop address next
     final dropId = await _resolveOrCreateAddressId(
       addressText: dropText,
       lat: _dropLatitude,
       lng: _dropLongitude,
       label: 'Drop Location',
+      knownAddressId: _dropAddressId,
+      placeId: _dropPlaceId,
+      contactName: _dropContactName,
+      contactPhone: _dropContactPhone,
+      city: _dropCity,
+      state: _dropState,
+      country: _dropCountry,
+      postalCode: _dropPostalCode,
     );
 
-    if (pickupId == null || dropId == null) {
+    // If drop creation succeeded, preserve it
+    if (dropId != null) {
+      _dropAddressId = dropId;
+    }
+
+    if (dropId == null) {
       setState(() {
         _isCreatingBooking = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to resolve address coordinates. Please try again.'), backgroundColor: Colors.redAccent),
-        );
+        final addressProvider = Provider.of<AddressProvider>(context, listen: false);
+        final errorMsg = (_dropLatitude == null || _dropLongitude == null)
+            ? 'Drop coordinates are missing. Please re-select the drop location.'
+            : (addressProvider.errorMessage ?? 'Failed to resolve drop address. Please try again.');
+        AppSnackBar.showError(context, errorMsg);
+      }
+      return;
+    }
+
+    if (pickupId == dropId) {
+      setState(() {
+        _isCreatingBooking = false;
+      });
+      if (mounted) {
+        AppSnackBar.showError(context, 'Pickup and drop addresses cannot be the same');
       }
       return;
     }
@@ -506,15 +788,21 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
     final otherText = isPickup ? _dropController.text : _pickupController.text;
     final otherLat = isPickup ? _dropLatitude : _pickupLatitude;
     final otherLng = isPickup ? _dropLongitude : _pickupLongitude;
+    final otherAddressId = isPickup ? _dropAddressId : _pickupAddressId;
+    final otherPlaceId = isPickup ? _dropPlaceId : _pickupPlaceId;
 
     if (otherText.trim().isNotEmpty || (otherLat != null && otherLng != null)) {
       final isSame = _isDuplicateLocation(
         lat1: itemLat,
         lng1: itemLng,
         text1: itemAddress,
+        addressId1: item['id'] as int?,
+        placeId1: null,
         lat2: otherLat,
         lng2: otherLng,
         text2: otherText,
+        addressId2: otherAddressId,
+        placeId2: otherPlaceId,
       );
 
       if (isSame) {
@@ -669,6 +957,12 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                               lng: item['lng'] is num ? (item['lng'] as num).toDouble() : null,
                               contactName: nameController.text.trim(),
                               contactPhone: phoneController.text.trim(),
+                              addressId: item['id'] as int?,
+                              placeId: null,
+                              city: item['city']?.toString(),
+                              state: item['state']?.toString(),
+                              country: item['country']?.toString(),
+                              postalCode: item['postalCode']?.toString(),
                             );
 
                             Navigator.pop(dialogContext); // close dialog
@@ -958,9 +1252,11 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                               lat1: pLat,
                               lng1: pLng,
                               text1: pAddr,
+                              addressId1: pickup['id'] is num ? (pickup['id'] as num).toInt() : null,
                               lat2: dLat,
                               lng2: dLng,
                               text2: dAddr,
+                              addressId2: drop['id'] is num ? (drop['id'] as num).toInt() : null,
                             )) {
                               Navigator.pop(dialogContext);
                               _showValidationErrorDialog(
@@ -974,12 +1270,24 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                               _pickupController.text = pAddr;
                               _pickupLatitude = pLat;
                               _pickupLongitude = pLng;
+                              _pickupAddressId = pickup['id'] is num ? (pickup['id'] as num).toInt() : null;
+                              _pickupPlaceId = null;
+                              _pickupCity = pickup['city']?.toString();
+                              _pickupState = pickup['state']?.toString();
+                              _pickupCountry = pickup['country']?.toString();
+                              _pickupPostalCode = pickup['postalCode']?.toString();
                               _pickupContactName = pickupNameController.text.trim();
                               _pickupContactPhone = pickupPhoneController.text.trim();
 
                               _dropController.text = dAddr;
                               _dropLatitude = dLat;
                               _dropLongitude = dLng;
+                              _dropAddressId = drop['id'] is num ? (drop['id'] as num).toInt() : null;
+                              _dropPlaceId = null;
+                              _dropCity = drop['city']?.toString();
+                              _dropState = drop['state']?.toString();
+                              _dropCountry = drop['country']?.toString();
+                              _dropPostalCode = drop['postalCode']?.toString();
                               _dropContactName = dropNameController.text.trim();
                               _dropContactPhone = dropPhoneController.text.trim();
                             });
@@ -1151,6 +1459,19 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                                 ),
                               );
                               if (result != null) {
+                                String? placeId;
+                                String? city = result['city']?.toString();
+                                String? state = result['state']?.toString();
+                                String? country = result['country']?.toString();
+                                String? postalCode = result['postalCode']?.toString();
+                                if (result['googlePlace'] is GooglePlace) {
+                                  final gp = result['googlePlace'] as GooglePlace;
+                                  placeId = gp.placeId;
+                                  city ??= gp.city;
+                                  state ??= gp.state;
+                                  country ??= gp.country;
+                                  postalCode ??= gp.postalCode;
+                                }
                                 _validateAndApplyLocation(
                                   isPickup: true,
                                   address: result['address'] ?? '',
@@ -1158,6 +1479,12 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                                   lng: result['longitude'],
                                   contactName: result['contactPersonName'],
                                   contactPhone: result['contactPersonPhone'],
+                                  addressId: null,
+                                  placeId: placeId,
+                                  city: city,
+                                  state: state,
+                                  country: country,
+                                  postalCode: postalCode,
                                 );
                               }
                             },
@@ -1223,6 +1550,19 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                                 ),
                               );
                               if (result != null) {
+                                String? placeId;
+                                String? city = result['city']?.toString();
+                                String? state = result['state']?.toString();
+                                String? country = result['country']?.toString();
+                                String? postalCode = result['postalCode']?.toString();
+                                if (result['googlePlace'] is GooglePlace) {
+                                  final gp = result['googlePlace'] as GooglePlace;
+                                  placeId = gp.placeId;
+                                  city ??= gp.city;
+                                  state ??= gp.state;
+                                  country ??= gp.country;
+                                  postalCode ??= gp.postalCode;
+                                }
                                 _validateAndApplyLocation(
                                   isPickup: false,
                                   address: result['address'] ?? '',
@@ -1230,6 +1570,12 @@ class _PickupDetailsViewState extends State<PickupDetailsView> {
                                   lng: result['longitude'],
                                   contactName: result['contactPersonName'],
                                   contactPhone: result['contactPersonPhone'],
+                                  addressId: null,
+                                  placeId: placeId,
+                                  city: city,
+                                  state: state,
+                                  country: country,
+                                  postalCode: postalCode,
                                 );
                               }
                             },

@@ -351,6 +351,11 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
             longitude: result['longitude'] ?? details.longitude,
             contactPersonName: result['contactPersonName'],
             contactPersonPhone: result['contactPersonPhone'],
+            formattedAddress: details.formattedAddress,
+            city: details.city,
+            state: details.state,
+            country: details.country,
+            postalCode: details.postalCode,
           );
           Navigator.pop(context, place);
         } else {
@@ -397,6 +402,7 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
           placemark: locationProvider.currentPlacemark,
         );
         if (result != null && mounted) {
+          final pm = locationProvider.currentPlacemark;
           final currentPlace = GooglePlace(
             placeId: 'current_location',
             displayName: result['address'] ?? address,
@@ -405,6 +411,10 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
             longitude: result['longitude'] ?? lng,
             contactPersonName: result['contactPersonName'],
             contactPersonPhone: result['contactPersonPhone'],
+            city: pm?.locality ?? pm?.subAdministrativeArea,
+            state: pm?.administrativeArea,
+            country: pm?.country,
+            postalCode: pm?.postalCode,
           );
           Navigator.pop(context, currentPlace);
         } else {
@@ -810,6 +820,10 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
         longitude: lng,
         contactPersonName: nameController.text.trim(),
         contactPersonPhone: phoneController.text.trim(),
+        city: address['city'],
+        state: address['state'],
+        country: address['country'],
+        postalCode: address['postalCode'],
       );
       Navigator.pop(context, place);
     }

@@ -8,12 +8,14 @@ class AddressProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _addresses = [];
   bool _isLoading = false;
   String? _errorMessage;
+  int? _lastCreatedAddressId;
 
   AddressProvider(this._addressRepository);
 
   List<Map<String, dynamic>> get addresses => List.unmodifiable(_addresses);
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  int? get lastCreatedAddressId => _lastCreatedAddressId;
 
   Future<void> fetchAddresses() async {
     _isLoading = true;
@@ -37,34 +39,70 @@ class AddressProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> addAddress(Map<String, dynamic> data) async {
+  Future<int?> createAddress(Map<String, dynamic> data) async {
     _isLoading = true;
     _errorMessage = null;
+    _lastCreatedAddressId = null;
     notifyListeners();
 
     try {
       final response = await _addressRepository.addAddress(data);
 
       if (response.success) {
-        await fetchAddresses();
-        return true;
+        int? createdId;
+        if (response.data is Map) {
+          final map = response.data as Map;
+          final rawId = map['id'] ?? map['addressId'];
+          if (rawId is num) {
+            createdId = rawId.toInt();
+          }
+        } else if (response.data is num) {
+          createdId = (response.data as num).toInt();
+        }
+
+        // If the response does not provide a reliable ID, do not guess from existing addresses
+        if (createdId == null) {
+          _errorMessage = response.message.isNotEmpty
+              ? response.message
+              : 'Address was created but no valid address ID was returned by the server.';
+          _isLoading = false;
+          notifyListeners();
+          return null;
+        }
+
+        _lastCreatedAddressId = createdId;
+
+        try {
+          await fetchAddresses();
+        } catch (e) {
+          debugPrint('Address list refresh failed after creation: $e');
+        }
+
+        _isLoading = false;
+        notifyListeners();
+        return createdId;
       } else {
         _errorMessage = response.message;
       }
       _isLoading = false;
       notifyListeners();
-      return false;
+      return null;
     } on ApiException catch (e) {
       _errorMessage = e.message;
       _isLoading = false;
       notifyListeners();
-      return false;
+      return null;
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
       _isLoading = false;
       notifyListeners();
-      return false;
+      return null;
     }
+  }
+
+  Future<bool> addAddress(Map<String, dynamic> data) async {
+    final id = await createAddress(data);
+    return id != null;
   }
 
   Future<bool> updateAddress({

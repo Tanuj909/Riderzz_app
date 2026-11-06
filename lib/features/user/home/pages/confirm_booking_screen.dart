@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/core/models/vehicle_type_model.dart';
+import 'package:riderzz_app/core/widgets/app_snackbar.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/user/home/providers/booking_provider.dart';
 
@@ -33,6 +34,15 @@ class _ConfirmBookingViewState extends State<ConfirmBookingView> {
     final vehicle = widget.bookingData['vehicleType'] as VehicleTypeModel;
     final pickupId = widget.bookingData['pickupAddressId'] as int;
     final dropId = widget.bookingData['dropAddressId'] as int;
+
+    if (pickupId == dropId) {
+      setState(() {
+        _isBookingInProgress = false;
+      });
+      AppSnackBar.showError(context, 'Pickup and drop addresses cannot be the same');
+      return;
+    }
+
     double weight = 10.0;
     final wStr = widget.bookingData['weightKg']?.toString().toLowerCase() ?? '';
     if (wStr.contains('0-5')) weight = 5.0;
@@ -73,9 +83,12 @@ class _ConfirmBookingViewState extends State<ConfirmBookingView> {
       widget.onConfirm(result);
     } else {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to create booking')),
-      );
+      final String errorMessage = (bookingProvider.errorMessage != null &&
+              bookingProvider.errorMessage!.trim().isNotEmpty)
+          ? bookingProvider.errorMessage!.trim()
+          : 'Failed to create booking. Please try again.';
+
+      AppSnackBar.showError(context, errorMessage);
     }
   }
 

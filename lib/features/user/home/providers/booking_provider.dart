@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:riderzz_app/core/network/api_exception.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/user/home/data/repositories/booking_repository.dart';
 import 'package:riderzz_app/core/models/driver_location_model.dart';
@@ -75,7 +76,12 @@ class BookingProvider extends ChangeNotifier {
       notifyListeners();
       return booking;
     } catch (e) {
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      if (e is ApiException) {
+        _errorMessage = e.message;
+      } else {
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      }
+      debugPrint('[BookingProvider] createBooking failed: $_errorMessage');
       notifyListeners();
       return null;
     } finally {
