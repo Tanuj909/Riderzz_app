@@ -1020,8 +1020,25 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                               const SizedBox(height: 12),
                               Row(
                                 children: [
-                                  const Icon(Icons.person_rounded, size: 16, color: Color(0xFF64748B)),
-                                  const SizedBox(width: 6),
+                                  if (activeBooking.driver!.profileImage != null &&
+                                      activeBooking.driver!.profileImage!.trim().isNotEmpty) ...[
+                                    Container(
+                                      width: 28,
+                                      height: 28,
+                                      margin: const EdgeInsets.only(right: 8),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                                        image: DecorationImage(
+                                          image: NetworkImage(activeBooking.driver!.profileImage!),
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                  ] else ...[
+                                    const Icon(Icons.person_rounded, size: 16, color: Color(0xFF64748B)),
+                                    const SizedBox(width: 6),
+                                  ],
                                   Expanded(
                                     child: Row(
                                       children: [
@@ -1052,13 +1069,26 @@ class _UserHomePageState extends State<UserHomePage> with SingleTickerProviderSt
                                   const Icon(Icons.star_rounded, color: Colors.amber, size: 15),
                                   const SizedBox(width: 3),
                                   Text(
-                                    activeBooking.driver!.rating.toStringAsFixed(1),
+                                    activeBooking.driver!.rating > 0
+                                        ? activeBooking.driver!.rating.toStringAsFixed(1)
+                                        : 'New',
                                     style: GoogleFonts.outfit(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
                                       color: const Color(0xFF1E293B),
                                     ),
                                   ),
+                                  if (activeBooking.driver!.completedTrips != null &&
+                                      activeBooking.driver!.completedTrips! > 0) ...[
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '(${activeBooking.driver!.completedTrips})',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 11,
+                                        color: const Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                               if (activeBooking.vehicleNumber != null && activeBooking.vehicleNumber!.isNotEmpty) ...[

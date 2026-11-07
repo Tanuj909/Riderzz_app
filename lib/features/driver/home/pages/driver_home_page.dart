@@ -17,6 +17,7 @@ import 'package:riderzz_app/features/user/coupons/providers/customer_coupon_prov
 import 'package:riderzz_app/features/user/coupons/widgets/customer_coupons_bottom_sheet.dart';
 import 'package:riderzz_app/features/driver/home/widgets/timed_swipe_to_accept_button.dart';
 import 'package:riderzz_app/core/widgets/notification_permission_banner.dart';
+import 'package:image_picker/image_picker.dart';
 
 class DriverHomePage extends StatefulWidget {
   const DriverHomePage({super.key});
@@ -31,8 +32,61 @@ class _DriverHomePageState extends State<DriverHomePage> {
   int _searchCountdown = 30;
   bool _isContactDropdownExpanded = false;
   bool _isVerifyingOtp = false;
+  bool _isUploadingProfileImage = false;
   String? _selectedPaymentMethod;
   final Map<int, DateTime> _bookingArrivalTimes = {};
+
+  Future<void> _pickAndUploadProfileImage() async {
+    final authProvider = context.read<AuthProvider>();
+    final driverProvider = context.read<DriverHomeProvider>();
+    final picker = ImagePicker();
+    try {
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+      if (image == null) return;
+
+      setState(() => _isUploadingProfileImage = true);
+
+      final success = await authProvider.updateProfileImage(image.path, image.name);
+
+      if (mounted) {
+        setState(() => _isUploadingProfileImage = false);
+        if (success) {
+          PaintingBinding.instance.imageCache.clear();
+          PaintingBinding.instance.imageCache.clearLiveImages();
+          if (authProvider.lastUploadedImageUrl != null) {
+            driverProvider.updateLocalProfileImage(authProvider.lastUploadedImageUrl!);
+          }
+          await driverProvider.fetchDriverProfile(force: true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Profile image uploaded successfully!', style: GoogleFonts.outfit()),
+              backgroundColor: const Color(0xFF1C9A5B),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(authProvider.errorMessage ?? 'Failed to upload profile image', style: GoogleFonts.outfit()),
+              backgroundColor: const Color(0xFFD90429),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploadingProfileImage = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error selecting image: $e', style: GoogleFonts.outfit()),
+            backgroundColor: const Color(0xFFD90429),
+          ),
+        );
+      }
+    }
+  }
 
   void _showLowBalanceDialog(BuildContext context) {
     showDialog(
@@ -445,6 +499,9 @@ class _DriverHomePageState extends State<DriverHomePage> {
     final profile = driverProvider.profile;
 
     final driverName = profile?.name ?? user?.name ?? 'Partner';
+    final profileImageUrl = (profile?.profileImage != null && profile!.profileImage!.trim().isNotEmpty)
+        ? profile.profileImage
+        : ((user?.profileImage != null && user!.profileImage!.trim().isNotEmpty) ? user.profileImage : null);
     final vehicleDetails = profile?.vehicle != null 
         ? '${profile!.vehicle!.make} ${profile.vehicle!.model}'
         : 'No vehicle details';
@@ -724,18 +781,29 @@ class _DriverHomePageState extends State<DriverHomePage> {
                         MaterialPageRoute(
                           builder: (context) => const DriverProfileScreen(),
                         ),
-                      );
+                      ).then((_) => driverProvider.fetchDriverProfile());
                     },
                     child: Container(
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Color(0xFFD90429), Color(0xFF900018)], // --red to --red-dark
-                        ),
+                        gradient: (profileImageUrl == null || profileImageUrl.isEmpty)
+                            ? const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [Color(0xFFD90429), Color(0xFF900018)], // --red to --red-dark
+                              )
+                            : null,
+                        border: profileImageUrl != null && profileImageUrl.isNotEmpty
+                            ? Border.all(color: const Color(0xFFD90429), width: 1.5)
+                            : null,
+                        image: (profileImageUrl != null && profileImageUrl.isNotEmpty)
+                            ? DecorationImage(
+                                image: NetworkImage(profileImageUrl),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
                         boxShadow: [
                           BoxShadow(
                             color: const Color(0xFFD90429).withValues(alpha: 0.3),
@@ -745,14 +813,16 @@ class _DriverHomePageState extends State<DriverHomePage> {
                         ],
                       ),
                       alignment: Alignment.center,
-                      child: Text(
-                        _getInitials(driverName),
-                        style: GoogleFonts.outfit(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
+                      child: (profileImageUrl == null || profileImageUrl.isEmpty)
+                          ? Text(
+                              _getInitials(driverName),
+                              style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            )
+                          : null,
                     ),
                   ),
                 ],
@@ -1028,6 +1098,105 @@ class _DriverHomePageState extends State<DriverHomePage> {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ],
+          // Profile image missing banner
+          if (driverProvider.profile != null &&
+              (driverProvider.profile!.profileImage == null ||
+                  driverProvider.profile!.profileImage!.trim().isEmpty)) ...[
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: _isUploadingProfileImage ? null : _pickAndUploadProfileImage,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F9FF),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFBAE0FD)),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x05121214),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFBAE0FD),
+                        shape: BoxShape.circle,
+                      ),
+                      child: _isUploadingProfileImage
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0284C7)),
+                              ),
+                            )
+                          : const Icon(
+                              Icons.add_a_photo_rounded,
+                              color: Color(0xFF0284C7),
+                              size: 20,
+                            ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Profile Photo Missing',
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFF1E293B),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'Please upload your profile image to build trust with customers.',
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFF64748B),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0284C7),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: _isUploadingProfileImage
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Text(
+                              'Upload',
+                              style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

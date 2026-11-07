@@ -210,6 +210,13 @@ class DriverHomeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateLocalProfileImage(String imageUrl) {
+    if (_profile != null) {
+      _profile = _profile!.copyWith(profileImage: imageUrl);
+      notifyListeners();
+    }
+  }
+
   Future<void> fetchDriverProfile({bool force = false}) async {
     if (!force && _profile != null) {
       return;

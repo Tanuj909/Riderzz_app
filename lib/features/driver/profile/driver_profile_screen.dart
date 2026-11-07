@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 import 'package:riderzz_app/core/models/driver_profile_model.dart';
 
@@ -24,6 +25,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
   late bool _isEditing;
   late bool _isDocumentsExpanded;
   bool _isUploadingDoc = false;
+  bool _isUploadingImage = false;
   
   final ImagePicker _picker = ImagePicker();
   late TextEditingController _licenseController;
@@ -106,6 +108,57 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
       setState(() {
         _dobController.text = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
       });
+    }
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    final authProvider = context.read<AuthProvider>();
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+      if (image == null) return;
+
+      setState(() => _isUploadingImage = true);
+
+      final success = await authProvider.updateProfileImage(image.path, image.name);
+
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
+        if (success) {
+          // Clear image cache and update local state immediately
+          PaintingBinding.instance.imageCache.clear();
+          PaintingBinding.instance.imageCache.clearLiveImages();
+          if (authProvider.lastUploadedImageUrl != null) {
+            context.read<DriverHomeProvider>().updateLocalProfileImage(authProvider.lastUploadedImageUrl!);
+          }
+          await context.read<DriverHomeProvider>().fetchDriverProfile(force: true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Profile image updated!', style: GoogleFonts.outfit()),
+              backgroundColor: const Color(0xFF1C9A5B),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(authProvider.errorMessage ?? 'Failed to upload image', style: GoogleFonts.outfit()),
+              backgroundColor: const Color(0xFFD90429),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error picking image: $e', style: GoogleFonts.outfit()),
+            backgroundColor: const Color(0xFFD90429),
+          ),
+        );
+      }
     }
   }
 
@@ -393,32 +446,67 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                // Avatar
-                                Container(
-                                  width: 72,
-                                  height: 72,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: const Color(0xFFD90429).withOpacity(0.1),
-                                    border: Border.all(color: const Color(0xFFD90429), width: 2),
-                                    image: profile.profileImage != null && profile.profileImage!.isNotEmpty
-                                        ? DecorationImage(
-                                            image: NetworkImage(profile.profileImage!),
-                                            fit: BoxFit.cover,
-                                          )
-                                        : null,
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: profile.profileImage == null || profile.profileImage!.isEmpty
-                                      ? Text(
-                                          initials,
-                                          style: GoogleFonts.plusJakartaSans(
-                                            color: const Color(0xFFD90429),
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.w800,
+                                // Avatar — tappable to upload image
+                                GestureDetector(
+                                  onTap: _isUploadingImage ? null : _pickAndUploadImage,
+                                  child: Stack(
+                                    children: [
+                                      Container(
+                                        width: 72,
+                                        height: 72,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: const Color(0xFFD90429).withOpacity(0.1),
+                                          border: Border.all(color: const Color(0xFFD90429), width: 2),
+                                          image: profile.profileImage != null && profile.profileImage!.isNotEmpty
+                                              ? DecorationImage(
+                                                  image: NetworkImage(profile.profileImage!),
+                                                  fit: BoxFit.cover,
+                                                )
+                                              : null,
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: _isUploadingImage
+                                            ? const SizedBox(
+                                                width: 28,
+                                                height: 28,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2.5,
+                                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD90429)),
+                                                ),
+                                              )
+                                            : (profile.profileImage == null || profile.profileImage!.isEmpty)
+                                                ? Text(
+                                                    initials,
+                                                    style: GoogleFonts.plusJakartaSans(
+                                                      color: const Color(0xFFD90429),
+                                                      fontSize: 24,
+                                                      fontWeight: FontWeight.w800,
+                                                    ),
+                                                  )
+                                                : null,
+                                      ),
+                                      // Camera badge overlay
+                                      if (!_isUploadingImage)
+                                        Positioned(
+                                          right: 0,
+                                          bottom: 0,
+                                          child: Container(
+                                            width: 22,
+                                            height: 22,
+                                            decoration: const BoxDecoration(
+                                              color: Color(0xFFD90429),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.camera_alt_rounded,
+                                              color: Colors.white,
+                                              size: 13,
+                                            ),
                                           ),
-                                        )
-                                      : null,
+                                        ),
+                                    ],
+                                  ),
                                 ),
                                 const SizedBox(width: 16),
                                 // Info
@@ -533,6 +621,81 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
+                                // Profile Photo Upload in Edit Mode
+                                Center(
+                                  child: GestureDetector(
+                                    onTap: _isUploadingImage ? null : _pickAndUploadImage,
+                                    child: Stack(
+                                      children: [
+                                        Container(
+                                          width: 80,
+                                          height: 80,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: const Color(0xFFD90429).withOpacity(0.1),
+                                            border: Border.all(color: const Color(0xFFD90429), width: 2),
+                                            image: profile.profileImage != null && profile.profileImage!.isNotEmpty
+                                                ? DecorationImage(
+                                                    image: NetworkImage(profile.profileImage!),
+                                                    fit: BoxFit.cover,
+                                                  )
+                                                : null,
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: _isUploadingImage
+                                              ? const SizedBox(
+                                                  width: 28,
+                                                  height: 28,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2.5,
+                                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD90429)),
+                                                  ),
+                                                )
+                                              : (profile.profileImage == null || profile.profileImage!.isEmpty)
+                                                  ? Text(
+                                                      initials,
+                                                      style: GoogleFonts.plusJakartaSans(
+                                                        color: const Color(0xFFD90429),
+                                                        fontSize: 26,
+                                                        fontWeight: FontWeight.w800,
+                                                      ),
+                                                    )
+                                                  : null,
+                                        ),
+                                        if (!_isUploadingImage)
+                                          Positioned(
+                                            right: 0,
+                                            bottom: 0,
+                                            child: Container(
+                                              width: 26,
+                                              height: 26,
+                                              decoration: const BoxDecoration(
+                                                color: Color(0xFFD90429),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(
+                                                Icons.camera_alt_rounded,
+                                                color: Colors.white,
+                                                size: 15,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Center(
+                                  child: Text(
+                                    'Tap to change photo',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF6C6F79),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
                                 // Bio
                                 _buildTextField(
                                   label: 'Bio',

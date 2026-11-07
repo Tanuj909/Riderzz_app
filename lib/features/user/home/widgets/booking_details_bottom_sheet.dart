@@ -214,11 +214,57 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                         const SizedBox(height: 12),
                         Row(
                           children: [
+                            if (booking.driver!.profileImage != null && booking.driver!.profileImage!.trim().isNotEmpty) ...[
+                              Container(
+                                width: 44,
+                                height: 44,
+                                margin: const EdgeInsets.only(right: 12),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                  image: DecorationImage(
+                                    image: NetworkImage(booking.driver!.profileImage!),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            ] else ...[
+                              Container(
+                                width: 44,
+                                height: 44,
+                                margin: const EdgeInsets.only(right: 12),
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Color(0xFFF1F1F4),
+                                ),
+                                child: const Icon(Icons.person_outline_rounded, color: Color(0xFF6C6F79), size: 24),
+                              ),
+                            ],
                             Expanded(
-                              child: _buildDetailTile('Driver Name', booking.driver!.fullName, Icons.person_outline_rounded),
-                            ),
-                            Expanded(
-                              child: _buildDetailTile('Phone Number', booking.driver!.phone, Icons.phone_outlined),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    booking.driver!.fullName,
+                                    style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF121214)),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.star_rounded, color: Colors.amber, size: 14),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        booking.driver!.rating > 0 ? booking.driver!.rating.toStringAsFixed(1) : 'New',
+                                        style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF121214)),
+                                      ),
+                                      if (booking.driver!.completedTrips != null && booking.driver!.completedTrips! > 0) ...[
+                                        const SizedBox(width: 6),
+                                        Text('· ${booking.driver!.completedTrips} trips', style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF6C6F79))),
+                                      ],
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -226,10 +272,10 @@ void showBookingDetailsBottomSheet(BuildContext context, BookingModel initialBoo
                         Row(
                           children: [
                             Expanded(
-                              child: _buildDetailTile('Vehicle Number', booking.vehicleNumber ?? 'N/A', Icons.directions_car_outlined),
+                              child: _buildDetailTile('Phone Number', booking.driver!.phone, Icons.phone_outlined),
                             ),
                             Expanded(
-                              child: _buildDetailTile('Rating', '${booking.driver!.rating.toStringAsFixed(1)} ★', Icons.star_outline_rounded),
+                              child: _buildDetailTile('Vehicle Number', booking.vehicleNumber ?? 'N/A', Icons.directions_car_outlined),
                             ),
                           ],
                         ),

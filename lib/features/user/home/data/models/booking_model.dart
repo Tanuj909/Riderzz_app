@@ -3,16 +3,38 @@ class DriverInfo {
   final String fullName;
   final String phone;
   final String? email;
+  final String? profileImage;
   final double rating;
+  final int? completedTrips;
   final String? licenseNumber;
+  final String? role;
+  final String? approvalStatus;
+  final String? vehicleTypeName;
+  final String? make;
+  final String? model;
+  final String? registrationNumber;
+  final String? color;
+  final int? manufacturingYear;
+  final String? bio;
 
   DriverInfo({
     required this.userId,
     required this.fullName,
     required this.phone,
     this.email,
+    this.profileImage,
     required this.rating,
+    this.completedTrips,
     this.licenseNumber,
+    this.role,
+    this.approvalStatus,
+    this.vehicleTypeName,
+    this.make,
+    this.model,
+    this.registrationNumber,
+    this.color,
+    this.manufacturingYear,
+    this.bio,
   });
 
   factory DriverInfo.fromJson(Map<String, dynamic> json) {
@@ -21,8 +43,19 @@ class DriverInfo {
       fullName: json['fullName'] as String? ?? 'N/A',
       phone: json['phone'] as String? ?? 'N/A',
       email: json['email'] as String?,
+      profileImage: json['profileImage'] as String?,
       rating: (json['rating'] as num? ?? 0.0).toDouble(),
+      completedTrips: json['completedTrips'] as int?,
       licenseNumber: json['licenseNumber'] as String?,
+      role: json['role'] as String?,
+      approvalStatus: json['approvalStatus'] as String?,
+      vehicleTypeName: json['vehicleTypeName'] as String?,
+      make: json['make'] as String?,
+      model: json['model'] as String?,
+      registrationNumber: json['registrationNumber'] as String?,
+      color: json['color'] as String?,
+      manufacturingYear: json['manufacturingYear'] as int?,
+      bio: json['bio'] as String?,
     );
   }
 }

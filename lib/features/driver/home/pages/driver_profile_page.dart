@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_bank_accounts_page.dart';
@@ -20,6 +21,8 @@ class DriverProfilePage extends StatefulWidget {
 class _DriverProfilePageState extends State<DriverProfilePage> {
   final ImagePicker _picker = ImagePicker();
   String? _uploadingDocType;
+  bool _isUploadingProfileImage = false;
+  String _appVersion = '';
 
   // Dark refined red shade for icons (consistent with UserAccountPage)
   static const Color _iconColor = Color(0xFF8B1A2B);
@@ -31,8 +34,71 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<DriverHomeProvider>().fetchDriverProfile();
+      context.read<DriverHomeProvider>().fetchDriverProfile(force: true);
     });
+    _loadAppVersion();
+  }
+
+  Future<void> _pickAndUploadProfileImage() async {
+    final authProvider = context.read<AuthProvider>();
+    final driverProvider = context.read<DriverHomeProvider>();
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+      if (image == null) return;
+
+      setState(() => _isUploadingProfileImage = true);
+
+      final success = await authProvider.updateProfileImage(image.path, image.name);
+
+      if (mounted) {
+        setState(() => _isUploadingProfileImage = false);
+        if (success) {
+          PaintingBinding.instance.imageCache.clear();
+          PaintingBinding.instance.imageCache.clearLiveImages();
+          if (authProvider.lastUploadedImageUrl != null) {
+            driverProvider.updateLocalProfileImage(authProvider.lastUploadedImageUrl!);
+          }
+          await driverProvider.fetchDriverProfile(force: true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Profile image updated successfully!', style: GoogleFonts.outfit()),
+              backgroundColor: const Color(0xFF1C9A5B),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(authProvider.errorMessage ?? 'Failed to upload profile image', style: GoogleFonts.outfit()),
+              backgroundColor: const Color(0xFFD90429),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploadingProfileImage = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error selecting image: $e', style: GoogleFonts.outfit()),
+            backgroundColor: const Color(0xFFD90429),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          _appVersion = info.version;
+        });
+      }
+    } catch (_) {}
   }
 
   void _handleRoleTransition() async {
@@ -243,91 +309,94 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Avatar
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFC62E42), Color(0xFFA31E30)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFC62E42).withOpacity(0.3),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                        image: (profileImage != null && profileImage.isNotEmpty)
-                            ? DecorationImage(
-                                image: NetworkImage(profileImage),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
-                      ),
-                      alignment: Alignment.center,
-                      child: (profileImage == null || profileImage.isEmpty)
-                          ? Text(
-                              _getInitials(driverName),
-                              style: GoogleFonts.outfit(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
+                    // Avatar — tappable to upload image
+                    GestureDetector(
+                      onTap: _isUploadingProfileImage ? null : _pickAndUploadProfileImage,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFC62E42), Color(0xFFA31E30)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
                               ),
-                            )
-                          : null,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFC62E42).withOpacity(0.3),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                              image: (profileImage != null && profileImage.isNotEmpty)
+                                  ? DecorationImage(
+                                      image: NetworkImage(profileImage),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
+                            ),
+                            alignment: Alignment.center,
+                            child: _isUploadingProfileImage
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : (profileImage == null || profileImage.isEmpty)
+                                    ? Text(
+                                        _getInitials(driverName),
+                                        style: GoogleFonts.outfit(
+                                          color: Colors.white,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      )
+                                    : null,
+                          ),
+                          // Camera edit badge overlay
+                          if (!_isUploadingProfileImage)
+                            Positioned(
+                              right: -2,
+                              bottom: -2,
+                              child: Container(
+                                width: 22,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFC62E42),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 1.5),
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt_rounded,
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  driverName,
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800,
-                                    color: const Color(0xFF121214),
-                                    letterSpacing: -0.3,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  borderRadius: BorderRadius.circular(6),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.orange.withOpacity(0.25),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Text(
-                                  'PRO',
-                                  style: GoogleFonts.outfit(
-                                    color: const Color(0xFF664200),
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.8,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          Text(
+                            driverName,
+                            style: GoogleFonts.outfit(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF121214),
+                              letterSpacing: -0.3,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             '+91 $driverPhone',
@@ -597,7 +666,9 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
               // Version Info
               Center(
                 child: Text(
-                  'Riderzz Partner v1.0.0',
+                  _appVersion.isNotEmpty
+                      ? 'Riderzz Partner v$_appVersion'
+                      : 'Riderzz Partner',
                   style: GoogleFonts.outfit(
                     fontSize: 12,
                     color: const Color(0xFFB0B5BF),

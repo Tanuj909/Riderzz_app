@@ -993,6 +993,281 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
     }
   }
 
+  void _showDriverProfileModal(BuildContext context, DriverInfo driver) {
+    final vehiclePlate = _vehicleNumber ?? _currentBooking.vehicleNumber ?? widget.vehicleName;
+    final hasImage = driver.profileImage != null && driver.profileImage!.trim().isNotEmpty;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Driver Header: Avatar + Name + Badge
+              Row(
+                children: [
+                  Container(
+                    width: 68,
+                    height: 68,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+                      image: hasImage
+                          ? DecorationImage(
+                              image: NetworkImage(driver.profileImage!),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                      gradient: !hasImage
+                          ? const LinearGradient(
+                              colors: [Color(0xFF121214), Color(0xFF3A3B41)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
+                    ),
+                    alignment: Alignment.center,
+                    child: !hasImage
+                        ? Text(
+                            driver.fullName.isNotEmpty ? driver.fullName[0].toUpperCase() : 'D',
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                driver.fullName,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF121214),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            const Icon(
+                              Icons.verified_rounded,
+                              color: Color(0xFF1C9A5B),
+                              size: 18,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            driver.vehicleTypeName ?? 'Delivery Partner',
+                            style: GoogleFonts.outfit(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF475569),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Stats Row (Rating & Completed Trips)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFF1F5F9)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.star_rounded, color: Color(0xFFFFB000), size: 22),
+                          const SizedBox(width: 6),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                driver.rating > 0 ? driver.rating.toStringAsFixed(1) : 'New',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF1E293B),
+                                ),
+                              ),
+                              Text(
+                                'Rating',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 11,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(height: 30, width: 1, color: const Color(0xFFE2E8F0)),
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.local_shipping_rounded, color: Color(0xFF1C9A5B), size: 22),
+                          const SizedBox(width: 6),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${driver.completedTrips ?? 0}',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF1E293B),
+                                ),
+                              ),
+                              Text(
+                                'Trips Completed',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 11,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Vehicle & License Info Card
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFF1F5F9)),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.pin_rounded, size: 18, color: Color(0xFF64748B)),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Vehicle Number',
+                          style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF64748B)),
+                        ),
+                        const Spacer(),
+                        Text(
+                          vehiclePlate,
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF1E293B),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (driver.licenseNumber != null && driver.licenseNumber!.isNotEmpty) ...[
+                      const Divider(height: 18, color: Color(0xFFE2E8F0)),
+                      Row(
+                        children: [
+                          const Icon(Icons.badge_outlined, size: 18, color: Color(0xFF64748B)),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Driving License',
+                            style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF64748B)),
+                          ),
+                          const Spacer(),
+                          Text(
+                            driver.licenseNumber!,
+                            style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF1E293B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Action Buttons: Call Driver
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _makeCall(driver.phone);
+                  },
+                  icon: const Icon(Icons.phone_in_talk_rounded, color: Colors.white, size: 18),
+                  label: Text(
+                    'Call Driver (${driver.phone})',
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 15),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1C9A5B),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _handleGenerateOtp() async {
     setState(() {
       _otpLoading = true;
@@ -1728,114 +2003,173 @@ class _FindingDriverScreenState extends State<FindingDriverScreen>
 
                               // Shipment Shutter Driver Card
                               if (_currentBooking.driver != null) ...[
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: const Color(0xFFE1E1E6),
-                                    ),
-                                    boxShadow: const [
-                                      BoxShadow(
-                                        color: Color(0x05121214),
-                                        blurRadius: 10,
-                                        offset: Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 52,
-                                        height: 52,
-                                        decoration: const BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: [
-                                              Color(0xFF121214),
-                                              Color(0xFF3A3B41),
-                                            ],
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
+                                Builder(
+                                  builder: (context) {
+                                    final driver = _currentBooking.driver!;
+                                    final hasImage = driver.profileImage != null &&
+                                        driver.profileImage!.trim().isNotEmpty;
+                                    final vehiclePlate = _vehicleNumber ??
+                                        _currentBooking.vehicleNumber ??
+                                        widget.vehicleName;
+                                    return GestureDetector(
+                                      onTap: () => _showDriverProfileModal(context, driver),
+                                      child: Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: const Color(0xFFE1E1E6),
                                           ),
-                                          shape: BoxShape.circle,
+                                          boxShadow: const [
+                                            BoxShadow(
+                                              color: Color(0x05121214),
+                                              blurRadius: 10,
+                                              offset: Offset(0, 2),
+                                            ),
+                                          ],
                                         ),
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                          _currentBooking
-                                                  .driver!
-                                                  .fullName
-                                                  .isNotEmpty
-                                              ? _currentBooking
-                                                    .driver!
-                                                    .fullName[0]
-                                                    .toUpperCase()
-                                              : 'D',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
+                                        child: Row(
                                           children: [
-                                            Text(
-                                              _currentBooking.driver!.fullName,
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                                color: Color(0xFF121214),
-                                                fontFamily: 'Outfit',
+                                            Container(
+                                              width: 52,
+                                              height: 52,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: const Color(0xFFE2E8F0),
+                                                  width: 1.5,
+                                                ),
+                                                image: hasImage
+                                                    ? DecorationImage(
+                                                        image: NetworkImage(driver.profileImage!),
+                                                        fit: BoxFit.cover,
+                                                      )
+                                                    : null,
+                                                gradient: !hasImage
+                                                    ? const LinearGradient(
+                                                        colors: [
+                                                          Color(0xFF121214),
+                                                          Color(0xFF3A3B41),
+                                                        ],
+                                                        begin: Alignment.topLeft,
+                                                        end: Alignment.bottomRight,
+                                                      )
+                                                    : null,
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: !hasImage
+                                                  ? Text(
+                                                      driver.fullName.isNotEmpty
+                                                          ? driver.fullName[0].toUpperCase()
+                                                          : 'D',
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 20,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    )
+                                                  : null,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Flexible(
+                                                        child: Text(
+                                                          driver.fullName,
+                                                          style: const TextStyle(
+                                                            fontSize: 16,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: Color(0xFF121214),
+                                                            fontFamily: 'Outfit',
+                                                          ),
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      const Icon(
+                                                        Icons.verified_rounded,
+                                                        color: Color(0xFF1C9A5B),
+                                                        size: 15,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    'Phone: ${driver.phone}',
+                                                    style: const TextStyle(
+                                                      fontSize: 12.5,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: Color(0xFF121214),
+                                                      fontFamily: 'Outfit',
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Row(
+                                                    children: [
+                                                      Text(
+                                                        vehiclePlate,
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          color: Color(0xFF6C6F79),
+                                                          fontFamily: 'Outfit',
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 6),
+                                                      const Icon(Icons.star_rounded, color: Colors.amber, size: 14),
+                                                      const SizedBox(width: 2),
+                                                      Text(
+                                                        driver.rating > 0 ? driver.rating.toStringAsFixed(1) : 'New',
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Color(0xFF121214),
+                                                          fontFamily: 'Outfit',
+                                                        ),
+                                                      ),
+                                                      if (driver.completedTrips != null && driver.completedTrips! > 0) ...[
+                                                        const SizedBox(width: 4),
+                                                        Text(
+                                                          '· ${driver.completedTrips} trips',
+                                                          style: const TextStyle(
+                                                            fontSize: 12,
+                                                            color: Color(0xFF6C6F79),
+                                                            fontFamily: 'Outfit',
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ],
+                                                  ),
+                                                ],
                                               ),
                                             ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              'Phone: ${_currentBooking.driver!.phone}',
-                                              style: const TextStyle(
-                                                fontSize: 12.5,
-                                                fontWeight: FontWeight.w600,
-                                                color: Color(0xFF121214),
-                                                fontFamily: 'Outfit',
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              '${_vehicleNumber ?? _currentBooking.vehicleNumber ?? widget.vehicleName} · ★${_currentBooking.driver!.rating.toStringAsFixed(1)}',
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                color: Color(0xFF6C6F79),
-                                                fontFamily: 'Outfit',
+                                            GestureDetector(
+                                              onTap: () => _makeCall(driver.phone),
+                                              child: Container(
+                                                width: 42,
+                                                height: 42,
+                                                decoration: const BoxDecoration(
+                                                  color: Color(0xFFF1F1F4),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(
+                                                  Icons.phone_in_talk_rounded,
+                                                  color: Color(0xFF121214),
+                                                  size: 18,
+                                                ),
                                               ),
                                             ),
                                           ],
                                         ),
                                       ),
-                                      GestureDetector(
-                                        onTap: () => _makeCall(
-                                          _currentBooking.driver!.phone,
-                                        ),
-                                        child: Container(
-                                          width: 42,
-                                          height: 42,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFFF1F1F4),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(
-                                            Icons.phone_in_talk_rounded,
-                                            color: Color(0xFF121214),
-                                            size: 18,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                    );
+                                  },
                                 ),
                               ],
 

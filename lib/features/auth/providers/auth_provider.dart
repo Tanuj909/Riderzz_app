@@ -560,6 +560,9 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  String? _lastUploadedImageUrl;
+  String? get lastUploadedImageUrl => _lastUploadedImageUrl;
+
   /// Upload customer profile image and update local state
   Future<bool> updateProfileImage(String filePath, String fileName) async {
     _isLoading = true;
@@ -568,6 +571,7 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final imageUrl = await _authRepository.uploadProfileImage(filePath, fileName);
+      _lastUploadedImageUrl = imageUrl;
       
       // Update local customer profile if loaded
       if (_customerProfile != null) {
