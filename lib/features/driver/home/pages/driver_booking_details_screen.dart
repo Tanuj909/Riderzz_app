@@ -1426,7 +1426,6 @@ class _DriverBookingDetailsScreenState
       case 'DRIVER_ASSIGNED':
         return 'Swipe: Arrived at Pickup';
       case 'OTP_VERIFIED':
-        return 'Swipe: Pick Up Goods';
       case 'GOODS_PICKED_UP':
         return 'Swipe: Start Ride';
       case 'IN_TRANSIT':
@@ -1443,7 +1442,6 @@ class _DriverBookingDetailsScreenState
       case 'DRIVER_ASSIGNED':
         return 'DRIVER_ARRIVED';
       case 'OTP_VERIFIED':
-        return 'GOODS_PICKED_UP';
       case 'GOODS_PICKED_UP':
         return 'IN_TRANSIT';
       case 'IN_TRANSIT':
@@ -2481,13 +2479,13 @@ class _DriverBookingDetailsScreenState
                                   // Swipe Slider (below buttons)
                                   SwipeSlider(
                                     key: ValueKey(
-                                      'status_${booking.status}_${booking.id}',
+                                      'status_${_localStatus ?? booking.status}_${booking.id}',
                                     ),
-                                    text: _getSliderText(booking.status),
+                                    text: _getSliderText(_localStatus ?? booking.status),
                                     isLoading: driverProvider.isBookingsLoading,
                                     onSwipeComplete: () async {
                                       final nextStatus = _getNextStatus(
-                                        booking.status,
+                                        _localStatus ?? booking.status,
                                       );
                                       if (nextStatus == 'IN_TRANSIT') {
                                         final confirm = await showDialog<bool>(
@@ -3492,27 +3490,96 @@ class OtpVerificationView extends StatefulWidget {
 }
 
 class _OtpVerificationViewState extends State<OtpVerificationView> {
-  final TextEditingController _otpController = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
+  final List<TextEditingController> _controllers =
+      List.generate(4, (_) => TextEditingController());
+  final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
+
+  String get _currentOtp => _controllers.map((c) => c.text).join();
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _focusNode.requestFocus();
-      }
-    });
+    for (int i = 0; i < 4; i++) {
+      _focusNodes[i].addListener(_onFocusChange);
+    }
+  }
+
+  void _onFocusChange() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
   void dispose() {
-    _otpController.dispose();
-    _focusNode.dispose();
+    for (int i = 0; i < 4; i++) {
+      _focusNodes[i].removeListener(_onFocusChange);
+      _focusNodes[i].dispose();
+      _controllers[i].dispose();
+    }
     super.dispose();
   }
 
-  void _submitOtp(String otp) {
+  void _onDigitChanged(int index, String rawVal) {
+    if (rawVal.isEmpty) {
+      setState(() {});
+      return;
+    }
+
+    // Filter to digits only
+    final cleanDigits = rawVal.replaceAll(RegExp(r'\D'), '');
+    if (cleanDigits.isEmpty) {
+      _controllers[index].clear();
+      setState(() {});
+      return;
+    }
+
+    // 1. Paste support: if user pasted multiple digits (e.g. "1234")
+    if (cleanDigits.length >= 4) {
+      for (int k = 0; k < 4; k++) {
+        _controllers[k].text = cleanDigits[k];
+      }
+      _focusNodes[3].unfocus();
+      setState(() {});
+      _checkAndSubmit();
+      return;
+    }
+
+    // 2. Single or replacement digit: take the newest digit typed
+    final String newChar = cleanDigits[cleanDigits.length - 1];
+    _controllers[index].value = TextEditingValue(
+      text: newChar,
+      selection: const TextSelection.collapsed(offset: 1),
+    );
+
+    setState(() {});
+
+    // Advance focus if valid digit entered
+    if (index < 3) {
+      _focusNodes[index + 1].requestFocus();
+      _controllers[index + 1].selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: _controllers[index + 1].text.length,
+      );
+    } else {
+      _focusNodes[index].unfocus();
+    }
+
+    _checkAndSubmit();
+  }
+
+  void _clearAll() {
+    for (var c in _controllers) {
+      c.clear();
+    }
+    for (var f in _focusNodes) {
+      f.unfocus();
+    }
+    setState(() {});
+  }
+
+  void _checkAndSubmit() {
+    final otp = _currentOtp;
     if (otp.length == 4 && !widget.isLoading) {
       widget.onOtpSubmit(otp);
     }
@@ -3550,7 +3617,7 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
       );
     }
 
-    final otpText = _otpController.text;
+    final otpText = _currentOtp;
     final isOtpComplete = otpText.length == 4;
 
     return Container(
@@ -3564,42 +3631,21 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Header Row
+          // 1. Single Clean Header Row (No 123 icon, no subtitle)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF121214).withValues(alpha: 0.08),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.pin_rounded,
-                      size: 15,
-                      color: Color(0xFF121214),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Customer Delivery PIN',
-                    style: GoogleFonts.outfit(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF121214),
-                    ),
-                  ),
-                ],
+              Text(
+                'Customer Delivery PIN',
+                style: GoogleFonts.outfit(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF121214),
+                ),
               ),
               if (otpText.isNotEmpty && !widget.isLoading)
                 GestureDetector(
-                  onTap: () {
-                    _otpController.clear();
-                    setState(() {});
-                    _focusNode.requestFocus();
-                  },
+                  onTap: _clearAll,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     child: Text(
@@ -3614,135 +3660,106 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                 ),
             ],
           ),
-          const SizedBox(height: 4),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Ask customer for the 4-digit PIN to start ride',
-              style: GoogleFonts.outfit(
-                fontSize: 11,
-                color: const Color(0xFF64748B),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
           const SizedBox(height: 14),
 
-          // Hidden Native TextField with PIN Cells
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              // 1. Offscreen/Transparent input capturing keyboard & paste reliably
-              Opacity(
-                opacity: 0.0,
-                child: SizedBox(
-                  width: 250,
-                  height: 60,
+          // 2. 4 Interactive PIN Input Boxes (Direct tap & edit enabled)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(4, (index) {
+              final bool isFocused = _focusNodes[index].hasFocus;
+              final bool isFilled = _controllers[index].text.isNotEmpty;
+
+              return Container(
+                width: 52,
+                height: 58,
+                margin: const EdgeInsets.symmetric(horizontal: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isFocused
+                        ? const Color(0xFF1C9A5B)
+                        : (isFilled ? const Color(0xFF121214) : const Color(0xFFCBD5E1)),
+                    width: isFocused ? 2.0 : 1.4,
+                  ),
+                  boxShadow: isFocused
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFF1C9A5B).withValues(alpha: 0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : [
+                          const BoxShadow(
+                            color: Color(0x06000000),
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                ),
+                alignment: Alignment.center,
+                child: Focus(
+                  onKeyEvent: (node, event) {
+                    if (event is KeyDownEvent &&
+                        event.logicalKey == LogicalKeyboardKey.backspace) {
+                      if (_controllers[index].text.isEmpty && index > 0) {
+                        _controllers[index - 1].clear();
+                        _focusNodes[index - 1].requestFocus();
+                        setState(() {});
+                        return KeyEventResult.handled;
+                      }
+                    }
+                    return KeyEventResult.ignored;
+                  },
                   child: TextField(
-                    controller: _otpController,
-                    focusNode: _focusNode,
-                    maxLength: 4,
+                    controller: _controllers[index],
+                    focusNode: _focusNodes[index],
                     keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    enabled: !widget.isLoading,
+                    showCursor: false,
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(4),
                     ],
-                    autofocus: true,
-                    enabled: !widget.isLoading,
-                    onChanged: (val) {
-                      setState(() {});
-                      if (val.length == 4) {
-                        _submitOtp(val);
-                      }
+                    style: GoogleFonts.ibmPlexMono(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF121214),
+                    ),
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                      counterText: '',
+                      isDense: true,
+                      hintText: isFocused ? '' : '·',
+                      hintStyle: GoogleFonts.ibmPlexMono(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFFCBD5E1),
+                      ),
+                    ),
+                    onTap: () {
+                      _controllers[index].selection = TextSelection(
+                        baseOffset: 0,
+                        extentOffset: _controllers[index].text.length,
+                      );
                     },
+                    onChanged: (val) => _onDigitChanged(index, val),
                   ),
                 ),
-              ),
-
-              // 2. Interactive PIN Boxes Display
-              GestureDetector(
-                onTap: () {
-                  _focusNode.requestFocus();
-                },
-                behavior: HitTestBehavior.opaque,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(4, (index) {
-                    final bool isFilled = otpText.length > index;
-                    final bool isFocused = _focusNode.hasFocus &&
-                        (otpText.length == index || (index == 3 && otpText.length == 4));
-                    final String char = isFilled ? otpText[index] : '';
-
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 160),
-                      curve: Curves.easeOutCubic,
-                      width: 52,
-                      height: 58,
-                      margin: const EdgeInsets.symmetric(horizontal: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isFocused
-                              ? const Color(0xFF1C9A5B)
-                              : (isFilled ? const Color(0xFF121214) : const Color(0xFFCBD5E1)),
-                          width: isFocused ? 2.0 : 1.4,
-                        ),
-                        boxShadow: isFocused
-                            ? [
-                                BoxShadow(
-                                  color: const Color(0xFF1C9A5B).withValues(alpha: 0.2),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ]
-                            : [
-                                const BoxShadow(
-                                  color: Color(0x06000000),
-                                  blurRadius: 4,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                      ),
-                      alignment: Alignment.center,
-                      child: isFilled
-                          ? Text(
-                              char,
-                              style: GoogleFonts.ibmPlexMono(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF121214),
-                              ),
-                            )
-                          : (isFocused
-                              ? Container(
-                                  width: 2,
-                                  height: 20,
-                                  color: const Color(0xFF1C9A5B),
-                                )
-                              : Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFCBD5E1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                )),
-                    );
-                  }),
-                ),
-              ),
-            ],
+              );
+            }),
           ),
           const SizedBox(height: 14),
 
-          // Submit / Verify Button
+          // 3. Submit / Verify Button
           SizedBox(
             width: double.infinity,
             height: 46,
             child: ElevatedButton(
               onPressed: (isOtpComplete && !widget.isLoading)
-                  ? () => _submitOtp(otpText)
+                  ? _checkAndSubmit
                   : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: isOtpComplete

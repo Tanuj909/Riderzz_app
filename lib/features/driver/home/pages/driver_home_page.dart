@@ -408,7 +408,6 @@ class _DriverHomePageState extends State<DriverHomePage> {
       case 'DRIVER_ASSIGNED':
         return 'Swipe: Arrived at Pickup';
       case 'OTP_VERIFIED':
-        return 'Swipe: Pick Up Goods';
       case 'GOODS_PICKED_UP':
         return 'Swipe: Start Ride';
       case 'IN_TRANSIT':
@@ -425,7 +424,6 @@ class _DriverHomePageState extends State<DriverHomePage> {
       case 'DRIVER_ASSIGNED':
         return 'DRIVER_ARRIVED';
       case 'OTP_VERIFIED':
-        return 'GOODS_PICKED_UP';
       case 'GOODS_PICKED_UP':
         return 'IN_TRANSIT';
       case 'IN_TRANSIT':
