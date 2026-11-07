@@ -1066,167 +1066,356 @@ class _DriverBookingDetailsScreenState
     DriverHomeProvider driverProvider,
     int bookingId,
   ) {
-    final controller = TextEditingController(
-      text: 'Vehicle broke down',
-    );
+    String selectedReason = 'Vehicle breakdown / Mechanical issue';
+    final otherController = TextEditingController();
+    bool isSubmitting = false;
+
+    final List<Map<String, dynamic>> reasons = [
+      {
+        'title': 'Vehicle breakdown / Mechanical issue',
+        'icon': Icons.build_circle_outlined,
+      },
+      {
+        'title': 'Customer not answering / unreachable',
+        'icon': Icons.phone_missed_rounded,
+      },
+      {
+        'title': 'Heavy traffic / High delay',
+        'icon': Icons.traffic_rounded,
+      },
+      {
+        'title': 'Customer requested cancellation',
+        'icon': Icons.person_off_outlined,
+      },
+      {
+        'title': 'Personal emergency',
+        'icon': Icons.emergency_outlined,
+      },
+      {
+        'title': 'Other reason',
+        'icon': Icons.edit_note_rounded,
+      },
+    ];
+
     showDialog(
       context: context,
       builder: (ctx) {
-        return Dialog(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFE5E7),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.cancel_rounded,
-                        color: Color(0xFFE53E4F),
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Cancel Booking',
-                      style: GoogleFonts.outfit(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF121214),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Please provide a reason for cancelling this booking.',
-                  style: GoogleFonts.outfit(
-                    fontSize: 14,
-                    color: const Color(0xFF6C6F79),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: controller,
-                  maxLines: 3,
-                  style: GoogleFonts.outfit(
-                    fontSize: 14,
-                    color: const Color(0xFF121214),
-                    fontWeight: FontWeight.w500,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Enter reason...',
-                    hintStyle: GoogleFonts.outfit(
-                      color: const Color(0xFFA2A5AE),
-                    ),
-                    filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
-                    contentPadding: const EdgeInsets.all(16),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: Color(0xFFE53E4F),
-                        width: 1.5,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    OutlinedButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF6C6F79),
-                        side: const BorderSide(
-                          color: Color(0xFFE2E8F0),
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                      ),
-                      child: Text(
-                        'Close',
-                        style: GoogleFonts.outfit(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () async {
-                        Navigator.pop(ctx);
-                        final success = await driverProvider
-                            .cancelBookingForDriver(bookingId, controller.text);
-                        if (success && mounted) {
-                          Navigator.pop(
-                            context,
-                          ); // Pop details screen since it's cancelled
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Booking cancelled successfully'),
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            final bool isOther = selectedReason == 'Other reason';
+
+            return Dialog(
+              backgroundColor: Colors.white,
+              elevation: 8,
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 24.0,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Container(
+                width: double.infinity,
+                constraints: const BoxConstraints(maxWidth: 480),
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFFEBEE),
+                              shape: BoxShape.circle,
                             ),
-                          );
-                        } else if (!success && mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                driverProvider.bookingsError ??
-                                    'Failed to cancel booking',
+                            child: const Icon(
+                              Icons.cancel_rounded,
+                              color: Color(0xFFD90429),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Cancel Booking',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF121214),
+                                  ),
+                                ),
+                                Text(
+                                  'Select a reason for cancelling this ride',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 12,
+                                    color: const Color(0xFF6C6F79),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.close_rounded,
+                              size: 20,
+                              color: Color(0xFF6C6F79),
+                            ),
+                            onPressed: isSubmitting
+                                ? null
+                                : () => Navigator.pop(ctx),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Predefined Reasons List
+                      ...reasons.map((r) {
+                        final String title = r['title'] as String;
+                        final IconData icon = r['icon'] as IconData;
+                        final bool isSelected = selectedReason == title;
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 7.0),
+                          child: InkWell(
+                            onTap: isSubmitting
+                                ? null
+                                : () {
+                                    setDialogState(() {
+                                      selectedReason = title;
+                                    });
+                                  },
+                            borderRadius: BorderRadius.circular(12),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 9.5,
                               ),
-                              backgroundColor: Colors.redAccent,
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? const Color(0xFFFFF5F5)
+                                    : const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? const Color(0xFFD90429)
+                                      : const Color(0xFFE2E8F0),
+                                  width: isSelected ? 1.5 : 1.0,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    icon,
+                                    size: 18,
+                                    color: isSelected
+                                        ? const Color(0xFFD90429)
+                                        : const Color(0xFF6C6F79),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      title,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 13,
+                                        fontWeight: isSelected
+                                            ? FontWeight.w700
+                                            : FontWeight.w600,
+                                        color: isSelected
+                                            ? const Color(0xFF121214)
+                                            : const Color(0xFF4A4B50),
+                                      ),
+                                    ),
+                                  ),
+                                  Icon(
+                                    isSelected
+                                        ? Icons.radio_button_checked_rounded
+                                        : Icons.radio_button_off_rounded,
+                                    size: 18,
+                                    color: isSelected
+                                        ? const Color(0xFFD90429)
+                                        : const Color(0xFFCBD5E1),
+                                  ),
+                                ],
+                              ),
                             ),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFCC2D3B),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
+                          ),
+                        );
+                      }),
+
+                      // Optional custom text field when "Other reason" is selected
+                      if (isOther) ...[
+                        const SizedBox(height: 4),
+                        TextField(
+                          controller: otherController,
+                          maxLines: 2,
+                          autofocus: true,
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            color: const Color(0xFF121214),
+                            fontWeight: FontWeight.w500,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Type your cancellation reason here...',
+                            hintStyle: GoogleFonts.outfit(
+                              color: const Color(0xFFA2A5AE),
+                              fontSize: 12.5,
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: Color(0xFFE2E8F0),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: Color(0xFFD90429),
+                                width: 1.5,
+                              ),
+                            ),
+                          ),
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(100),
-                        ),
+                      ],
+
+                      const SizedBox(height: 14),
+
+                      // Actions
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: isSubmitting
+                                  ? null
+                                  : () => Navigator.pop(ctx),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF4A4B50),
+                                side: const BorderSide(
+                                  color: Color(0xFFE2E8F0),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 11,
+                                ),
+                              ),
+                              child: Text(
+                                'Keep Booking',
+                                style: GoogleFonts.outfit(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: isSubmitting
+                                  ? null
+                                  : () async {
+                                      final String finalReason = isOther
+                                          ? (otherController.text.trim().isNotEmpty
+                                              ? otherController.text.trim()
+                                              : 'Other reason')
+                                          : selectedReason;
+
+                                      setDialogState(() {
+                                        isSubmitting = true;
+                                      });
+
+                                      final success = await driverProvider
+                                          .cancelBookingForDriver(
+                                            bookingId,
+                                            finalReason,
+                                          );
+
+                                      if (ctx.mounted) {
+                                        Navigator.pop(ctx);
+                                      }
+
+                                      if (success && mounted) {
+                                        Navigator.pop(
+                                          context,
+                                        ); // Pop details screen since it's cancelled
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Booking cancelled successfully',
+                                            ),
+                                            backgroundColor: Color(0xFF1C9A5B),
+                                          ),
+                                        );
+                                      } else if (!success && mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              driverProvider.bookingsError ??
+                                                  'Failed to cancel booking',
+                                            ),
+                                            backgroundColor:
+                                                const Color(0xFFD90429),
+                                          ),
+                                        );
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFD90429),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 11,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: isSubmitting
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                          Colors.white,
+                                        ),
+                                      ),
+                                    )
+                                  : Text(
+                                      'Confirm Cancel',
+                                      style: GoogleFonts.outfit(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13.5,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
                       ),
-                      child: Text(
-                        'Cancel',
-                        style: GoogleFonts.outfit(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -1462,65 +1651,6 @@ class _DriverBookingDetailsScreenState
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: _onViewRoutePressed,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _isRouteDrawn
-                              ? const Color(0xFFE31C2E)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(99),
-                          border: Border.all(color: const Color(0xFFE1E1E6)),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x1A000000),
-                              blurRadius: 8,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.directions,
-                              size: 14,
-                              color: _isRouteDrawn
-                                  ? Colors.white
-                                  : const Color(0xFF121214),
-                            ),
-                            const SizedBox(width: 4),
-                            if (_isRouteLoading)
-                              const SizedBox(
-                                width: 12,
-                                height: 12,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Color(0xFFE31C2E),
-                                  ),
-                                ),
-                              )
-                            else
-                              Text(
-                                'View Route',
-                                style: GoogleFonts.outfit(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                  color: _isRouteDrawn
-                                      ? Colors.white
-                                      : const Color(0xFF121214),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
                     // Navigate button: only shown for active bookings
                     if (!isDelivered &&
                         statusUpper != 'CANCELLED' &&
@@ -1556,8 +1686,8 @@ class _DriverBookingDetailsScreenState
                               Text(
                                 (statusUpper == 'IN_TRANSIT' ||
                                         statusUpper == 'DRIVER_ARRIVED_DROP')
-                                    ? 'Drop'
-                                    : 'Pickup',
+                                    ? 'Route to Drop'
+                                    : 'Route to Pickup',
                                 style: GoogleFonts.outfit(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 13,
@@ -1734,7 +1864,7 @@ class _DriverBookingDetailsScreenState
                                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                             children: [
                                               Text(
-                                                'Commission Deducted',
+                                                'Commission Deduction',
                                                 style: GoogleFonts.outfit(
                                                   color: const Color(0xFF4A4B50),
                                                   fontSize: 12,
@@ -2468,7 +2598,7 @@ class _DriverBookingDetailsScreenState
                                       }
                                     },
                                     icon: const Icon(Icons.navigation_rounded),
-                                    label: const Text('Pickup Location'),
+                                    label: const Text('Route to Pickup'),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color(0xFF121214),
                                       foregroundColor: Colors.white,
@@ -2534,7 +2664,7 @@ class _DriverBookingDetailsScreenState
                                       }
                                     },
                                     icon: const Icon(Icons.navigation_rounded),
-                                    label: const Text('Drop Location'),
+                                    label: const Text('Route to Drop'),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color(0xFF121214),
                                       foregroundColor: Colors.white,
@@ -3362,38 +3492,29 @@ class OtpVerificationView extends StatefulWidget {
 }
 
 class _OtpVerificationViewState extends State<OtpVerificationView> {
-  final List<FocusNode> _focusNodes = List.generate(4, (index) => FocusNode());
-  final List<TextEditingController> _controllers = List.generate(
-    4,
-    (index) => TextEditingController(),
-  );
+  final TextEditingController _otpController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
 
   @override
   void dispose() {
-    for (var node in _focusNodes) {
-      node.dispose();
-    }
-    for (var controller in _controllers) {
-      controller.dispose();
-    }
+    _otpController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
-  void _onKeyChanged(String value, int index) {
-    if (value.isNotEmpty) {
-      if (index < 3) {
-        _focusNodes[index + 1].requestFocus();
-      } else {
-        _focusNodes[index].unfocus();
-        final otp = _controllers.map((c) => c.text).join();
-        if (otp.length == 4) {
-          widget.onOtpSubmit(otp);
-        }
-      }
-    } else {
-      if (index > 0) {
-        _focusNodes[index - 1].requestFocus();
-      }
+  void _submitOtp(String otp) {
+    if (otp.length == 4 && !widget.isLoading) {
+      widget.onOtpSubmit(otp);
     }
   }
 
@@ -3401,24 +3522,24 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
   Widget build(BuildContext context) {
     if (widget.isSuccess) {
       return Container(
-        height: 56,
+        padding: const EdgeInsets.symmetric(vertical: 16),
         alignment: Alignment.center,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 28,
-              height: 28,
+              width: 32,
+              height: 32,
               decoration: const BoxDecoration(
                 color: Color(0xFF1C9A5B),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check, color: Colors.white, size: 16),
+              child: const Icon(Icons.check_rounded, color: Colors.white, size: 20),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             Text(
-              'Verified!',
-              style: GoogleFonts.plusJakartaSans(
+              'PIN Verified Successfully!',
+              style: GoogleFonts.outfit(
                 color: const Color(0xFF1C9A5B),
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -3429,91 +3550,248 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
       );
     }
 
-    if (widget.isLoading) {
-      return Container(
-        height: 56,
-        alignment: Alignment.center,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD90429)),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Verifying...',
-              style: GoogleFonts.outfit(
-                color: const Color(0xFF6C6F79),
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+    final otpText = _otpController.text;
+    final isOtpComplete = otpText.length == 4;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          'Ask customer for 4-digit PIN',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF121214),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(4, (index) {
-            return Container(
-              width: 48,
-              height: 56,
-              margin: const EdgeInsets.symmetric(horizontal: 6),
-              child: TextField(
-                controller: _controllers[index],
-                focusNode: _focusNodes[index],
-                maxLength: 1,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.ibmPlexMono(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF121214),
-                ),
-                decoration: InputDecoration(
-                  counterText: '',
-                  contentPadding: EdgeInsets.zero,
-                  filled: true,
-                  fillColor: const Color(0xFFF1F1F4),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFE1E1E6),
-                      width: 2,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Header Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF121214).withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.pin_rounded,
+                      size: 15,
+                      color: Color(0xFF121214),
                     ),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFD90429),
-                      width: 2,
+                  const SizedBox(width: 8),
+                  Text(
+                    'Customer Delivery PIN',
+                    style: GoogleFonts.outfit(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF121214),
                     ),
                   ),
-                ),
-                onChanged: (val) => _onKeyChanged(val, index),
+                ],
               ),
-            );
-          }),
-        ),
-      ],
+              if (otpText.isNotEmpty && !widget.isLoading)
+                GestureDetector(
+                  onTap: () {
+                    _otpController.clear();
+                    setState(() {});
+                    _focusNode.requestFocus();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: Text(
+                      'Clear',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFFD90429),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Ask customer for the 4-digit PIN to start ride',
+              style: GoogleFonts.outfit(
+                fontSize: 11,
+                color: const Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Hidden Native TextField with PIN Cells
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              // 1. Offscreen/Transparent input capturing keyboard & paste reliably
+              Opacity(
+                opacity: 0.0,
+                child: SizedBox(
+                  width: 250,
+                  height: 60,
+                  child: TextField(
+                    controller: _otpController,
+                    focusNode: _focusNode,
+                    maxLength: 4,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(4),
+                    ],
+                    autofocus: true,
+                    enabled: !widget.isLoading,
+                    onChanged: (val) {
+                      setState(() {});
+                      if (val.length == 4) {
+                        _submitOtp(val);
+                      }
+                    },
+                  ),
+                ),
+              ),
+
+              // 2. Interactive PIN Boxes Display
+              GestureDetector(
+                onTap: () {
+                  _focusNode.requestFocus();
+                },
+                behavior: HitTestBehavior.opaque,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(4, (index) {
+                    final bool isFilled = otpText.length > index;
+                    final bool isFocused = _focusNode.hasFocus &&
+                        (otpText.length == index || (index == 3 && otpText.length == 4));
+                    final String char = isFilled ? otpText[index] : '';
+
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 160),
+                      curve: Curves.easeOutCubic,
+                      width: 52,
+                      height: 58,
+                      margin: const EdgeInsets.symmetric(horizontal: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isFocused
+                              ? const Color(0xFF1C9A5B)
+                              : (isFilled ? const Color(0xFF121214) : const Color(0xFFCBD5E1)),
+                          width: isFocused ? 2.0 : 1.4,
+                        ),
+                        boxShadow: isFocused
+                            ? [
+                                BoxShadow(
+                                  color: const Color(0xFF1C9A5B).withValues(alpha: 0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : [
+                                const BoxShadow(
+                                  color: Color(0x06000000),
+                                  blurRadius: 4,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                      ),
+                      alignment: Alignment.center,
+                      child: isFilled
+                          ? Text(
+                              char,
+                              style: GoogleFonts.ibmPlexMono(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF121214),
+                              ),
+                            )
+                          : (isFocused
+                              ? Container(
+                                  width: 2,
+                                  height: 20,
+                                  color: const Color(0xFF1C9A5B),
+                                )
+                              : Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFCBD5E1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                )),
+                    );
+                  }),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Submit / Verify Button
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: ElevatedButton(
+              onPressed: (isOtpComplete && !widget.isLoading)
+                  ? () => _submitOtp(otpText)
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isOtpComplete
+                    ? const Color(0xFF1C9A5B)
+                    : const Color(0xFFE2E8F0),
+                foregroundColor: isOtpComplete
+                    ? Colors.white
+                    : const Color(0xFF94A3B8),
+                disabledBackgroundColor: const Color(0xFFE2E8F0),
+                disabledForegroundColor: const Color(0xFF94A3B8),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: widget.isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline_rounded,
+                          size: 18,
+                          color: isOtpComplete
+                              ? Colors.white
+                              : const Color(0xFF94A3B8),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          widget.isLoading ? 'Verifying PIN...' : 'Verify PIN',
+                          style: GoogleFonts.outfit(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -260,7 +260,14 @@ class BookingModel {
       dropContactName: dropObj?['contactPersonName'] as String?,
       dropContactPhone: dropObj?['contactPersonPhone'] as String?,
       vehicleNumber: json['vehicleNumber'] as String?,
-      commissionAmount: (json['commissionAmount'] as num?)?.toDouble(),
+      commissionAmount: (json['commissionAmount'] as num? ??
+              json['commission'] as num? ??
+              json['adminCommission'] as num? ??
+              json['commissionCharge'] as num? ??
+              json['platformFee'] as num? ??
+              json['companyCommission'] as num? ??
+              json['driverCommission'] as num?)
+          ?.toDouble(),
       tollAmount: (json['tollAmount'] as num? ?? json['tollCharge'] as num?)?.toDouble(),
     );
   }

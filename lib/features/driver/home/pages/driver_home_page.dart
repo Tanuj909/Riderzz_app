@@ -283,10 +283,25 @@ class _DriverHomePageState extends State<DriverHomePage> {
     required String role,
     required String name,
     required String phone,
+    Color? iconColor,
   }) {
+    final bool hasPhone = phone.trim().isNotEmpty;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        Container(
+          padding: const EdgeInsets.all(7),
+          decoration: BoxDecoration(
+            color: (iconColor ?? const Color(0xFF1C9A5B)).withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.person_rounded,
+            size: 15,
+            color: iconColor ?? const Color(0xFF1C9A5B),
+          ),
+        ),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,22 +315,24 @@ class _DriverHomePageState extends State<DriverHomePage> {
                   letterSpacing: 0.5,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               Text(
-                name,
+                name.isNotEmpty ? name : 'Not specified',
                 style: GoogleFonts.outfit(
                   color: const Color(0xFF121214),
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              if (phone.isNotEmpty) ...[
+              if (hasPhone) ...[
                 const SizedBox(height: 1),
                 Text(
                   phone,
                   style: GoogleFonts.ibmPlexMono(
                     color: const Color(0xFF6C6F79),
-                    fontSize: 11,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -323,29 +340,64 @@ class _DriverHomePageState extends State<DriverHomePage> {
             ],
           ),
         ),
-        if (phone.isNotEmpty)
-          IconButton(
-            onPressed: () async {
-              final Uri url = Uri(scheme: 'tel', path: phone);
+        if (hasPhone)
+          InkWell(
+            onTap: () async {
+              final Uri url = Uri(scheme: 'tel', path: phone.trim());
               if (await canLaunchUrl(url)) {
                 await launchUrl(url);
               }
             },
-            icon: const Icon(
-              Icons.phone_rounded,
-              color: Color(0xFF1C9A5B),
-              size: 18,
-            ),
-            style: IconButton.styleFrom(
-              backgroundColor: const Color(0xFF1C9A5B).withValues(alpha: 0.1),
-              padding: const EdgeInsets.all(8),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1C9A5B),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x221C9A5B),
+                    blurRadius: 4,
+                    offset: Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.phone_rounded,
+                    color: Colors.white,
+                    size: 13,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Call',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
             ),
           )
         else
-          const Icon(
-            Icons.phone_disabled_rounded,
-            color: Colors.grey,
-            size: 18,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F1F4),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'No phone',
+              style: GoogleFonts.outfit(
+                color: const Color(0xFFA2A5AE),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
       ],
     );
@@ -1169,18 +1221,31 @@ class _DriverHomePageState extends State<DriverHomePage> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Colors.white, Color(0xFFFCFCFD)],
-                    ),
+                    gradient: driverProvider.activeBooking!.fastDelivery
+                        ? const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFFFFF9ED), Color(0xFFFFF2D6)],
+                          )
+                        : const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Colors.white, Color(0xFFFCFCFD)],
+                          ),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFFE1E1E6).withValues(alpha: 0.8)),
-                    boxShadow: const [
+                    border: Border.all(
+                      color: driverProvider.activeBooking!.fastDelivery
+                          ? const Color(0xFFFF9800)
+                          : const Color(0xFFE1E1E6).withValues(alpha: 0.8),
+                      width: driverProvider.activeBooking!.fastDelivery ? 1.5 : 1.0,
+                    ),
+                    boxShadow: [
                       BoxShadow(
-                        color: Color(0x0F121214),
+                        color: driverProvider.activeBooking!.fastDelivery
+                            ? const Color(0x22E65100)
+                            : const Color(0x0F121214),
                         blurRadius: 20,
-                        offset: Offset(0, 8),
+                        offset: const Offset(0, 8),
                       ),
                     ],
                   ),
@@ -1189,267 +1254,340 @@ class _DriverHomePageState extends State<DriverHomePage> {
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1C9A5B).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              driverProvider.activeBooking!.status,
-                              style: GoogleFonts.outfit(
-                                color: const Color(0xFF1C9A5B),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
-                              ),
+                          Text(
+                            '₹${driverProvider.activeBooking!.totalFare.toStringAsFixed(2)}',
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFF121214),
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
                             ),
                           ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                '₹${driverProvider.activeBooking!.totalFare.toStringAsFixed(2)}',
-                                style: GoogleFonts.outfit(
-                                  color: const Color(0xFF121214),
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900,
+                          if (driverProvider.activeBooking!.fastDelivery)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF9800).withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(100),
+                                border: Border.all(
+                                  color: const Color(0xFFFFB74D).withValues(alpha: 0.6),
                                 ),
                               ),
-                              if (driverProvider.activeBooking!.fastDelivery &&
-                                  driverProvider.activeBooking!.fastDeliveryCharge != null &&
-                                  driverProvider.activeBooking!.fastDeliveryCharge! > 0)
-                                Text(
-                                  '+ ₹${driverProvider.activeBooking!.fastDeliveryCharge!.toStringAsFixed(2)} Fast Charge',
-                                  style: GoogleFonts.outfit(
-                                    color: const Color(0xFFCC2D3B),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.flash_on_rounded,
+                                    size: 13,
+                                    color: Color(0xFFE65100),
                                   ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    (driverProvider.activeBooking!.fastDeliveryCharge != null &&
+                                            driverProvider.activeBooking!.fastDeliveryCharge! > 0)
+                                        ? 'Includes ₹${driverProvider.activeBooking!.fastDeliveryCharge!.toStringAsFixed(0)} Fast Charge'
+                                        : 'Fast Booking',
+                                    style: GoogleFonts.outfit(
+                                      color: const Color(0xFFE65100),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1C9A5B).withValues(alpha: 0.10),
+                                borderRadius: BorderRadius.circular(100),
+                                border: Border.all(
+                                  color: const Color(0xFF1C9A5B).withValues(alpha: 0.30),
                                 ),
-                            ],
-                          ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF1C9A5B),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'Normal Booking',
+                                    style: GoogleFonts.outfit(
+                                      color: const Color(0xFF1C9A5B),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'BOOKING ID: ${driverProvider.activeBooking!.bookingId}',
-                        style: GoogleFonts.outfit(
-                          color: const Color(0xFFA2A5AE),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      if (driverProvider.activeBooking!.commissionAmount != null) ...[
-                        const SizedBox(height: 10),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF9F3),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFFFEAD2)),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFFFEAD2),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.account_balance_wallet_rounded,
-                                  color: Color(0xFFE2A03F),
-                                  size: 16,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                      // Commission Deduction Section
+                      Builder(
+                        builder: (context) {
+                          final double? rawCommission = driverProvider.activeBooking!.commissionAmount;
+                          final double commissionToDisplay = (rawCommission != null && rawCommission > 0)
+                              ? rawCommission
+                              : (driverProvider.activeBooking!.totalFare * 0.10);
+                          return Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.only(top: 10),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF9F3),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFFFEAD2)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          'Commission Deducted',
-                                          style: GoogleFonts.outfit(
-                                            color: const Color(0xFF4A4B50),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                        Text(
-                                          '- ₹${driverProvider.activeBooking!.commissionAmount!.toStringAsFixed(2)}',
-                                          style: GoogleFonts.ibmPlexMono(
-                                            color: const Color(0xFFCC2D3B),
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 2),
                                     Text(
-                                      'This amount will be deducted from your wallet.',
+                                      'Commission Deduction',
                                       style: GoogleFonts.outfit(
-                                        color: const Color(0xFF8E9098),
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
+                                        color: const Color(0xFF121214),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFFEAD2),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        '-₹${commissionToDisplay.toStringAsFixed(0)}',
+                                        style: GoogleFonts.ibmPlexMono(
+                                          color: const Color(0xFFCC2D3B),
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w800,
+                                        ),
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                                const SizedBox(height: 3),
+                                Text(
+                                  'This amount will be deducted from your wallet.',
+                                  style: GoogleFonts.outfit(
+                                    color: const Color(0xFF8E9098),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                       const SizedBox(height: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Padding(
-                                padding: EdgeInsets.only(top: 2.0),
-                                child: Icon(Icons.circle, size: 8, color: Color(0xFF121214)),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  driverProvider.activeBooking!.pickupAddressName,
-                                  style: GoogleFonts.outfit(
-                                    color: const Color(0xFF121214),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.2,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F1F4),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Column(
+                                    children: [
+                                      const SizedBox(height: 4),
+                                      const Icon(Icons.circle, size: 8, color: Color(0xFF121214)),
+                                      Expanded(
+                                        child: Container(
+                                          width: 1.5,
+                                          margin: const EdgeInsets.symmetric(vertical: 4),
+                                          color: const Color(0xFFCBD5E1),
+                                        ),
+                                      ),
+                                      const Icon(Icons.location_on, size: 12, color: Color(0xFFD90429)),
+                                      const SizedBox(height: 2),
+                                    ],
                                   ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Pickup',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 10.5,
+                                            color: const Color(0xFF6C6F79),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 1),
+                                        Text(
+                                          driverProvider.activeBooking!.pickupAddressName.isNotEmpty
+                                              ? driverProvider.activeBooking!.pickupAddressName
+                                              : 'Pickup Location',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xFF121214),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Drop',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 10.5,
+                                            color: const Color(0xFF6C6F79),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 24, top: 1),
+                              child: Text(
+                                driverProvider.activeBooking!.dropAddressName.isNotEmpty
+                                    ? driverProvider.activeBooking!.dropAddressName
+                                    : 'Drop Location',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF121214),
                                 ),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Padding(
-                                padding: EdgeInsets.only(top: 2.0),
-                                child: Icon(Icons.location_on, size: 12, color: Color(0xFFD90429)),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  driverProvider.activeBooking!.dropAddressName,
-                                  style: GoogleFonts.outfit(
-                                    color: const Color(0xFF121214),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.2,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
                       ),
                       
-                      // Contact Dropdown Toggle Row
-                      const SizedBox(height: 14),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _isContactDropdownExpanded = !_isContactDropdownExpanded;
-                          });
-                        },
-                        child: Container(
-                          color: Colors.transparent,
-                          child: Row(
-                            children: [
-                              Text(
-                                'CONTACT',
-                                style: GoogleFonts.outfit(
-                                  color: const Color(0xFF6C6F79),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.8,
+                      // Contact Details Section
+                      const SizedBox(height: 10),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Column(
+                          children: [
+                            InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _isContactDropdownExpanded = !_isContactDropdownExpanded;
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(14),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7.5),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(5),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1C9A5B).withValues(alpha: 0.12),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.phone_in_talk_rounded,
+                                        color: Color(0xFF1C9A5B),
+                                        size: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Contact Details',
+                                      style: GoogleFonts.outfit(
+                                        color: const Color(0xFF121214),
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Icon(
+                                      _isContactDropdownExpanded
+                                          ? Icons.keyboard_arrow_up_rounded
+                                          : Icons.keyboard_arrow_down_rounded,
+                                      color: const Color(0xFF6C6F79),
+                                      size: 20,
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              const Expanded(
-                                child: Divider(
-                                  color: Color(0xFFE1E1E6),
-                                  thickness: 1,
+                            ),
+                            if (_isContactDropdownExpanded) ...[
+                              const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                child: Column(
+                                  children: [
+                                    // Pickup Contact
+                                    _buildContactRow(
+                                      role: 'Pickup Contact',
+                                      name: (driverProvider.activeBooking!.pickupContactName != null &&
+                                              driverProvider.activeBooking!.pickupContactName!.isNotEmpty)
+                                          ? driverProvider.activeBooking!.pickupContactName!
+                                          : (driverProvider.activeBooking!.customer?.fullName ?? 'Customer'),
+                                      phone: (driverProvider.activeBooking!.pickupContactPhone != null &&
+                                              driverProvider.activeBooking!.pickupContactPhone!.isNotEmpty)
+                                          ? driverProvider.activeBooking!.pickupContactPhone!
+                                          : (driverProvider.activeBooking!.customer?.phone ?? ''),
+                                      iconColor: const Color(0xFF1C9A5B),
+                                    ),
+                                    const Divider(color: Color(0xFFE2E8F0), height: 10),
+                                    
+                                    // Drop Contact
+                                    _buildContactRow(
+                                      role: 'Drop Contact',
+                                      name: (driverProvider.activeBooking!.dropContactName != null &&
+                                              driverProvider.activeBooking!.dropContactName!.isNotEmpty)
+                                          ? driverProvider.activeBooking!.dropContactName!
+                                          : (driverProvider.activeBooking!.customer?.fullName ?? 'Customer'),
+                                      phone: (driverProvider.activeBooking!.dropContactPhone != null &&
+                                              driverProvider.activeBooking!.dropContactPhone!.isNotEmpty)
+                                          ? driverProvider.activeBooking!.dropContactPhone!
+                                          : (driverProvider.activeBooking!.customer?.phone ?? ''),
+                                      iconColor: const Color(0xFFD90429),
+                                    ),
+
+                                    // Customer (if phone is different)
+                                    if (driverProvider.activeBooking!.customer?.phone != null &&
+                                        driverProvider.activeBooking!.customer!.phone!.isNotEmpty &&
+                                        driverProvider.activeBooking!.customer!.phone != driverProvider.activeBooking!.pickupContactPhone &&
+                                        driverProvider.activeBooking!.customer!.phone != driverProvider.activeBooking!.dropContactPhone) ...[
+                                      const Divider(color: Color(0xFFE2E8F0), height: 10),
+                                      _buildContactRow(
+                                        role: 'Booked By (Customer)',
+                                        name: driverProvider.activeBooking!.customer?.fullName ?? 'Customer',
+                                        phone: driverProvider.activeBooking!.customer?.phone ?? '',
+                                        iconColor: const Color(0xFF2563EB),
+                                      ),
+                                    ],
+                                  ],
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Icon(
-                                _isContactDropdownExpanded
-                                    ? Icons.keyboard_arrow_up_rounded
-                                    : Icons.keyboard_arrow_down_rounded,
-                                color: const Color(0xFF6C6F79),
-                                size: 20,
                               ),
                             ],
-                          ),
+                          ],
                         ),
                       ),
-
-                      // Contact Dropdown Content
-                      if (_isContactDropdownExpanded) ...[
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8F9FA),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFE1E1E6)),
-                          ),
-                          child: Column(
-                            children: [
-                              // Customer Contact
-                              _buildContactRow(
-                                role: 'Customer',
-                                name: driverProvider.activeBooking!.customer?.fullName ?? 'No Name',
-                                phone: driverProvider.activeBooking!.customer?.phone ?? '',
-                              ),
-                              const Divider(color: Color(0xFFE1E1E6), height: 16),
-                              
-                              // Pickup Contact
-                              _buildContactRow(
-                                role: 'Pickup Contact',
-                                name: (driverProvider.activeBooking!.pickupContactName != null &&
-                                        driverProvider.activeBooking!.pickupContactName!.isNotEmpty)
-                                    ? driverProvider.activeBooking!.pickupContactName!
-                                    : (driverProvider.activeBooking!.customer?.fullName ?? 'No Name'),
-                                phone: (driverProvider.activeBooking!.pickupContactPhone != null &&
-                                        driverProvider.activeBooking!.pickupContactPhone!.isNotEmpty)
-                                    ? driverProvider.activeBooking!.pickupContactPhone!
-                                    : (driverProvider.activeBooking!.customer?.phone ?? ''),
-                              ),
-                              const Divider(color: Color(0xFFE1E1E6), height: 16),
-                              
-                              // Drop Contact
-                              _buildContactRow(
-                                role: 'Drop Contact',
-                                name: (driverProvider.activeBooking!.dropContactName != null &&
-                                        driverProvider.activeBooking!.dropContactName!.isNotEmpty)
-                                    ? driverProvider.activeBooking!.dropContactName!
-                                    : (driverProvider.activeBooking!.customer?.fullName ?? 'No Name'),
-                                phone: (driverProvider.activeBooking!.dropContactPhone != null &&
-                                        driverProvider.activeBooking!.dropContactPhone!.isNotEmpty)
-                                    ? driverProvider.activeBooking!.dropContactPhone!
-                                    : (driverProvider.activeBooking!.customer?.phone ?? ''),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
 
                       // Status / OTP Action Section
                       const SizedBox(height: 14),
@@ -2643,15 +2781,31 @@ class _PendingBookingCardState extends State<_PendingBookingCard> {
   @override
   Widget build(BuildContext context) {
     final booking = widget.booking;
+    final isFast = booking.fastDelivery;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isFast ? const Color(0xFFFFF7EA) : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE1E1E6)),
-        boxShadow: const [
-          BoxShadow(color: Color(0x0A121214), blurRadius: 12, offset: Offset(0, 4)),
+        border: Border.all(
+          color: isFast ? const Color(0xFFFF9800) : const Color(0xFFE1E1E6),
+          width: isFast ? 1.5 : 1.0,
+        ),
+        boxShadow: [
+          if (isFast)
+            const BoxShadow(
+              color: Color(0x22E65100),
+              blurRadius: 14,
+              offset: Offset(0, 4),
+            )
+          else
+            const BoxShadow(
+              color: Color(0x0A121214),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
         ],
       ),
       child: Column(
@@ -2660,27 +2814,11 @@ class _PendingBookingCardState extends State<_PendingBookingCard> {
           // 1. Header row
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD90429).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  'NEW REQUEST',
-                  style: GoogleFonts.outfit(
-                    color: const Color(0xFFD90429),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              if (booking.fastDelivery) ...[
-                const SizedBox(width: 8),
+              if (isFast)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF9800).withValues(alpha: 0.15),
+                    color: const Color(0xFFFF9800),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
@@ -2689,21 +2827,38 @@ class _PendingBookingCardState extends State<_PendingBookingCard> {
                       const Icon(
                         Icons.flash_on_rounded,
                         size: 11,
-                        color: Color(0xFFE65100),
+                        color: Colors.white,
                       ),
                       const SizedBox(width: 2),
                       Text(
-                        'Fast Delivery',
+                        'FAST BOOKING',
                         style: GoogleFonts.outfit(
-                          color: const Color(0xFFE65100),
+                          color: Colors.white,
                           fontSize: 10,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ],
                   ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'NORMAL BOOKING',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF475569),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ),
-              ],
               const Spacer(),
               if (booking.expiresInSeconds != null) ...[
                 const Icon(
@@ -2724,7 +2879,10 @@ class _PendingBookingCardState extends State<_PendingBookingCard> {
             ],
           ),
           const SizedBox(height: 8),
-          const Divider(height: 1, color: Color(0xFFE1E1E6)),
+          Divider(
+            height: 1,
+            color: isFast ? const Color(0xFFFFE0B2) : const Color(0xFFE1E1E6),
+          ),
           const SizedBox(height: 12),
 
           // 2. Price, distance and details action button (Details button visible only after 5s)
@@ -2760,7 +2918,7 @@ class _PendingBookingCardState extends State<_PendingBookingCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'EST. FARE',
+                    'FARE',
                     style: GoogleFonts.outfit(
                       color: const Color(0xFFA2A5AE),
                       fontSize: 9,
@@ -2769,13 +2927,33 @@ class _PendingBookingCardState extends State<_PendingBookingCard> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    '₹${booking.totalFare.toStringAsFixed(2)}',
-                    style: GoogleFonts.outfit(
-                      color: const Color(0xFF1C9A5B),
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        '₹${booking.totalFare.toStringAsFixed(2)}',
+                        style: GoogleFonts.outfit(
+                          color: isFast ? const Color(0xFFE65100) : const Color(0xFF1C9A5B),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      if (isFast &&
+                          booking.fastDeliveryCharge != null &&
+                          booking.fastDeliveryCharge! > 0) ...[
+                        const SizedBox(width: 4),
+                        Text(
+                          '(Incl. ₹${booking.fastDeliveryCharge!.toStringAsFixed(0)} Fast Fee)',
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFFD97706),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
@@ -2803,7 +2981,7 @@ class _PendingBookingCardState extends State<_PendingBookingCard> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
+                        color: isFast ? const Color(0xFFFFECB3) : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -2814,14 +2992,14 @@ class _PendingBookingCardState extends State<_PendingBookingCard> {
                             style: GoogleFonts.outfit(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF475569),
+                              color: isFast ? const Color(0xFFB45309) : const Color(0xFF475569),
                             ),
                           ),
                           const SizedBox(width: 2),
-                          const Icon(
+                          Icon(
                             Icons.chevron_right_rounded,
                             size: 16,
-                            color: Color(0xFF475569),
+                            color: isFast ? const Color(0xFFB45309) : const Color(0xFF475569),
                           ),
                         ],
                       ),
@@ -2835,121 +3013,88 @@ class _PendingBookingCardState extends State<_PendingBookingCard> {
 
           // 3. Pickup and Drop Location Section
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFEDF2F7)),
+              color: isFast ? const Color(0xFFFEEFD9) : const Color(0xFFF1F1F4),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Pickup Location
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 3.0),
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF1C9A5B),
-                          shape: BoxShape.circle,
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Column(
+                        children: [
+                          const SizedBox(height: 4),
+                          const Icon(Icons.circle, size: 8, color: Color(0xFF121214)),
+                          Expanded(
+                            child: Container(
+                              width: 1.5,
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              color: isFast ? const Color(0xFFFFCC80) : const Color(0xFFE1E1E6),
+                            ),
+                          ),
+                          const Icon(Icons.location_on, size: 12, color: Color(0xFFD90429)),
+                          const SizedBox(height: 2),
+                        ],
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Pickup',
+                              style: GoogleFonts.outfit(
+                                fontSize: 10.5,
+                                color: const Color(0xFF6C6F79),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 1),
+                            Text(
+                              booking.pickupAddressName.isNotEmpty
+                                  ? booking.pickupAddressName
+                                  : 'Pickup Location',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF121214),
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Drop',
+                              style: GoogleFonts.outfit(
+                                fontSize: 10.5,
+                                color: const Color(0xFF6C6F79),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'PICKUP',
-                            style: GoogleFonts.outfit(
-                              color: const Color(0xFFA2A5AE),
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 1),
-                          Text(
-                            booking.pickupAddressName.isNotEmpty
-                                ? booking.pickupAddressName
-                                : 'Pickup Location',
-                            style: GoogleFonts.outfit(
-                              color: const Color(0xFF121214),
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              height: 1.25,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-
-                // Connecting Line
-                Padding(
-                  padding: const EdgeInsets.only(left: 3.0),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      width: 1.5,
-                      height: 14,
-                      margin: const EdgeInsets.symmetric(vertical: 2),
-                      color: const Color(0xFFCBD5E1),
-                    ),
+                    ],
                   ),
                 ),
-
-                // Drop Location
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: const EdgeInsets.only(top: 2.0),
-                      child: Icon(
-                        Icons.location_on_rounded,
-                        size: 12,
-                        color: Color(0xFFD90429),
-                      ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 24, top: 1),
+                  child: Text(
+                    booking.dropAddressName.isNotEmpty
+                        ? booking.dropAddressName
+                        : 'Drop Location',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF121214),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'DROP',
-                            style: GoogleFonts.outfit(
-                              color: const Color(0xFFA2A5AE),
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 1),
-                          Text(
-                            booking.dropAddressName.isNotEmpty
-                                ? booking.dropAddressName
-                                : 'Drop Location',
-                            style: GoogleFonts.outfit(
-                              color: const Color(0xFF121214),
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              height: 1.25,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),

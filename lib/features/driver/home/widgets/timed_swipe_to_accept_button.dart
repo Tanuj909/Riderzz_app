@@ -21,6 +21,8 @@ class _TimedSwipeToAcceptButtonState extends State<TimedSwipeToAcceptButton>
     with TickerProviderStateMixin {
   late AnimationController _progressController;
   late AnimationController _arrowAnimationController;
+  late AnimationController _arrowNudgeController;
+  late Animation<double> _arrowNudgeAnimation;
   bool _isLocked = true;
   double _thumbPosition = 0;
   bool _isLoading = false;
@@ -41,6 +43,19 @@ class _TimedSwipeToAcceptButtonState extends State<TimedSwipeToAcceptButton>
       vsync: this,
       duration: const Duration(milliseconds: 1400),
     )..repeat();
+
+    // Continuous nudge animation for the swipe arrow
+    _arrowNudgeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    )..repeat(reverse: true);
+
+    _arrowNudgeAnimation = Tween<double>(begin: -1.0, end: 5.0).animate(
+      CurvedAnimation(
+        parent: _arrowNudgeController,
+        curve: Curves.easeInOut,
+      ),
+    );
 
     final elapsedMs = DateTime.now().difference(widget.firstSeenTime).inMilliseconds;
     if (elapsedMs >= 5000) {
@@ -73,6 +88,7 @@ class _TimedSwipeToAcceptButtonState extends State<TimedSwipeToAcceptButton>
   void dispose() {
     _progressController.dispose();
     _arrowAnimationController.dispose();
+    _arrowNudgeController.dispose();
     super.dispose();
   }
 
@@ -282,12 +298,24 @@ class _TimedSwipeToAcceptButtonState extends State<TimedSwipeToAcceptButton>
                                     ),
                                   ),
                                 )
-                              : Icon(
-                                  Icons.arrow_forward_rounded,
-                                  size: 19,
-                                  color: _isLocked
-                                      ? const Color(0xFF7A0C18)
-                                      : const Color(0xFF1C9A5B),
+                              : AnimatedBuilder(
+                                  animation: _arrowNudgeAnimation,
+                                  builder: (context, child) {
+                                    final double nudge = (_thumbPosition == 0 && !_isLoading)
+                                        ? _arrowNudgeAnimation.value
+                                        : 0.0;
+                                    return Transform.translate(
+                                      offset: Offset(nudge, 0),
+                                      child: child,
+                                    );
+                                  },
+                                  child: Icon(
+                                    Icons.arrow_forward_rounded,
+                                    size: 19,
+                                    color: _isLocked
+                                        ? const Color(0xFF7A0C18)
+                                        : const Color(0xFF1C9A5B),
+                                  ),
                                 ),
                         ),
                       ),
