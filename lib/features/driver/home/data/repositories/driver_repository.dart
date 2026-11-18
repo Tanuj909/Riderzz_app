@@ -7,6 +7,7 @@ import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/core/models/driver_earnings_model.dart';
 import 'package:riderzz_app/core/models/driver_message_model.dart';
 import 'package:riderzz_app/core/models/driver_registration_check_model.dart';
+import 'package:riderzz_app/core/models/rating_model.dart';
 
 
 class DriverRepository {
@@ -151,5 +152,17 @@ class DriverRepository {
 
   Future<Map<String, dynamic>> requestWithdrawal(double amount) async {
     return await _remoteDataSource.requestWithdrawal(amount);
+  }
+
+  Future<BookingRatingData?> getBookingRating(int bookingId) async {
+    return await _remoteDataSource.getBookingRating(bookingId);
+  }
+
+  Future<List<RatingItemModel>> getDriverReviews({int page = 0, int size = 10}) async {
+    return await _remoteDataSource.getDriverReviews(page: page, size: size);
+  }
+
+  Future<DriverRatingSummary?> getDriverRatingSummary() async {
+    return await _remoteDataSource.getDriverRatingSummary();
   }
 }

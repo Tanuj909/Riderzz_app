@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/support/providers/support_provider.dart';
+import 'package:riderzz_app/core/utils/no_emoji_input_formatter.dart';
 
 class TicketDetailsScreen extends StatefulWidget {
   final int ticketId;
@@ -586,6 +587,9 @@ class _TicketDetailsScreenState extends State<TicketDetailsScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: TextField(
                             controller: _messageController,
+                            inputFormatters: [
+                              NoEmojiInputFormatter(),
+                            ],
                             style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF0F172A)),
                             decoration: InputDecoration(
                               hintText: 'Type your message...',

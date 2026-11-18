@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/features/support/providers/support_provider.dart';
+import 'package:riderzz_app/core/utils/no_emoji_input_formatter.dart';
 
 class RaiseTicketScreen extends StatefulWidget {
   const RaiseTicketScreen({super.key});
@@ -369,6 +370,9 @@ class _RaiseTicketScreenState extends State<RaiseTicketScreen> {
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
+        inputFormatters: [
+          NoEmojiInputFormatter(),
+        ],
         validator: validator,
         style: GoogleFonts.outfit(fontSize: 15, color: const Color(0xFF121214), fontWeight: FontWeight.w500),
         decoration: InputDecoration(

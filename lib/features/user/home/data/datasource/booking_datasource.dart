@@ -3,6 +3,7 @@ import 'package:riderzz_app/core/network/api_constants.dart';
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/core/models/driver_location_model.dart';
 import 'package:riderzz_app/core/models/pricing_tier_model.dart';
+import 'package:riderzz_app/core/models/rating_model.dart';
 
 class BookingRemoteDataSource {
   final ApiClient _apiClient;
@@ -151,14 +152,24 @@ class BookingRemoteDataSource {
     return null;
   }
 
+  Future<BookingRatingData?> getBookingRating(int bookingId) async {
+    final response = await _apiClient.get(ApiConstants.bookingRating(bookingId));
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final dynamic data = resBody['data'];
+    if (data != null && data is Map) {
+      return BookingRatingData.fromJson(Map<String, dynamic>.from(data));
+    }
+    return null;
+  }
+
   Future<bool> submitRating({
     required int bookingId,
-    required String ratingType,
+    String ratingType = 'CUSTOMER_TO_DRIVER',
     required int stars,
     required String review,
   }) async {
     final response = await _apiClient.post(
-      '/ratings',
+      ApiConstants.ratings,
       data: {
         'bookingId': bookingId,
         'ratingType': ratingType,

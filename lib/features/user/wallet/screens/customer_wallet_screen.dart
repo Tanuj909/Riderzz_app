@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:riderzz_app/features/user/wallet/providers/customer_wallet_provider.dart';
 import 'package:riderzz_app/features/user/wallet/data/models/customer_bank_account_model.dart';
+import 'package:riderzz_app/core/utils/no_emoji_input_formatter.dart';
 
 class CustomerWalletScreen extends StatefulWidget {
   final bool showBackButton;
@@ -1008,6 +1009,7 @@ class _CustomerWalletScreenState extends State<CustomerWalletScreen> {
                           textCapitalization: TextCapitalization.words,
                           textInputAction: TextInputAction.next,
                           inputFormatters: [
+                            NoEmojiInputFormatter(),
                             LengthLimitingTextInputFormatter(100),
                           ],
                           onFieldSubmitted: (_) {
@@ -1046,6 +1048,7 @@ class _CustomerWalletScreenState extends State<CustomerWalletScreen> {
                           textCapitalization: TextCapitalization.words,
                           textInputAction: TextInputAction.next,
                           inputFormatters: [
+                            NoEmojiInputFormatter(),
                             LengthLimitingTextInputFormatter(100),
                           ],
                           onFieldSubmitted: (_) {

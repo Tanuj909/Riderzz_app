@@ -10,6 +10,7 @@ import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/core/models/driver_earnings_model.dart';
 import 'package:riderzz_app/core/models/driver_message_model.dart';
 import 'package:riderzz_app/core/models/driver_registration_check_model.dart';
+import 'package:riderzz_app/core/models/rating_model.dart';
 
 
 class DriverRemoteDataSource {
@@ -381,5 +382,43 @@ class DriverRemoteDataSource {
     } catch (e) {
       throw ApiException(e.toString());
     }
+  }
+
+  Future<BookingRatingData?> getBookingRating(int bookingId) async {
+    final response = await _apiClient.get(ApiConstants.bookingRating(bookingId));
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final dynamic data = resBody['data'];
+    if (data != null && data is Map) {
+      return BookingRatingData.fromJson(Map<String, dynamic>.from(data));
+    }
+    return null;
+  }
+
+  Future<List<RatingItemModel>> getDriverReviews({int page = 0, int size = 10}) async {
+    final response = await _apiClient.get(
+      ApiConstants.driverReviews,
+      queryParameters: {'page': page, 'size': size},
+    );
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final dynamic data = resBody['data'];
+    List<dynamic> list = [];
+    if (data is Map && data['content'] is List) {
+      list = data['content'] as List;
+    } else if (data is List) {
+      list = data;
+    }
+    return list
+        .map((item) => RatingItemModel.fromJson(Map<String, dynamic>.from(item as Map)))
+        .toList();
+  }
+
+  Future<DriverRatingSummary?> getDriverRatingSummary() async {
+    final response = await _apiClient.get(ApiConstants.driverRatingSummary);
+    final Map<String, dynamic> resBody = Map<String, dynamic>.from(response.data);
+    final dynamic data = resBody['data'];
+    if (data != null && data is Map) {
+      return DriverRatingSummary.fromJson(Map<String, dynamic>.from(data as Map));
+    }
+    return null;
   }
 }

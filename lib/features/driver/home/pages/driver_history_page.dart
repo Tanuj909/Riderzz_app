@@ -5,6 +5,9 @@ import 'package:riderzz_app/features/driver/home/data/repositories/driver_reposi
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/driver/home/pages/driver_booking_details_screen.dart';
 import 'package:riderzz_app/features/driver/home/driver_home_screen.dart';
+import 'package:riderzz_app/core/widgets/booking_rating_bottom_sheet.dart';
+import 'package:riderzz_app/core/models/rating_model.dart';
+import 'package:riderzz_app/features/driver/home/pages/driver_trip_earnings_screen.dart';
 
 class DriverHistoryPage extends StatefulWidget {
   const DriverHistoryPage({super.key});
@@ -16,7 +19,17 @@ class DriverHistoryPage extends StatefulWidget {
 class _DriverHistoryPageState extends State<DriverHistoryPage> {
   String _selectedFilter = 'All';
   final List<String> _filters = ['All', 'Completed', 'Cancelled', 'Upcoming'];
-  
+  int _selectedTabIndex = 0; // 0: Rides History, 1: Reviews
+
+  // Reviews State
+  List<RatingItemModel> _reviews = [];
+  DriverRatingSummary? _ratingSummary;
+  bool _isLoadingReviews = false;
+  bool _isLoadingMoreReviews = false;
+  bool _hasMoreReviews = true;
+  int _reviewsCurrentPage = 0;
+  String? _reviewsError;
+
   List<BookingModel> _bookings = [];
   bool _isLoading = true;
   bool _isLoadingMore = false;
@@ -28,6 +41,7 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
   void initState() {
     super.initState();
     _fetchHistory();
+    _fetchRatingSummary();
   }
 
   Future<void> _fetchHistory({bool loadMore = false}) async {
@@ -81,6 +95,73 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
           }
         });
       }
+    }
+  }
+
+  Future<void> _fetchReviews({bool loadMore = false}) async {
+    if (!mounted) return;
+
+    if (loadMore) {
+      if (_isLoadingMoreReviews || !_hasMoreReviews) return;
+      setState(() => _isLoadingMoreReviews = true);
+    } else {
+      setState(() {
+        _isLoadingReviews = true;
+        _reviewsError = null;
+        _reviewsCurrentPage = 0;
+        _hasMoreReviews = true;
+      });
+      _fetchRatingSummary();
+    }
+
+    try {
+      final repo = context.read<DriverRepository>();
+      final nextPage = loadMore ? _reviewsCurrentPage + 1 : 0;
+      final data = await repo.getDriverReviews(page: nextPage, size: 10);
+
+      if (mounted) {
+        setState(() {
+          if (loadMore) {
+            if (data.isEmpty) {
+              _hasMoreReviews = false;
+            } else {
+              _reviews.addAll(data);
+              _reviewsCurrentPage = nextPage;
+              if (data.length < 10) _hasMoreReviews = false;
+            }
+            _isLoadingMoreReviews = false;
+          } else {
+            _reviews = data;
+            _isLoadingReviews = false;
+            if (data.length < 10) _hasMoreReviews = false;
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _reviewsError = e.toString().replaceFirst('Exception: ', '');
+          if (loadMore) {
+            _isLoadingMoreReviews = false;
+          } else {
+            _isLoadingReviews = false;
+          }
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchRatingSummary() async {
+    try {
+      final repo = context.read<DriverRepository>();
+      final summary = await repo.getDriverRatingSummary();
+      if (mounted && summary != null) {
+        setState(() {
+          _ratingSummary = summary;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching driver rating summary: $e');
     }
   }
 
@@ -149,25 +230,166 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
-          onRefresh: _fetchHistory,
+          onRefresh: () async {
+            if (_selectedTabIndex == 0) {
+              await _fetchHistory();
+            } else {
+              await _fetchReviews();
+            }
+          },
           color: const Color(0xFFD90429),
-          child: _isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD90429)),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+                  child: Text(
+                    'Rides & Reviews',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF121214),
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                )
-              : _error != null
-                  ? SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(24.0),
+                ),
+
+                // Segmented Tabs Switcher
+                Container(
+                  margin: const EdgeInsets.only(bottom: 20),
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            if (_selectedTabIndex != 0) {
+                              setState(() => _selectedTabIndex = 0);
+                            }
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: _selectedTabIndex == 0 ? Colors.white : Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: _selectedTabIndex == 0
+                                  ? [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.06),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.local_shipping_outlined,
+                                  size: 16,
+                                  color: _selectedTabIndex == 0
+                                      ? const Color(0xFF121214)
+                                      : const Color(0xFF64748B),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Rides History',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: _selectedTabIndex == 0
+                                        ? const Color(0xFF121214)
+                                        : const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            if (_selectedTabIndex != 1) {
+                              setState(() => _selectedTabIndex = 1);
+                              if (_reviews.isEmpty) {
+                                _fetchReviews();
+                              }
+                            }
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: _selectedTabIndex == 1 ? Colors.white : Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: _selectedTabIndex == 1
+                                  ? [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.06),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.star_rounded,
+                                  size: 18,
+                                  color: _selectedTabIndex == 1
+                                      ? const Color(0xFFEAB308)
+                                      : const Color(0xFF64748B),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Reviews',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: _selectedTabIndex == 1
+                                        ? const Color(0xFF121214)
+                                        : const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Content
+                if (_selectedTabIndex == 0) ...[
+                  if (_isLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 60),
                       child: Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD90429)),
+                        ),
+                      ),
+                    )
+                  else if (_error != null)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 40),
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const SizedBox(height: 100),
-                            const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 48),
-                            const SizedBox(height: 16),
+                            const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 44),
+                            const SizedBox(height: 14),
                             Text(
                               _error!,
                               style: GoogleFonts.outfit(
@@ -177,66 +399,70 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                               ),
                               textAlign: TextAlign.center,
                             ),
+                            const SizedBox(height: 12),
+                            OutlinedButton(
+                              onPressed: () => _fetchHistory(),
+                              child: const Text('Try Again'),
+                            ),
                           ],
                         ),
                       ),
                     )
-                  : SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8.0, bottom: 20.0),
-                            child: Text(
-                              'Rides History',
-                              style: GoogleFonts.outfit(
-                                color: const Color(0xFF121214),
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                          
-                          // Chips Row
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            clipBehavior: Clip.none,
-                            child: Row(
-                              children: _filters.map((filter) {
-                                final isActive = _selectedFilter == filter;
-                                return GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedFilter = filter;
-                                    });
-                                  },
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    margin: const EdgeInsets.only(right: 10),
-                                    decoration: BoxDecoration(
-                                      color: isActive ? const Color(0xFF121214) : Colors.white,
-                                      borderRadius: BorderRadius.circular(100),
-                                      border: Border.all(
-                                        color: isActive ? const Color(0xFF121214) : const Color(0xFFE1E1E6),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      filter,
-                                      style: GoogleFonts.outfit(
-                                        color: isActive ? Colors.white : const Color(0xFF6C6F79),
-                                        fontSize: 13,
-                                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
+                  else
+                    _buildRidesTabContent(),
+                ] else ...[
+                  _buildReviewsTabContent(),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRidesTabContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Chips Row
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          clipBehavior: Clip.none,
+          child: Row(
+            children: _filters.map((filter) {
+              final isActive = _selectedFilter == filter;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedFilter = filter;
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin: const EdgeInsets.only(right: 10),
+                  decoration: BoxDecoration(
+                    color: isActive ? const Color(0xFF121214) : Colors.white,
+                    borderRadius: BorderRadius.circular(100),
+                    border: Border.all(
+                      color: isActive ? const Color(0xFF121214) : const Color(0xFFE1E1E6),
+                    ),
+                  ),
+                  child: Text(
+                    filter,
+                    style: GoogleFonts.outfit(
+                      color: isActive ? Colors.white : const Color(0xFF6C6F79),
+                      fontSize: 13,
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 24),
                           
                           // Trip Cards
                           if (_filteredBookings.isEmpty)
@@ -407,49 +633,82 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                                       const SizedBox(height: 10),
                                       
                                       // Actions Bottom Button
-                                      SizedBox(
-                                        width: double.infinity,
-                                        child: TextButton.icon(
-                                          onPressed: () async {
-                                            final statusUpper = booking.status.toUpperCase();
-                                            if (statusUpper == 'CANCELLED' || statusUpper == 'FAILED' || statusUpper == 'DELIVERED' || statusUpper == 'COMPLETED') {
-                                              if (context.mounted) {
-                                                _showRideDetailsModal(context, booking);
-                                              }
-                                              return;
-                                            }
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: TextButton.icon(
+                                              onPressed: () async {
+                                                final statusUpper = booking.status.toUpperCase();
+                                                if (statusUpper == 'CANCELLED' || statusUpper == 'FAILED' || statusUpper == 'DELIVERED' || statusUpper == 'COMPLETED') {
+                                                  if (context.mounted) {
+                                                    _showRideDetailsModal(context, booking);
+                                                  }
+                                                  return;
+                                                }
 
-                                            final result = await Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) => DriverBookingDetailsScreen(
-                                                  booking: booking,
-                                                  startExpanded: true,
+                                                final result = await Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) => DriverBookingDetailsScreen(
+                                                      booking: booking,
+                                                      startExpanded: true,
+                                                    ),
+                                                  ),
+                                                );
+                                                if (result == 'go_to_wallet' && context.mounted) {
+                                                  final homeState = context.findAncestorStateOfType<DriverHomeScreenState>();
+                                                  if (homeState != null) {
+                                                    homeState.setIndex(2);
+                                                  }
+                                                }
+                                              },
+                                              icon: const Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF475569)),
+                                              label: Text(
+                                                'View Details',
+                                                style: GoogleFonts.outfit(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: const Color(0xFF475569),
                                                 ),
                                               ),
-                                            );
-                                            if (result == 'go_to_wallet' && context.mounted) {
-                                              final homeState = context.findAncestorStateOfType<DriverHomeScreenState>();
-                                              if (homeState != null) {
-                                                homeState.setIndex(2);
-                                              }
-                                            }
-                                          },
-                                          icon: const Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF475569)),
-                                          label: Text(
-                                            'View Details',
-                                            style: GoogleFonts.outfit(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w700,
-                                              color: const Color(0xFF475569),
+                                              style: TextButton.styleFrom(
+                                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                                backgroundColor: const Color(0xFFF1F5F9),
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                              ),
                                             ),
                                           ),
-                                          style: TextButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(vertical: 12),
-                                            backgroundColor: const Color(0xFFF1F5F9),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                          ),
-                                        ),
+                                          if (booking.status.toUpperCase() == 'DELIVERED') ...[
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: TextButton.icon(
+                                                onPressed: () {
+                                                  BookingRatingBottomSheet.showDriver(
+                                                    context: context,
+                                                    booking: booking,
+                                                  );
+                                                },
+                                                icon: const Icon(Icons.star_rounded, size: 18, color: Color(0xFFEAB308)),
+                                                label: Text(
+                                                  'Rating',
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: const Color(0xFF1E293B),
+                                                  ),
+                                                ),
+                                                style: TextButton.styleFrom(
+                                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                                  backgroundColor: const Color(0xFFFEF9C3),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(12),
+                                                    side: const BorderSide(color: Color(0xFFFEF08A)),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -493,10 +752,345 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                               const SizedBox(height: 24),
                             ],
                         ],
+                      );
+  }
+
+  Widget _buildReviewsTabContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 1. Average Rating & Total Reviews Card (TOP of Reviews tab) - Compact
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            children: [
+              // Average Rating
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Average Rating',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF64748B),
                       ),
                     ),
+                    const SizedBox(height: 2),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          (_ratingSummary?.averageRating ?? 0.0).toStringAsFixed(1),
+                          style: GoogleFonts.outfit(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          '/ 5.0',
+                          style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                height: 32,
+                width: 1,
+                color: const Color(0xFFCBD5E1),
+              ),
+              // Total Reviews
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Total Reviews',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF64748B),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${_ratingSummary?.ratingCount ?? 0}',
+                      style: GoogleFonts.outfit(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
+        const SizedBox(height: 16),
+
+        // 2. Reviews Header
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Customer Reviews',
+              style: GoogleFonts.outfit(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF1E293B),
+              ),
+            ),
+            if (_reviews.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${_reviews.length} shown',
+                  style: GoogleFonts.outfit(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // 3. Reviews List or Loading or Empty
+        if (_isLoadingReviews && _reviews.isEmpty) ...[
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 40),
+            child: Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD90429)),
+              ),
+            ),
+          ),
+        ] else if (_reviewsError != null && _reviews.isEmpty) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFE1E1E6)),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 36),
+                const SizedBox(height: 12),
+                Text(
+                  _reviewsError!,
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF4A5568),
+                    fontSize: 13,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: () => _fetchReviews(),
+                  child: const Text('Try Again'),
+                ),
+              ],
+            ),
+          ),
+        ] else if (_reviews.isEmpty) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFF1F5F9)),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF1F5F9),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.rate_review_outlined,
+                    size: 36,
+                    color: Color(0xFF94A3B8),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No Reviews Yet',
+                  style: GoogleFonts.outfit(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Customer reviews for completed rides will appear here.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ] else ...[
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _reviews.length,
+            itemBuilder: (context, index) {
+              final review = _reviews[index];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFF1F5F9)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Top: Star rating icons & Date
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: List.generate(5, (sIndex) {
+                            final isSelected = sIndex < review.stars;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 3),
+                              child: Icon(
+                                isSelected ? Icons.star_rounded : Icons.star_outline_rounded,
+                                color: isSelected ? const Color(0xFFEAB308) : const Color(0xFFCBD5E1),
+                                size: 18,
+                              ),
+                            );
+                          }),
+                        ),
+                        if (review.createdAt != null)
+                          Text(
+                            _formatDate(review.createdAt!),
+                            style: GoogleFonts.outfit(
+                              fontSize: 11.5,
+                              color: const Color(0xFF94A3B8),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (review.bookingNumber != null && review.bookingNumber!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Booking #${review.bookingNumber}',
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                    if (review.review != null && review.review!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Text(
+                          review.review!,
+                          softWrap: true,
+                          style: GoogleFonts.outfit(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF1E293B),
+                            height: 1.45,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
+          if (_hasMoreReviews) ...[
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: _isLoadingMoreReviews
+                    ? null
+                    : () => _fetchReviews(loadMore: true),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFD90429),
+                  side: const BorderSide(color: Color(0xFFD90429)),
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: _isLoadingMoreReviews
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD90429)),
+                        ),
+                      )
+                    : Text(
+                        'Load More Reviews',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+              ),
+            ),
+          ],
+        ],
+      ],
     );
   }
 
@@ -666,7 +1260,7 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  isCompleted ? 'EARNINGS' : 'ESTIMATED FARE',
+                                  isCompleted ? 'TOTAL FARE' : 'ESTIMATED FARE',
                                   style: GoogleFonts.outfit(
                                     color: const Color(0xFF64748B),
                                     fontSize: 10.5,
@@ -686,7 +1280,46 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                                 ),
                               ],
                             ),
-                            if (booking.estimatedDistanceKm != null)
+                            if (isCompleted)
+                              InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => DriverTripEarningsScreen(booking: booking),
+                                    ),
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: const Color(0xFFCBD5E1)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Earning',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF0F172A),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      const Icon(
+                                        Icons.arrow_forward_ios_rounded,
+                                        size: 10,
+                                        color: Color(0xFF0F172A),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            else if (booking.estimatedDistanceKm != null)
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
@@ -964,6 +1597,31 @@ class _DriverHistoryPageState extends State<DriverHistoryPage> {
                                     ],
                                   ),
                                 ),
+                                if (booking.estimatedDistanceKm != null)
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Distance',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 11,
+                                            color: const Color(0xFF64748B),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '${booking.estimatedDistanceKm!.toStringAsFixed(1)} km',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xFF1E293B),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                               ],
                             ),
                             if (!isCancelled && booking.goodsDescription.isNotEmpty) ...[

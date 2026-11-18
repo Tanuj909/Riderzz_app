@@ -18,6 +18,8 @@ import 'package:riderzz_app/features/user/coupons/widgets/customer_coupons_botto
 import 'package:riderzz_app/features/driver/home/widgets/timed_swipe_to_accept_button.dart';
 import 'package:riderzz_app/core/widgets/notification_permission_banner.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:riderzz_app/core/utils/no_emoji_input_formatter.dart';
+import 'package:riderzz_app/features/driver/home/pages/driver_trip_earnings_screen.dart';
 
 class DriverHomePage extends StatefulWidget {
   const DriverHomePage({super.key});
@@ -1925,6 +1927,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                     isLoading: driverProvider.isBookingsLoading,
                                     onSwipeComplete: () async {
                                       final messenger = ScaffoldMessenger.of(context);
+                                      final activeBooking = driverProvider.activeBooking;
                                       final nextStatus = _getNextStatus(driverProvider.activeBooking!.status);
                                       final success = await driverProvider.updateStatusForBooking(
                                         driverProvider.activeBooking!.id,
@@ -1934,6 +1937,20 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                         setState(() {
                                           _selectedPaymentMethod = null;
                                         });
+                                        if (activeBooking != null && nextStatus.toUpperCase() == 'DELIVERED') {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => DriverTripEarningsScreen(
+                                                booking: activeBooking,
+                                                onDismiss: () {
+                                                  driverProvider.fetchHomeBookings();
+                                                  Navigator.of(context).pop();
+                                                },
+                                              ),
+                                            ),
+                                          );
+                                        }
                                         return true;
                                       } else if (!success && mounted) {
                                         messenger.showSnackBar(
@@ -2085,6 +2102,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                     isLoading: driverProvider.isBookingsLoading,
                                     onSwipeComplete: () async {
                                       final messenger = ScaffoldMessenger.of(context);
+                                      final activeBooking = driverProvider.activeBooking;
                                       final nextStatus = _getNextStatus(driverProvider.activeBooking!.status);
                                       final success = await driverProvider.updateStatusForBooking(
                                         driverProvider.activeBooking!.id,
@@ -2094,6 +2112,20 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                         setState(() {
                                           _selectedPaymentMethod = null;
                                         });
+                                        if (activeBooking != null && nextStatus.toUpperCase() == 'DELIVERED') {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => DriverTripEarningsScreen(
+                                                booking: activeBooking,
+                                                onDismiss: () {
+                                                  driverProvider.fetchHomeBookings();
+                                                  Navigator.of(context).pop();
+                                                },
+                                              ),
+                                            ),
+                                          );
+                                        }
                                         return true;
                                       } else if (!success && mounted) {
                                         messenger.showSnackBar(
@@ -2611,6 +2643,9 @@ class _UpdateDriverProfileDialogState extends State<UpdateDriverProfileDialog> {
           controller: controller,
           maxLines: maxLines,
           autofocus: autofocus,
+          inputFormatters: [
+            NoEmojiInputFormatter(),
+          ],
           style: GoogleFonts.outfit(
             fontSize: 13.5,
             color: const Color(0xFF1A202C),
@@ -2733,6 +2768,9 @@ class _UpdateDriverProfileDialogState extends State<UpdateDriverProfileDialog> {
                       TextFormField(
                         controller: _dobController,
                         readOnly: true,
+                        inputFormatters: [
+                          NoEmojiInputFormatter(),
+                        ],
                         style: GoogleFonts.outfit(fontSize: 13.5, color: const Color(0xFF1A202C)),
                         onTap: () => _selectDate(context),
                         decoration: InputDecoration(
@@ -2774,6 +2812,10 @@ class _UpdateDriverProfileDialogState extends State<UpdateDriverProfileDialog> {
                       const SizedBox(height: 5),
                       DropdownButtonFormField<String>(
                         value: _selectedGender,
+                        isExpanded: true,
+                        dropdownColor: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF64748B), size: 20),
                         style: GoogleFonts.outfit(fontSize: 13.5, color: const Color(0xFF1A202C)),
                         decoration: InputDecoration(
                           isDense: true,
@@ -2794,7 +2836,14 @@ class _UpdateDriverProfileDialogState extends State<UpdateDriverProfileDialog> {
                         items: ['MALE', 'FEMALE', 'OTHER'].map((g) {
                           return DropdownMenuItem(
                             value: g,
-                            child: Text(g[0] + g.substring(1).toLowerCase()),
+                            child: Text(
+                              g[0] + g.substring(1).toLowerCase(),
+                              style: GoogleFonts.outfit(
+                                fontSize: 13.5,
+                                color: const Color(0xFF1A202C),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                           );
                         }).toList(),
                         onChanged: (val) {

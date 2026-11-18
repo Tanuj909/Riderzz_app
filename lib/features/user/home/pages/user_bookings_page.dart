@@ -6,6 +6,7 @@ import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/vehicle/providers/vehicle_provider.dart';
 import 'package:riderzz_app/features/user/home/pages/finding_driver_screen.dart';
 import 'package:riderzz_app/features/user/home/widgets/booking_details_bottom_sheet.dart';
+import 'package:riderzz_app/core/widgets/booking_rating_bottom_sheet.dart';
 
 class UserBookingsPage extends StatefulWidget {
   const UserBookingsPage({super.key});
@@ -439,19 +440,21 @@ class _UserBookingsPageState extends State<UserBookingsPage> {
                               Expanded(
                                 child: TextButton.icon(
                                   onPressed: () => showBookingDetailsBottomSheet(context, booking),
-                                  icon: const Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF475569)),
+                                  icon: const Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFF475569)),
                                   label: Text(
                                     'View Details',
                                     style: GoogleFonts.outfit(
-                                      fontSize: 13,
+                                      fontSize: 12.5,
                                       fontWeight: FontWeight.w700,
                                       color: const Color(0xFF475569),
                                     ),
                                   ),
                                   style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    minimumSize: const Size(0, 36),
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                     backgroundColor: const Color(0xFFF1F5F9),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    shape: const StadiumBorder(),
                                   ),
                                 ),
                               ),
@@ -488,15 +491,51 @@ class _UserBookingsPageState extends State<UserBookingsPage> {
                                     label: Text(
                                       'Track Ride',
                                       style: GoogleFonts.outfit(
-                                        fontSize: 13,
+                                        fontSize: 12.5,
                                         fontWeight: FontWeight.w700,
                                         color: Colors.white,
                                       ),
                                     ),
                                     style: TextButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                      minimumSize: const Size(0, 36),
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                       backgroundColor: const Color(0xFFC62E42),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      shape: const StadiumBorder(),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              if (booking.status.toUpperCase() == 'DELIVERED') ...[
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: TextButton.icon(
+                                    onPressed: () {
+                                      BookingRatingBottomSheet.showCustomer(
+                                        context: context,
+                                        booking: booking,
+                                        onRatingSubmitted: () {
+                                          Provider.of<BookingProvider>(context, listen: false).fetchBookings(page: 0);
+                                        },
+                                      );
+                                    },
+                                    icon: const Icon(Icons.star_rounded, size: 14, color: Color(0xFFEAB308)),
+                                    label: Text(
+                                      'Review',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF1E293B),
+                                      ),
+                                    ),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                      minimumSize: const Size(0, 36),
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      backgroundColor: const Color(0xFFFEF9C3),
+                                      shape: const StadiumBorder(
+                                        side: BorderSide(color: Color(0xFFFEF08A)),
+                                      ),
                                     ),
                                   ),
                                 ),

@@ -2,6 +2,7 @@ import 'package:riderzz_app/features/user/home/data/datasource/booking_datasourc
 import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/core/models/driver_location_model.dart';
 import 'package:riderzz_app/core/models/pricing_tier_model.dart';
+import 'package:riderzz_app/core/models/rating_model.dart';
 
 class BookingRepository {
   final BookingRemoteDataSource _remoteDataSource;
@@ -56,9 +57,13 @@ class BookingRepository {
     );
   }
 
+  Future<BookingRatingData?> getBookingRating(int bookingId) async {
+    return await _remoteDataSource.getBookingRating(bookingId);
+  }
+
   Future<bool> submitRating({
     required int bookingId,
-    required String ratingType,
+    String ratingType = 'CUSTOMER_TO_DRIVER',
     required int stars,
     required String review,
   }) async {

@@ -17,6 +17,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 import 'package:riderzz_app/core/services/broadcast_socket_service.dart';
 import 'package:riderzz_app/features/notification/data/models/notification_model.dart';
+import 'package:riderzz_app/features/driver/home/pages/driver_trip_earnings_screen.dart';
 
 class DriverBookingDetailsScreen extends StatefulWidget {
   final BookingModel booking;
@@ -1482,16 +1483,6 @@ class _DriverBookingDetailsScreenState
       _checkAndShowStatusDialog(statusUpper);
     }
 
-    if (isDelivered && !_wasAlreadyCompleted && !_hasStartedAutoPop) {
-      _hasStartedAutoPop = true;
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) {
-          driverProvider.fetchHomeBookings();
-          Navigator.of(context).pop();
-        }
-      });
-    }
-
     if (!_hasInitialBoundsFit) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _fitMapBoundsForCurrentState(booking);
@@ -2784,107 +2775,17 @@ class _DriverBookingDetailsScreenState
             ),
           ),
 
-          // Completion Modal Overlay
+          // Completion Modal / Receipt Overlay
           if (isDelivered && !_wasAlreadyCompleted)
             Positioned.fill(
-              child: Container(
-                color: const Color(0xFFF6F6F8),
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE7F7EF),
-                        borderRadius: BorderRadius.circular(100),
-                        border: Border.all(
-                          color: const Color(0xFF1C9A5B).withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.check_circle_rounded,
-                            color: Color(0xFF1C9A5B),
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Completed',
-                            style: GoogleFonts.outfit(
-                              color: const Color(0xFF1C9A5B),
-                              fontWeight: FontWeight.w800,
-                              fontSize: 13,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    Text(
-                      'Trip Earnings',
-                      style: GoogleFonts.outfit(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF6C6F79),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '₹${booking.totalFare.toStringAsFixed(2)}',
-                      style: GoogleFonts.outfit(
-                        fontSize: 48,
-                        fontWeight: FontWeight.w900,
-                        color: const Color(0xFF121214),
-                        letterSpacing: -1,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Going to home page in 3 seconds...',
-                      style: GoogleFonts.outfit(
-                        fontSize: 14,
-                        color: const Color(0xFF6C6F79),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // Clear active booking ONLY if this is a newly/live completed trip
-                          if (!_wasAlreadyCompleted) {
-                            driverProvider.fetchHomeBookings();
-                          }
-                          Navigator.pop(context);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFCC2D3B),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(100),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          _wasAlreadyCompleted ? 'Close' : 'Go to Home Now',
-                          style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              child: DriverTripEarningsScreen(
+                booking: booking,
+                onDismiss: () {
+                  if (!_wasAlreadyCompleted) {
+                    driverProvider.fetchHomeBookings();
+                  }
+                  Navigator.pop(context);
+                },
               ),
             ),
         ],

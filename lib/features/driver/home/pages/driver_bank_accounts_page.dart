@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:riderzz_app/core/models/bank_account_model.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
+import 'package:riderzz_app/core/utils/no_emoji_input_formatter.dart';
 
 class DriverBankAccountsPage extends StatefulWidget {
   const DriverBankAccountsPage({super.key});
@@ -146,6 +147,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                           TextFormField(
                             controller: holderNameController,
                             enabled: !isSubmitting,
+                            inputFormatters: [NoEmojiInputFormatter()],
                             style: GoogleFonts.outfit(color: const Color(0xFF121214), fontSize: 15, fontWeight: FontWeight.w600),
                             decoration: _buildInputDecoration('Account Holder Name'),
                             validator: (value) {
@@ -279,6 +281,10 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                             controller: accountNumberController,
                             enabled: !isSubmitting,
                             keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              NoEmojiInputFormatter(),
+                            ],
                             style: GoogleFonts.outfit(color: const Color(0xFF121214), fontSize: 15, fontWeight: FontWeight.w600),
                             decoration: _buildInputDecoration('Account Number'),
                             validator: (value) {
@@ -298,6 +304,7 @@ class _DriverBankAccountsPageState extends State<DriverBankAccountsPage> {
                             controller: ifscController,
                             enabled: !isSubmitting,
                             textCapitalization: TextCapitalization.characters,
+                            inputFormatters: [NoEmojiInputFormatter()],
                             style: GoogleFonts.outfit(color: const Color(0xFF121214), fontSize: 15, fontWeight: FontWeight.w600),
                             decoration: _buildInputDecoration('IFSC Code'),
                             validator: (value) {

@@ -4,6 +4,7 @@ import 'package:riderzz_app/features/user/home/data/models/booking_model.dart';
 import 'package:riderzz_app/features/user/home/data/repositories/booking_repository.dart';
 import 'package:riderzz_app/core/models/driver_location_model.dart';
 import 'package:riderzz_app/core/models/pricing_tier_model.dart';
+import 'package:riderzz_app/core/models/rating_model.dart';
 
 class BookingProvider extends ChangeNotifier {
   final BookingRepository _repository;
@@ -194,9 +195,24 @@ class BookingProvider extends ChangeNotifier {
     }
   }
 
+  final Map<int, BookingRatingData?> _bookingRatings = {};
+  BookingRatingData? getCachedRating(int bookingId) => _bookingRatings[bookingId];
+
+  Future<BookingRatingData?> fetchBookingRating(int bookingId) async {
+    try {
+      final data = await _repository.getBookingRating(bookingId);
+      _bookingRatings[bookingId] = data;
+      notifyListeners();
+      return data;
+    } catch (e) {
+      debugPrint("Error fetching booking rating: $e");
+      return null;
+    }
+  }
+
   Future<bool> submitRating({
     required int bookingId,
-    required String ratingType,
+    String ratingType = 'CUSTOMER_TO_DRIVER',
     required int stars,
     required String review,
   }) async {
@@ -211,6 +227,10 @@ class BookingProvider extends ChangeNotifier {
         stars: stars,
         review: review,
       );
+      if (success) {
+        // Refresh rating cache for this booking
+        await fetchBookingRating(bookingId);
+      }
       return success;
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');

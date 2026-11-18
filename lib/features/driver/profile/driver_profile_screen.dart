@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:riderzz_app/features/auth/providers/auth_provider.dart';
 import 'package:riderzz_app/features/driver/home/providers/driver_home_provider.dart';
 import 'package:riderzz_app/core/models/driver_profile_model.dart';
+import 'package:riderzz_app/core/models/rating_model.dart';
+import 'package:riderzz_app/features/driver/home/data/repositories/driver_repository.dart';
+import 'package:riderzz_app/core/utils/no_emoji_input_formatter.dart';
 
 class DriverProfileScreen extends StatefulWidget {
   final bool startInEditMode;
@@ -33,6 +37,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
   late TextEditingController _upiController;
   late TextEditingController _dobController;
   String _selectedGender = 'MALE';
+  DriverRatingSummary? _ratingSummary;
 
   @override
   void initState() {
@@ -60,6 +65,21 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
       _selectedGender = ['MALE', 'FEMALE', 'OTHER'].contains(profile.gender.toUpperCase())
           ? profile.gender.toUpperCase()
           : 'MALE';
+    }
+    _fetchRatingSummary();
+  }
+
+  Future<void> _fetchRatingSummary() async {
+    try {
+      final repo = context.read<DriverRepository>();
+      final summary = await repo.getDriverRatingSummary();
+      if (mounted && summary != null) {
+        setState(() {
+          _ratingSummary = summary;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching rating summary in profile: $e');
     }
   }
 
@@ -443,132 +463,220 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                               ],
                               border: Border.all(color: const Color(0xFFE9ECEF)),
                             ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                // Avatar — tappable to upload image
-                                GestureDetector(
-                                  onTap: _isUploadingImage ? null : _pickAndUploadImage,
-                                  child: Stack(
-                                    children: [
-                                      Container(
-                                        width: 72,
-                                        height: 72,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: const Color(0xFFD90429).withOpacity(0.1),
-                                          border: Border.all(color: const Color(0xFFD90429), width: 2),
-                                          image: profile.profileImage != null && profile.profileImage!.isNotEmpty
-                                              ? DecorationImage(
-                                                  image: NetworkImage(profile.profileImage!),
-                                                  fit: BoxFit.cover,
-                                                )
-                                              : null,
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: _isUploadingImage
-                                            ? const SizedBox(
-                                                width: 28,
-                                                height: 28,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2.5,
-                                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD90429)),
-                                                ),
-                                              )
-                                            : (profile.profileImage == null || profile.profileImage!.isEmpty)
-                                                ? Text(
-                                                    initials,
-                                                    style: GoogleFonts.plusJakartaSans(
-                                                      color: const Color(0xFFD90429),
-                                                      fontSize: 24,
-                                                      fontWeight: FontWeight.w800,
-                                                    ),
-                                                  )
-                                                : null,
-                                      ),
-                                      // Camera badge overlay
-                                      if (!_isUploadingImage)
-                                        Positioned(
-                                          right: 0,
-                                          bottom: 0,
-                                          child: Container(
-                                            width: 22,
-                                            height: 22,
-                                            decoration: const BoxDecoration(
-                                              color: Color(0xFFD90429),
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: const Icon(
-                                              Icons.camera_alt_rounded,
-                                              color: Colors.white,
-                                              size: 13,
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                // Info
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        profile.name,
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w800,
-                                          color: const Color(0xFF121214),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    // Avatar — tappable to upload image
+                                    GestureDetector(
+                                      onTap: _isUploadingImage ? null : _pickAndUploadImage,
+                                      child: Stack(
                                         children: [
                                           Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                            width: 72,
+                                            height: 72,
                                             decoration: BoxDecoration(
-                                              color: _getStatusColor(profile.approvalStatus).withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(20),
+                                              shape: BoxShape.circle,
+                                              color: const Color(0xFFD90429).withOpacity(0.1),
+                                              border: Border.all(color: const Color(0xFFD90429), width: 2),
+                                              image: profile.profileImage != null && profile.profileImage!.isNotEmpty
+                                                  ? DecorationImage(
+                                                      image: NetworkImage(profile.profileImage!),
+                                                      fit: BoxFit.cover,
+                                                    )
+                                                  : null,
                                             ),
-                                            child: Text(
-                                              profile.approvalStatus.toUpperCase(),
-                                              style: GoogleFonts.outfit(
-                                                fontSize: 9,
-                                                fontWeight: FontWeight.bold,
-                                                color: _getStatusColor(profile.approvalStatus),
-                                                letterSpacing: 0.5,
+                                            alignment: Alignment.center,
+                                            child: _isUploadingImage
+                                                ? const SizedBox(
+                                                    width: 28,
+                                                    height: 28,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2.5,
+                                                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD90429)),
+                                                    ),
+                                                  )
+                                                : (profile.profileImage == null || profile.profileImage!.isEmpty)
+                                                    ? Text(
+                                                        initials,
+                                                        style: GoogleFonts.plusJakartaSans(
+                                                          color: const Color(0xFFD90429),
+                                                          fontSize: 24,
+                                                          fontWeight: FontWeight.w800,
+                                                        ),
+                                                      )
+                                                    : null,
+                                          ),
+                                          // Camera badge overlay
+                                          if (!_isUploadingImage)
+                                            Positioned(
+                                              right: 0,
+                                              bottom: 0,
+                                              child: Container(
+                                                width: 22,
+                                                height: 22,
+                                                decoration: const BoxDecoration(
+                                                  color: Color(0xFFD90429),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(
+                                                  Icons.camera_alt_rounded,
+                                                  color: Colors.white,
+                                                  size: 13,
+                                                ),
                                               ),
                                             ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    // Info
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            profile.name,
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w800,
+                                              color: const Color(0xFF121214),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                decoration: BoxDecoration(
+                                                  color: _getStatusColor(profile.approvalStatus).withOpacity(0.1),
+                                                  borderRadius: BorderRadius.circular(20),
+                                                ),
+                                                child: Text(
+                                                  profile.approvalStatus.toUpperCase(),
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 9,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: _getStatusColor(profile.approvalStatus),
+                                                    letterSpacing: 0.5,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFF1C9A5B).withOpacity(0.1),
+                                                  borderRadius: BorderRadius.circular(20),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    const Icon(Icons.local_shipping_rounded, color: Color(0xFF1C9A5B), size: 12),
+                                                    const SizedBox(width: 3),
+                                                    Text(
+                                                      '${profile.totalTrips} Trips',
+                                                      style: GoogleFonts.plusJakartaSans(
+                                                        fontSize: 10,
+                                                        fontWeight: FontWeight.w700,
+                                                        color: const Color(0xFF1C9A5B),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 8),
-                                      // Mini Stats Row
-                                      Row(
-                                        children: [
-                                          const Icon(Icons.star_rounded, color: Color(0xFFFFB000), size: 16),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            '${profile.rating.toStringAsFixed(1)} Rating',
-                                            style: GoogleFonts.plusJakartaSans(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w700,
-                                              color: const Color(0xFF4A5568),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                                const SizedBox(height: 12),
+                                // Rating Stats Section (Compact)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF8FAFC),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      // Average Rating
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Average Rating',
+                                              style: GoogleFonts.outfit(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w500,
+                                                color: const Color(0xFF64748B),
+                                              ),
                                             ),
-                                          ),
-                                          const SizedBox(width: 16),
-                                          const Icon(Icons.local_shipping_rounded, color: Color(0xFF1C9A5B), size: 16),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            '${profile.totalTrips} Trips',
-                                            style: GoogleFonts.plusJakartaSans(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w700,
-                                              color: const Color(0xFF4A5568),
+                                            const SizedBox(height: 2),
+                                            Row(
+                                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                                              textBaseline: TextBaseline.alphabetic,
+                                              children: [
+                                                Text(
+                                                  (_ratingSummary?.averageRating ?? 0.0).toStringAsFixed(1),
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: const Color(0xFF0F172A),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 3),
+                                                Text(
+                                                  '/ 5.0',
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: const Color(0xFF94A3B8),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
+                                      ),
+                                      Container(
+                                        height: 28,
+                                        width: 1,
+                                        color: const Color(0xFFCBD5E1),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      // Total Rating
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Total Rating',
+                                              style: GoogleFonts.outfit(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w500,
+                                                color: const Color(0xFF64748B),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              '${_ratingSummary?.ratingCount ?? 0}',
+                                              style: GoogleFonts.outfit(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w800,
+                                                color: const Color(0xFF0F172A),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -744,6 +852,10 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                                     const SizedBox(height: 6),
                                     DropdownButtonFormField<String>(
                                       value: _selectedGender,
+                                      isExpanded: true,
+                                      dropdownColor: Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6C6F79), size: 20),
                                       decoration: InputDecoration(
                                         prefixIcon: const Icon(Icons.wc_rounded, color: Color(0xFF6C6F79)),
                                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1139,6 +1251,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     String? hintText,
     int maxLines = 1,
     String? Function(String?)? validator,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1155,6 +1268,10 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
         TextFormField(
           controller: controller,
           maxLines: maxLines,
+          inputFormatters: [
+            NoEmojiInputFormatter(),
+            if (inputFormatters != null) ...inputFormatters,
+          ],
           style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 14),
           validator: validator,
           decoration: InputDecoration(

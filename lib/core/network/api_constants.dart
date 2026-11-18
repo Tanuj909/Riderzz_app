@@ -59,6 +59,12 @@ class ApiConstants {
   // Support Endpoints
   static const String supportTickets = '/support/tickets';
 
+  // Ratings Endpoints
+  static const String ratings = '/ratings';
+  static String bookingRating(int bookingId) => '/ratings/booking/$bookingId';
+  static const String driverReviews = '/ratings/driver/my-reviews';
+  static const String driverRatingSummary = '/ratings/driver/my-summary';
+
   // Rewards & Coupons
   static const String customerCoupons = '/rewards/customer/coupons';
   static String customerCouponClaim(int id) => '/rewards/customer/coupons/$id/claim';
